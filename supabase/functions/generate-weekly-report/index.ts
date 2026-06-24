@@ -29,6 +29,23 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
+    const { data: sub } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    let isPremium = false
+    if (sub && (sub.plan === 'beta_pro' || sub.plan === 'pro') && sub.status === 'active') {
+      if (!sub.beta_expires_at || new Date(sub.beta_expires_at) > new Date()) {
+        isPremium = true
+      }
+    }
+
+    if (!isPremium) {
+      return new Response(JSON.stringify({ error: "PRO_REQUIRED" }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
     const endpoint = 'generate-weekly-report'
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
     const { count } = await supabase
