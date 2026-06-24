@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { GoogleGenAI, Type } from "npm:@google/genai"
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,6 +25,36 @@ serve(async (req) => {
   let text = "Unknown";
 
   try {
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    const token = authHeader.replace('Bearer ', '')
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    const endpoint = 'parse-meal'
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    const { count } = await supabase
+      .from('api_usage')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('endpoint', endpoint)
+      .gte('created_at', twentyFourHoursAgo)
+
+    if (count !== null && count >= 50) {
+      return new Response(JSON.stringify({ error: "Daily limit reached. Upgrade to Pro for unlimited logging." }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    await supabase.from('api_usage').insert({ user_id: user.id, endpoint })
+
     const body = await req.json();
     text = body.text;
     const apiKey = Deno.env.get('GEMINI_API_KEY')
