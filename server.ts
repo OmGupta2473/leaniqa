@@ -19,50 +19,53 @@ async function startServer() {
         // Simulate a delay
         await new Promise(resolve => setTimeout(resolve, 800));
         return res.json({
-          name: text,
           calories: Math.floor(Math.random() * 300) + 200,
           protein: Math.floor(Math.random() * 20) + 5,
           fat: Math.floor(Math.random() * 15) + 5,
           carbs: Math.floor(Math.random() * 40) + 20,
-          tip: "Focus on increasing your protein intake in the next meal."
+          confidence: 85,
+          foods_detected: [text]
         });
       }
 
       try {
-        const ai = new GoogleGenAI({ apiKey });
-        
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: `Analyze this meal: "${text}". Provide a reasonable estimate for calories, protein (g), fat (g), and carbs (g). Use Indian food context where applicable. Keep the name concise. Also provide a 1-sentence actionable coaching tip based on this meal's macros.`,
-          config: {
-            responseMimeType: 'application/json',
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                name: { type: Type.STRING },
-                calories: { type: Type.NUMBER },
-                protein: { type: Type.NUMBER },
-                fat: { type: Type.NUMBER },
-                carbs: { type: Type.NUMBER },
-                tip: { type: Type.STRING }
-              },
-              required: ['name', 'calories', 'protein', 'fat', 'carbs', 'tip']
-            }
+      const ai = new GoogleGenAI({ apiKey });
+      
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: `Analyze this meal description: "${text}". Provide a reasonable estimate for macros. Use Indian food context where applicable. Provide your confidence level (0-100) and an array of detected food items.`,
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              calories: { type: Type.NUMBER },
+              protein: { type: Type.NUMBER },
+              fat: { type: Type.NUMBER },
+              carbs: { type: Type.NUMBER },
+              confidence: { type: Type.NUMBER },
+              foods_detected: { 
+                type: Type.ARRAY,
+                items: { type: Type.STRING }
+              }
+            },
+            required: ['calories', 'protein', 'fat', 'carbs', 'confidence', 'foods_detected']
           }
-        });
-        
-        const data = JSON.parse(response.text || '{}');
-        res.json(data);
+        }
+      });
+      
+      const data = JSON.parse(response.text || '{}');
+      res.json(data);
       } catch (apiError: any) {
         console.warn('Gemini API unavailable, using fallback:', apiError.message);
         // Fallback for API errors like 503 Overloaded
         return res.json({
-          name: text,
           calories: Math.floor(Math.random() * 300) + 200,
           protein: Math.floor(Math.random() * 20) + 5,
           fat: Math.floor(Math.random() * 15) + 5,
           carbs: Math.floor(Math.random() * 40) + 20,
-          tip: "Stay hydrated and consider a short walk after this meal."
+          confidence: 80,
+          foods_detected: [text]
         });
       }
     } catch (error) {
