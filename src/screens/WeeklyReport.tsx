@@ -1,12 +1,17 @@
-import { useAppStore } from '../store';
 import { Calendar, TrendingUp, AlertTriangle } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { profileService } from '../services/profileService';
+import { mealService } from '../services/mealService';
+import { weightService } from '../services/weightService';
 
 export function WeeklyReportScreen() {
-  const { profile, meals, weightLogs } = useAppStore();
+  const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
+  const { data: meals = [] } = useQuery({ queryKey: ['meals'], queryFn: () => mealService.getMeals() });
+  const { data: weightLogs = [] } = useQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
 
-  const maintKcal = profile?.maintenanceKcal || 2200;
+  const maintKcal = profile?.maintenance_kcal || 2200;
   const targetKcal = maintKcal - 400;
-  const proteinTarget = profile?.proteinTarget || 150;
+  const proteinTarget = profile?.protein_target || 150;
 
   // Simple analytics logic for past 7 days
   const today = new Date();
@@ -17,7 +22,7 @@ export function WeeklyReportScreen() {
   });
 
   const dayStats = past7Days.map(dateStr => {
-    const dayMeals = meals.filter(m => m.time.startsWith(dateStr));
+    const dayMeals = meals.filter(m => m.meal_time.startsWith(dateStr));
     const kcals = dayMeals.reduce((acc, m) => acc + m.calories, 0);
     const prot = dayMeals.reduce((acc, m) => acc + m.protein, 0);
     const weightLog = weightLogs.find(w => w.date.startsWith(dateStr));
@@ -72,7 +77,7 @@ export function WeeklyReportScreen() {
           <div className="text-[10px] text-text-secondary mt-0.5">PROT. COMPLIANCE</div>
         </div>
         <div className="bg-background-secondary rounded-md p-2.5 text-center border border-border-tertiary">
-          <div className="text-[18px] font-medium text-amber">{avgScore}</div>
+          <div className="text-[18px] font-medium text-amber">{avgScore || 0}</div>
           <div className="text-[10px] text-text-secondary mt-0.5">AVG SCORE</div>
         </div>
       </div>

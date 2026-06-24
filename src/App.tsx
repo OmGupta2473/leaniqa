@@ -6,6 +6,8 @@ import { MealLoggerScreen } from './screens/MealLogger';
 import { ProgressScreen } from './screens/Progress';
 import { WeeklyReportScreen } from './screens/WeeklyReport';
 import { PricingScreen } from './screens/Pricing';
+import { useQuery } from '@tanstack/react-query';
+import { profileService } from './services/profileService';
 
 const TITLES: Record<string, string> = {
   onboard: 'Welcome to Physique AI',
@@ -17,7 +19,12 @@ const TITLES: Record<string, string> = {
 };
 
 export default function App() {
-  const { currentScreen, profile } = useAppStore();
+  const { currentScreen } = useAppStore();
+
+  const { data: profile } = useQuery({
+    queryKey: ['profile'],
+    queryFn: () => profileService.getProfile()
+  });
 
   const title = TITLES[currentScreen] || 'Physique AI';
 

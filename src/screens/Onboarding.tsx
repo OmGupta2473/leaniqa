@@ -2,9 +2,13 @@ import { useState } from 'react';
 import { useAppStore } from '../store';
 import { cn } from '../lib/utils';
 import { Sparkles } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { profileService } from '../services/profileService';
 
 export function OnboardingScreen() {
-  const { setScreen, updateProfile, updateGoal } = useAppStore();
+  const { setScreen } = useAppStore();
+  const queryClient = useQueryClient();
+  
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
   const [height, setHeight] = useState('');
@@ -17,6 +21,18 @@ export function OnboardingScreen() {
   
   const [showResults, setShowResults] = useState(false);
   const [results, setResults] = useState({ maint: 0, protein: 0, bf: 0 });
+
+  const saveMutation = useMutation({
+    mutationFn: async (data: { profile: any, goal: any }) => {
+      await profileService.upsertProfile(data.profile);
+      await profileService.upsertGoal(data.goal);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['goal'] });
+      setScreen('dash');
+    }
+  });
 
   const calculate = () => {
     const w = parseFloat(weight) || 80;
@@ -45,15 +61,25 @@ export function OnboardingScreen() {
     setResults({ maint, protein, bf });
     setShowResults(true);
     
-    updateProfile({
-      name: name || 'User', age: a, height: h, weight: w, gender, waist: waistVal, neck: neckVal, hip: hipVal, activityLevel: activity,
-      maintenanceKcal: maint, proteinTarget: protein, estimatedBf: bf
-    });
-
-    updateGoal({
-      currentBf: bf,
-      targetBf: gender === 'Male' ? 12 : 20,
-      strategy: 'Recommended'
+    saveMutation.mutate({
+      profile: {
+        name: name || 'User', 
+        age: a, 
+        height: h, 
+        weight: w, 
+        gender, 
+        waist: waistVal, 
+        neck: neckVal, 
+        hip: hipVal, 
+        activity_level: activity,
+        maintenance_kcal: maint, 
+        protein_target: protein
+      },
+      goal: {
+        current_bf: bf,
+        target_bf: gender === 'Male' ? 12 : 20,
+        strategy: 'Recommended'
+      }
     });
   };
 
@@ -108,7 +134,7 @@ export function OnboardingScreen() {
         )}
       </div>
       
-      {!showResults && <button onClick={calculate} className="w-full p-2.5 border-none bg-purple text-background-primary text-[14px] font-bold tracking-tight uppercase cursor-pointer transition-opacity hover:opacity-90 mb-3.5">Calculate Baseline</button>}
+      {!showResults && <button onClick={calculate} disabled={saveMutation.isPending} className="w-full p-2.5 border-none bg-purple text-background-primary text-[14px] font-bold tracking-tight uppercase cursor-pointer transition-opacity hover:opacity-90 mb-3.5 disabled:opacity-50">Calculate Baseline</button>}
       
       {showResults && (
         <div className="bg-background-secondary p-4 mb-3.5 border border-border-tertiary animate-in fade-in slide-in-from-top-2">
@@ -128,7 +154,9 @@ export function OnboardingScreen() {
             </div>
           </div>
           <div className="mt-4 pt-4 border-t border-border-tertiary">
-            <button onClick={() => setScreen('dash')} className="w-full p-2.5 border-[0.5px] border-purple bg-purple/10 text-purple text-[14px] font-bold tracking-tight uppercase cursor-pointer transition-opacity hover:bg-purple/20">Enter Command Center →</button>
+            <button onClick={() => setScreen('dash')} disabled={saveMutation.isPending} className="w-full p-2.5 border-[0.5px] border-purple bg-purple/10 text-purple text-[14px] font-bold tracking-tight uppercase cursor-pointer transition-opacity hover:bg-purple/20 disabled:opacity-50">
+              {saveMutation.isPending ? 'Saving...' : 'Enter Command Center →'}
+            </button>
           </div>
         </div>
       )}
