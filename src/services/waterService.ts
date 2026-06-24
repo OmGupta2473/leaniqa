@@ -22,7 +22,6 @@ export const waterService = {
   async addWater(amountMl: number): Promise<DbWaterLog | null> {
     const userId = await authService.getUserId();
     const payload = {
-      id: crypto.randomUUID(),
       user_id: userId,
       amount_ml: amountMl,
       date: new Date().toISOString()

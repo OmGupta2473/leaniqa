@@ -40,7 +40,6 @@ export const weightService = {
     const payload = {
       ...logData,
       body_fat: bodyFatEstimate,
-      id: crypto.randomUUID(),
       user_id: userId,
     };
 

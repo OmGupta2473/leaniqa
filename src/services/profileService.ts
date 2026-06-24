@@ -61,12 +61,10 @@ export const profileService = {
       user_id: userId,
     };
 
-    // Try to get existing to get its ID, or generate new ID
+    // Try to get existing to get its ID
     const existing = await this.getGoal();
     if (existing) {
       payload.id = existing.id;
-    } else {
-      payload.id = crypto.randomUUID();
     }
 
     const { data, error } = await supabase
