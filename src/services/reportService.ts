@@ -44,12 +44,14 @@ export const reportService = {
       .eq('week_start', weekStart)
       .maybeSingle();
 
-    const payload = {
-      id: existing?.id || crypto.randomUUID(),
+    const payload: any = {
       user_id: userId,
       week_start: weekStart,
       report: JSON.stringify(reportData)
     };
+    if (existing?.id) {
+      payload.id = existing.id;
+    }
 
     const { data, error } = await supabase
       .from('weekly_reports')

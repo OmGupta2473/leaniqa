@@ -22,7 +22,6 @@ export const mealService = {
     const userId = await authService.getUserId();
     const payload = {
       ...mealData,
-      id: crypto.randomUUID(),
       user_id: userId,
     };
 

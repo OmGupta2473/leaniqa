@@ -1,5 +1,5 @@
 export interface DbProfile {
-  id: string;
+  id?: string;
   email: string;
   name: string;
   age: number;
@@ -16,7 +16,7 @@ export interface DbProfile {
 }
 
 export interface DbGoal {
-  id: string;
+  id?: string;
   user_id: string;
   current_bf: number;
   target_bf: number;
@@ -25,7 +25,7 @@ export interface DbGoal {
 }
 
 export interface DbMealLog {
-  id: string;
+  id?: string;
   user_id: string;
   meal_text: string;
   calories: number;
@@ -37,7 +37,7 @@ export interface DbMealLog {
 }
 
 export interface DbWeightLog {
-  id: string;
+  id?: string;
   user_id: string;
   weight: number;
   body_fat?: number;
@@ -45,7 +45,7 @@ export interface DbWeightLog {
 }
 
 export interface DbDailyMetric {
-  id: string;
+  id?: string;
   user_id: string;
   date: string;
   target_calories: number;
@@ -57,21 +57,21 @@ export interface DbDailyMetric {
 }
 
 export interface DbWaterLog {
-  id: string;
+  id?: string;
   user_id: string;
   amount_ml: number;
   date: string;
 }
 
 export interface DbWeeklyReport {
-  id: string;
+  id?: string;
   user_id: string;
   week_start: string;
   report: string;
 }
 
 export interface DbSubscription {
-  id: string;
+  id?: string;
   user_id: string;
   status: 'active' | 'past_due' | 'canceled' | 'trialing';
   plan: 'pro' | 'free';

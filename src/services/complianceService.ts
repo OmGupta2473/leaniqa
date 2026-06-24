@@ -55,11 +55,13 @@ export const complianceService = {
         .eq('date', today)
         .maybeSingle();
         
-      const payload = {
+      const payload: any = {
         ...metricPayload,
         user_id: userId,
-        id: existing?.id || crypto.randomUUID()
       };
+      if (existing?.id) {
+        payload.id = existing.id;
+      }
       
       const { data, error } = await supabase
         .from('daily_metrics')
