@@ -16,9 +16,17 @@ export function MealLoggerScreen() {
   const { data: meals = [] } = useQuery({ queryKey: ['meals'], queryFn: () => mealService.getMeals() });
 
   const [chat, setChat] = useState<{role: 'user'|'ai', text: string, data?: any}[]>([
-    { role: 'ai', text: `Good morning${profile?.name ? `, ${profile.name}` : ''}! What did you eat first today? Just type it naturally — I'll handle the rest.` }
+    { role: 'ai', text: `Good morning! What did you eat first today? Just type it naturally — I'll handle the rest.` }
   ]);
   const chatRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (profile?.name && chat.length === 1 && chat[0].role === 'ai') {
+      setChat([
+        { role: 'ai', text: `Good morning, ${profile.name}! What did you eat first today? Just type it naturally — I'll handle the rest.` }
+      ]);
+    }
+  }, [profile?.name]);
 
   useEffect(() => {
     if (chatRef.current) {

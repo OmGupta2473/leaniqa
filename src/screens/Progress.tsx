@@ -4,20 +4,36 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianG
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileService } from '../services/profileService';
 import { weightService } from '../services/weightService';
+import { complianceService } from '../services/complianceService';
 import { calculateProjections } from '../lib/projectionEngine';
 
 export function ProgressScreen() {
   const [weight, setWeight] = useState('');
+  const [waist, setWaist] = useState('');
+  const [neck, setNeck] = useState('');
+  const [hip, setHip] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
   
   const queryClient = useQueryClient();
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
   const { data: weightLogs = [] } = useQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
+  const { data: scores } = useQuery({ queryKey: ['complianceScore'], queryFn: () => complianceService.getScores() });
 
   const currentWeight = weightLogs.length > 0 ? weightLogs[weightLogs.length - 1].weight : profile?.weight || 80;
   
   const addWeightMutation = useMutation({
     mutationFn: async (val: number) => {
+      // First update profile measurements if provided
+      if (showAdvanced) {
+        const updates: any = {};
+        if (waist) updates.waist = parseFloat(waist);
+        if (neck) updates.neck = parseFloat(neck);
+        if (hip) updates.hip = parseFloat(hip);
+        if (Object.keys(updates).length > 0) {
+          await profileService.upsertProfile(updates);
+        }
+      }
       return weightService.addWeightLog({
         weight: val,
         date: new Date().toISOString()
@@ -25,7 +41,13 @@ export function ProgressScreen() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['weightLogs'] });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['goal'] });
       setWeight('');
+      setWaist('');
+      setNeck('');
+      setHip('');
+      setShowAdvanced(false);
     }
   });
 
@@ -44,10 +66,10 @@ export function ProgressScreen() {
     chartData.push({ name: 'Start', weight: currentWeight });
   }
 
-  const currentBf = goal?.current_bf || 20;
+  const currentBf = goal?.current_bf ?? 20;
   const targetBf = goal?.target_bf || 12;
   const weeklyDeficitKcal = 400 * 7; // Average weekly deficit
-  const complianceScore = 80; // Estimated 80% compliance
+  const complianceScore = scores?.weeklyAverage ?? 80;
 
   const projections = calculateProjections({
     currentWeight,
@@ -64,16 +86,55 @@ export function ProgressScreen() {
         <p className="text-[12px] text-text-secondary">Log your weight daily to track your physique timeline.</p>
       </div>
 
-      <div className="flex gap-2 mb-6">
-        <input 
-          type="number" 
-          value={weight} 
-          onChange={(e) => setWeight(e.target.value)} 
-          placeholder={`e.g. ${currentWeight}`} 
-          className="flex-1 px-3 py-2 border-[0.5px] border-border-secondary bg-background-primary text-text-primary focus:outline-none focus:border-purple"
-          disabled={addWeightMutation.isPending}
-        />
-        <button onClick={handleLog} disabled={addWeightMutation.isPending} className="px-4 py-2 border-none bg-purple text-background-primary font-bold uppercase tracking-widest text-[12px] cursor-pointer disabled:opacity-50">Log</button>
+      <div className="mb-4 flex flex-col gap-3">
+        <div className="flex gap-2">
+          <input 
+            type="number" 
+            value={weight} 
+            onChange={(e) => setWeight(e.target.value)} 
+            placeholder={`Weight e.g. ${currentWeight}kg`} 
+            className="flex-1 px-3 py-2 border-[0.5px] border-border-secondary bg-background-primary text-text-primary focus:outline-none focus:border-purple text-[13px]"
+            disabled={addWeightMutation.isPending}
+          />
+          <button onClick={handleLog} disabled={addWeightMutation.isPending} className="px-4 py-2 border-none bg-purple text-background-primary font-bold uppercase tracking-widest text-[12px] cursor-pointer disabled:opacity-50">Log</button>
+        </div>
+        
+        <div>
+          <button 
+            onClick={() => setShowAdvanced(!showAdvanced)} 
+            className="text-[11px] text-purple hover:underline bg-transparent border-none cursor-pointer p-0"
+          >
+            {showAdvanced ? '- Hide Measurements Check-in' : '+ Add Monthly Measurements Check-in'}
+          </button>
+          
+          {showAdvanced && (
+            <div className="grid grid-cols-2 gap-2 mt-3 animate-in fade-in slide-in-from-top-2">
+              <input 
+                type="number" 
+                value={waist} 
+                onChange={(e) => setWaist(e.target.value)} 
+                placeholder={`Waist (cm) e.g. ${profile?.waist || 85}`} 
+                className="px-3 py-2 border-[0.5px] border-border-secondary bg-background-primary text-text-primary focus:outline-none focus:border-purple text-[13px]"
+              />
+              <input 
+                type="number" 
+                value={neck} 
+                onChange={(e) => setNeck(e.target.value)} 
+                placeholder={`Neck (cm) e.g. ${profile?.neck || 38}`} 
+                className="px-3 py-2 border-[0.5px] border-border-secondary bg-background-primary text-text-primary focus:outline-none focus:border-purple text-[13px]"
+              />
+              {profile?.gender === 'Female' && (
+                <input 
+                  type="number" 
+                  value={hip} 
+                  onChange={(e) => setHip(e.target.value)} 
+                  placeholder={`Hip (cm) e.g. ${profile?.hip || 95}`} 
+                  className="col-span-2 px-3 py-2 border-[0.5px] border-border-secondary bg-background-primary text-text-primary focus:outline-none focus:border-purple text-[13px]"
+                />
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="bg-background-secondary p-4 border border-border-tertiary mb-4">

@@ -1,6 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
-import { Dumbbell, Mail, Github, Chrome } from 'lucide-react'; // Fallback icons for providers
+import { Dumbbell, Mail, Apple, Chrome } from 'lucide-react'; // Fallback icons for providers
 
 export function AuthScreen() {
   const [email, setEmail] = useState('');
@@ -71,7 +71,7 @@ export function AuthScreen() {
             onClick={() => handleOAuthLogin('apple')}
             className="w-full flex items-center justify-center gap-2 p-3 bg-text-primary text-background-primary rounded-md text-[14px] font-medium hover:opacity-90 transition-opacity"
           >
-            <Github className="w-4 h-4" /> Continue with Apple
+            <Apple className="w-4 h-4" /> Continue with Apple
           </button>
 
           <div className="relative">

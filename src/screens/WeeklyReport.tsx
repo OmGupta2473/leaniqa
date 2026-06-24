@@ -7,6 +7,7 @@ import { weightService } from '../services/weightService';
 import { reportService } from '../services/reportService';
 import { complianceService } from '../services/complianceService';
 import { subscriptionService } from '../services/subscriptionService';
+import { supabase } from '../lib/supabase';
 import { useAppStore } from '../store';
 
 export function WeeklyReportScreen() {

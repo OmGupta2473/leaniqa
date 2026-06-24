@@ -46,7 +46,7 @@ export function DashboardScreen() {
   }, [mealsLength, weightLogsLength]);
 
   const name = profile?.name || 'User';
-  const currentBf = goal?.current_bf || profile?.weight ? 20 : 20; // fallback if body fat not tracked
+  const currentBf = goal?.current_bf ?? 20; // fallback if body fat not tracked
   const targetBf = goal?.target_bf || 12;
   const maintKcal = profile?.maintenance_kcal || 2200;
   const proteinTarget = profile?.protein_target || 150;
