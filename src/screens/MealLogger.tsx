@@ -27,40 +27,54 @@ export function MealLoggerScreen() {
 
   const addMealMutation = useMutation({
     mutationFn: async (text: string) => {
-      const res = await fetch('/api/parse-meal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text })
-      });
-      
-      const data = await res.json();
-      
-      if (data.calories) {
-        await mealService.addMeal({
-          meal_text: text,
-          calories: data.calories,
-          protein: data.protein,
-          fat: data.fat,
-          carbs: data.carbs,
-          meal_time: new Date().toISOString(),
-          tip: data.tip
-        });
-        return data;
-      } else {
-        throw new Error("Could not parse meal");
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          const res = await fetch('/api/parse-meal', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text })
+          });
+          
+          if (!res.ok) throw new Error('API Error');
+          
+          const data = await res.json();
+          
+          if (data.calories !== undefined && data.confidence !== undefined) {
+            await mealService.addMeal({
+              meal_text: text,
+              calories: data.calories,
+              protein: data.protein,
+              fat: data.fat,
+              carbs: data.carbs,
+              meal_time: new Date().toISOString(),
+              tip: data.foods_detected?.join(', ') || text // store foods detected in tip column temporarily
+            });
+            return data;
+          } else {
+            throw new Error("Could not parse meal");
+          }
+        } catch (err) {
+          retries--;
+          if (retries === 0) throw err;
+          await new Promise(r => setTimeout(r, 1000));
+        }
       }
     },
     onSuccess: (data, text) => {
       queryClient.invalidateQueries({ queryKey: ['meals'] });
+      
+      const foodsDetected = data.foods_detected?.join(', ') || text;
+      
       setChat(prev => [...prev, { 
         role: 'ai', 
-        text: `Got it. ${data.name || text}.`,
+        text: `Got it. Logged: ${foodsDetected}. (Confidence: ${data.confidence}%)`,
         data 
       }]);
       setLoading(false);
     },
     onError: () => {
-      setChat(prev => [...prev, { role: 'ai', text: "Sorry, I had trouble connecting to the nutrition database." }]);
+      setChat(prev => [...prev, { role: 'ai', text: "Sorry, I had trouble connecting to the nutrition database after multiple attempts." }]);
       setLoading(false);
     }
   });
