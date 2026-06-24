@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+@theme {
+  --color-purple: #C7FF24;
+  --color-teal: #C7FF24;
+  --color-blue: #38bdf8;
+  --color-green: #C7FF24;
+  --color-amber: #fbbf24;
+  --color-coral: #ef4444;
+  --color-pink: #C7FF24;
+  
+  --color-purple-bg: rgba(255, 255, 255, 0.05);
+  --color-teal-bg: rgba(255, 255, 255, 0.05);
+  --color-blue-bg: rgba(56, 189, 248, 0.1);
+  --color-green-bg: rgba(199, 255, 36, 0.1);
+  --color-amber-bg: rgba(251, 191, 36, 0.1);
+  --color-coral-bg: rgba(239, 68, 68, 0.1);
+  --color-pink-bg: rgba(255, 255, 255, 0.05);
+  
+  --color-border-primary: rgba(255, 255, 255, 0.1);
+  --color-border-secondary: rgba(255, 255, 255, 0.05);
+  --color-border-tertiary: rgba(255, 255, 255, 0.05);
+  
+  --color-background-primary: #050505;
+  --color-background-secondary: #0A0A0A;
+  
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-text-tertiary: #64748b;
+}
+
+@layer base {
+  :root {
+    --purple: #C7FF24; --teal: #C7FF24; --blue: #38bdf8; --green: #C7FF24;
+    --amber: #fbbf24; --coral: #ef4444; --pink: #C7FF24;
+    --purple-bg: rgba(255, 255, 255, 0.05); --teal-bg: rgba(255, 255, 255, 0.05); --blue-bg: rgba(56, 189, 248, 0.1);
+    --green-bg: rgba(199, 255, 36, 0.1); --amber-bg: rgba(251, 191, 36, 0.1); --coral-bg: rgba(239, 68, 68, 0.1); --pink-bg: rgba(255, 255, 255, 0.05);
+    
+    --color-border-primary: rgba(255, 255, 255, 0.1);
+    --color-border-secondary: rgba(255, 255, 255, 0.05);
+    --color-border-tertiary: rgba(255, 255, 255, 0.05);
+    
+    --color-background-primary: #050505;
+    --color-background-secondary: #0A0A0A;
+    --color-text-primary: #f1f5f9;
+    --color-text-secondary: #94a3b8;
+    --color-text-tertiary: #64748b;
+  }
+}
+
+body {
+  font-family: var(--font-sans, sans-serif);
+  background-color: #050505; /* Dark background */
+  color: var(--color-text-primary);
+}
