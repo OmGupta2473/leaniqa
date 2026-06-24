@@ -54,7 +54,7 @@ async function startServer() {
         const data = JSON.parse(response.text || '{}');
         res.json(data);
       } catch (apiError: any) {
-        console.error('Gemini API Error:', apiError);
+        console.warn('Gemini API unavailable, using fallback:', apiError.message);
         // Fallback for API errors like 503 Overloaded
         return res.json({
           name: text,
