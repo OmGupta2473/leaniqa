@@ -78,17 +78,14 @@ export function WeeklyReportScreen() {
         throw new Error('PRO_REQUIRED');
       }
       
-      const res = await fetch('/api/generate-weekly-report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('generate-weekly-report', {
+        body: {
           metrics: dayStats,
           weights: weightLogs.filter(w => new Date(w.date) >= new Date(past7Days[0])),
           meals: meals.filter(m => new Date(m.meal_time) >= new Date(past7Days[0]))
-        })
+        }
       });
-      if (!res.ok) throw new Error('Failed to generate report');
-      const data = await res.json();
+      if (error) throw new Error(error.message || 'Failed to generate report');
       await reportService.saveWeeklyReport(weekStartStr, data);
       return data;
     },

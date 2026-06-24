@@ -5,6 +5,7 @@ import { cn } from '../lib/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { mealService } from '../services/mealService';
 import { profileService } from '../services/profileService';
+import { supabase } from '../lib/supabase';
 
 export function MealLoggerScreen() {
   const [input, setInput] = useState('');
@@ -30,15 +31,11 @@ export function MealLoggerScreen() {
       let retries = 3;
       while (retries > 0) {
         try {
-          const res = await fetch('/api/parse-meal', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text })
+          const { data, error } = await supabase.functions.invoke('parse-meal', {
+            body: { text }
           });
           
-          if (!res.ok) throw new Error('API Error');
-          
-          const data = await res.json();
+          if (error) throw new Error(error.message || 'API Error');
           
           if (data.calories !== undefined && data.confidence !== undefined) {
             await mealService.addMeal({
