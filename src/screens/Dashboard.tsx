@@ -1,18 +1,38 @@
 import { useAppStore } from '../store';
 import { Target, Droplets, Utensils, AlertCircle } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileService } from '../services/profileService';
 import { mealService } from '../services/mealService';
 import { weightService } from '../services/weightService';
+import { complianceService } from '../services/complianceService';
 import { calculateProjections } from '../lib/projectionEngine';
+import { useEffect } from 'react';
 
 export function DashboardScreen() {
   const { setScreen } = useAppStore();
+  const queryClient = useQueryClient();
 
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
   const { data: meals } = useQuery({ queryKey: ['meals'], queryFn: () => mealService.getMeals() });
   const { data: weightLogs = [] } = useQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
+  
+  const { data: scores } = useQuery({ 
+    queryKey: ['scores'], 
+    queryFn: () => complianceService.getScores() 
+  });
+
+  const updateScoreMutation = useMutation({
+    mutationFn: () => complianceService.updateTodayScore(0), // default water
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['scores'] })
+  });
+
+  useEffect(() => {
+    // Update daily score whenever meals or weight logs change
+    if (meals || weightLogs) {
+      updateScoreMutation.mutate();
+    }
+  }, [meals, weightLogs]);
 
   const name = profile?.name || 'User';
   const currentBf = goal?.current_bf || profile?.weight ? 20 : 20; // fallback if body fat not tracked
@@ -35,14 +55,14 @@ export function DashboardScreen() {
   // Projected Date Calculation using Engine
   const currentWeight = weightLogs.length > 0 ? weightLogs[weightLogs.length - 1].weight : profile?.weight || 80;
   const weeklyDeficitKcal = 400 * 7;
-  const complianceScore = 80;
+  const complianceScore = scores?.weeklyAverage || 80; // Use actual weekly average for projection!
   
   const projections = calculateProjections({
     currentWeight,
     currentBf,
     targetBf,
     weeklyDeficitKcal,
-    complianceScore,
+    complianceScore: Math.max(complianceScore, 10), // minimum 10% to avoid infinity
   });
   
   const targetProjection = projections.find(p => p.bfTarget === targetBf);
@@ -74,6 +94,10 @@ export function DashboardScreen() {
         <div>
           <div className="text-[12px] text-text-secondary">Welcome back,</div>
           <div className="text-[18px] font-medium text-text-primary">{name}</div>
+        </div>
+        <div className="flex flex-col items-end">
+          <div className="text-[24px] font-medium text-purple leading-none">{scores?.todayScore || 0}</div>
+          <div className="text-[10px] text-text-secondary uppercase tracking-widest mt-1">Today's Score</div>
         </div>
       </div>
 

@@ -3,17 +3,19 @@ import { useQuery } from '@tanstack/react-query';
 import { profileService } from '../services/profileService';
 import { mealService } from '../services/mealService';
 import { weightService } from '../services/weightService';
+import { reportService } from '../services/reportService';
+import { complianceService } from '../services/complianceService';
 
 export function WeeklyReportScreen() {
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
   const { data: meals = [] } = useQuery({ queryKey: ['meals'], queryFn: () => mealService.getMeals() });
   const { data: weightLogs = [] } = useQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
+  const { data: dailyMetrics = [] } = useQuery({ queryKey: ['dailyMetrics'], queryFn: () => reportService.getDailyMetrics() });
+  const { data: scores } = useQuery({ queryKey: ['scores'], queryFn: () => complianceService.getScores() });
 
-  const maintKcal = profile?.maintenance_kcal || 2200;
-  const targetKcal = maintKcal - 400;
   const proteinTarget = profile?.protein_target || 150;
 
-  // Simple analytics logic for past 7 days
+  // Real analytics logic for past 7 days from DB
   const today = new Date();
   const past7Days = Array.from({length: 7}, (_, i) => {
     const d = new Date(today);
@@ -23,27 +25,23 @@ export function WeeklyReportScreen() {
 
   const dayStats = past7Days.map(dateStr => {
     const dayMeals = meals.filter(m => m.meal_time.startsWith(dateStr));
-    const kcals = dayMeals.reduce((acc, m) => acc + m.calories, 0);
     const prot = dayMeals.reduce((acc, m) => acc + m.protein, 0);
     const weightLog = weightLogs.find(w => w.date.startsWith(dateStr));
     
-    // Score
-    const kcalScore = kcals === 0 ? 0 : Math.max(0, 100 - Math.abs((kcals - targetKcal) / targetKcal) * 100);
-    const protScore = prot === 0 ? 0 : Math.min(100, (prot / proteinTarget) * 100);
-    // Water and weight omitted from strict score for simplicity unless requested
-    const score = Math.round((kcalScore * 0.4) + (protScore * 0.3) + 30); // Base 30 for water/weight
+    // Find metric in DB
+    const metric = dailyMetrics.find(m => m.date === dateStr);
+    const score = metric ? metric.score : 0;
 
     return {
       date: dateStr,
       day: new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short' }),
-      kcals,
       prot,
-      score: kcals === 0 ? 0 : score, // 0 if no data
+      score,
       weight: weightLog?.weight
     };
   });
 
-  const avgScore = Math.round(dayStats.filter(d => d.score > 0).reduce((acc, d) => acc + d.score, 0) / (dayStats.filter(d => d.score > 0).length || 1));
+  const avgScore = scores?.weeklyAverage || 0;
   const avgProtPct = Math.round(dayStats.filter(d => d.prot > 0).reduce((acc, d) => acc + (d.prot / proteinTarget * 100), 0) / (dayStats.filter(d => d.prot > 0).length || 1));
   
   const startWeight = dayStats.find(d => d.weight)?.weight || profile?.weight || 80;
@@ -77,7 +75,7 @@ export function WeeklyReportScreen() {
           <div className="text-[10px] text-text-secondary mt-0.5">PROT. COMPLIANCE</div>
         </div>
         <div className="bg-background-secondary rounded-md p-2.5 text-center border border-border-tertiary">
-          <div className="text-[18px] font-medium text-amber">{avgScore || 0}</div>
+          <div className="text-[18px] font-medium text-amber">{avgScore}</div>
           <div className="text-[10px] text-text-secondary mt-0.5">AVG SCORE</div>
         </div>
       </div>
