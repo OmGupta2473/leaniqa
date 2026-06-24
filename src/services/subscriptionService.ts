@@ -1,23 +1,43 @@
+import { supabase } from '../lib/supabase';
+import { authService } from './authService';
+
 export const subscriptionService = {
   async getSubscriptionStatus() {
-    // Placeholder for future RevenueCat integration
-    // Returns active premium status
-    return {
-      isPremium: true, // Currently hardcoded to true for beta
-      plan: 'beta_pro',
-      status: 'active'
-    };
+    try {
+      const userId = await authService.getUserId();
+      const { data, error } = await supabase.rpc('get_or_create_subscription', {
+        p_user_id: userId
+      });
+
+      if (error) throw error;
+
+      const isPremium = data?.plan === 'beta_pro' && 
+                        data?.status === 'active' && 
+                        (!data?.beta_expires_at || new Date(data.beta_expires_at) > new Date());
+
+      return {
+        isPremium,
+        plan: data?.plan || 'free',
+        status: data?.status || 'active'
+      };
+    } catch (error) {
+      console.error('Error fetching subscription status:', error);
+      return { isPremium: false, plan: 'free', status: 'error' };
+    }
+  },
+
+  async activatePro(razorpayOrderId: string) {
+    console.log(`Activating pro via razorpay placeholder for order: ${razorpayOrderId}`);
+    return { success: true };
   },
 
   async activatePremium() {
-    // Placeholder for future RevenueCat integration
-    console.log('Activating premium via RevenueCat placeholder');
+    console.log('Activating premium via placeholder');
     return { success: true };
   },
 
   async restorePurchases() {
-    // Placeholder for future RevenueCat integration
-    console.log('Restoring purchases via RevenueCat placeholder');
+    console.log('Restoring purchases placeholder');
     return { success: true };
   }
 };

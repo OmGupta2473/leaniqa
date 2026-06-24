@@ -73,8 +73,8 @@ export interface DbWeeklyReport {
 export interface DbSubscription {
   id?: string;
   user_id: string;
-  status: 'active' | 'past_due' | 'canceled' | 'trialing';
-  plan: 'pro' | 'free';
-  razorpay_subscription_id?: string;
+  status: 'active' | 'canceled' | 'expired';
+  plan: 'free' | 'beta_pro' | 'pro';
+  beta_expires_at?: string;
   created_at?: string;
 }
