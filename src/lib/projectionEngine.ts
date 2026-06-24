@@ -11,6 +11,7 @@ export interface ProjectionResult {
   date: Date;
   weeks: number;
   status: 'completed' | 'projected';
+  estWeight: number;
 }
 
 export function calculateProjections({
@@ -44,7 +45,7 @@ export function calculateProjections({
   
   for (const t of targets) {
     if (t >= currentBf) {
-      results.push({ bfTarget: t, date: now, weeks: 0, status: 'completed' });
+      results.push({ bfTarget: t, date: now, weeks: 0, status: 'completed', estWeight: currentWeight });
       continue;
     }
     
@@ -52,6 +53,7 @@ export function calculateProjections({
     const tDec = t / 100;
     const targetFatMass = (tDec * leanMass) / (1 - tDec);
     const fatToLose = fatMass - targetFatMass;
+    const estWeight = leanMass + targetFatMass;
     
     if (fatToLose > 0) {
       const weeksToLose = fatToLose / fatLossPerWeekKg;
@@ -62,7 +64,8 @@ export function calculateProjections({
         bfTarget: t,
         date: projectedDate,
         weeks: Math.ceil(weeksToLose),
-        status: 'projected'
+        status: 'projected',
+        estWeight
       });
     }
   }

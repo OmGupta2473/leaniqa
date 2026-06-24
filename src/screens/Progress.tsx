@@ -107,24 +107,39 @@ export function ProgressScreen() {
       </div>
 
       <div className="bg-background-secondary p-4 border border-border-tertiary">
-        <div className="text-[11px] font-medium uppercase tracking-widest text-text-secondary mb-3">Body Fat Projection</div>
+        <div className="text-[11px] font-medium uppercase tracking-widest text-text-secondary mb-3">Physique Transformation Roadmap</div>
         
-        <div className="space-y-4">
-          {projections.map((p, index) => (
-            <div key={p.bfTarget}>
-              <div className="flex items-center justify-between">
-                <div className="text-[13px] text-text-primary">
-                  {p.bfTarget}% Body Fat {p.bfTarget === targetBf ? '(Goal)' : ''}
-                </div>
-                <div className={`text-[12px] font-mono ${p.status === 'completed' ? 'text-text-secondary' : 'text-purple'}`}>
-                  {p.status === 'completed' ? 'Completed' : `In ${p.weeks} weeks`}
+        <div className="relative pl-6 space-y-6 py-2">
+          {/* Vertical timeline line */}
+          <div className="absolute top-0 bottom-0 left-2.5 w-[2px] bg-border-secondary"></div>
+          
+          {projections.map((p, index) => {
+            const isCompleted = p.status === 'completed';
+            const isCurrent = !isCompleted && (index === 0 || projections[index - 1].status === 'completed');
+            
+            return (
+              <div key={p.bfTarget} className="relative">
+                {/* Timeline Dot */}
+                <div className={`absolute -left-6 top-1 w-3 h-3 rounded-full border-2 bg-background-primary z-10 ${isCompleted ? 'border-text-secondary bg-text-secondary' : isCurrent ? 'border-purple shadow-[0_0_8px_rgba(167,139,250,0.6)]' : 'border-border-secondary'}`}></div>
+                
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className={`text-[15px] font-medium ${isCompleted ? 'text-text-tertiary line-through' : isCurrent ? 'text-purple' : 'text-text-primary'}`}>
+                      {p.bfTarget}% Body Fat {p.bfTarget === targetBf ? '(Goal)' : ''}
+                    </div>
+                    {!isCompleted && (
+                      <div className="text-[12px] text-text-secondary mt-1">
+                        Est. Weight: ~{p.estWeight.toFixed(1)} kg
+                      </div>
+                    )}
+                  </div>
+                  <div className={`text-[12px] font-mono px-2 py-1 rounded-md ${isCompleted ? 'bg-border-tertiary text-text-secondary' : 'bg-purple/10 text-purple'}`}>
+                    {isCompleted ? 'Completed' : `ETA: ${p.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })}`}
+                  </div>
                 </div>
               </div>
-              {index < projections.length - 1 && (
-                <div className="h-[1px] bg-border-tertiary mt-4"></div>
-              )}
-            </div>
-          ))}
+            );
+          })}
           {projections.length === 0 && (
             <div className="text-[12px] text-text-secondary">Provide valid goal info to see projections.</div>
           )}

@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Calendar, TrendingUp, AlertTriangle, Sparkles } from 'lucide-react';
+import { Calendar, TrendingUp, AlertTriangle, Sparkles, Lock } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileService } from '../services/profileService';
 import { mealService } from '../services/mealService';
 import { weightService } from '../services/weightService';
 import { reportService } from '../services/reportService';
 import { complianceService } from '../services/complianceService';
+import { subscriptionService } from '../services/subscriptionService';
+import { useAppStore } from '../store';
 
 export function WeeklyReportScreen() {
+  const { setScreen } = useAppStore();
   const queryClient = useQueryClient();
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
   const { data: meals = [] } = useQuery({ queryKey: ['meals'], queryFn: () => mealService.getMeals() });
@@ -61,8 +64,20 @@ export function WeeklyReportScreen() {
   const currentReport = weeklyReports.find(r => r.week_start === weekStartStr);
   const parsedReport = currentReport ? JSON.parse(currentReport.report) : null;
 
+  const [isPro, setIsPro] = useState(false);
+  
+  useEffect(() => {
+    subscriptionService.getSubscriptionStatus().then(status => setIsPro(status.isPremium));
+  }, []);
+
   const generateReportMutation = useMutation({
     mutationFn: async () => {
+      // Pro check via service
+      const status = await subscriptionService.getSubscriptionStatus();
+      if (!status.isPremium) {
+        throw new Error('PRO_REQUIRED');
+      }
+      
       const res = await fetch('/api/generate-weekly-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -79,6 +94,11 @@ export function WeeklyReportScreen() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['weeklyReports'] });
+    },
+    onError: (err: any) => {
+      if (err.message === 'PRO_REQUIRED') {
+        setScreen('pricing');
+      }
     }
   });
 
@@ -101,7 +121,11 @@ export function WeeklyReportScreen() {
             disabled={generateReportMutation.isPending}
             className="bg-purple text-background-primary rounded-md px-3 py-1.5 text-[12px] font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-1"
           >
-            {generateReportMutation.isPending ? 'Analyzing...' : 'Generate Report'}
+            {generateReportMutation.isPending ? 'Analyzing...' : (
+              <>
+                {!isPro && <Lock size={12} />} Generate Report
+              </>
+            )}
           </button>
         ) : (
            <div className="text-[12px] text-text-secondary">Generates on Sunday</div>

@@ -56,9 +56,25 @@ export interface DbDailyMetric {
   score: number;
 }
 
+export interface DbWaterLog {
+  id: string;
+  user_id: string;
+  amount_ml: number;
+  date: string;
+}
+
 export interface DbWeeklyReport {
   id: string;
   user_id: string;
   week_start: string;
   report: string;
+}
+
+export interface DbSubscription {
+  id: string;
+  user_id: string;
+  status: 'active' | 'past_due' | 'canceled' | 'trialing';
+  plan: 'pro' | 'free';
+  razorpay_subscription_id?: string;
+  created_at?: string;
 }
