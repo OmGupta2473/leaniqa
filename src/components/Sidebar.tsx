@@ -1,6 +1,7 @@
 import { useAppStore } from '../store';
 import { cn } from '../lib/utils';
-import { LayoutDashboard, MessageSquare, TrendingUp, FileBarChart, CreditCard } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, TrendingUp, FileBarChart, CreditCard, LogOut } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export function Sidebar() {
   const { currentScreen, setScreen } = useAppStore();
@@ -11,6 +12,10 @@ export function Sidebar() {
     { id: 'progress', icon: TrendingUp, label: 'Progress' },
     { id: 'week', icon: FileBarChart, label: 'Reports' },
   ];
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
 
   return (
     <nav className="w-16 bg-background-secondary border-r-[0.5px] border-border-tertiary flex flex-col items-center py-3 gap-1 shrink-0" role="navigation" aria-label="App navigation">
@@ -47,6 +52,14 @@ export function Sidebar() {
         )}
       >
         <CreditCard size={20} strokeWidth={2} />
+      </button>
+      <button
+        onClick={handleLogout}
+        title="Logout"
+        aria-label="Logout"
+        className="w-10 h-10 rounded-md border-none bg-transparent cursor-pointer flex items-center justify-center text-text-secondary hover:bg-background-primary hover:text-coral transition-all mt-1"
+      >
+        <LogOut size={20} strokeWidth={2} />
       </button>
     </nav>
   );
