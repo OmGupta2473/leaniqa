@@ -1,0 +1,23 @@
+export const IndianFoodsDB: Record<string, string> = {
+  'dal chawal': '~620 kcal · 22g protein · 18g fat · 95g carbs — Good base meal, protein is moderate. Add a side of dahi to boost protein.',
+  'roti': null,
+  'sabzi': null,
+  'paneer': '~280 kcal per 100g · 20g protein · 22g fat · Excellent protein source!',
+  'paneer tikka': '~380 kcal for 150g · 46g protein · 22g fat — Great high-protein dinner. Perfectly on plan.',
+  'biryani': '~650 kcal per plate · 28g protein (with chicken) · 30g fat · 72g carbs — Heavy on carbs. Skip rice at next meal.',
+  'chai': '~70 kcal for a cup with milk · 2g protein — Add only 1 sugar or go sugarless.',
+  'boiled eggs': '~140 kcal for 2 · 12g protein · 10g fat — Great snack. High satiety per calorie.',
+  'egg': '~70 kcal each · 6g protein · 5g fat',
+  'puri': '~100 kcal per puri · 2g protein · 5g fat — Deep fried. Limit to 2-3 per meal.',
+  'bhindi': '~35 kcal per 100g · 2g protein · Low calorie, high fiber vegetable. ✓',
+  'chole': '~350 kcal per cup · 15g protein · 10g fat · 50g carbs — Good protein-to-calorie ratio.',
+  'rajma': '~330 kcal per cup · 18g protein · Good plant protein. Pair with roti.',
+  'dosa': '~200 kcal · 5g protein · Low protein. Add sambar or egg for protein.',
+  'idli': '~130 kcal for 2 · 4g protein · Light option. Add sambar.',
+  'sambar': '~80 kcal per cup · 4g protein · Good to add to any south Indian meal.',
+  'aloo': '~150 kcal per medium · 3g protein · High carb. Portion carefully.',
+  'chicken': '~165 kcal per 100g · 31g protein · Excellent protein source. Preferred lean protein.',
+  'fish': '~150 kcal per 100g · 26g protein · Excellent. High protein, healthy fats.',
+  'roti sabzi': '~310 kcal for 2 rotis + sabzi · 10g protein · 8g fat · 52g carbs — Standard home meal. Add dal for protein.',
+  'chai biscuit': '~140 kcal · 3g protein · Minimal nutrition. Replace biscuits with a boiled egg.'
+};
