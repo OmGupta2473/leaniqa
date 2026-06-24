@@ -1,21 +1,30 @@
 import { useAppStore } from '../store';
 import { Target, Droplets, Utensils, AlertCircle } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { profileService } from '../services/profileService';
+import { mealService } from '../services/mealService';
+import { weightService } from '../services/weightService';
 
 export function DashboardScreen() {
-  const { profile, goal, meals, weightLogs, setScreen } = useAppStore();
+  const { setScreen } = useAppStore();
+
+  const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
+  const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
+  const { data: meals } = useQuery({ queryKey: ['meals'], queryFn: () => mealService.getMeals() });
+  const { data: weightLogs } = useQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
 
   const name = profile?.name || 'User';
-  const currentBf = goal?.currentBf || profile?.estimatedBf || 20;
-  const targetBf = goal?.targetBf || 12;
-  const maintKcal = profile?.maintenanceKcal || 2200;
-  const proteinTarget = profile?.proteinTarget || 150;
+  const currentBf = goal?.current_bf || profile?.weight ? 20 : 20; // fallback if body fat not tracked
+  const targetBf = goal?.target_bf || 12;
+  const maintKcal = profile?.maintenance_kcal || 2200;
+  const proteinTarget = profile?.protein_target || 150;
   
   const dailyTargetKcal = maintKcal - 400; // Simplified for deficit
   const waterTargetLiters = 3.0; // Fixed generic target for now
   
   // Calculate today's intake
   const today = new Date().toISOString().split('T')[0];
-  const todaysMeals = meals.filter(m => m.time.startsWith(today));
+  const todaysMeals = meals?.filter(m => m.meal_time.startsWith(today)) || [];
   const eatenKcal = todaysMeals.reduce((acc, m) => acc + m.calories, 0);
   const eatenProtein = todaysMeals.reduce((acc, m) => acc + m.protein, 0);
   

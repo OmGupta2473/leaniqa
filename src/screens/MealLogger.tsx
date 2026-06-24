@@ -2,14 +2,20 @@ import { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '../store';
 import { Send, Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { IndianFoodsDB } from '../data';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { mealService } from '../services/mealService';
+import { profileService } from '../services/profileService';
 
 export function MealLoggerScreen() {
-  const { meals, addMeal, profile } = useAppStore();
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  const queryClient = useQueryClient();
+  const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
+  const { data: meals = [] } = useQuery({ queryKey: ['meals'], queryFn: () => mealService.getMeals() });
+
   const [chat, setChat] = useState<{role: 'user'|'ai', text: string, data?: any}[]>([
-    { role: 'ai', text: `Good morning, ${profile?.name || 'Rahul'}! What did you eat first today? Just type it naturally — I'll handle the rest.` }
+    { role: 'ai', text: `Good morning${profile?.name ? `, ${profile.name}` : ''}! What did you eat first today? Just type it naturally — I'll handle the rest.` }
   ]);
   const chatRef = useRef<HTMLDivElement>(null);
 
@@ -17,29 +23,10 @@ export function MealLoggerScreen() {
     if (chatRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
-  }, [chat]);
+  }, [chat, meals]);
 
-  const handleSend = async (textOverride?: string) => {
-    const text = textOverride || input.trim();
-    if (!text) return;
-    
-    setInput('');
-    setChat(prev => [...prev, { role: 'user', text }]);
-    setLoading(true);
-
-    try {
-      // First check local hardcoded DB for instant response simulation
-      const tLower = text.toLowerCase();
-      let matchedLocal = false;
-      
-      for (const [key, resp] of Object.entries(IndianFoodsDB)) {
-        if (tLower.includes(key) && resp) {
-          // It's a string like '~620 kcal · 22g protein...'
-          // We can parse it roughly or just let the API handle it if we want structured data
-          // But to be safe and structured, we will always call our API!
-        }
-      }
-
+  const addMealMutation = useMutation({
+    mutationFn: async (text: string) => {
       const res = await fetch('/api/parse-meal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -49,37 +36,53 @@ export function MealLoggerScreen() {
       const data = await res.json();
       
       if (data.calories) {
-        addMeal({
-          id: Date.now().toString(),
-          text,
-          name: data.name || text,
+        await mealService.addMeal({
+          meal_text: text,
           calories: data.calories,
           protein: data.protein,
           fat: data.fat,
           carbs: data.carbs,
-          time: new Date().toISOString()
+          meal_time: new Date().toISOString(),
+          tip: data.tip
         });
-        
-        setChat(prev => [...prev, { 
-          role: 'ai', 
-          text: `Got it. ${data.name || text}.`,
-          data 
-        }]);
+        return data;
       } else {
-        setChat(prev => [...prev, { role: 'ai', text: "I couldn't parse that meal. Could you try being more specific?" }]);
+        throw new Error("Could not parse meal");
       }
-    } catch (e) {
-      console.error(e);
+    },
+    onSuccess: (data, text) => {
+      queryClient.invalidateQueries({ queryKey: ['meals'] });
+      setChat(prev => [...prev, { 
+        role: 'ai', 
+        text: `Got it. ${data.name || text}.`,
+        data 
+      }]);
+      setLoading(false);
+    },
+    onError: () => {
       setChat(prev => [...prev, { role: 'ai', text: "Sorry, I had trouble connecting to the nutrition database." }]);
-    } finally {
       setLoading(false);
     }
+  });
+
+  const handleSend = (textOverride?: string) => {
+    const text = textOverride || input.trim();
+    if (!text || loading) return;
+    
+    setInput('');
+    setChat(prev => [...prev, { role: 'user', text }]);
+    setLoading(true);
+
+    addMealMutation.mutate(text);
   };
 
-  const eatenKcal = meals.reduce((acc, m) => acc + m.calories, 0);
-  const eatenProtein = meals.reduce((acc, m) => acc + m.protein, 0);
-  const eatenFat = meals.reduce((acc, m) => acc + m.fat, 0);
-  const eatenCarbs = meals.reduce((acc, m) => acc + m.carbs, 0);
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todaysMeals = meals.filter(m => m.meal_time.startsWith(todayStr));
+  
+  const eatenKcal = todaysMeals.reduce((acc, m) => acc + m.calories, 0);
+  const eatenProtein = todaysMeals.reduce((acc, m) => acc + m.protein, 0);
+  const eatenFat = todaysMeals.reduce((acc, m) => acc + m.fat, 0);
+  const eatenCarbs = todaysMeals.reduce((acc, m) => acc + m.carbs, 0);
 
   return (
     <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -92,7 +95,7 @@ export function MealLoggerScreen() {
         ))}
       </div>
       
-      <div className="flex flex-col gap-2 mb-3 flex-1 overflow-y-auto" ref={chatRef}>
+      <div className="flex flex-col gap-2 mb-3 flex-1 overflow-y-auto pr-1" ref={chatRef}>
         {chat.map((msg, i) => (
           <div key={i} className={cn(
             "p-2 px-3 text-[13px] leading-relaxed max-w-[85%]",

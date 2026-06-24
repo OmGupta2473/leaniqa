@@ -1,23 +1,36 @@
 import { useState } from 'react';
-import { useAppStore } from '../store';
 import { Target, Scale } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { profileService } from '../services/profileService';
+import { weightService } from '../services/weightService';
 
 export function ProgressScreen() {
-  const { profile, goal, weightLogs, addWeightLog } = useAppStore();
   const [weight, setWeight] = useState('');
+  
+  const queryClient = useQueryClient();
+  const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
+  const { data: weightLogs = [] } = useQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
 
   const currentWeight = weightLogs.length > 0 ? weightLogs[weightLogs.length - 1].weight : profile?.weight || 80;
   
+  const addWeightMutation = useMutation({
+    mutationFn: async (val: number) => {
+      return weightService.addWeightLog({
+        weight: val,
+        date: new Date().toISOString()
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['weightLogs'] });
+      setWeight('');
+    }
+  });
+
   const handleLog = () => {
     const val = parseFloat(weight);
     if (!val) return;
-    addWeightLog({
-      id: Date.now().toString(),
-      weight: val,
-      date: new Date().toISOString()
-    });
-    setWeight('');
+    addWeightMutation.mutate(val);
   };
 
   const chartData = weightLogs.map((log, i) => ({
@@ -43,8 +56,9 @@ export function ProgressScreen() {
           onChange={(e) => setWeight(e.target.value)} 
           placeholder={`e.g. ${currentWeight}`} 
           className="flex-1 px-3 py-2 border-[0.5px] border-border-secondary bg-background-primary text-text-primary focus:outline-none focus:border-purple"
+          disabled={addWeightMutation.isPending}
         />
-        <button onClick={handleLog} className="px-4 py-2 border-none bg-purple text-background-primary font-bold uppercase tracking-widest text-[12px] cursor-pointer">Log</button>
+        <button onClick={handleLog} disabled={addWeightMutation.isPending} className="px-4 py-2 border-none bg-purple text-background-primary font-bold uppercase tracking-widest text-[12px] cursor-pointer disabled:opacity-50">Log</button>
       </div>
 
       <div className="bg-background-secondary p-4 border border-border-tertiary mb-4">
