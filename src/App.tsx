@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+import { Session } from '@supabase/supabase-js';
 import { Sidebar } from './components/Sidebar';
 import { useAppStore } from './store';
 import { OnboardingScreen } from './screens/Onboarding';
@@ -6,10 +8,13 @@ import { MealLoggerScreen } from './screens/MealLogger';
 import { ProgressScreen } from './screens/Progress';
 import { WeeklyReportScreen } from './screens/WeeklyReport';
 import { PricingScreen } from './screens/Pricing';
+import { AuthScreen } from './screens/Auth';
 import { useQuery } from '@tanstack/react-query';
 import { profileService } from './services/profileService';
+import { supabase } from './lib/supabase';
 
 const TITLES: Record<string, string> = {
+  auth: 'Sign In',
   onboard: 'Welcome to Physique AI',
   dash: 'Dashboard',
   meal: 'Nutrition Log',
@@ -19,14 +24,52 @@ const TITLES: Record<string, string> = {
 };
 
 export default function App() {
-  const { currentScreen } = useAppStore();
+  const { currentScreen, setScreen } = useAppStore();
+  const [session, setSession] = useState<Session | null>(null);
+  const [loadingSession, setLoadingSession] = useState(true);
 
-  const { data: profile } = useQuery({
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoadingSession(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const { data: profile, isLoading: loadingProfile } = useQuery({
     queryKey: ['profile'],
-    queryFn: () => profileService.getProfile()
+    queryFn: () => profileService.getProfile(),
+    enabled: !!session,
   });
 
+  useEffect(() => {
+    if (!loadingSession && !session && currentScreen !== 'auth') {
+      setScreen('auth');
+    } else if (!loadingSession && session && !loadingProfile && currentScreen === 'auth') {
+      if (profile) {
+        setScreen('dash');
+      } else {
+        setScreen('onboard');
+      }
+    }
+  }, [session, loadingSession, currentScreen, profile, loadingProfile, setScreen]);
+
   const title = TITLES[currentScreen] || 'Physique AI';
+
+  if (loadingSession) {
+    return <div className="min-h-screen flex items-center justify-center bg-background-primary text-text-secondary text-[14px]">Loading...</div>;
+  }
+
+  if (currentScreen === 'auth') {
+    return <AuthScreen />;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
