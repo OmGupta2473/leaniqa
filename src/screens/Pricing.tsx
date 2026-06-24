@@ -4,14 +4,23 @@ import { useAppStore } from '../store';
 export function PricingScreen() {
   const { setScreen } = useAppStore();
 
+  const activateBeta = () => {
+    alert("Founding Member Beta - Premium features unlocked.");
+    setScreen('dash');
+  };
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div className="text-center py-2 pb-4">
         <h2 className="text-[20px] font-medium text-text-primary mb-1.5">Launch pricing</h2>
         <p className="text-[13px] text-text-secondary max-w-[320px] mx-auto">Get early access at a significant discount.</p>
+        
+        <div className="mt-4 bg-purple/10 border border-purple/30 text-purple p-3 rounded-md text-[13px] font-medium">
+          Founding Member Beta - Premium features unlocked.
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className="grid grid-cols-2 gap-3 mb-4 opacity-75">
         <div className="border-[0.5px] border-border-tertiary rounded-xl p-4 flex flex-col bg-background-secondary">
           <div><span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium mb-2 bg-purple-bg text-text-primary border border-border-primary">Monthly</span></div>
           <div className="text-[13px] font-medium text-text-primary">Pro Monthly</div>
@@ -23,7 +32,12 @@ export function PricingScreen() {
             <li className="text-[12px] text-text-secondary flex items-start gap-1.5"><Check size={14} className="text-purple shrink-0 mt-0.5" /> Physique timeline</li>
             <li className="text-[12px] text-text-secondary flex items-start gap-1.5"><Check size={14} className="text-purple shrink-0 mt-0.5" /> Weekly reports</li>
           </ul>
-          <button className="w-full p-2.5 rounded-md border-[0.5px] border-border-secondary bg-transparent text-text-primary text-[14px] font-medium cursor-pointer">Select</button>
+          <button 
+            onClick={activateBeta}
+            className="w-full p-2.5 rounded-md border-[0.5px] border-border-secondary bg-transparent text-text-primary text-[14px] font-medium cursor-pointer"
+          >
+            Continue
+          </button>
         </div>
         
         <div className="border-[2px] border-purple rounded-xl p-4 flex flex-col relative overflow-hidden">
@@ -37,7 +51,12 @@ export function PricingScreen() {
             <li className="text-[12px] text-text-secondary flex items-start gap-1.5"><Check size={14} className="text-purple shrink-0 mt-0.5" /> Priority AI processing</li>
             <li className="text-[12px] text-text-secondary flex items-start gap-1.5"><Check size={14} className="text-purple shrink-0 mt-0.5" /> Locked in early pricing</li>
           </ul>
-          <button onClick={() => setScreen('dash')} className="w-full p-2.5 rounded-md border-none bg-purple text-background-primary text-[14px] font-medium cursor-pointer transition-opacity hover:opacity-90 shadow-lg shadow-purple/20">Subscribe Yearly</button>
+          <button 
+            onClick={activateBeta}
+            className="w-full p-2.5 rounded-md border-none bg-purple text-background-primary text-[14px] font-medium cursor-pointer transition-opacity hover:opacity-90 shadow-lg shadow-purple/20"
+          >
+            Continue
+          </button>
         </div>
       </div>
 

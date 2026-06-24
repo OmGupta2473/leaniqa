@@ -5,6 +5,7 @@ import { profileService } from '../services/profileService';
 import { mealService } from '../services/mealService';
 import { weightService } from '../services/weightService';
 import { complianceService } from '../services/complianceService';
+import { waterService } from '../services/waterService';
 import { calculateProjections } from '../lib/projectionEngine';
 import { useEffect } from 'react';
 
@@ -16,6 +17,7 @@ export function DashboardScreen() {
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
   const { data: meals } = useQuery({ queryKey: ['meals'], queryFn: () => mealService.getMeals() });
   const { data: weightLogs = [] } = useQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
+  const { data: waterLogs = [] } = useQuery({ queryKey: ['waterLogs'], queryFn: () => waterService.getWaterLogs() });
   
   const { data: scores } = useQuery({ 
     queryKey: ['scores'], 
@@ -23,16 +25,25 @@ export function DashboardScreen() {
   });
 
   const updateScoreMutation = useMutation({
-    mutationFn: () => complianceService.updateTodayScore(0), // default water
+    mutationFn: () => complianceService.updateTodayScore(0), // water is now handled in the query or backend
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['scores'] })
   });
 
-  useEffect(() => {
-    // Update daily score whenever meals or weight logs change
-    if (meals || weightLogs) {
+  const addWaterMutation = useMutation({
+    mutationFn: (amountMl: number) => waterService.addWater(amountMl),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['waterLogs'] });
       updateScoreMutation.mutate();
     }
-  }, [meals, weightLogs]);
+  });
+
+  const mealsLength = meals?.length || 0;
+  const weightLogsLength = weightLogs?.length || 0;
+
+  useEffect(() => {
+    // Update daily score whenever meals or weight logs change
+    updateScoreMutation.mutate();
+  }, [mealsLength, weightLogsLength]);
 
   const name = profile?.name || 'User';
   const currentBf = goal?.current_bf || profile?.weight ? 20 : 20; // fallback if body fat not tracked
@@ -48,6 +59,9 @@ export function DashboardScreen() {
   const todaysMeals = meals?.filter(m => m.meal_time.startsWith(today)) || [];
   const eatenKcal = todaysMeals.reduce((acc, m) => acc + m.calories, 0);
   const eatenProtein = todaysMeals.reduce((acc, m) => acc + m.protein, 0);
+  
+  const todaysWater = waterLogs.filter(w => w.date.startsWith(today)).reduce((acc, w) => acc + w.amount_ml, 0);
+  const todaysWaterLiters = todaysWater / 1000;
   
   const remainingKcal = Math.max(0, dailyTargetKcal - eatenKcal);
   const remainingProtein = Math.max(0, proteinTarget - eatenProtein);
@@ -90,6 +104,10 @@ export function DashboardScreen() {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="bg-purple/10 border-[0.5px] border-purple/30 text-purple px-4 py-2 text-center text-[11px] font-medium mb-4 rounded-md">
+        Founding Member Beta - Premium features unlocked.
+      </div>
+      
       <div className="flex justify-between items-center mb-4">
         <div>
           <div className="text-[12px] text-text-secondary">Welcome back,</div>
@@ -102,17 +120,18 @@ export function DashboardScreen() {
       </div>
 
       {/* Card 1: Goal */}
-      <div className="bg-background-secondary p-4 mb-3 border border-border-tertiary">
-        <div className="flex justify-between text-[11px] text-text-secondary uppercase tracking-widest mb-2 font-medium">
-          <span>{targetBf}% Goal</span>
-          <span className="text-purple">Projected: {projectedDateString}</span>
+      <div className="bg-gradient-to-br from-purple/20 via-purple/5 to-background-secondary p-5 mb-4 border border-purple/30 rounded-lg shadow-[0_4px_20px_rgba(167,139,250,0.1)] relative overflow-hidden">
+        <div className="absolute -right-6 -top-6 w-24 h-24 bg-purple/10 rounded-full blur-2xl"></div>
+        <div className="flex justify-between text-[11px] text-text-secondary uppercase tracking-widest mb-3 font-medium relative z-10">
+          <span className="text-purple flex items-center gap-1.5"><Target size={12} /> {targetBf}% Target</span>
+          <span className="text-purple bg-purple/10 px-2 py-0.5 rounded-sm">Projected: {projectedDateString}</span>
         </div>
-        <div className="flex items-baseline gap-2 mb-1.5">
-          <span className="text-[28px] font-medium text-text-primary">{currentBf.toFixed(1)}%</span>
-          <span className="text-[12px] text-text-secondary">Current Body Fat</span>
+        <div className="flex items-baseline gap-2 mb-2 relative z-10">
+          <span className="text-[36px] font-bold text-text-primary tracking-tight leading-none">{currentBf.toFixed(1)}%</span>
+          <span className="text-[12px] text-text-secondary font-medium">Current Body Fat</span>
         </div>
-        <div className="h-1.5 bg-background-primary overflow-hidden mt-2 border border-border-tertiary">
-          <div className="h-full bg-purple" style={{ width: `${Math.min(100, Math.max(5, (100 - (currentBf - targetBf) * 5)))}%` }}></div>
+        <div className="h-2 bg-background-primary/50 overflow-hidden mt-4 border border-purple/10 rounded-full relative z-10">
+          <div className="h-full bg-purple rounded-full shadow-[0_0_10px_rgba(167,139,250,0.5)]" style={{ width: `${Math.min(100, Math.max(5, (100 - (currentBf - targetBf) * 5)))}%` }}></div>
         </div>
       </div>
 
@@ -120,17 +139,20 @@ export function DashboardScreen() {
       <div className="mb-3">
         <div className="text-[11px] text-text-secondary uppercase tracking-widest mb-1.5 font-medium px-1">Today's Targets</div>
         <div className="grid grid-cols-3 gap-2">
-          <div className="bg-background-secondary p-3 border border-border-tertiary text-center">
-            <div className="text-[18px] font-medium text-amber">{eatenKcal} <span className="text-[12px] text-text-secondary font-normal">/ {dailyTargetKcal}</span></div>
-            <div className="text-[10px] text-text-secondary mt-0.5 uppercase tracking-wider">Calories</div>
+          <div className="bg-background-secondary p-3 border border-border-tertiary text-center flex flex-col justify-between">
+            <div className="text-[18px] font-medium text-amber">{eatenKcal} <span className="text-[10px] text-text-secondary font-normal">/ {dailyTargetKcal}</span></div>
+            <div className="text-[10px] text-text-secondary mt-1 uppercase tracking-wider">Calories</div>
           </div>
-          <div className="bg-background-secondary p-3 border border-border-tertiary text-center">
-            <div className="text-[18px] font-medium text-blue">{eatenProtein}g <span className="text-[12px] text-text-secondary font-normal">/ {proteinTarget}g</span></div>
-            <div className="text-[10px] text-text-secondary mt-0.5 uppercase tracking-wider">Protein</div>
+          <div className="bg-background-secondary p-3 border border-border-tertiary text-center flex flex-col justify-between">
+            <div className="text-[18px] font-medium text-blue">{eatenProtein}g <span className="text-[10px] text-text-secondary font-normal">/ {proteinTarget}g</span></div>
+            <div className="text-[10px] text-text-secondary mt-1 uppercase tracking-wider">Protein</div>
           </div>
-          <div className="bg-background-secondary p-3 border border-border-tertiary text-center">
-            <div className="text-[18px] font-medium text-teal">0.0L <span className="text-[12px] text-text-secondary font-normal">/ {waterTargetLiters}L</span></div>
-            <div className="text-[10px] text-text-secondary mt-0.5 uppercase tracking-wider">Water</div>
+          <div className="bg-background-secondary p-2 border border-border-tertiary text-center flex flex-col justify-between">
+            <div className="text-[18px] font-medium text-teal">{todaysWaterLiters.toFixed(1)}L <span className="text-[10px] text-text-secondary font-normal">/ {waterTargetLiters}L</span></div>
+            <div className="flex justify-center gap-1 mt-2">
+              <button onClick={() => addWaterMutation.mutate(250)} className="bg-background-primary border border-border-tertiary rounded px-1.5 py-0.5 text-[9px] hover:bg-border-secondary transition-colors">+250</button>
+              <button onClick={() => addWaterMutation.mutate(500)} className="bg-background-primary border border-border-tertiary rounded px-1.5 py-0.5 text-[9px] hover:bg-border-secondary transition-colors">+500</button>
+            </div>
           </div>
         </div>
       </div>
