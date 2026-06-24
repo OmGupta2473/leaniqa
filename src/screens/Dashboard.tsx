@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { profileService } from '../services/profileService';
 import { mealService } from '../services/mealService';
 import { weightService } from '../services/weightService';
+import { calculateProjections } from '../lib/projectionEngine';
 
 export function DashboardScreen() {
   const { setScreen } = useAppStore();
@@ -11,7 +12,7 @@ export function DashboardScreen() {
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
   const { data: meals } = useQuery({ queryKey: ['meals'], queryFn: () => mealService.getMeals() });
-  const { data: weightLogs } = useQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
+  const { data: weightLogs = [] } = useQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
 
   const name = profile?.name || 'User';
   const currentBf = goal?.current_bf || profile?.weight ? 20 : 20; // fallback if body fat not tracked
@@ -31,11 +32,29 @@ export function DashboardScreen() {
   const remainingKcal = Math.max(0, dailyTargetKcal - eatenKcal);
   const remainingProtein = Math.max(0, proteinTarget - eatenProtein);
 
-  // Projected Date Calculation (Simplified heuristic: 0.5% BF loss per week on 400 kcal deficit)
-  const weeksToTarget = Math.max(0, (currentBf - targetBf) / 0.5);
-  const projectedDate = new Date();
-  projectedDate.setDate(projectedDate.getDate() + weeksToTarget * 7);
-  const projectedDateString = projectedDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+  // Projected Date Calculation using Engine
+  const currentWeight = weightLogs.length > 0 ? weightLogs[weightLogs.length - 1].weight : profile?.weight || 80;
+  const weeklyDeficitKcal = 400 * 7;
+  const complianceScore = 80;
+  
+  const projections = calculateProjections({
+    currentWeight,
+    currentBf,
+    targetBf,
+    weeklyDeficitKcal,
+    complianceScore,
+  });
+  
+  const targetProjection = projections.find(p => p.bfTarget === targetBf);
+  
+  let projectedDateString = 'Unknown';
+  if (targetProjection) {
+    if (targetProjection.status === 'completed') {
+      projectedDateString = 'Completed!';
+    } else {
+      projectedDateString = targetProjection.date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+  }
 
   // Recommendations
   let recommendation = '';
