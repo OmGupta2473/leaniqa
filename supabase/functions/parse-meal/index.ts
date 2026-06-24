@@ -82,14 +82,48 @@ serve(async (req) => {
     })
   } catch (error) {
     console.warn("AI failed, falling back to basic DB estimate", error);
-    // Fallback logic
+    
+    // Deterministic Fallback Logic
+    const normalizedText = text.toLowerCase();
+    let calories = 300, protein = 10, fat = 10, carbs = 40;
+    let detected = [text];
+
+    const foodDb: Record<string, { calories: number, protein: number, fat: number, carbs: number }> = {
+      'chicken': { calories: 250, protein: 30, fat: 10, carbs: 0 },
+      'dal': { calories: 200, protein: 12, fat: 4, carbs: 30 },
+      'chawal': { calories: 240, protein: 4, fat: 0, carbs: 53 },
+      'rice': { calories: 240, protein: 4, fat: 0, carbs: 53 },
+      'paneer': { calories: 350, protein: 20, fat: 28, carbs: 4 },
+      'fish': { calories: 200, protein: 25, fat: 10, carbs: 0 },
+      'idli': { calories: 150, protein: 4, fat: 0, carbs: 30 },
+      'roti': { calories: 120, protein: 4, fat: 1, carbs: 25 },
+      'egg': { calories: 140, protein: 12, fat: 10, carbs: 1 },
+      'salad': { calories: 50, protein: 2, fat: 0, carbs: 10 }
+    };
+
+    let foundMatch = false;
+    for (const [key, macros] of Object.entries(foodDb)) {
+      if (normalizedText.includes(key)) {
+        if (!foundMatch) {
+          calories = 0; protein = 0; fat = 0; carbs = 0;
+          detected = [];
+          foundMatch = true;
+        }
+        calories += macros.calories;
+        protein += macros.protein;
+        fat += macros.fat;
+        carbs += macros.carbs;
+        detected.push(key);
+      }
+    }
+
     const fallbackData = {
-      calories: Math.floor(Math.random() * 300) + 200,
-      protein: Math.floor(Math.random() * 20) + 5,
-      fat: Math.floor(Math.random() * 15) + 5,
-      carbs: Math.floor(Math.random() * 40) + 20,
-      confidence: 50,
-      foods_detected: [text]
+      calories,
+      protein,
+      fat,
+      carbs,
+      confidence: foundMatch ? 80 : 30,
+      foods_detected: detected
     };
     
     return new Response(JSON.stringify(fallbackData), {

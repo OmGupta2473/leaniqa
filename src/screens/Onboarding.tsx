@@ -44,7 +44,14 @@ export function OnboardingScreen() {
 
     // Maintenance Katch-McArdle or Mifflin-St Jeor (using Mifflin for simplicity)
     const maintBase = (w * 10) + (h * 6.25) - (a * 5) + (gender === 'Male' ? 5 : -161);
-    const maint = Math.round(maintBase * (activity === 'Light' ? 1.375 : activity === 'Moderate' ? 1.55 : 1.2));
+    
+    let multiplier = 1.2;
+    if (activity === 'Light') multiplier = 1.375;
+    else if (activity === 'Moderate') multiplier = 1.55;
+    else if (activity === 'Active') multiplier = 1.725;
+    else if (activity === 'Very active') multiplier = 1.9;
+    
+    const maint = Math.round(maintBase * multiplier);
     
     // US Navy Method BF%
     let bf = 0;
@@ -96,6 +103,15 @@ export function OnboardingScreen() {
           <div className="flex gap-1.5 flex-wrap">
             {['Male', 'Female'].map(g => (
               <button key={g} onClick={() => setGender(g as any)} className={cn("px-3 py-1.5 border-[0.5px] border-border-secondary text-[12px] cursor-pointer transition-all bg-background-primary", gender === g ? "bg-purple text-background-primary font-medium border-purple" : "text-text-secondary hover:bg-background-secondary")}>{g}</button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1 col-span-2 mt-1">
+          <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Activity Level</span>
+          <div className="flex gap-1.5 flex-wrap">
+            {['Sedentary', 'Light', 'Moderate', 'Active', 'Very active'].map(act => (
+              <button key={act} onClick={() => setActivity(act as any)} className={cn("px-3 py-1.5 border-[0.5px] border-border-secondary text-[12px] cursor-pointer transition-all bg-background-primary", activity === act ? "bg-purple text-background-primary font-medium border-purple" : "text-text-secondary hover:bg-background-secondary")}>{act}</button>
             ))}
           </div>
         </div>
