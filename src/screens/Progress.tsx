@@ -4,12 +4,14 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianG
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileService } from '../services/profileService';
 import { weightService } from '../services/weightService';
+import { calculateProjections } from '../lib/projectionEngine';
 
 export function ProgressScreen() {
   const [weight, setWeight] = useState('');
   
   const queryClient = useQueryClient();
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
+  const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
   const { data: weightLogs = [] } = useQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
 
   const currentWeight = weightLogs.length > 0 ? weightLogs[weightLogs.length - 1].weight : profile?.weight || 80;
@@ -41,6 +43,19 @@ export function ProgressScreen() {
   if (chartData.length === 0) {
     chartData.push({ name: 'Start', weight: currentWeight });
   }
+
+  const currentBf = goal?.current_bf || 20;
+  const targetBf = goal?.target_bf || 12;
+  const weeklyDeficitKcal = 400 * 7; // Average weekly deficit
+  const complianceScore = 80; // Estimated 80% compliance
+
+  const projections = calculateProjections({
+    currentWeight,
+    currentBf,
+    targetBf,
+    weeklyDeficitKcal,
+    complianceScore,
+  });
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -95,28 +110,24 @@ export function ProgressScreen() {
         <div className="text-[11px] font-medium uppercase tracking-widest text-text-secondary mb-3">Body Fat Projection</div>
         
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="text-[13px] text-text-primary">20% Body Fat</div>
-            <div className="text-[12px] text-text-secondary font-mono">Completed</div>
-          </div>
-          <div className="h-[1px] bg-border-tertiary"></div>
-          
-          <div className="flex items-center justify-between">
-            <div className="text-[13px] text-text-primary">18% Body Fat</div>
-            <div className="text-[12px] text-purple font-mono">In 3 weeks</div>
-          </div>
-          <div className="h-[1px] bg-border-tertiary"></div>
-          
-          <div className="flex items-center justify-between">
-            <div className="text-[13px] text-text-primary">15% Body Fat</div>
-            <div className="text-[12px] text-text-secondary font-mono">In 9 weeks</div>
-          </div>
-          <div className="h-[1px] bg-border-tertiary"></div>
-          
-          <div className="flex items-center justify-between">
-            <div className="text-[13px] text-text-primary">12% Body Fat (Goal)</div>
-            <div className="text-[12px] text-text-secondary font-mono">In 15 weeks</div>
-          </div>
+          {projections.map((p, index) => (
+            <div key={p.bfTarget}>
+              <div className="flex items-center justify-between">
+                <div className="text-[13px] text-text-primary">
+                  {p.bfTarget}% Body Fat {p.bfTarget === targetBf ? '(Goal)' : ''}
+                </div>
+                <div className={`text-[12px] font-mono ${p.status === 'completed' ? 'text-text-secondary' : 'text-purple'}`}>
+                  {p.status === 'completed' ? 'Completed' : `In ${p.weeks} weeks`}
+                </div>
+              </div>
+              {index < projections.length - 1 && (
+                <div className="h-[1px] bg-border-tertiary mt-4"></div>
+              )}
+            </div>
+          ))}
+          {projections.length === 0 && (
+            <div className="text-[12px] text-text-secondary">Provide valid goal info to see projections.</div>
+          )}
         </div>
       </div>
     </div>
