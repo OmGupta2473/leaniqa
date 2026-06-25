@@ -2,9 +2,11 @@ import { useAppStore } from '../store';
 import { cn } from '../lib/utils';
 import { LayoutDashboard, MessageSquare, TrendingUp, FileBarChart, CreditCard, LogOut, Target } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useQueryClient } from '@tanstack/react-query';
 
 export function Sidebar() {
   const { currentScreen, setScreen, clearStore } = useAppStore();
+  const queryClient = useQueryClient();
 
   const navItems = [
     { id: 'goal', icon: Target, label: 'Goal Setter' },
@@ -16,6 +18,7 @@ export function Sidebar() {
 
   const handleLogout = async () => {
     clearStore();
+    queryClient.clear();
     await supabase.auth.signOut();
   };
 

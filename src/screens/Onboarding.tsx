@@ -4,6 +4,7 @@ import { cn } from '../lib/utils';
 import { Sparkles } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileService } from '../services/profileService';
+import { complianceService } from '../services/complianceService';
 
 export function OnboardingScreen() {
   const { setScreen, setOnboardingData } = useAppStore();
@@ -59,6 +60,9 @@ export function OnboardingScreen() {
       } else {
         queryClient.invalidateQueries({ queryKey: ['profile'] });
       }
+      complianceService.updateTodayScore().then(() => {
+        queryClient.invalidateQueries({ queryKey: ['complianceScore'] });
+      }).catch(console.error);
       setOnboardingData({
         ...results,
         weightKg: parseFloat(weight) || 80,

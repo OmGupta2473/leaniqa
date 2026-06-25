@@ -5,6 +5,7 @@ import { profileService } from '../services/profileService';
 import { mealService } from '../services/mealService';
 import { weightService } from '../services/weightService';
 import { waterService } from '../services/waterService';
+import { complianceService } from '../services/complianceService';
 import { calculateProjections } from '../lib/projectionEngine';
 import { useEffect } from 'react';
 import { QueryError } from '../components/QueryError';
@@ -23,6 +24,9 @@ export function DashboardScreen() {
     mutationFn: (amountMl: number) => waterService.addWater(amountMl),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['waterTotal', 'today'] });
+      complianceService.updateTodayScore().then(() => {
+        queryClient.invalidateQueries({ queryKey: ['complianceScore'] });
+      }).catch(console.error);
     }
   });
 
@@ -40,14 +44,26 @@ export function DashboardScreen() {
     );
   }
 
-  const name = onboardingData?.name || profile?.name || 'User';
-  const targetBf = onboardingData?.targetBodyFatPct ?? goal?.target_bf;
-  const currentBf = onboardingData?.currentBodyFatPct ?? goal?.current_bf;
-  const proteinTarget = onboardingData?.proteinMid ?? profile?.protein_target;
-  const strategyName = onboardingData?.chosenStrategyName ?? goal?.strategy ?? 'Recommended';
+  const hasSaved = !!profile || !!goal;
   
-  const dailyTargetKcal = onboardingData?.dailyCalorieGoal ?? (profile?.maintenance_kcal ? profile.maintenance_kcal - (goal?.deficit_kcal ?? 400) : undefined);
-  const waterTargetLiters = onboardingData?.waterLitres ? parseFloat(onboardingData.waterLitres) : undefined;
+  const name = hasSaved ? (profile?.name || 'User') : (onboardingData?.name || 'User');
+  const targetBf = hasSaved ? goal?.target_bf : onboardingData?.targetBodyFatPct;
+  const currentBf = hasSaved ? goal?.current_bf : onboardingData?.currentBodyFatPct;
+  const proteinTarget = hasSaved ? profile?.protein_target : onboardingData?.proteinMid;
+  const strategyName = hasSaved ? (goal?.strategy ?? 'Recommended') : (onboardingData?.chosenStrategyName ?? 'Recommended');
+  
+  const dailyTargetKcal = hasSaved 
+    ? (profile?.maintenance_kcal ? profile.maintenance_kcal - (goal?.deficit_kcal ?? 400) : undefined)
+    : onboardingData?.dailyCalorieGoal;
+
+  let waterTargetLiters: number | undefined;
+  if (hasSaved && profile?.weight) {
+    let water = (profile.weight * 35) / 1000;
+    if (profile.activity_level === 'Very active') water += 0.5;
+    waterTargetLiters = parseFloat(water.toFixed(1));
+  } else if (!hasSaved) {
+    waterTargetLiters = onboardingData?.waterLitres ? parseFloat(onboardingData.waterLitres) : undefined;
+  }
   
   // Calculate today's intake
   const todaysMeals = meals || [];
@@ -59,19 +75,21 @@ export function DashboardScreen() {
   const remainingKcal = dailyTargetKcal !== undefined ? Math.max(0, dailyTargetKcal - eatenKcal) : undefined;
   const remainingProtein = proteinTarget !== undefined ? Math.max(0, proteinTarget - eatenProtein) : undefined;
 
-  let projectedDateString = onboardingData?.estimatedCompletionDate || 'Unknown';
-  if (goal?.target_date) {
+  let projectedDateString = 'Unknown';
+  if (hasSaved && goal?.target_date) {
     const targetDateObj = new Date(goal.target_date);
     if (!isNaN(targetDateObj.getTime())) {
        projectedDateString = targetDateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
     }
+  } else if (!hasSaved && onboardingData?.estimatedCompletionDate) {
+    projectedDateString = onboardingData.estimatedCompletionDate;
   }
 
   // Calculate Days
   let currentDay = 0;
   let totalDays = 0;
   
-  if (goal?.created_at && goal?.target_date) {
+  if (hasSaved && goal?.created_at && goal?.target_date) {
     const start = new Date(goal.created_at);
     start.setHours(0,0,0,0);
     const end = new Date(goal.target_date);
@@ -82,7 +100,7 @@ export function DashboardScreen() {
     totalDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
     currentDay = Math.max(0, Math.round((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
     if (currentDay > totalDays) currentDay = totalDays;
-  } else if (onboardingData?.estimatedWeeks) {
+  } else if (!hasSaved && onboardingData?.estimatedWeeks) {
     totalDays = onboardingData.estimatedWeeks * 7;
     currentDay = 0; // Just started
   }
@@ -174,8 +192,8 @@ export function DashboardScreen() {
               <>
                 <div className="text-[18px] font-medium text-teal">{todaysWaterLiters.toFixed(1)}L <span className="text-[10px] text-text-secondary font-normal">/ {waterTargetLiters !== undefined ? waterTargetLiters : '—'}L</span></div>
                 <div className="flex justify-center gap-1 mt-2">
-                  <button onClick={() => addWaterMutation.mutate(250)} className="bg-background-primary border border-border-tertiary rounded px-1.5 py-0.5 text-[9px] hover:bg-border-secondary transition-colors">+250</button>
-                  <button onClick={() => addWaterMutation.mutate(500)} className="bg-background-primary border border-border-tertiary rounded px-1.5 py-0.5 text-[9px] hover:bg-border-secondary transition-colors">+500</button>
+                  <button onClick={() => addWaterMutation.mutate(250)} disabled={addWaterMutation.isPending} className="bg-background-primary border border-border-tertiary rounded px-1.5 py-0.5 text-[9px] hover:bg-border-secondary transition-colors disabled:opacity-50">{addWaterMutation.isPending ? '...' : '+250'}</button>
+                  <button onClick={() => addWaterMutation.mutate(500)} disabled={addWaterMutation.isPending} className="bg-background-primary border border-border-tertiary rounded px-1.5 py-0.5 text-[9px] hover:bg-border-secondary transition-colors disabled:opacity-50">{addWaterMutation.isPending ? '...' : '+500'}</button>
                 </div>
               </>
             )}
