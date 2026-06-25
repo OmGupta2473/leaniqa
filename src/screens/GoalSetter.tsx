@@ -161,10 +161,16 @@ export function GoalSetterScreen() {
   });
 
   return (
-    <div className="pb-8">
+    <div className="pb-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="text-center py-4 pb-5">
+        <div className="text-[10px] text-purple font-bold tracking-widest uppercase mb-2">Step 2 of 2</div>
+        <h2 className="text-[20px] font-medium text-text-primary mb-1.5">Physique Goals</h2>
+        <p className="text-[13px] text-text-secondary max-w-[320px] mx-auto">Set your target body fat and choose a timeline.</p>
+      </div>
+
       {/* SECTION A */}
       <div className="mb-8">
-        <h2 className="text-[20px] font-medium text-text-primary mb-1">Select the image that looks most like your current body</h2>
+        <h2 className="text-[16px] font-medium text-text-primary mb-1">Select the image that looks most like your current body</h2>
         <p className="text-[13px] text-text-secondary mb-4">This helps us calculate how much fat you're actually carrying</p>
         
         <div className="flex gap-3 overflow-x-auto pb-4 snap-x hide-scrollbar">
@@ -192,7 +198,7 @@ export function GoalSetterScreen() {
       <div className={cn("mb-8 transition-opacity duration-300", !currentBfMid ? "opacity-40 pointer-events-none" : "opacity-100")}>
         <div className="flex items-center gap-2 mb-1">
           {!currentBfMid && <Lock size={16} className="text-text-secondary" />}
-          <h2 className="text-[20px] font-medium text-text-primary">Now choose your target physique</h2>
+          <h2 className="text-[16px] font-medium text-text-primary">Now choose your target physique</h2>
         </div>
         <p className="text-[13px] text-text-secondary mb-4">You can only target a lower body fat % than where you are now</p>
 
@@ -250,7 +256,7 @@ export function GoalSetterScreen() {
       <div className={cn("transition-opacity duration-300", (!currentBfMid || !targetBfMid) ? "opacity-40 pointer-events-none" : "opacity-100")}>
         <div className="flex items-center gap-2 mb-1">
           {(!currentBfMid || !targetBfMid) && <Lock size={16} className="text-text-secondary" />}
-          <h2 className="text-[20px] font-medium text-text-primary">How do you want to get there?</h2>
+          <h2 className="text-[16px] font-medium text-text-primary">How do you want to get there?</h2>
         </div>
         <p className="text-[13px] text-text-secondary mb-4">Each approach has a different speed, risk, and lifestyle demand</p>
 
