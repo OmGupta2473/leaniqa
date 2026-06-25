@@ -20,7 +20,7 @@ export function OnboardingScreen() {
   const [neck, setNeck] = useState('');
   const [hip, setHip] = useState('');
   const [gender, setGender] = useState<'Male'|'Female'>('Male');
-  const [activity, setActivity] = useState<'Light'|'Moderate'|'Active'>('Light');
+  const [activity, setActivity] = useState<'Sedentary'|'Lightly Active'|'Moderately Active'|'Very Active'|'Athlete'>('Lightly Active');
   
   const [showResults, setShowResults] = useState(false);
   const [showStep2, setShowStep2] = useState(false);
@@ -85,7 +85,13 @@ export function OnboardingScreen() {
 
     // Maintenance Mifflin-St Jeor
     const maintBase = (w * 10) + (h * 6.25) - (a * 5) + (gender === 'Male' ? 5 : -161);
-    const multipliers = { Light: 1.375, Moderate: 1.55, Active: 1.725 };
+    const multipliers: Record<string, number> = { 
+      'Sedentary': 1.2, 
+      'Lightly Active': 1.375, 
+      'Moderately Active': 1.55, 
+      'Very Active': 1.725, 
+      'Athlete': 1.9 
+    };
     const maint = Math.round(maintBase * multipliers[activity]);
     
     // Rough BF formula
@@ -108,7 +114,13 @@ export function OnboardingScreen() {
     const hipVal = parseFloat(hip) || 100;
 
     const maintBase = (w * 10) + (h * 6.25) - (a * 5) + (gender === 'Male' ? 5 : -161);
-    const multipliers = { Light: 1.375, Moderate: 1.55, Active: 1.725 };
+    const multipliers: Record<string, number> = { 
+      'Sedentary': 1.2, 
+      'Lightly Active': 1.375, 
+      'Moderately Active': 1.55, 
+      'Very Active': 1.725, 
+      'Athlete': 1.9 
+    };
     const maint = Math.round(maintBase * multipliers[activity]);
     
     let bf = 0;
@@ -215,11 +227,33 @@ export function OnboardingScreen() {
           <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple" type="number" value={weight} onChange={e => setWeight(e.target.value)} placeholder="kg" />
         </div>
 
-        <div className="flex flex-col gap-1 col-span-2">
+        <div className="flex flex-col gap-2 col-span-2 mt-2">
           <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Activity level</span>
-          <div className="flex gap-1.5">
-            {['Light', 'Moderate', 'Active'].map(a => (
-              <button key={a} onClick={() => setActivity(a as any)} className={cn("px-3 py-1.5 border-[0.5px] border-border-secondary text-[12px] cursor-pointer transition-all bg-background-primary flex-1", activity === a ? "bg-purple text-background-primary font-medium border-purple" : "text-text-secondary hover:bg-background-secondary")}>{a}</button>
+          <div className="flex flex-col gap-2">
+            {[
+              { label: 'Sedentary', desc: 'Desk job, little or no exercise, mostly sitting through the day' },
+              { label: 'Lightly Active', desc: 'Daily walks, light home workouts, occasional stretching or yoga' },
+              { label: 'Moderately Active', desc: 'Gym or sports 3–4 times a week with moderate effort' },
+              { label: 'Very Active', desc: 'Intense gym sessions 5–6 times a week or a physically demanding job' },
+              { label: 'Athlete', desc: 'Twice-a-day training, competitive sports, or heavy manual labour every day' }
+            ].map(a => (
+              <button 
+                key={a.label} 
+                onClick={() => setActivity(a.label as any)} 
+                className={cn(
+                  "p-3 border-[0.5px] cursor-pointer transition-all text-left flex flex-col gap-1", 
+                  activity === a.label 
+                    ? "bg-purple/5 border-purple" 
+                    : "border-border-secondary bg-background-primary text-text-secondary hover:bg-background-secondary"
+                )}
+              >
+                <div className={cn("text-[13px] font-medium", activity === a.label ? "text-purple" : "text-text-primary")}>
+                  {a.label}
+                </div>
+                <div className="text-[11px] leading-snug text-text-secondary">
+                  {a.desc}
+                </div>
+              </button>
             ))}
           </div>
         </div>
