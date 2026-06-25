@@ -12,20 +12,21 @@ export const complianceService = {
     try {
       const userId = await authService.getUserId();
       const profile = await profileService.getProfile();
+      const goal = await profileService.getGoal();
       
       if (!profile) return null;
       
       const today = new Date().toISOString().split('T')[0];
       
       // Fetch today's data
-      const meals = await mealService.getMealsByDate(today);
+      const meals = await mealService.getTodaysMeals();
       const weightLogs = await weightService.getWeightLogs();
       
       const hasWeightLogged = weightLogs.some(w => w.date.startsWith(today));
       const actualCalories = meals.reduce((acc, m) => acc + m.calories, 0);
       const actualProtein = meals.reduce((acc, m) => acc + m.protein, 0);
       
-      const targetCalories = (profile.maintenance_kcal || 2200) - 400; // Simplified deficit
+      const targetCalories = (profile.maintenance_kcal || 2200) - (goal?.deficit_kcal ?? 400);
       const targetProtein = profile.protein_target || 150;
       
       const score = calculateDailyScore({
