@@ -8,16 +8,17 @@ import { complianceService } from '../services/complianceService';
 import { waterService } from '../services/waterService';
 import { calculateProjections } from '../lib/projectionEngine';
 import { useEffect } from 'react';
+import { QueryError } from '../components/QueryError';
 
 export function DashboardScreen() {
   const { setScreen } = useAppStore();
   const queryClient = useQueryClient();
 
-  const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
-  const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
-  const { data: meals } = useQuery({ queryKey: ['meals', 'today'], queryFn: () => mealService.getTodaysMeals() });
+  const { data: profile, isError: isProfileError, error: profileError, refetch: refetchProfile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
+  const { data: goal, isError: isGoalError, error: goalError, refetch: refetchGoal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
+  const { data: meals, isError: isMealsError, refetch: refetchMeals } = useQuery({ queryKey: ['meals', 'today'], queryFn: () => mealService.getTodaysMeals() });
   const { data: weightLogs = [] } = useQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
-  const { data: todaysWaterTotal = 0 } = useQuery({ queryKey: ['waterTotal', 'today'], queryFn: () => waterService.getTodaysWaterTotal() });
+  const { data: todaysWaterTotal = 0, isError: isWaterError, refetch: refetchWater } = useQuery({ queryKey: ['waterTotal', 'today'], queryFn: () => waterService.getTodaysWaterTotal() });
   
   const { data: scores } = useQuery({ 
     queryKey: ['scores'], 
@@ -37,6 +38,20 @@ export function DashboardScreen() {
     await complianceService.updateTodayScore(0);
     queryClient.invalidateQueries({ queryKey: ['scores'] });
   };
+
+  if (isProfileError || isGoalError) {
+    return (
+      <div className="flex flex-col h-full justify-center">
+        <QueryError 
+          error={profileError || goalError} 
+          onRetry={() => {
+            if (isProfileError) refetchProfile();
+            if (isGoalError) refetchGoal();
+          }} 
+        />
+      </div>
+    );
+  }
 
   const name = profile?.name || 'User';
   const currentBf = goal?.current_bf ?? 20; // fallback if body fat not tracked
@@ -136,22 +151,42 @@ export function DashboardScreen() {
 
       {/* Card 2: Today's Targets */}
       <div className="mb-3">
-        <div className="text-[11px] text-text-secondary uppercase tracking-widest mb-1.5 font-medium px-1">Today's Targets</div>
+        <div className="flex items-center justify-between px-1 mb-1.5">
+          <div className="text-[11px] text-text-secondary uppercase tracking-widest font-medium">Today's Targets</div>
+        </div>
         <div className="grid grid-cols-3 gap-2">
           <div className="bg-background-secondary p-3 border border-border-tertiary text-center flex flex-col justify-between">
-            <div className="text-[18px] font-medium text-amber">{eatenKcal} <span className="text-[10px] text-text-secondary font-normal">/ {dailyTargetKcal}</span></div>
-            <div className="text-[10px] text-text-secondary mt-1 uppercase tracking-wider">Calories</div>
+            {isMealsError ? (
+              <div className="text-[10px] text-red-500 my-auto cursor-pointer" onClick={() => refetchMeals()}>Retry</div>
+            ) : (
+              <>
+                <div className="text-[18px] font-medium text-amber">{eatenKcal} <span className="text-[10px] text-text-secondary font-normal">/ {dailyTargetKcal}</span></div>
+                <div className="text-[10px] text-text-secondary mt-1 uppercase tracking-wider">Calories</div>
+              </>
+            )}
           </div>
           <div className="bg-background-secondary p-3 border border-border-tertiary text-center flex flex-col justify-between">
-            <div className="text-[18px] font-medium text-blue">{eatenProtein}g <span className="text-[10px] text-text-secondary font-normal">/ {proteinTarget}g</span></div>
-            <div className="text-[10px] text-text-secondary mt-1 uppercase tracking-wider">Protein</div>
+            {isMealsError ? (
+              <div className="text-[10px] text-red-500 my-auto cursor-pointer" onClick={() => refetchMeals()}>Retry</div>
+            ) : (
+              <>
+                <div className="text-[18px] font-medium text-blue">{eatenProtein}g <span className="text-[10px] text-text-secondary font-normal">/ {proteinTarget}g</span></div>
+                <div className="text-[10px] text-text-secondary mt-1 uppercase tracking-wider">Protein</div>
+              </>
+            )}
           </div>
           <div className="bg-background-secondary p-2 border border-border-tertiary text-center flex flex-col justify-between">
-            <div className="text-[18px] font-medium text-teal">{todaysWaterLiters.toFixed(1)}L <span className="text-[10px] text-text-secondary font-normal">/ {waterTargetLiters}L</span></div>
-            <div className="flex justify-center gap-1 mt-2">
-              <button onClick={() => addWaterMutation.mutate(250)} className="bg-background-primary border border-border-tertiary rounded px-1.5 py-0.5 text-[9px] hover:bg-border-secondary transition-colors">+250</button>
-              <button onClick={() => addWaterMutation.mutate(500)} className="bg-background-primary border border-border-tertiary rounded px-1.5 py-0.5 text-[9px] hover:bg-border-secondary transition-colors">+500</button>
-            </div>
+            {isWaterError ? (
+              <div className="text-[10px] text-red-500 my-auto cursor-pointer" onClick={() => refetchWater()}>Retry</div>
+            ) : (
+              <>
+                <div className="text-[18px] font-medium text-teal">{todaysWaterLiters.toFixed(1)}L <span className="text-[10px] text-text-secondary font-normal">/ {waterTargetLiters}L</span></div>
+                <div className="flex justify-center gap-1 mt-2">
+                  <button onClick={() => addWaterMutation.mutate(250)} className="bg-background-primary border border-border-tertiary rounded px-1.5 py-0.5 text-[9px] hover:bg-border-secondary transition-colors">+250</button>
+                  <button onClick={() => addWaterMutation.mutate(500)} className="bg-background-primary border border-border-tertiary rounded px-1.5 py-0.5 text-[9px] hover:bg-border-secondary transition-colors">+500</button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
