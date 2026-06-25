@@ -12,6 +12,9 @@ export function OnboardingScreen() {
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
   const [height, setHeight] = useState('');
+  const [heightUnit, setHeightUnit] = useState<'cm'|'ft'>('cm');
+  const [heightFt, setHeightFt] = useState('');
+  const [heightIn, setHeightIn] = useState('');
   const [weight, setWeight] = useState('');
   const [waist, setWaist] = useState('');
   const [neck, setNeck] = useState('');
@@ -35,9 +38,49 @@ export function OnboardingScreen() {
     }
   });
 
+  const toggleHeightUnit = (unit: 'cm'|'ft') => {
+    if (unit === heightUnit) return;
+    if (unit === 'ft') {
+      const cm = parseFloat(height);
+      if (!isNaN(cm) && cm > 0) {
+        const totalInches = cm / 2.54;
+        const ft = Math.floor(totalInches / 12);
+        const inches = Math.round(totalInches % 12);
+        setHeightFt(ft.toString());
+        setHeightIn(inches.toString());
+      } else {
+        setHeightFt('');
+        setHeightIn('');
+      }
+    } else {
+      const ft = parseFloat(heightFt) || 0;
+      const inc = parseFloat(heightIn) || 0;
+      if (ft > 0 || inc > 0) {
+        const totalInches = (ft * 12) + inc;
+        const cm = Math.round(totalInches * 2.54);
+        setHeight(cm.toString());
+      } else {
+        setHeight('');
+      }
+    }
+    setHeightUnit(unit);
+  };
+
+  const getComputedHeight = () => {
+    let h = parseFloat(height) || 0;
+    if (heightUnit === 'ft') {
+      const ft = parseFloat(heightFt) || 0;
+      const inc = parseFloat(heightIn) || 0;
+      if (ft > 0 || inc > 0) {
+        h = Math.round(((ft * 12) + inc) * 2.54);
+      }
+    }
+    return h || 175;
+  };
+
   const calculateRough = () => {
     const w = parseFloat(weight) || 80;
-    const h = parseFloat(height) || 175;
+    const h = getComputedHeight();
     const a = parseFloat(age) || 30;
 
     // Maintenance Mifflin-St Jeor
@@ -58,7 +101,7 @@ export function OnboardingScreen() {
 
   const calculateNavy = () => {
     const w = parseFloat(weight) || 80;
-    const h = parseFloat(height) || 175;
+    const h = getComputedHeight();
     const a = parseFloat(age) || 30;
     const waistVal = parseFloat(waist) || (gender === 'Male' ? 90 : 80);
     const neckVal = parseFloat(neck) || (gender === 'Male' ? 38 : 34);
@@ -84,7 +127,7 @@ export function OnboardingScreen() {
 
   const handleSave = () => {
     const w = parseFloat(weight) || 80;
-    const h = parseFloat(height) || 175;
+    const h = getComputedHeight();
     const a = parseFloat(age) || 30;
     const waistVal = showStep2 && waist ? parseFloat(waist) : undefined;
     const neckVal = showStep2 && neck ? parseFloat(neck) : undefined;
@@ -143,8 +186,29 @@ export function OnboardingScreen() {
           <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple" type="number" value={age} onChange={e => setAge(e.target.value)} placeholder="Age" />
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Height (cm)</span>
-          <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple" type="number" value={height} onChange={e => setHeight(e.target.value)} placeholder="cm" />
+          <div className="flex justify-between items-center h-[16px]">
+            <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Height</span>
+            <div className="flex bg-background-secondary rounded-sm p-[2px] border-[0.5px] border-border-secondary">
+              <button 
+                onClick={() => toggleHeightUnit('cm')} 
+                className={cn("px-1.5 py-0.5 text-[9px] rounded-[1px] transition-colors leading-none font-medium uppercase tracking-wider", heightUnit === 'cm' ? "bg-purple text-background-primary" : "text-text-secondary hover:text-text-primary")}
+              >cm</button>
+              <button 
+                onClick={() => toggleHeightUnit('ft')} 
+                className={cn("px-1.5 py-0.5 text-[9px] rounded-[1px] transition-colors leading-none font-medium uppercase tracking-wider", heightUnit === 'ft' ? "bg-purple text-background-primary" : "text-text-secondary hover:text-text-primary")}
+              >ft / in</button>
+            </div>
+          </div>
+          {heightUnit === 'cm' ? (
+            <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple" type="number" value={height} onChange={e => setHeight(e.target.value)} placeholder="e.g. 172" />
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple w-full min-w-0" type="number" value={heightFt} onChange={e => setHeightFt(e.target.value)} placeholder="5" />
+              <span className="text-text-secondary font-medium text-[13px]">'</span>
+              <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple w-full min-w-0" type="number" value={heightIn} onChange={e => setHeightIn(e.target.value)} placeholder="10" />
+              <span className="text-text-secondary font-medium text-[13px]">"</span>
+            </div>
+          )}
         </div>
         <div className="flex flex-col gap-1">
           <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Weight (kg)</span>
