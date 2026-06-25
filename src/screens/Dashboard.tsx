@@ -17,7 +17,7 @@ export function DashboardScreen() {
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
   const { data: meals } = useQuery({ queryKey: ['meals', 'today'], queryFn: () => mealService.getTodaysMeals() });
   const { data: weightLogs = [] } = useQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
-  const { data: waterLogs = [] } = useQuery({ queryKey: ['waterLogs'], queryFn: () => waterService.getWaterLogs() });
+  const { data: todaysWaterTotal = 0 } = useQuery({ queryKey: ['waterTotal', 'today'], queryFn: () => waterService.getTodaysWaterTotal() });
   
   const { data: scores } = useQuery({ 
     queryKey: ['scores'], 
@@ -28,9 +28,8 @@ export function DashboardScreen() {
   const addWaterMutation = useMutation({
     mutationFn: (amountMl: number) => waterService.addWater(amountMl),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['waterLogs'] });
-      // Fire-and-forget score update
-      complianceService.updateTodayScore(0);
+      queryClient.invalidateQueries({ queryKey: ['waterTotal', 'today'] });
+      queryClient.invalidateQueries({ queryKey: ['scores'] });
     }
   });
 
@@ -53,9 +52,7 @@ export function DashboardScreen() {
   const eatenKcal = todaysMeals.reduce((acc, m) => acc + m.calories, 0);
   const eatenProtein = todaysMeals.reduce((acc, m) => acc + m.protein, 0);
   
-  const today = new Date().toISOString().split('T')[0];
-  const todaysWater = waterLogs.filter(w => w.date.startsWith(today)).reduce((acc, w) => acc + w.amount_ml, 0);
-  const todaysWaterLiters = todaysWater / 1000;
+  const todaysWaterLiters = todaysWaterTotal / 1000;
   
   const remainingKcal = Math.max(0, dailyTargetKcal - eatenKcal);
   const remainingProtein = Math.max(0, proteinTarget - eatenProtein);

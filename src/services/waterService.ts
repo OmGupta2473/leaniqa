@@ -6,17 +6,26 @@ import { complianceService } from './complianceService';
 export const waterService = {
   async getWaterLogs(): Promise<DbWaterLog[]> {
     const userId = await authService.getUserId();
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+
     const { data, error } = await supabase
       .from('water_logs')
       .select('*')
       .eq('user_id', userId)
+      .gte('date', startOfToday)
       .order('date', { ascending: true });
 
-    if (error && error.code !== '42P01') {
+    if (error) {
       console.error('Error fetching water logs:', error);
       return [];
     }
     return data || [];
+  },
+
+  async getTodaysWaterTotal(): Promise<number> {
+    const logs = await this.getWaterLogs();
+    return logs.reduce((acc, w) => acc + w.amount_ml, 0);
   },
 
   async addWater(amountMl: number): Promise<DbWaterLog | null> {
@@ -33,27 +42,14 @@ export const waterService = {
       .select()
       .single();
 
-    if (error && error.code !== '42P01') {
+    if (error) {
       console.error('Error adding water:', error);
       return null;
     }
     
-    // Also try to update daily metrics water directly as a fallback if table is missing
-    const todayStr = new Date().toISOString().split('T')[0];
-    const { data: metrics } = await supabase
-      .from('daily_metrics')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('date', todayStr)
-      .maybeSingle();
-      
-    if (metrics) {
-      await supabase
-        .from('daily_metrics')
-        .update({ water: (metrics.water || 0) + (amountMl / 1000) })
-        .eq('id', metrics.id);
-    }
+    const newTotalLiters = (await this.getTodaysWaterTotal()) / 1000;
+    await complianceService.updateTodayScore(newTotalLiters);
     
-    return data || payload as any; // return payload so UI updates even if DB failed due to missing table
+    return data;
   }
 };
