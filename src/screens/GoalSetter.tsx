@@ -66,7 +66,9 @@ export function GoalSetterScreen() {
         current_bf: strategyData.current_bf,
         target_bf: strategyData.target_bf,
         strategy: strategyData.strategy,
-        deficit_kcal: strategyData.deficit_kcal
+        deficit_kcal: strategyData.deficit_kcal,
+        target_date: strategyData.targetDateIso,
+        target_weight: strategyData.targetWeightKg
       });
       return { strategyData, savedGoal };
     },
@@ -105,7 +107,8 @@ export function GoalSetterScreen() {
       dailyTarget: strategy.dailyTarget,
       targetWeightKg,
       estimatedWeeks: strategy.weeks,
-      estimatedCompletionDate: strategy.dateStr
+      estimatedCompletionDate: strategy.dateStr,
+      targetDateIso: strategy.targetDateIso
     });
   };
 
@@ -151,12 +154,14 @@ export function GoalSetterScreen() {
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() + weeks * 7);
     const dateStr = targetDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const targetDateIso = targetDate.toISOString().split('T')[0];
 
     return {
       ...s,
       dailyTarget,
       weeks,
-      dateStr
+      dateStr,
+      targetDateIso
     };
   });
 
