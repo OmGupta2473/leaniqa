@@ -69,7 +69,7 @@ export default function App() {
         setScreen('onboard');
       } else if (profile && !goal && currentScreen !== 'goal' && currentScreen !== 'onboard') {
         setScreen('goal');
-      } else if (profile && goal && (currentScreen === 'auth' || currentScreen === 'onboard' || currentScreen === 'goal')) {
+      } else if (profile && goal && currentScreen === 'auth') {
         setScreen('dash');
       }
     }

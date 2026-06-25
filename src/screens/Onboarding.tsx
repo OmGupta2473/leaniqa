@@ -53,6 +53,7 @@ export function OnboardingScreen() {
       await profileService.upsertProfile(profile);
     },
     onSuccess: () => {
+      console.log('Navigating to Screen 2');
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       setOnboardingData({
         ...results,
