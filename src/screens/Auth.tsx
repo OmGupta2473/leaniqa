@@ -20,7 +20,10 @@ export function AuthScreen() {
         token: otp,
         type: 'email',
       });
-      if (error) setMessage(error.message);
+      if (error) {
+        if (error.message.includes('fetch') || error.message.includes('Network')) setMessage("Network offline");
+        else setMessage("Authentication failed");
+      }
     } else {
       const { error } = await supabase.auth.signInWithOtp({ 
         email,
@@ -29,7 +32,8 @@ export function AuthScreen() {
         }
       });
       if (error) {
-        setMessage(error.message);
+        if (error.message.includes('fetch') || error.message.includes('Network')) setMessage("Network offline");
+        else setMessage("Authentication failed");
       } else {
         setMessage('Check your email for the login code, or enter it below!');
         setIsOtpSent(true);
@@ -39,13 +43,18 @@ export function AuthScreen() {
   };
 
   const handleOAuthLogin = async (provider: 'google' | 'apple') => {
+    setLoading(true);
     const { error } = await supabase.auth.signInWithOAuth({ 
       provider,
       options: {
         redirectTo: window.location.origin
       }
     });
-    if (error) setMessage(error.message);
+    if (error) {
+      if (error.message.includes('fetch') || error.message.includes('Network')) setMessage("Network offline");
+      else setMessage("Authentication failed");
+      setLoading(false);
+    }
   };
 
   return (
@@ -62,14 +71,16 @@ export function AuthScreen() {
         <div className="space-y-4">
           <button 
             onClick={() => handleOAuthLogin('google')}
-            className="w-full flex items-center justify-center gap-2 p-3 bg-background-secondary border border-border-secondary rounded-md text-[14px] font-medium text-text-primary hover:bg-border-tertiary transition-colors"
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 p-3 bg-background-secondary border border-border-secondary rounded-md text-[14px] font-medium text-text-primary hover:bg-border-tertiary transition-colors disabled:opacity-50"
           >
             <Chrome className="w-4 h-4" /> Continue with Google
           </button>
           
           <button 
             onClick={() => handleOAuthLogin('apple')}
-            className="w-full flex items-center justify-center gap-2 p-3 bg-text-primary text-background-primary rounded-md text-[14px] font-medium hover:opacity-90 transition-opacity"
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 p-3 bg-text-primary text-background-primary rounded-md text-[14px] font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             <Apple className="w-4 h-4" /> Continue with Apple
           </button>

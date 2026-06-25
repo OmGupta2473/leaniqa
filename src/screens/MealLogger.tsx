@@ -111,7 +111,7 @@ export function MealLoggerScreen() {
 
           const { data: { session } } = await supabase.auth.getSession();
           if (!session) {
-            throw new Error("No active session. Please log in again.");
+            throw new Error("Authentication failed");
           }
 
           const { data, error } = await supabase.functions.invoke('parse-meal', {
@@ -134,20 +134,20 @@ export function MealLoggerScreen() {
             const msg = error.message || '';
             const status = error.status || (error as any).context?.status;
             
-            if (status === 401 || msg.includes('401') || msg.includes('Unauthorized')) { errorMessage = "Authorization failed (401)."; shouldRetry = false; }
-            else if (status === 403 || msg.includes('403') || msg.includes('Forbidden')) { errorMessage = "Forbidden (403)."; shouldRetry = false; }
-            else if (status === 429 || msg.includes('429') || msg.includes('limit')) { errorMessage = "Daily limit reached (429). Upgrade to Pro for unlimited logging."; shouldRetry = false; }
-            else if (status >= 500 || msg.includes('500') || msg.includes('Internal')) errorMessage = "Edge Function encountered a server error (500).";
-            else if (msg.includes('timeout') || msg.includes('Timeout')) errorMessage = "Gemini AI timed out.";
-            else if (msg.includes('JSON')) errorMessage = "Received invalid JSON from AI.";
-            else if (msg.includes('fetch') || msg.includes('Network')) errorMessage = "Network failure.";
-            else errorMessage = `Edge Function unavailable (${msg || 'Unknown error'}).`;
+            if (status === 401 || msg.includes('401') || msg.includes('Unauthorized')) { errorMessage = "Authentication failed"; shouldRetry = false; }
+            else if (status === 403 || msg.includes('403') || msg.includes('Forbidden')) { errorMessage = "Authentication failed"; shouldRetry = false; }
+            else if (status === 429 || msg.includes('429') || msg.includes('limit')) { errorMessage = "Daily limit reached"; shouldRetry = false; }
+            else if (status >= 500 || msg.includes('500') || msg.includes('Internal')) errorMessage = "Server unavailable";
+            else if (msg.includes('timeout') || msg.includes('Timeout')) errorMessage = "Server unavailable";
+            else if (msg.includes('JSON')) errorMessage = "Meal parsing unavailable";
+            else if (msg.includes('fetch') || msg.includes('Network')) errorMessage = "Network offline";
+            else errorMessage = "Meal parsing unavailable";
           }
 
           if (error || !data || typeof data.calories !== 'number') {
             if (!shouldRetry || retries === 1) {
               if (!errorMessage) {
-                errorMessage = "Could not parse meal properly from AI.";
+                errorMessage = "Meal parsing unavailable";
               }
               const fallbackData = getDeterministicFallback(text);
               const tip = `${errorMessage} Using offline estimate.`;
@@ -186,10 +186,10 @@ export function MealLoggerScreen() {
             const msg = err.message || '';
             let errorMessage = '';
             
-            if (msg.includes('timeout') || msg.includes('Timeout')) errorMessage = "Gemini AI timed out.";
-            else if (msg.includes('JSON')) errorMessage = "Received invalid JSON from AI.";
-            else if (msg.includes('fetch') || msg.includes('Network')) errorMessage = "Network failure.";
-            else errorMessage = `Edge Function unavailable (${msg || 'Unknown error'}).`;
+            if (msg.includes('timeout') || msg.includes('Timeout')) errorMessage = "Server unavailable";
+            else if (msg.includes('JSON')) errorMessage = "Meal parsing unavailable";
+            else if (msg.includes('fetch') || msg.includes('Network')) errorMessage = "Network offline";
+            else errorMessage = "Server unavailable";
 
             const fallbackData = getDeterministicFallback(text);
             const tip = `${errorMessage} Using offline estimate.`;
@@ -213,7 +213,9 @@ export function MealLoggerScreen() {
     onSuccess: (data, text) => {
       queryClient.invalidateQueries({ queryKey: ['meals', 'today'] });
       // Fire-and-forget score update
-      complianceService.updateTodayScore(0);
+      complianceService.updateTodayScore().then(() => {
+        queryClient.invalidateQueries({ queryKey: ['complianceScore'] });
+      }).catch(console.error);
       
       const foodsDetected = data.foods_detected?.join(', ') || text;
       
@@ -301,12 +303,13 @@ export function MealLoggerScreen() {
 
       <div className="flex gap-2 items-center mb-3">
         <input 
-          className="flex-1 px-3 py-2 border-[0.5px] border-border-secondary rounded-md text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple" 
+          className="flex-1 px-3 py-2 border-[0.5px] border-border-secondary rounded-md text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple disabled:opacity-50" 
           type="text" 
           placeholder="What did you eat? Type naturally..." 
           value={input} 
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSend()}
+          disabled={loading}
         />
         <button onClick={() => handleSend()} disabled={loading} aria-label="Log meal" className="w-9 h-9 rounded-md border-none bg-purple text-background-primary flex items-center justify-center cursor-pointer disabled:opacity-50">
           <Send size={16} />

@@ -81,7 +81,7 @@ export function WeeklyReportScreen() {
       
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        throw new Error("No active session. Please log in again.");
+        throw new Error("Authentication failed");
       }
       
       const { data, error } = await supabase.functions.invoke('generate-weekly-report', {
@@ -94,7 +94,17 @@ export function WeeklyReportScreen() {
           Authorization: `Bearer ${session.access_token}`
         }
       });
-      if (error) throw new Error(error.message || 'Failed to generate report');
+      if (error) {
+        const msg = error.message || '';
+        const status = error.status || (error as any).context?.status;
+        if (status === 401 || msg.includes('401') || msg.includes('Unauthorized')) { throw new Error("Authentication failed"); }
+        else if (status === 403 || msg.includes('403') || msg.includes('Forbidden')) { throw new Error("Authentication failed"); }
+        else if (status === 429 || msg.includes('429') || msg.includes('limit')) { throw new Error("Daily limit reached"); }
+        else if (status >= 500 || msg.includes('500') || msg.includes('Internal')) throw new Error("Server unavailable");
+        else if (msg.includes('timeout') || msg.includes('Timeout')) throw new Error("Server unavailable");
+        else if (msg.includes('fetch') || msg.includes('Network')) throw new Error("Network offline");
+        else throw new Error("Server unavailable");
+      }
       await reportService.saveWeeklyReport(weekStartStr, data);
       return data;
     },
@@ -119,27 +129,32 @@ export function WeeklyReportScreen() {
           <div className="text-[11px] font-medium uppercase tracking-wider text-text-tertiary mb-0.5">Weekly Report</div>
           <div className="text-[14px] font-medium text-text-primary">Last 7 Days</div>
         </div>
-        {parsedReport ? (
-          <div className="bg-purple/10 border-[0.5px] border-purple/20 text-purple rounded-full px-2.5 py-1 text-[12px] font-medium flex items-center gap-1">
-            <Sparkles size={12} /> Generated
-          </div>
-        ) : canGenerate ? (
-          <button 
-            onClick={() => generateReportMutation.mutate()}
-            disabled={generateReportMutation.isPending}
-            className="bg-purple text-background-primary rounded-md px-3 py-1.5 text-[12px] font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-1"
-          >
-            {generateReportMutation.isPending ? 'Analyzing...' : (
-              <>
-                {!isPro && <Lock size={12} />} Generate Report
-              </>
-            )}
-          </button>
-        ) : (
-           <div className="text-[10px] text-text-secondary bg-background-secondary border border-border-tertiary px-2 py-1.5 rounded-md flex items-center gap-1.5 max-w-[200px] text-right">
-             Log meals for 3 days to unlock your first AI report. You have {daysWithData}/3 days logged.
-           </div>
-        )}
+        <div className="flex flex-col items-end gap-1">
+          {parsedReport ? (
+            <div className="bg-purple/10 border-[0.5px] border-purple/20 text-purple rounded-full px-2.5 py-1 text-[12px] font-medium flex items-center gap-1">
+              <Sparkles size={12} /> Generated
+            </div>
+          ) : canGenerate ? (
+            <button 
+              onClick={() => generateReportMutation.mutate()}
+              disabled={generateReportMutation.isPending}
+              className="bg-purple text-background-primary rounded-md px-3 py-1.5 text-[12px] font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-1"
+            >
+              {generateReportMutation.isPending ? 'Analyzing...' : (
+                <>
+                  {!isPro && <Lock size={12} />} Generate Report
+                </>
+              )}
+            </button>
+          ) : (
+             <div className="text-[10px] text-text-secondary bg-background-secondary border border-border-tertiary px-2 py-1.5 rounded-md flex items-center gap-1.5 max-w-[200px] text-right">
+               Log meals for 3 days to unlock your first AI report. You have {daysWithData}/3 days logged.
+             </div>
+          )}
+          {generateReportMutation.isError && generateReportMutation.error?.message !== 'PRO_REQUIRED' && (
+            <div className="text-[10px] text-coral">{generateReportMutation.error.message}</div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-3.5">

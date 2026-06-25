@@ -3,6 +3,7 @@ import { useAppStore } from '../store';
 import { cn } from '../lib/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileService } from '../services/profileService';
+import { complianceService } from '../services/complianceService';
 import { Lock, Check, AlertTriangle } from 'lucide-react';
 
 const bodyFatOptions = [
@@ -79,6 +80,9 @@ export function GoalSetterScreen() {
       } else {
         queryClient.invalidateQueries({ queryKey: ['goal'] });
       }
+      complianceService.updateTodayScore().then(() => {
+        queryClient.invalidateQueries({ queryKey: ['complianceScore'] });
+      }).catch(console.error);
       
       // Pass accumulated user data
       setOnboardingData({
