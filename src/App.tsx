@@ -12,6 +12,9 @@ import { AuthScreen } from './screens/Auth';
 import { useQuery } from '@tanstack/react-query';
 import { profileService } from './services/profileService';
 import { supabase } from './lib/supabase';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { useNetworkStatus } from './lib/utils';
+import { WifiOff } from 'lucide-react';
 
 const TITLES: Record<string, string> = {
   auth: 'Sign In',
@@ -27,6 +30,7 @@ export default function App() {
   const { currentScreen, setScreen } = useAppStore();
   const [session, setSession] = useState<Session | null>(null);
   const [loadingSession, setLoadingSession] = useState(true);
+  const { isOnline } = useNetworkStatus();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -72,8 +76,14 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="flex h-[640px] w-full max-w-md border-[0.5px] border-border-tertiary rounded-xl overflow-hidden bg-background-primary shadow-2xl">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4">
+      {!isOnline && (
+        <div className="w-full max-w-md bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs py-2 px-4 rounded-t-xl flex items-center justify-center gap-2 mb-[-8px] pb-4 z-0">
+          <WifiOff size={14} />
+          You're offline — data may not update
+        </div>
+      )}
+      <div className="flex h-[640px] w-full max-w-md border-[0.5px] border-border-tertiary rounded-xl overflow-hidden bg-background-primary shadow-2xl z-10 relative">
         <Sidebar />
         
         <div className="flex-1 flex flex-col overflow-hidden relative bg-background-primary">
@@ -86,13 +96,15 @@ export default function App() {
             </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto overflow-x-hidden p-5 scroll-smooth">
-            {currentScreen === 'onboard' && <OnboardingScreen />}
-            {currentScreen === 'dash' && <DashboardScreen />}
-            {currentScreen === 'meal' && <MealLoggerScreen />}
-            {currentScreen === 'progress' && <ProgressScreen />}
-            {currentScreen === 'week' && <WeeklyReportScreen />}
-            {currentScreen === 'pricing' && <PricingScreen />}
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-5 scroll-smooth relative">
+            <ErrorBoundary>
+              {currentScreen === 'onboard' && <OnboardingScreen />}
+              {currentScreen === 'dash' && <DashboardScreen />}
+              {currentScreen === 'meal' && <MealLoggerScreen />}
+              {currentScreen === 'progress' && <ProgressScreen />}
+              {currentScreen === 'week' && <WeeklyReportScreen />}
+              {currentScreen === 'pricing' && <PricingScreen />}
+            </ErrorBoundary>
           </div>
         </div>
       </div>
