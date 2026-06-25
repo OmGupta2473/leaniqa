@@ -168,8 +168,12 @@ export function OnboardingScreen() {
     const fatMid = Math.round((tdee * 0.275) / 9);
 
     // Carbs: Remainder
-    const carbMid = Math.round(((tdee - (proteinMid * 4) - (fatMid * 9)) / 4) / 5) * 5;
-    const carbMin = carbMid - 20;
+    let carbKcal = tdee - (proteinMid * 4) - (fatMid * 9);
+    if (isNaN(carbKcal) || !isFinite(carbKcal) || carbKcal < 0) {
+      carbKcal = 0;
+    }
+    const carbMid = Math.round(carbKcal / 4);
+    const carbMin = Math.max(0, carbMid - 20);
     const carbMax = carbMid + 20;
 
     // Fiber
@@ -192,6 +196,7 @@ export function OnboardingScreen() {
       fatMid,
       carbMin,
       carbMax,
+      carbMid,
       fiberMin,
       fiberMax,
       waterLitres: water.toFixed(1)
@@ -345,7 +350,7 @@ export function OnboardingScreen() {
               </div>
               <div className="flex justify-between items-center p-3 border-b border-border-tertiary">
                 <span className="text-[12px] text-text-secondary">Carbohydrates</span>
-                <span className="text-[13px] font-medium text-text-primary">{results.carbMid - 20}–{results.carbMid + 20} g/day <span className="text-[11px] font-normal text-text-secondary ml-1">(remainder)</span></span>
+                <span className="text-[13px] font-medium text-text-primary">{results.carbMin}–{results.carbMax} g/day <span className="text-[11px] font-normal text-text-secondary ml-1">(remainder)</span></span>
               </div>
               <div className="flex justify-between items-center p-3 border-b border-border-tertiary">
                 <span className="text-[12px] text-text-secondary">Fiber</span>

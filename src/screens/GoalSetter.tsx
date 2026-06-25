@@ -66,7 +66,9 @@ export function GoalSetterScreen() {
         current_bf: strategyData.current_bf,
         target_bf: strategyData.target_bf,
         strategy: strategyData.strategy,
-        deficit_kcal: strategyData.deficit_kcal
+        deficit_kcal: strategyData.deficit_kcal,
+        target_date: strategyData.estimatedCompletionDate,
+        target_weight: strategyData.targetWeightKg
       });
       return { strategyData, savedGoal };
     },
@@ -333,7 +335,7 @@ export function GoalSetterScreen() {
                     : "bg-background-secondary text-text-primary border-[0.5px] border-border-secondary hover:border-border-tertiary"
                 )}
               >
-                {saveMutation.isPending ? 'Saving...' : 'Choose this plan'}
+                {saveMutation.isPending ? 'Saving...' : 'Continue'}
               </button>
             </div>
           ))}
