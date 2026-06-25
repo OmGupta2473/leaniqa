@@ -19,12 +19,32 @@ export function OnboardingScreen() {
   const [waist, setWaist] = useState('');
   const [neck, setNeck] = useState('');
   const [hip, setHip] = useState('');
-  const [gender, setGender] = useState<'Male'|'Female'>('Male');
-  const [activity, setActivity] = useState<'Sedentary'|'Lightly Active'|'Moderately Active'|'Very Active'|'Athlete'>('Lightly Active');
+  const [gender, setGender] = useState<'Male'|'Female'|''>('');
+  const [activity, setActivity] = useState<'Sedentary'|'Lightly Active'|'Moderately Active'|'Very Active'|'Athlete'|''>('');
   
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [showResults, setShowResults] = useState(false);
   const [showStep2, setShowStep2] = useState(false);
   const [results, setResults] = useState({ maint: 0, protein: 0, bf: 0 });
+
+  useEffect(() => {
+    if (Object.keys(errors).length === 0) return;
+    const newErrors = { ...errors };
+    if (name.trim() && newErrors.name) delete newErrors.name;
+    if (age && newErrors.age) delete newErrors.age;
+    if (weight && newErrors.weight) delete newErrors.weight;
+    if (heightUnit === 'cm' && height && newErrors.height) delete newErrors.height;
+    if (heightUnit === 'ft' && heightFt && heightIn && newErrors.height) delete newErrors.height;
+    if (waist && newErrors.waist) delete newErrors.waist;
+    if (neck && newErrors.neck) delete newErrors.neck;
+    if (gender === 'Female' && hip && newErrors.hip) delete newErrors.hip;
+    if (gender && newErrors.gender) delete newErrors.gender;
+    if (activity && newErrors.activity) delete newErrors.activity;
+    
+    if (Object.keys(newErrors).length !== Object.keys(errors).length) {
+      setErrors(newErrors);
+    }
+  }, [name, age, weight, height, heightFt, heightIn, waist, neck, hip, heightUnit, gender, activity, errors]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: { profile: any, goal: any }) => {
@@ -66,6 +86,33 @@ export function OnboardingScreen() {
     setHeightUnit(unit);
   };
 
+  const validateStep1 = () => {
+    const newErrors: Record<string, string> = {};
+    if (!gender) newErrors.gender = 'Please select your gender';
+    if (!name.trim()) newErrors.name = 'Name is required';
+    if (!age) newErrors.age = 'Age is required';
+    if (!weight) newErrors.weight = 'Weight is required';
+    if (heightUnit === 'cm') {
+      if (!height) newErrors.height = 'Height is required';
+    } else {
+      if (!heightFt || !heightIn) newErrors.height = 'Height is required';
+    }
+    if (!activity) newErrors.activity = 'Please select your activity level';
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateStep2 = () => {
+    const newErrors: Record<string, string> = {};
+    if (!waist) newErrors.waist = 'Waist is required';
+    if (!neck) newErrors.neck = 'Neck is required';
+    if (gender === 'Female' && !hip) newErrors.hip = 'Hip is required';
+    
+    setErrors(prev => ({ ...prev, ...newErrors }));
+    return Object.keys(newErrors).length === 0;
+  };
+
   const getComputedHeight = () => {
     let h = parseFloat(height) || 0;
     if (heightUnit === 'ft') {
@@ -79,6 +126,8 @@ export function OnboardingScreen() {
   };
 
   const calculateRough = () => {
+    if (!validateStep1()) return;
+
     const w = parseFloat(weight) || 80;
     const h = getComputedHeight();
     const a = parseFloat(age) || 30;
@@ -106,6 +155,8 @@ export function OnboardingScreen() {
   };
 
   const calculateNavy = () => {
+    if (!validateStep1() || !validateStep2()) return;
+
     const w = parseFloat(weight) || 80;
     const h = getComputedHeight();
     const a = parseFloat(age) || 30;
@@ -138,6 +189,9 @@ export function OnboardingScreen() {
   };
 
   const handleSave = () => {
+    if (!validateStep1()) return;
+    if (showStep2 && !validateStep2()) return;
+
     const w = parseFloat(weight) || 80;
     const h = getComputedHeight();
     const a = parseFloat(age) || 30;
@@ -154,11 +208,11 @@ export function OnboardingScreen() {
         age: a, 
         height: h, 
         weight: w, 
-        gender, 
+        gender: gender || 'Male', 
         waist: waistVal, 
         neck: neckVal, 
         hip: hipVal, 
-        activity_level: activity,
+        activity_level: activity || 'Lightly Active',
         maintenance_kcal: results.maint, 
         protein_target: results.protein
       },
@@ -177,25 +231,34 @@ export function OnboardingScreen() {
         <h2 className="text-[20px] font-medium text-text-primary mb-1.5">Elite Coaching Setup</h2>
         <p className="text-[13px] text-text-secondary max-w-[320px] mx-auto">We use US Navy standards for precision targeting.</p>
       </div>
+
+      {Object.keys(errors).length > 0 && (
+        <div className="mb-4 p-2.5 bg-red-500/10 border border-red-500/20 text-red-500 text-[13px] text-center font-medium">
+          Please fill in all fields to get your plan
+        </div>
+      )}
       
       <div className="grid grid-cols-2 gap-2.5 mb-4">
         <div className="flex flex-col gap-1 col-span-2 mt-1">
           <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Gender</span>
           <div className="flex gap-1.5 flex-wrap">
             {['Male', 'Female'].map(g => (
-              <button key={g} onClick={() => setGender(g as any)} className={cn("px-3 py-1.5 border-[0.5px] border-border-secondary text-[12px] cursor-pointer transition-all bg-background-primary flex-1", gender === g ? "bg-purple text-background-primary font-medium border-purple" : "text-text-secondary hover:bg-background-secondary")}>{g}</button>
+              <button key={g} onClick={() => setGender(g as any)} className={cn("px-3 py-1.5 border-[0.5px] border-border-secondary text-[12px] cursor-pointer transition-all bg-background-primary flex-1", gender === g ? "bg-purple text-background-primary font-medium border-purple" : "text-text-secondary hover:bg-background-secondary", errors.gender && "border-red-500")}>{g}</button>
             ))}
           </div>
+          {errors.gender && <span className="text-[10px] text-red-500 mt-0.5">{errors.gender}</span>}
         </div>
 
         <div className="flex flex-col gap-1 col-span-2">
           <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Your name</span>
-          <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple" type="text" value={name} onChange={e => setName(e.target.value)} placeholder="First name" />
+          <input className={cn("px-2.5 py-1.5 border-[0.5px] text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple", errors.name ? "border-red-500" : "border-border-secondary")} type="text" value={name} onChange={e => setName(e.target.value)} placeholder="First name" />
+          {errors.name && <span className="text-[10px] text-red-500 mt-0.5">{errors.name}</span>}
         </div>
 
         <div className="flex flex-col gap-1 col-span-2">
           <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Age</span>
-          <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple" type="number" value={age} onChange={e => setAge(e.target.value)} placeholder="Age" />
+          <input className={cn("px-2.5 py-1.5 border-[0.5px] text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple", errors.age ? "border-red-500" : "border-border-secondary")} type="number" value={age} onChange={e => setAge(e.target.value)} placeholder="Age" />
+          {errors.age && <span className="text-[10px] text-red-500 mt-0.5">{errors.age}</span>}
         </div>
         <div className="flex flex-col gap-1">
           <div className="flex justify-between items-center h-[16px]">
@@ -212,19 +275,21 @@ export function OnboardingScreen() {
             </div>
           </div>
           {heightUnit === 'cm' ? (
-            <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple" type="number" value={height} onChange={e => setHeight(e.target.value)} placeholder="e.g. 172" />
+            <input className={cn("px-2.5 py-1.5 border-[0.5px] text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple", errors.height ? "border-red-500" : "border-border-secondary")} type="number" value={height} onChange={e => setHeight(e.target.value)} placeholder="e.g. 172" />
           ) : (
             <div className="flex items-center gap-1.5">
-              <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple w-full min-w-0" type="number" value={heightFt} onChange={e => setHeightFt(e.target.value)} placeholder="5" />
+              <input className={cn("px-2.5 py-1.5 border-[0.5px] text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple w-full min-w-0", errors.height ? "border-red-500" : "border-border-secondary")} type="number" value={heightFt} onChange={e => setHeightFt(e.target.value)} placeholder="5" />
               <span className="text-text-secondary font-medium text-[13px]">'</span>
-              <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple w-full min-w-0" type="number" value={heightIn} onChange={e => setHeightIn(e.target.value)} placeholder="10" />
+              <input className={cn("px-2.5 py-1.5 border-[0.5px] text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple w-full min-w-0", errors.height ? "border-red-500" : "border-border-secondary")} type="number" value={heightIn} onChange={e => setHeightIn(e.target.value)} placeholder="10" />
               <span className="text-text-secondary font-medium text-[13px]">"</span>
             </div>
           )}
+          {errors.height && <span className="text-[10px] text-red-500 mt-0.5">{errors.height}</span>}
         </div>
         <div className="flex flex-col gap-1">
           <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Weight (kg)</span>
-          <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple" type="number" value={weight} onChange={e => setWeight(e.target.value)} placeholder="kg" />
+          <input className={cn("px-2.5 py-1.5 border-[0.5px] text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple", errors.weight ? "border-red-500" : "border-border-secondary")} type="number" value={weight} onChange={e => setWeight(e.target.value)} placeholder="kg" />
+          {errors.weight && <span className="text-[10px] text-red-500 mt-0.5">{errors.weight}</span>}
         </div>
 
         <div className="flex flex-col gap-2 col-span-2 mt-2">
@@ -244,7 +309,8 @@ export function OnboardingScreen() {
                   "p-3 border-[0.5px] cursor-pointer transition-all text-left flex flex-col gap-1", 
                   activity === a.label 
                     ? "bg-purple/5 border-purple" 
-                    : "border-border-secondary bg-background-primary text-text-secondary hover:bg-background-secondary"
+                    : "bg-background-primary text-text-secondary hover:bg-background-secondary",
+                  errors.activity && activity !== a.label ? "border-red-500" : (activity !== a.label ? "border-border-secondary" : "")
                 )}
               >
                 <div className={cn("text-[13px] font-medium", activity === a.label ? "text-purple" : "text-text-primary")}>
@@ -256,6 +322,7 @@ export function OnboardingScreen() {
               </button>
             ))}
           </div>
+          {errors.activity && <span className="text-[10px] text-red-500 mt-0.5">{errors.activity}</span>}
         </div>
       </div>
       
