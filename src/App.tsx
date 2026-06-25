@@ -52,11 +52,11 @@ export default function App() {
   useEffect(() => {
     if (!loadingSession && !session && currentScreen !== 'auth') {
       setScreen('auth');
-    } else if (!loadingSession && session && !loadingProfile && currentScreen === 'auth') {
-      if (profile) {
-        setScreen('dash');
-      } else {
+    } else if (!loadingSession && session && !loadingProfile) {
+      if (!profile && currentScreen !== 'onboard') {
         setScreen('onboard');
+      } else if (profile && (currentScreen === 'auth' || currentScreen === 'onboard')) {
+        setScreen('dash');
       }
     }
   }, [session, loadingSession, currentScreen, profile, loadingProfile, setScreen]);
