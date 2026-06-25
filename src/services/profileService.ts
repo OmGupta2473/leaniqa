@@ -20,10 +20,13 @@ export const profileService = {
 
   async upsertProfile(profileData: Partial<DbProfile>): Promise<DbProfile | null> {
     const userId = await authService.getUserId();
+    const { data: { session } } = await supabase.auth.getSession();
+    const realEmail = session?.user?.email || '';
+
     const payload = {
       ...profileData,
       id: userId,
-      email: profileData.email || 'guest@example.com' // Mock email for guest
+      email: realEmail
     };
 
     const { data, error } = await supabase
