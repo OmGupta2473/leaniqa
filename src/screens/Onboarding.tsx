@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppStore } from '../store';
 import { cn } from '../lib/utils';
 import { Sparkles } from 'lucide-react';
