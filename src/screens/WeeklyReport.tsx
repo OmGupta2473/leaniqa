@@ -100,7 +100,9 @@ export function WeeklyReportScreen() {
     }
   });
 
-  const isSunday = today.getDay() === 0;
+  // Note: In production, Sunday automatic generation would be handled by a Supabase cron job
+  const daysWithData = dayStats.filter(d => d.prot > 0 || d.score > 0).length;
+  const canGenerate = daysWithData >= 3;
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -113,7 +115,7 @@ export function WeeklyReportScreen() {
           <div className="bg-purple/10 border-[0.5px] border-purple/20 text-purple rounded-full px-2.5 py-1 text-[12px] font-medium flex items-center gap-1">
             <Sparkles size={12} /> Generated
           </div>
-        ) : isSunday ? (
+        ) : canGenerate ? (
           <button 
             onClick={() => generateReportMutation.mutate()}
             disabled={generateReportMutation.isPending}
@@ -126,7 +128,9 @@ export function WeeklyReportScreen() {
             )}
           </button>
         ) : (
-           <div className="text-[12px] text-text-secondary">Generates on Sunday</div>
+           <div className="text-[10px] text-text-secondary bg-background-secondary border border-border-tertiary px-2 py-1.5 rounded-md flex items-center gap-1.5 max-w-[200px] text-right">
+             Log meals for 3 days to unlock your first AI report. You have {daysWithData}/3 days logged.
+           </div>
         )}
       </div>
 
@@ -181,7 +185,7 @@ export function WeeklyReportScreen() {
           </>
         ) : (
           <div className="text-[12px] text-text-secondary italic text-center p-4 border border-border-tertiary rounded-md bg-background-secondary">
-            {isSunday ? "Click Generate Report to get your AI insights for the week." : "Check back on Sunday for your automated AI report!"}
+            {canGenerate ? "Click Generate Report to get your AI insights for the week." : "Auto-generates every Sunday · Generate anytime with 3+ days"}
           </div>
         )}
       </div>
