@@ -44,24 +44,22 @@ export function DashboardScreen() {
     );
   }
 
-  const hasSaved = !!profile || !!goal;
+  const name = profile?.name ?? onboardingData?.name ?? 'User';
+  const targetBf = goal?.target_bf ?? onboardingData?.targetBodyFatPct;
+  const currentBf = goal?.current_bf ?? onboardingData?.currentBodyFatPct;
+  const proteinTarget = profile?.protein_target ?? onboardingData?.proteinMid;
+  const strategyName = goal?.strategy ?? onboardingData?.chosenStrategyName ?? 'Recommended';
   
-  const name = hasSaved ? (profile?.name || 'User') : (onboardingData?.name || 'User');
-  const targetBf = hasSaved ? goal?.target_bf : onboardingData?.targetBodyFatPct;
-  const currentBf = hasSaved ? goal?.current_bf : onboardingData?.currentBodyFatPct;
-  const proteinTarget = hasSaved ? profile?.protein_target : onboardingData?.proteinMid;
-  const strategyName = hasSaved ? (goal?.strategy ?? 'Recommended') : (onboardingData?.chosenStrategyName ?? 'Recommended');
-  
-  const dailyTargetKcal = hasSaved 
-    ? (profile?.maintenance_kcal ? profile.maintenance_kcal - (goal?.deficit_kcal ?? 400) : undefined)
+  const dailyTargetKcal = profile?.maintenance_kcal && goal?.deficit_kcal 
+    ? profile.maintenance_kcal - goal.deficit_kcal 
     : onboardingData?.dailyCalorieGoal;
 
   let waterTargetLiters: number | undefined;
-  if (hasSaved && profile?.weight) {
+  if (profile?.weight) {
     let water = (profile.weight * 35) / 1000;
     if (profile.activity_level === 'Very active') water += 0.5;
     waterTargetLiters = parseFloat(water.toFixed(1));
-  } else if (!hasSaved) {
+  } else {
     waterTargetLiters = onboardingData?.waterLitres ? parseFloat(onboardingData.waterLitres) : undefined;
   }
   
@@ -76,12 +74,12 @@ export function DashboardScreen() {
   const remainingProtein = proteinTarget !== undefined ? Math.max(0, proteinTarget - eatenProtein) : undefined;
 
   let projectedDateString = 'Unknown';
-  if (hasSaved && goal?.target_date) {
+  if (goal?.target_date) {
     const targetDateObj = new Date(goal.target_date);
     if (!isNaN(targetDateObj.getTime())) {
        projectedDateString = targetDateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
     }
-  } else if (!hasSaved && onboardingData?.estimatedCompletionDate) {
+  } else if (onboardingData?.estimatedCompletionDate) {
     projectedDateString = onboardingData.estimatedCompletionDate;
   }
 
@@ -89,7 +87,7 @@ export function DashboardScreen() {
   let currentDay = 0;
   let totalDays = 0;
   
-  if (hasSaved && goal?.created_at && goal?.target_date) {
+  if (goal?.created_at && goal?.target_date) {
     const start = new Date(goal.created_at);
     start.setHours(0,0,0,0);
     const end = new Date(goal.target_date);
@@ -100,7 +98,7 @@ export function DashboardScreen() {
     totalDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
     currentDay = Math.max(0, Math.round((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
     if (currentDay > totalDays) currentDay = totalDays;
-  } else if (!hasSaved && onboardingData?.estimatedWeeks) {
+  } else if (onboardingData?.estimatedWeeks) {
     totalDays = onboardingData.estimatedWeeks * 7;
     currentDay = 0; // Just started
   }
