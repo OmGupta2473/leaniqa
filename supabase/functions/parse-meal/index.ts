@@ -15,7 +15,8 @@ const MealSchema = z.object({
   fat: z.number(),
   carbs: z.number(),
   confidence: z.number(),
-  foods_detected: z.array(z.string())
+  foods_detected: z.array(z.string()),
+  coaching_tip: z.string().optional()
 });
 
 serve(async (req) => {
@@ -58,6 +59,9 @@ serve(async (req) => {
 
     const body = await req.json();
     text = body.text;
+    const remainingCalories = body.remainingCalories;
+    const remainingProtein = body.remainingProtein;
+    const mealType = body.mealType;
     const apiKey = Deno.env.get('GEMINI_API_KEY')
     
     if (!apiKey) {
@@ -97,6 +101,22 @@ serve(async (req) => {
         });
 
         const parsed = JSON.parse(response.text || '{}');
+        
+        let coaching_tip = "Good job logging your meal!";
+        if (remainingCalories !== undefined && remainingProtein !== undefined && mealType !== undefined) {
+           const tipResponse = await ai.models.generateContent({
+             model: 'gemini-2.5-flash',
+             contents: `The user just ate: ${parsed.foods_detected?.join(', ') || text}. They have ${remainingCalories} kcal and ${remainingProtein}g protein left today. 
+Suggest ONE specific next meal or snack using Indian food to help them hit their targets. 
+Be direct: give a food name, quantity, and expected macros. Keep it under 2 sentences. 
+If they're already at their targets, say they're on track and suggest staying light.
+Tone: like a PT friend, never judgmental.`
+           });
+           coaching_tip = tipResponse.text || coaching_tip;
+        }
+        
+        parsed.coaching_tip = coaching_tip;
+
         // Zod validation
         data = MealSchema.parse(parsed);
         success = true;
@@ -155,7 +175,8 @@ serve(async (req) => {
       fat,
       carbs,
       confidence: foundMatch ? 80 : 30,
-      foods_detected: detected
+      foods_detected: detected,
+      coaching_tip: "Stay consistent with your portions to hit your goals."
     };
     
     return new Response(JSON.stringify(fallbackData), {
