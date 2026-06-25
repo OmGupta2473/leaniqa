@@ -3,6 +3,7 @@ import { Session } from '@supabase/supabase-js';
 import { Sidebar } from './components/Sidebar';
 import { useAppStore } from './store';
 import { OnboardingScreen } from './screens/Onboarding';
+import { GoalSetterScreen } from './screens/GoalSetter';
 import { DashboardScreen } from './screens/Dashboard';
 import { MealLoggerScreen } from './screens/MealLogger';
 import { ProgressScreen } from './screens/Progress';
@@ -19,6 +20,7 @@ import { WifiOff } from 'lucide-react';
 const TITLES: Record<string, string> = {
   auth: 'Sign In',
   onboard: 'Welcome to Physique AI',
+  goal: 'Set Your Physique Goal',
   dash: 'Dashboard',
   meal: 'Nutrition Log',
   progress: 'Timeline Projection',
@@ -99,6 +101,7 @@ export default function App() {
           <div className="flex-1 overflow-y-auto overflow-x-hidden p-5 scroll-smooth relative">
             <ErrorBoundary>
               {currentScreen === 'onboard' && <OnboardingScreen />}
+              {currentScreen === 'goal' && <GoalSetterScreen />}
               {currentScreen === 'dash' && <DashboardScreen />}
               {currentScreen === 'meal' && <MealLoggerScreen />}
               {currentScreen === 'progress' && <ProgressScreen />}

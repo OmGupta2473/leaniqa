@@ -29,7 +29,7 @@ export function OnboardingScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       queryClient.invalidateQueries({ queryKey: ['goal'] });
-      setScreen('dash');
+      setScreen('goal');
     }
   });
 
