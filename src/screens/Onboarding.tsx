@@ -9,6 +9,7 @@ export function OnboardingScreen() {
   const { setScreen } = useAppStore();
   const queryClient = useQueryClient();
   
+  const [name, setName] = useState('');
   const [age, setAge] = useState('');
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
@@ -91,7 +92,7 @@ export function OnboardingScreen() {
     
     saveMutation.mutate({
       profile: {
-        name: 'User', 
+        name: name.trim() || 'User', 
         age: a, 
         height: h, 
         weight: w, 
@@ -127,6 +128,11 @@ export function OnboardingScreen() {
               <button key={g} onClick={() => setGender(g as any)} className={cn("px-3 py-1.5 border-[0.5px] border-border-secondary text-[12px] cursor-pointer transition-all bg-background-primary", gender === g ? "bg-purple text-background-primary font-medium border-purple" : "text-text-secondary hover:bg-background-secondary")}>{g}</button>
             ))}
           </div>
+        </div>
+
+        <div className="flex flex-col gap-1 col-span-2">
+          <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Your name</span>
+          <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple" type="text" value={name} onChange={e => setName(e.target.value)} placeholder="First name" />
         </div>
 
         <div className="flex flex-col gap-1 col-span-2">
