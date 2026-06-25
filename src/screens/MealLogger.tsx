@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '../store';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, Dumbbell } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { mealService } from '../services/mealService';
@@ -14,7 +14,22 @@ export function MealLoggerScreen() {
   
   const queryClient = useQueryClient();
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
+  const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
   const { data: meals = [] } = useQuery({ queryKey: ['meals', 'today'], queryFn: () => mealService.getTodaysMeals() });
+
+  const todaysMeals = meals;
+  
+  const eatenKcal = todaysMeals.reduce((acc, m) => acc + m.calories, 0);
+  const eatenProtein = todaysMeals.reduce((acc, m) => acc + m.protein, 0);
+  const eatenFat = todaysMeals.reduce((acc, m) => acc + m.fat, 0);
+  const eatenCarbs = todaysMeals.reduce((acc, m) => acc + m.carbs, 0);
+
+  const maintKcal = profile?.maintenance_kcal || 2200;
+  const dailyTargetKcal = maintKcal - (goal?.deficit_kcal ?? 400);
+  const proteinTarget = profile?.protein_target || 150;
+  
+  const remainingCalories = dailyTargetKcal - eatenKcal;
+  const remainingProtein = proteinTarget - eatenProtein;
 
   const [chat, setChat] = useState<{role: 'user'|'ai', text: string, data?: any}[]>([
     { role: 'ai', text: `Good morning! What did you eat first today? Just type it naturally — I'll handle the rest.` }
@@ -40,8 +55,20 @@ export function MealLoggerScreen() {
       let retries = 3;
       while (retries > 0) {
         try {
+          const hour = new Date().getHours();
+          let mealType = 'snack';
+          if (hour < 10) mealType = 'breakfast';
+          else if (hour < 14) mealType = 'lunch';
+          else if (hour < 17) mealType = 'snack';
+          else mealType = 'dinner';
+
           const { data, error } = await supabase.functions.invoke('parse-meal', {
-            body: { text }
+            body: { 
+              text,
+              remainingCalories,
+              remainingProtein,
+              mealType
+            }
           });
           
           if (error) throw new Error(error.message || 'API Error');
@@ -98,13 +125,6 @@ export function MealLoggerScreen() {
     addMealMutation.mutate(text);
   };
 
-  const todaysMeals = meals;
-  
-  const eatenKcal = todaysMeals.reduce((acc, m) => acc + m.calories, 0);
-  const eatenProtein = todaysMeals.reduce((acc, m) => acc + m.protein, 0);
-  const eatenFat = todaysMeals.reduce((acc, m) => acc + m.fat, 0);
-  const eatenCarbs = todaysMeals.reduce((acc, m) => acc + m.carbs, 0);
-
   return (
     <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div className="text-[11px] font-medium uppercase tracking-wider text-text-tertiary mb-2">Today's meals</div>
@@ -133,9 +153,17 @@ export function MealLoggerScreen() {
                 <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-green-bg text-text-primary">{msg.data.carbs}g carbs</span>
               </div>
             )}
-            {msg.data?.tip && (
-              <div className="mt-2 pt-2 border-t border-border-tertiary text-[12px] text-teal italic">
-                "{msg.data.tip}"
+            {msg.data?.coaching_tip && (
+              <div className="mt-2.5 pt-2.5 border-t border-border-tertiary flex gap-2">
+                <Dumbbell size={14} className="text-teal mt-0.5 shrink-0" />
+                <div className="text-[12px] text-teal italic pl-1 border-l-2 border-teal/30">
+                  {msg.data.coaching_tip}
+                </div>
+              </div>
+            )}
+            {msg.data?.tip && !msg.data?.coaching_tip && (
+              <div className="mt-2 pt-2 border-t border-border-tertiary text-[12px] text-text-secondary italic">
+                Detected: {msg.data.tip}
               </div>
             )}
           </div>
