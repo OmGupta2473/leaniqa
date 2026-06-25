@@ -9,7 +9,6 @@ export function OnboardingScreen() {
   const { setScreen } = useAppStore();
   const queryClient = useQueryClient();
   
-  const [name, setName] = useState('');
   const [age, setAge] = useState('');
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
@@ -17,10 +16,9 @@ export function OnboardingScreen() {
   const [neck, setNeck] = useState('');
   const [hip, setHip] = useState('');
   const [gender, setGender] = useState<'Male'|'Female'>('Male');
-  const [activity, setActivity] = useState<'Sedentary' | 'Light' | 'Moderate' | 'Active' | 'Very active'>('Light');
-  const [strategy, setStrategy] = useState<'Aggressive' | 'Recommended' | 'Slow cut'>('Recommended');
   
   const [showResults, setShowResults] = useState(false);
+  const [showStep2, setShowStep2] = useState(false);
   const [results, setResults] = useState({ maint: 0, protein: 0, bf: 0 });
 
   const saveMutation = useMutation({
@@ -35,7 +33,27 @@ export function OnboardingScreen() {
     }
   });
 
-  const calculate = () => {
+  const calculateRough = () => {
+    const w = parseFloat(weight) || 80;
+    const h = parseFloat(height) || 175;
+    const a = parseFloat(age) || 30;
+
+    // Maintenance Mifflin-St Jeor
+    const maintBase = (w * 10) + (h * 6.25) - (a * 5) + (gender === 'Male' ? 5 : -161);
+    const maint = Math.round(maintBase * 1.375); // Light activity default
+    
+    // Rough BF formula
+    let bf = ((w - (h - 100) * 0.9) / w) * 100;
+    bf = Math.max(8, Math.min(45, Math.round(bf * 10) / 10)); // clamp to 8-45%
+    
+    const lbm = w * (1 - bf / 100);
+    const protein = Math.round(lbm * 2.2);
+    
+    setResults({ maint, protein, bf });
+    setShowResults(true);
+  };
+
+  const calculateNavy = () => {
     const w = parseFloat(weight) || 80;
     const h = parseFloat(height) || 175;
     const a = parseFloat(age) || 30;
@@ -43,18 +61,9 @@ export function OnboardingScreen() {
     const neckVal = parseFloat(neck) || (gender === 'Male' ? 38 : 34);
     const hipVal = parseFloat(hip) || 100;
 
-    // Maintenance Katch-McArdle or Mifflin-St Jeor (using Mifflin for simplicity)
     const maintBase = (w * 10) + (h * 6.25) - (a * 5) + (gender === 'Male' ? 5 : -161);
+    const maint = Math.round(maintBase * 1.375); // Light activity default
     
-    let multiplier = 1.2;
-    if (activity === 'Light') multiplier = 1.375;
-    else if (activity === 'Moderate') multiplier = 1.55;
-    else if (activity === 'Active') multiplier = 1.725;
-    else if (activity === 'Very active') multiplier = 1.9;
-    
-    const maint = Math.round(maintBase * multiplier);
-    
-    // US Navy Method BF%
     let bf = 0;
     if (gender === 'Male') {
       bf = 495 / (1.0324 - 0.19077 * Math.log10(waistVal - neckVal) + 0.15456 * Math.log10(h)) - 450;
@@ -62,18 +71,27 @@ export function OnboardingScreen() {
       bf = 495 / (1.29579 - 0.35004 * Math.log10(waistVal + hipVal - neckVal) + 0.22100 * Math.log10(h)) - 450;
     }
     
-    bf = Math.max(3, Math.min(60, Math.round(bf * 10) / 10)); // Round to 1 decimal
+    bf = Math.max(3, Math.min(60, Math.round(bf * 10) / 10));
     const lbm = w * (1 - bf / 100);
-    const protein = Math.round(lbm * 2.2); // 2.2g per kg of LBM
+    const protein = Math.round(lbm * 2.2);
     
     setResults({ maint, protein, bf });
-    setShowResults(true);
-    
+  };
+
+  const handleSave = () => {
+    const w = parseFloat(weight) || 80;
+    const h = parseFloat(height) || 175;
+    const a = parseFloat(age) || 30;
+    const waistVal = showStep2 && waist ? parseFloat(waist) : undefined;
+    const neckVal = showStep2 && neck ? parseFloat(neck) : undefined;
+    const hipVal = showStep2 && hip && gender === 'Female' ? parseFloat(hip) : undefined;
+
+    const strategy = 'Recommended';
     const strategyDeficits: Record<string, number> = { 'Aggressive': 600, 'Recommended': 400, 'Slow cut': 200 };
     
     saveMutation.mutate({
       profile: {
-        name: name || 'User', 
+        name: 'User', 
         age: a, 
         height: h, 
         weight: w, 
@@ -81,12 +99,12 @@ export function OnboardingScreen() {
         waist: waistVal, 
         neck: neckVal, 
         hip: hipVal, 
-        activity_level: activity,
-        maintenance_kcal: maint, 
-        protein_target: protein
+        activity_level: 'Light',
+        maintenance_kcal: results.maint, 
+        protein_target: results.protein
       },
       goal: {
-        current_bf: bf,
+        current_bf: results.bf,
         target_bf: gender === 'Male' ? 12 : 20,
         strategy: strategy,
         deficit_kcal: strategyDeficits[strategy]
@@ -111,20 +129,7 @@ export function OnboardingScreen() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-1 col-span-2 mt-1">
-          <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Activity Level</span>
-          <div className="flex gap-1.5 flex-wrap">
-            {['Sedentary', 'Light', 'Moderate', 'Active', 'Very active'].map(act => (
-              <button key={act} onClick={() => setActivity(act as any)} className={cn("px-3 py-1.5 border-[0.5px] border-border-secondary text-[12px] cursor-pointer transition-all bg-background-primary", activity === act ? "bg-purple text-background-primary font-medium border-purple" : "text-text-secondary hover:bg-background-secondary")}>{act}</button>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Name</span>
-          <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple" type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Name" />
-        </div>
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 col-span-2">
           <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Age</span>
           <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple" type="number" value={age} onChange={e => setAge(e.target.value)} placeholder="Age" />
         </div>
@@ -136,38 +141,15 @@ export function OnboardingScreen() {
           <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Weight (kg)</span>
           <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple" type="number" value={weight} onChange={e => setWeight(e.target.value)} placeholder="kg" />
         </div>
-
-        <div className="flex flex-col gap-1">
-          <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Waist (cm)</span>
-          <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple" type="number" value={waist} onChange={e => setWaist(e.target.value)} placeholder="Navel" />
-        </div>
-        <div className="flex flex-col gap-1">
-          <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Neck (cm)</span>
-          <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple" type="number" value={neck} onChange={e => setNeck(e.target.value)} placeholder="Below larynx" />
-        </div>
-        
-        {gender === 'Female' && (
-          <div className="flex flex-col gap-1 col-span-2">
-            <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Hip (cm)</span>
-            <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple" type="number" value={hip} onChange={e => setHip(e.target.value)} placeholder="Widest part" />
-          </div>
-        )}
-
-        <div className="flex flex-col gap-1 col-span-2 mt-2">
-          <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Pacing Strategy</span>
-          <div className="flex gap-1.5 flex-wrap">
-            {['Aggressive', 'Recommended', 'Slow cut'].map(s => (
-              <button key={s} onClick={() => setStrategy(s as any)} className={cn("px-3 py-1.5 border-[0.5px] border-border-secondary text-[12px] cursor-pointer transition-all bg-background-primary", strategy === s ? "bg-purple text-background-primary font-medium border-purple" : "text-text-secondary hover:bg-background-secondary")}>{s}</button>
-            ))}
-          </div>
-        </div>
       </div>
       
-      {!showResults && <button onClick={calculate} disabled={saveMutation.isPending} className="w-full p-2.5 border-none bg-purple text-background-primary text-[14px] font-bold tracking-tight uppercase cursor-pointer transition-opacity hover:opacity-90 mb-3.5 disabled:opacity-50">Calculate Baseline</button>}
+      {!showResults && <button onClick={calculateRough} disabled={saveMutation.isPending} className="w-full p-2.5 border-none bg-purple text-background-primary text-[14px] font-bold tracking-tight uppercase cursor-pointer transition-opacity hover:opacity-90 mb-3.5 disabled:opacity-50">Calculate</button>}
       
       {showResults && (
         <div className="bg-background-secondary p-4 mb-3.5 border border-border-tertiary animate-in fade-in slide-in-from-top-2">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-purple mb-2.5">US Navy Projection</div>
+          <div className="text-[10px] font-bold uppercase tracking-widest text-purple mb-2.5">
+            {showStep2 ? 'US Navy Projection' : 'Estimated Projection'}
+          </div>
           <div className="grid grid-cols-3 gap-2">
             <div className="bg-background-primary p-2.5 text-center border-[0.5px] border-border-tertiary">
               <div className="text-[18px] font-medium text-text-primary">{results.maint.toLocaleString()}</div>
@@ -183,12 +165,50 @@ export function OnboardingScreen() {
             </div>
           </div>
           <div className="mt-4 pt-4 border-t border-border-tertiary">
-            <button onClick={() => setScreen('dash')} disabled={saveMutation.isPending} className="w-full p-2.5 border-[0.5px] border-purple bg-purple/10 text-purple text-[14px] font-bold tracking-tight uppercase cursor-pointer transition-opacity hover:bg-purple/20 disabled:opacity-50">
-              {saveMutation.isPending ? 'Saving...' : 'Enter Command Center →'}
+            <button onClick={handleSave} disabled={saveMutation.isPending} className="w-full p-2.5 border-[0.5px] border-purple bg-purple/10 text-purple text-[14px] font-bold tracking-tight uppercase cursor-pointer transition-opacity hover:bg-purple/20 disabled:opacity-50">
+              {saveMutation.isPending ? 'Saving...' : 'Set my physique goal →'}
             </button>
           </div>
+        </div>
+      )}
+
+      {showResults && !showStep2 && (
+        <div className="text-center mb-4">
+          <button 
+            onClick={() => setShowStep2(true)}
+            className="text-[12px] text-text-secondary hover:text-text-primary transition-colors bg-transparent border-none cursor-pointer underline underline-offset-2"
+          >
+            Refine with body measurements (more accurate)
+          </button>
+        </div>
+      )}
+
+      {showStep2 && (
+        <div className="animate-in fade-in slide-in-from-top-2 p-4 border border-border-secondary bg-background-primary mb-4">
+          <div className="text-[11px] font-medium uppercase tracking-widest text-text-secondary mb-3">Navy Method Refinement</div>
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="flex flex-col gap-1">
+              <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Waist (cm)</span>
+              <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple" type="number" value={waist} onChange={e => setWaist(e.target.value)} placeholder="Navel" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Neck (cm)</span>
+              <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple" type="number" value={neck} onChange={e => setNeck(e.target.value)} placeholder="Below larynx" />
+            </div>
+            
+            {gender === 'Female' && (
+              <div className="flex flex-col gap-1 col-span-2">
+                <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Hip (cm)</span>
+                <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple" type="number" value={hip} onChange={e => setHip(e.target.value)} placeholder="Widest part" />
+              </div>
+            )}
+          </div>
+          <button onClick={calculateNavy} className="w-full mt-3 p-2 border-[0.5px] border-border-secondary bg-background-secondary text-text-primary text-[12px] font-medium uppercase tracking-wider cursor-pointer transition-opacity hover:opacity-80">
+            Recalculate with measurements
+          </button>
         </div>
       )}
     </div>
   );
 }
+
