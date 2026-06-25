@@ -14,7 +14,7 @@ export function MealLoggerScreen() {
   
   const queryClient = useQueryClient();
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
-  const { data: meals = [] } = useQuery({ queryKey: ['meals'], queryFn: () => mealService.getMeals() });
+  const { data: meals = [] } = useQuery({ queryKey: ['meals', 'today'], queryFn: () => mealService.getTodaysMeals() });
 
   const [chat, setChat] = useState<{role: 'user'|'ai', text: string, data?: any}[]>([
     { role: 'ai', text: `Good morning! What did you eat first today? Just type it naturally — I'll handle the rest.` }
@@ -68,7 +68,7 @@ export function MealLoggerScreen() {
       }
     },
     onSuccess: (data, text) => {
-      queryClient.invalidateQueries({ queryKey: ['meals'] });
+      queryClient.invalidateQueries({ queryKey: ['meals', 'today'] });
       // Fire-and-forget score update
       complianceService.updateTodayScore(0);
       
@@ -98,8 +98,7 @@ export function MealLoggerScreen() {
     addMealMutation.mutate(text);
   };
 
-  const todayStr = new Date().toISOString().split('T')[0];
-  const todaysMeals = meals.filter(m => m.meal_time.startsWith(todayStr));
+  const todaysMeals = meals;
   
   const eatenKcal = todaysMeals.reduce((acc, m) => acc + m.calories, 0);
   const eatenProtein = todaysMeals.reduce((acc, m) => acc + m.protein, 0);

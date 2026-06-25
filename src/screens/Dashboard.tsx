@@ -15,7 +15,7 @@ export function DashboardScreen() {
 
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
-  const { data: meals } = useQuery({ queryKey: ['meals'], queryFn: () => mealService.getMeals() });
+  const { data: meals } = useQuery({ queryKey: ['meals', 'today'], queryFn: () => mealService.getTodaysMeals() });
   const { data: weightLogs = [] } = useQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
   const { data: waterLogs = [] } = useQuery({ queryKey: ['waterLogs'], queryFn: () => waterService.getWaterLogs() });
   
@@ -49,11 +49,11 @@ export function DashboardScreen() {
   const waterTargetLiters = 3.0; // Fixed generic target for now
   
   // Calculate today's intake
-  const today = new Date().toISOString().split('T')[0];
-  const todaysMeals = meals?.filter(m => m.meal_time.startsWith(today)) || [];
+  const todaysMeals = meals || [];
   const eatenKcal = todaysMeals.reduce((acc, m) => acc + m.calories, 0);
   const eatenProtein = todaysMeals.reduce((acc, m) => acc + m.protein, 0);
   
+  const today = new Date().toISOString().split('T')[0];
   const todaysWater = waterLogs.filter(w => w.date.startsWith(today)).reduce((acc, w) => acc + w.amount_ml, 0);
   const todaysWaterLiters = todaysWater / 1000;
   

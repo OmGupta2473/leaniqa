@@ -3,16 +3,49 @@ import { DbMealLog } from '../types/supabase';
 import { authService } from './authService';
 
 export const mealService = {
-  async getMeals(): Promise<DbMealLog[]> {
+  async getMeals(options?: { days?: number, limit?: number }): Promise<DbMealLog[]> {
     const userId = await authService.getUserId();
+    const days = options?.days ?? 30;
+    const limit = options?.limit ?? 200;
+    
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+
     const { data, error } = await supabase
       .from('meal_logs')
       .select('*')
       .eq('user_id', userId)
-      .order('meal_time', { ascending: true });
+      .gte('meal_time', cutoffDate.toISOString())
+      .order('meal_time', { ascending: true })
+      .limit(limit);
       
     if (error) {
       console.error('Error fetching meals:', error);
+      return [];
+    }
+    return data || [];
+  },
+
+  async getMealsForWeeklyReport(): Promise<DbMealLog[]> {
+    return this.getMeals({ days: 7, limit: 500 });
+  },
+
+  async getTodaysMeals(): Promise<DbMealLog[]> {
+    const userId = await authService.getUserId();
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    const startOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
+    
+    const { data, error } = await supabase
+      .from('meal_logs')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('meal_time', startOfToday)
+      .lt('meal_time', startOfTomorrow)
+      .order('meal_time', { ascending: true });
+      
+    if (error) {
+      console.error('Error fetching todays meals:', error);
       return [];
     }
     return data || [];
