@@ -55,9 +55,9 @@ export function GoalSetterScreen() {
 
   if (currentBfMid && targetBfMid) {
     const leanMassKg = currentWeight * (1 - currentBfMid / 100);
-    targetWeightKg = leanMassKg / (1 - targetBfMid / 100);
-    targetFatMass = targetWeightKg * (targetBfMid / 100);
-    fatToLoseKg = currentWeight - targetWeightKg;
+    targetWeightKg = Math.round((leanMassKg / (1 - targetBfMid / 100)) * 10) / 10;
+    targetFatMass = Math.round((targetWeightKg * (targetBfMid / 100)) * 10) / 10;
+    fatToLoseKg = Math.round((currentWeight - targetWeightKg) * 10) / 10;
   }
 
   const saveMutation = useMutation({
@@ -141,7 +141,7 @@ export function GoalSetterScreen() {
   const calculatedStrategies = strategies.map(s => {
     const dailyTarget = Math.round((tdee - s.deficit) / 10) * 10;
     const weeklyRate = (s.deficit * 7) / 7700;
-    const weeks = Math.ceil(fatToLoseKg / weeklyRate);
+    const weeks = Math.round(fatToLoseKg / weeklyRate);
     
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() + weeks * 7);

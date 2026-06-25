@@ -67,12 +67,10 @@ export default function App() {
     } else if (!loadingSession && session && !loadingProfile && !loadingGoal) {
       if (!profile && currentScreen !== 'onboard') {
         setScreen('onboard');
-      } else if (profile && (currentScreen === 'auth' || currentScreen === 'onboard')) {
-        if (!goal) {
-          setScreen('goal');
-        } else {
-          setScreen('dash');
-        }
+      } else if (profile && !goal && currentScreen !== 'goal' && currentScreen !== 'onboard') {
+        setScreen('goal');
+      } else if (profile && goal && (currentScreen === 'auth' || currentScreen === 'onboard' || currentScreen === 'goal')) {
+        setScreen('dash');
       }
     }
   }, [session, loadingSession, currentScreen, profile, loadingProfile, goal, loadingGoal, setScreen]);
