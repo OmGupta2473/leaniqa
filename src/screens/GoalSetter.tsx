@@ -71,6 +71,7 @@ export function GoalSetterScreen() {
       return strategyData;
     },
     onSuccess: (data) => {
+      console.log('Navigating to Screen 3');
       queryClient.invalidateQueries({ queryKey: ['goal'] });
       
       // Pass accumulated user data
