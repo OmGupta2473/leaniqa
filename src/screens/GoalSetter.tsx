@@ -62,30 +62,34 @@ export function GoalSetterScreen() {
 
   const saveMutation = useMutation({
     mutationFn: async (strategyData: any) => {
-      await profileService.upsertGoal({
+      const savedGoal = await profileService.upsertGoal({
         current_bf: strategyData.current_bf,
         target_bf: strategyData.target_bf,
         strategy: strategyData.strategy,
         deficit_kcal: strategyData.deficit_kcal
       });
-      return strategyData;
+      return { strategyData, savedGoal };
     },
     onSuccess: (data) => {
       console.log('Navigating to Screen 3');
-      queryClient.invalidateQueries({ queryKey: ['goal'] });
+      if (data.savedGoal) {
+        queryClient.setQueryData(['goal'], data.savedGoal);
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['goal'] });
+      }
       
       // Pass accumulated user data
       setOnboardingData({
         ...onboardingData,
-        currentBodyFatPct: data.current_bf,
-        targetBodyFatPct: data.target_bf,
-        fatToLoseKg: data.fatToLoseKg,
-        chosenStrategyName: data.strategy,
-        dailyCalorieGoal: data.dailyTarget,
-        dailyDeficit: data.deficit_kcal,
-        targetWeightKg: data.targetWeightKg,
-        estimatedWeeks: data.estimatedWeeks,
-        estimatedCompletionDate: data.estimatedCompletionDate
+        currentBodyFatPct: data.strategyData.current_bf,
+        targetBodyFatPct: data.strategyData.target_bf,
+        fatToLoseKg: data.strategyData.fatToLoseKg,
+        chosenStrategyName: data.strategyData.strategy,
+        dailyCalorieGoal: data.strategyData.dailyTarget,
+        dailyDeficit: data.strategyData.deficit_kcal,
+        targetWeightKg: data.strategyData.targetWeightKg,
+        estimatedWeeks: data.strategyData.estimatedWeeks,
+        estimatedCompletionDate: data.strategyData.estimatedCompletionDate
       });
       setScreen('dash');
     }
