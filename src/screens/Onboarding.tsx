@@ -6,9 +6,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileService } from '../services/profileService';
 
 export function OnboardingScreen() {
-  const { setScreen } = useAppStore();
+  const { setScreen, setOnboardingData } = useAppStore();
   const queryClient = useQueryClient();
-  
+
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
   const [height, setHeight] = useState('');
@@ -21,11 +21,14 @@ export function OnboardingScreen() {
   const [hip, setHip] = useState('');
   const [gender, setGender] = useState<'Male'|'Female'|''>('');
   const [activity, setActivity] = useState<'Sedentary'|'Lightly Active'|'Moderately Active'|'Very Active'|'Athlete'|''>('');
+  const [goal, setGoal] = useState<'Fat Loss'|'Muscle Gain'|'Maintenance'|''>('');
   
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showResults, setShowResults] = useState(false);
   const [showStep2, setShowStep2] = useState(false);
-  const [results, setResults] = useState({ maint: 0, protein: 0, bf: 0 });
+  
+  // Results
+  const [results, setResults] = useState<any>(null);
 
   useEffect(() => {
     if (Object.keys(errors).length === 0) return;
@@ -40,20 +43,20 @@ export function OnboardingScreen() {
     if (gender === 'Female' && hip && newErrors.hip) delete newErrors.hip;
     if (gender && newErrors.gender) delete newErrors.gender;
     if (activity && newErrors.activity) delete newErrors.activity;
+    if (goal && newErrors.goal) delete newErrors.goal;
     
     if (Object.keys(newErrors).length !== Object.keys(errors).length) {
       setErrors(newErrors);
     }
-  }, [name, age, weight, height, heightFt, heightIn, waist, neck, hip, heightUnit, gender, activity, errors]);
+  }, [name, age, weight, height, heightFt, heightIn, waist, neck, hip, heightUnit, gender, activity, goal, errors]);
 
   const saveMutation = useMutation({
-    mutationFn: async (data: { profile: any, goal: any }) => {
-      await profileService.upsertProfile(data.profile);
-      await profileService.upsertGoal(data.goal);
+    mutationFn: async (profile: any) => {
+      await profileService.upsertProfile(profile);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
-      queryClient.invalidateQueries({ queryKey: ['goal'] });
+      setOnboardingData(results);
       setScreen('goal');
     }
   });
@@ -98,6 +101,7 @@ export function OnboardingScreen() {
       if (!heightFt || !heightIn) newErrors.height = 'Height is required';
     }
     if (!activity) newErrors.activity = 'Please select your activity level';
+    if (!goal) newErrors.goal = 'Please select a goal';
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -125,7 +129,7 @@ export function OnboardingScreen() {
     return h || 175;
   };
 
-  const calculateRough = () => {
+  const calculateResults = () => {
     if (!validateStep1()) return;
 
     const w = parseFloat(weight) || 80;
@@ -141,56 +145,57 @@ export function OnboardingScreen() {
       'Very Active': 1.725, 
       'Athlete': 1.9 
     };
-    const maint = Math.round(maintBase * multipliers[activity]);
+    const tdee = Math.round(maintBase * multipliers[activity || 'Lightly Active']);
     
-    // Rough BF formula
-    let bf = ((w - (h - 100) * 0.9) / w) * 100;
-    bf = Math.max(8, Math.min(45, Math.round(bf * 10) / 10)); // clamp to 8-45%
-    
-    const lbm = w * (1 - bf / 100);
-    const protein = Math.round(lbm * 2.2);
-    
-    setResults({ maint, protein, bf });
-    setShowResults(true);
-  };
+    // Protein: 2.0-2.2 g/kg
+    const proteinMin = Math.round(w * 2.0);
+    const proteinMax = Math.round(w * 2.2);
+    const proteinMid = Math.round(w * 2.1);
 
-  const calculateNavy = () => {
-    if (!validateStep1() || !validateStep2()) return;
+    // Fat: 25-30% of TDEE
+    const fatMin = Math.round((tdee * 0.25) / 9);
+    const fatMax = Math.round((tdee * 0.30) / 9);
+    const fatMid = Math.round((tdee * 0.275) / 9);
 
-    const w = parseFloat(weight) || 80;
-    const h = getComputedHeight();
-    const a = parseFloat(age) || 30;
-    const waistVal = parseFloat(waist) || (gender === 'Male' ? 90 : 80);
-    const neckVal = parseFloat(neck) || (gender === 'Male' ? 38 : 34);
-    const hipVal = parseFloat(hip) || 100;
+    // Carbs: Remainder
+    const carbMid = Math.round((tdee - (proteinMid * 4) - (fatMid * 9)) / 4);
 
-    const maintBase = (w * 10) + (h * 6.25) - (a * 5) + (gender === 'Male' ? 5 : -161);
-    const multipliers: Record<string, number> = { 
-      'Sedentary': 1.2, 
-      'Lightly Active': 1.375, 
-      'Moderately Active': 1.55, 
-      'Very Active': 1.725, 
-      'Athlete': 1.9 
-    };
-    const maint = Math.round(maintBase * multipliers[activity]);
-    
-    let bf = 0;
-    if (gender === 'Male') {
-      bf = 495 / (1.0324 - 0.19077 * Math.log10(waistVal - neckVal) + 0.15456 * Math.log10(h)) - 450;
-    } else {
-      bf = 495 / (1.29579 - 0.35004 * Math.log10(waistVal + hipVal - neckVal) + 0.22100 * Math.log10(h)) - 450;
+    // Fiber
+    const fiberMin = gender === 'Female' ? 25 : 35;
+    const fiberMax = gender === 'Female' ? 28 : 38;
+
+    // Water
+    let water = (w * 35) / 1000;
+    if (activity === 'Very Active' || activity === 'Athlete') {
+      water += 0.5;
     }
-    
-    bf = Math.max(3, Math.min(60, Math.round(bf * 10) / 10));
-    const lbm = w * (1 - bf / 100);
-    const protein = Math.round(lbm * 2.2);
-    
-    setResults({ maint, protein, bf });
+
+    // Estimated Goal Weight
+    let goalWeight = w;
+    if (goal === 'Fat Loss') {
+      const heightInMeters = h / 100;
+      goalWeight = Math.round(22 * (heightInMeters * heightInMeters));
+    } else if (goal === 'Muscle Gain') {
+      goalWeight = w + 3;
+    }
+
+    setResults({
+      tdee,
+      proteinMin,
+      proteinMax,
+      fatMin,
+      fatMax,
+      carbMid,
+      fiberMin,
+      fiberMax,
+      water: water.toFixed(1),
+      goalWeight
+    });
+    setShowResults(true);
   };
 
   const handleSave = () => {
     if (!validateStep1()) return;
-    if (showStep2 && !validateStep2()) return;
 
     const w = parseFloat(weight) || 80;
     const h = getComputedHeight();
@@ -199,29 +204,19 @@ export function OnboardingScreen() {
     const neckVal = showStep2 && neck ? parseFloat(neck) : undefined;
     const hipVal = showStep2 && hip && gender === 'Female' ? parseFloat(hip) : undefined;
 
-    const strategy = 'Recommended';
-    const strategyDeficits: Record<string, number> = { 'Aggressive': 600, 'Recommended': 400, 'Slow cut': 200 };
-    
     saveMutation.mutate({
-      profile: {
-        name: name.trim() || 'User', 
-        age: a, 
-        height: h, 
-        weight: w, 
-        gender: gender || 'Male', 
-        waist: waistVal, 
-        neck: neckVal, 
-        hip: hipVal, 
-        activity_level: activity || 'Lightly Active',
-        maintenance_kcal: results.maint, 
-        protein_target: results.protein
-      },
-      goal: {
-        current_bf: results.bf,
-        target_bf: gender === 'Male' ? 12 : 20,
-        strategy: strategy,
-        deficit_kcal: strategyDeficits[strategy]
-      }
+      name: name.trim() || 'User', 
+      age: a, 
+      height: h, 
+      weight: w, 
+      gender: gender || 'Male', 
+      waist: waistVal, 
+      neck: neckVal, 
+      hip: hipVal, 
+      activity_level: activity || 'Lightly Active',
+      goal: goal || 'Fat Loss',
+      maintenance_kcal: results?.tdee || 0, 
+      protein_target: results?.proteinMid || 0
     });
   };
 
@@ -324,66 +319,100 @@ export function OnboardingScreen() {
           </div>
           {errors.activity && <span className="text-[10px] text-red-500 mt-0.5">{errors.activity}</span>}
         </div>
+        <div className="flex flex-col gap-2 col-span-2 mt-2">
+          <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Goal</span>
+          <div className="flex flex-col gap-2">
+            {[
+              { label: 'Fat Loss', desc: 'Lose body fat while preserving muscle mass' },
+              { label: 'Muscle Gain', desc: 'Build lean muscle mass with minimal fat gain' },
+              { label: 'Maintenance', desc: 'Maintain current body composition' }
+            ].map(g => (
+              <button 
+                key={g.label} 
+                onClick={() => setGoal(g.label as any)} 
+                className={cn(
+                  "p-3 border-[0.5px] cursor-pointer transition-all text-left flex flex-col gap-1", 
+                  goal === g.label 
+                    ? "bg-purple/5 border-purple" 
+                    : "bg-background-primary text-text-secondary hover:bg-background-secondary",
+                  errors.goal && goal !== g.label ? "border-red-500" : (goal !== g.label ? "border-border-secondary" : "")
+                )}
+              >
+                <div className={cn("text-[13px] font-medium", goal === g.label ? "text-purple" : "text-text-primary")}>
+                  {g.label}
+                </div>
+                <div className="text-[11px] leading-snug text-text-secondary">
+                  {g.desc}
+                </div>
+              </button>
+            ))}
+          </div>
+          {errors.goal && <span className="text-[10px] text-red-500 mt-0.5">{errors.goal}</span>}
+        </div>
       </div>
       
-      {!showResults && <button onClick={calculateRough} disabled={saveMutation.isPending} className="w-full p-2.5 border-none bg-purple text-background-primary text-[14px] font-bold tracking-tight uppercase cursor-pointer transition-opacity hover:opacity-90 mb-3.5 disabled:opacity-50">Calculate</button>}
+      {!showResults && <button onClick={calculateResults} disabled={saveMutation.isPending} className="w-full p-2.5 border-none bg-purple text-background-primary text-[14px] font-bold tracking-tight uppercase cursor-pointer transition-opacity hover:opacity-90 mb-3.5 disabled:opacity-50">Calculate</button>}
       
-      {showResults && (
-        <div className="bg-background-secondary p-4 mb-3.5 border border-border-tertiary animate-in fade-in slide-in-from-top-2">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-purple mb-2.5">
-            {showStep2 ? 'US Navy Projection' : 'Estimated Projection'}
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-background-primary p-2.5 text-center border-[0.5px] border-border-tertiary">
-              <div className="text-[18px] font-medium text-text-primary">{results.maint.toLocaleString()}</div>
-              <div className="text-[10px] text-text-secondary mt-0.5">MAINTENANCE</div>
-            </div>
-            <div className="bg-background-primary p-2.5 text-center border-[0.5px] border-border-tertiary">
-              <div className="text-[18px] font-medium text-text-primary">{results.protein}g</div>
-              <div className="text-[10px] text-text-secondary mt-0.5">PROTEIN TARGET</div>
-            </div>
-          </div>
-          <div className="mt-4 pt-4 border-t border-border-tertiary">
-            <button onClick={handleSave} disabled={saveMutation.isPending} className="w-full p-2.5 border-[0.5px] border-purple bg-purple/10 text-purple text-[14px] font-bold tracking-tight uppercase cursor-pointer transition-opacity hover:bg-purple/20 disabled:opacity-50">
-              {saveMutation.isPending ? 'Saving...' : 'Set my physique goal →'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {showResults && !showStep2 && (
-        <div className="text-center mb-4">
-          <button 
-            onClick={() => setShowStep2(true)}
-            className="text-[12px] text-text-secondary hover:text-text-primary transition-colors bg-transparent border-none cursor-pointer underline underline-offset-2"
-          >
-            Refine with body measurements (more accurate)
-          </button>
-        </div>
-      )}
-
-      {showStep2 && (
-        <div className="animate-in fade-in slide-in-from-top-2 p-4 border border-border-secondary bg-background-primary mb-4">
-          <div className="text-[11px] font-medium uppercase tracking-widest text-text-secondary mb-3">Navy Method Refinement</div>
-          <div className="grid grid-cols-2 gap-2.5">
-            <div className="flex flex-col gap-1">
-              <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Waist (cm)</span>
-              <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple" type="number" value={waist} onChange={e => setWaist(e.target.value)} placeholder="Navel" />
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Neck (cm)</span>
-              <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple" type="number" value={neck} onChange={e => setNeck(e.target.value)} placeholder="Below larynx" />
+      {showResults && results && (
+        <div className="mb-4 animate-in fade-in slide-in-from-top-2">
+          <div className="bg-background-secondary border border-border-tertiary mb-3">
+            <div className="p-3 border-b border-border-tertiary">
+              <h3 className="text-[14px] font-medium text-text-primary">Daily Nutrition Targets</h3>
+              <p className="text-[11px] text-text-secondary mt-0.5">Based on your stats and goal — here's what your body needs each day</p>
             </div>
             
-            {gender === 'Female' && (
-              <div className="flex flex-col gap-1 col-span-2">
-                <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Hip (cm)</span>
-                <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple" type="number" value={hip} onChange={e => setHip(e.target.value)} placeholder="Widest part" />
+            <div className="p-0">
+              <div className="flex justify-between items-center p-3 border-b border-border-tertiary">
+                <span className="text-[12px] text-text-secondary">Calories</span>
+                <span className="text-[13px] font-medium text-text-primary">{results.tdee} kcal <span className="text-[11px] font-normal text-text-secondary ml-1">(maintenance)</span></span>
               </div>
-            )}
+              <div className="flex justify-between items-center p-3 border-b border-border-tertiary">
+                <span className="text-[12px] text-text-secondary">Protein</span>
+                <span className="text-[13px] font-medium text-text-primary">{results.proteinMin}–{results.proteinMax} g/day <span className="text-[11px] font-normal text-text-secondary ml-1">(≈2.0–2.2 g/kg)</span></span>
+              </div>
+              <div className="flex justify-between items-center p-3 border-b border-border-tertiary">
+                <span className="text-[12px] text-text-secondary">Fat</span>
+                <span className="text-[13px] font-medium text-text-primary">{results.fatMin}–{results.fatMax} g/day</span>
+              </div>
+              <div className="flex justify-between items-center p-3 border-b border-border-tertiary">
+                <span className="text-[12px] text-text-secondary">Carbohydrates</span>
+                <span className="text-[13px] font-medium text-text-primary">{results.carbMid - 20}–{results.carbMid + 20} g/day <span className="text-[11px] font-normal text-text-secondary ml-1">(remainder)</span></span>
+              </div>
+              <div className="flex justify-between items-center p-3 border-b border-border-tertiary">
+                <span className="text-[12px] text-text-secondary">Fiber</span>
+                <span className="text-[13px] font-medium text-text-primary">{results.fiberMin}–{results.fiberMax} g/day</span>
+              </div>
+              <div className="flex justify-between items-center p-3">
+                <span className="text-[12px] text-text-secondary">Water</span>
+                <span className="text-[13px] font-medium text-text-primary">{results.water} L/day</span>
+              </div>
+            </div>
           </div>
-          <button onClick={calculateNavy} className="w-full mt-3 p-2 border-[0.5px] border-border-secondary bg-background-secondary text-text-primary text-[12px] font-medium uppercase tracking-wider cursor-pointer transition-opacity hover:opacity-80">
-            Recalculate with measurements
+
+          <div className="bg-background-secondary border border-border-tertiary mb-4 p-3">
+            <h3 className="text-[12px] font-medium text-text-primary mb-2">Your Estimated Stats</h3>
+            <div className="grid grid-cols-2 gap-y-2">
+              <div className="flex flex-col">
+                <span className="text-[10px] text-text-secondary uppercase tracking-wider">Current Weight</span>
+                <span className="text-[13px] text-text-primary font-medium">{weight || '—'} kg</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-text-secondary uppercase tracking-wider">Maintenance Calories</span>
+                <span className="text-[13px] text-text-primary font-medium">{results.tdee} kcal</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-text-secondary uppercase tracking-wider">Goal</span>
+                <span className="text-[13px] text-text-primary font-medium">{goal || '—'}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-text-secondary uppercase tracking-wider">Estimated Goal Weight</span>
+                <span className="text-[13px] text-text-primary font-medium">~{results.goalWeight} kg</span>
+              </div>
+            </div>
+          </div>
+
+          <button onClick={handleSave} disabled={saveMutation.isPending} className="w-full p-2.5 border-[0.5px] border-purple bg-purple/10 text-purple text-[14px] font-bold tracking-tight uppercase cursor-pointer transition-opacity hover:bg-purple/20 disabled:opacity-50">
+            {saveMutation.isPending ? 'Saving...' : 'Set my physique goal →'}
           </button>
         </div>
       )}
