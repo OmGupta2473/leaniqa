@@ -221,7 +221,8 @@ export function OnboardingScreen() {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div className="text-center py-4 pb-5">
-        <h2 className="text-[20px] font-medium text-text-primary mb-1.5">Elite Coaching Setup</h2>
+        <div className="text-[10px] text-purple font-bold tracking-widest uppercase mb-2">Step 1 of 2</div>
+        <h2 className="text-[20px] font-medium text-text-primary mb-1.5">Personal Information</h2>
         <p className="text-[13px] text-text-secondary max-w-[320px] mx-auto">We use US Navy standards for precision targeting.</p>
       </div>
 
@@ -382,7 +383,7 @@ export function OnboardingScreen() {
           </div>
 
           <button onClick={handleSave} disabled={saveMutation.isPending} className="w-full p-2.5 border-[0.5px] border-purple bg-purple/10 text-purple text-[14px] font-bold tracking-tight uppercase cursor-pointer transition-opacity hover:bg-purple/20 disabled:opacity-50">
-            {saveMutation.isPending ? 'Saving...' : 'Set my physique goal →'}
+            {saveMutation.isPending ? 'Saving...' : 'Continue'}
           </button>
         </div>
       )}
