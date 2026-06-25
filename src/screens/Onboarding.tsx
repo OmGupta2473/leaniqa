@@ -18,6 +18,7 @@ export function OnboardingScreen() {
   const [hip, setHip] = useState('');
   const [gender, setGender] = useState<'Male'|'Female'>('Male');
   const [activity, setActivity] = useState<'Sedentary' | 'Light' | 'Moderate' | 'Active' | 'Very active'>('Light');
+  const [strategy, setStrategy] = useState<'Aggressive' | 'Recommended' | 'Slow cut'>('Recommended');
   
   const [showResults, setShowResults] = useState(false);
   const [results, setResults] = useState({ maint: 0, protein: 0, bf: 0 });
@@ -68,6 +69,8 @@ export function OnboardingScreen() {
     setResults({ maint, protein, bf });
     setShowResults(true);
     
+    const strategyDeficits: Record<string, number> = { 'Aggressive': 600, 'Recommended': 400, 'Slow cut': 200 };
+    
     saveMutation.mutate({
       profile: {
         name: name || 'User', 
@@ -85,7 +88,8 @@ export function OnboardingScreen() {
       goal: {
         current_bf: bf,
         target_bf: gender === 'Male' ? 12 : 20,
-        strategy: 'Recommended'
+        strategy: strategy,
+        deficit_kcal: strategyDeficits[strategy]
       }
     });
   };
@@ -148,6 +152,15 @@ export function OnboardingScreen() {
             <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple" type="number" value={hip} onChange={e => setHip(e.target.value)} placeholder="Widest part" />
           </div>
         )}
+
+        <div className="flex flex-col gap-1 col-span-2 mt-2">
+          <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Pacing Strategy</span>
+          <div className="flex gap-1.5 flex-wrap">
+            {['Aggressive', 'Recommended', 'Slow cut'].map(s => (
+              <button key={s} onClick={() => setStrategy(s as any)} className={cn("px-3 py-1.5 border-[0.5px] border-border-secondary text-[12px] cursor-pointer transition-all bg-background-primary", strategy === s ? "bg-purple text-background-primary font-medium border-purple" : "text-text-secondary hover:bg-background-secondary")}>{s}</button>
+            ))}
+          </div>
+        </div>
       </div>
       
       {!showResults && <button onClick={calculate} disabled={saveMutation.isPending} className="w-full p-2.5 border-none bg-purple text-background-primary text-[14px] font-bold tracking-tight uppercase cursor-pointer transition-opacity hover:opacity-90 mb-3.5 disabled:opacity-50">Calculate Baseline</button>}

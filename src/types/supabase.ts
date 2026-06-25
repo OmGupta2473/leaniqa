@@ -21,6 +21,7 @@ export interface DbGoal {
   current_bf: number;
   target_bf: number;
   strategy: string;
+  deficit_kcal: number;
   target_date?: string;
 }
 

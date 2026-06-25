@@ -68,7 +68,7 @@ export function ProgressScreen() {
 
   const currentBf = goal?.current_bf ?? 20;
   const targetBf = goal?.target_bf || 12;
-  const weeklyDeficitKcal = 400 * 7; // Average weekly deficit
+  const weeklyDeficitKcal = (goal?.deficit_kcal ?? 400) * 7; // Average weekly deficit
   const complianceScore = scores?.weeklyAverage ?? 80;
 
   const projections = calculateProjections({

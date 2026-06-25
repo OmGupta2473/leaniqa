@@ -59,7 +59,7 @@ export function DashboardScreen() {
   const maintKcal = profile?.maintenance_kcal || 2200;
   const proteinTarget = profile?.protein_target || 150;
   
-  const dailyTargetKcal = maintKcal - 400; // Simplified for deficit
+  const dailyTargetKcal = maintKcal - (goal?.deficit_kcal ?? 400);
   const waterTargetLiters = 3.0; // Fixed generic target for now
   
   // Calculate today's intake
@@ -74,7 +74,7 @@ export function DashboardScreen() {
 
   // Projected Date Calculation using Engine
   const currentWeight = weightLogs.length > 0 ? weightLogs[weightLogs.length - 1].weight : profile?.weight || 80;
-  const weeklyDeficitKcal = 400 * 7;
+  const weeklyDeficitKcal = (goal?.deficit_kcal ?? 400) * 7;
   const complianceScore = scores?.weeklyAverage || 80; // Use actual weekly average for projection!
   
   const projections = calculateProjections({
@@ -152,7 +152,9 @@ export function DashboardScreen() {
       {/* Card 2: Today's Targets */}
       <div className="mb-3">
         <div className="flex items-center justify-between px-1 mb-1.5">
-          <div className="text-[11px] text-text-secondary uppercase tracking-widest font-medium">Today's Targets</div>
+          <div className="text-[11px] text-text-secondary uppercase tracking-widest font-medium">
+            Today's Targets <span className="text-purple ml-1">({goal?.strategy || 'Recommended'})</span>
+          </div>
         </div>
         <div className="grid grid-cols-3 gap-2">
           <div className="bg-background-secondary p-3 border border-border-tertiary text-center flex flex-col justify-between">
