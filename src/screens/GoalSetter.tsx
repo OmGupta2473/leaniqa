@@ -32,7 +32,7 @@ export function GoalSetterScreen() {
   const [targetBfMid, setTargetBfMid] = useState<number | null>(null);
 
   const tdee = onboardingData?.tdee || profile?.maintenance_kcal || 2500;
-  const currentWeight = profile?.weight || 80;
+  const currentWeight = onboardingData?.weightKg || profile?.weight || 80;
   const proteinMax = onboardingData?.proteinMax || 160;
   const proteinMid = onboardingData?.proteinMid || 150;
   const proteinMin = onboardingData?.proteinMin || 140;
@@ -76,12 +76,15 @@ export function GoalSetterScreen() {
       // Pass accumulated user data
       setOnboardingData({
         ...onboardingData,
-        currentBodyFat: data.current_bf,
-        targetBodyFat: data.target_bf,
-        fatToLose: data.fatToLoseKg,
-        chosenStrategy: data.strategy,
+        currentBodyFatPct: data.current_bf,
+        targetBodyFatPct: data.target_bf,
+        fatToLoseKg: data.fatToLoseKg,
+        chosenStrategyName: data.strategy,
         dailyCalorieGoal: data.dailyTarget,
-        targetWeight: data.targetWeightKg
+        dailyDeficit: data.deficit_kcal,
+        targetWeightKg: data.targetWeightKg,
+        estimatedWeeks: data.estimatedWeeks,
+        estimatedCompletionDate: data.estimatedCompletionDate
       });
       setScreen('dash');
     }
@@ -95,7 +98,9 @@ export function GoalSetterScreen() {
       deficit_kcal: strategy.deficit,
       fatToLoseKg,
       dailyTarget: strategy.dailyTarget,
-      targetWeightKg
+      targetWeightKg,
+      estimatedWeeks: strategy.weeks,
+      estimatedCompletionDate: strategy.dateStr
     });
   };
 
@@ -212,7 +217,7 @@ export function GoalSetterScreen() {
           ))}
         </div>
 
-        {currentBfMid && targetBfMid && (
+        {currentBfMid && targetBfMid && targetBfMid < currentBfMid && (
           <div className="bg-background-secondary border border-border-tertiary p-4 mt-2 animate-in fade-in slide-in-from-top-2">
             <div className="grid grid-cols-2 gap-y-3 gap-x-4">
               <div>
@@ -250,8 +255,15 @@ export function GoalSetterScreen() {
           </div>
         )}
 
-        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-          {calculatedStrategies.map((s) => (
+        {currentBfMid && targetBfMid && targetBfMid >= currentBfMid && (
+          <div className="text-[13px] text-coral flex items-center gap-1 mb-4 p-3 bg-coral/10 border border-coral/20">
+            <AlertTriangle size={14} /> Please select a target body fat % lower than your current level.
+          </div>
+        )}
+
+        {currentBfMid && targetBfMid && targetBfMid < currentBfMid && (
+          <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+            {calculatedStrategies.map((s) => (
             <div 
               key={s.name} 
               className={cn(
@@ -314,7 +326,8 @@ export function GoalSetterScreen() {
               </button>
             </div>
           ))}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
