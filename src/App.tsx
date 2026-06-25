@@ -55,17 +55,27 @@ export default function App() {
     enabled: !!session,
   });
 
+  const { data: goal, isLoading: loadingGoal } = useQuery({
+    queryKey: ['goal'],
+    queryFn: () => profileService.getGoal(),
+    enabled: !!session && !!profile,
+  });
+
   useEffect(() => {
     if (!loadingSession && !session && currentScreen !== 'auth') {
       setScreen('auth');
-    } else if (!loadingSession && session && !loadingProfile) {
+    } else if (!loadingSession && session && !loadingProfile && !loadingGoal) {
       if (!profile && currentScreen !== 'onboard') {
         setScreen('onboard');
       } else if (profile && (currentScreen === 'auth' || currentScreen === 'onboard')) {
-        setScreen('dash');
+        if (!goal) {
+          setScreen('goal');
+        } else {
+          setScreen('dash');
+        }
       }
     }
-  }, [session, loadingSession, currentScreen, profile, loadingProfile, setScreen]);
+  }, [session, loadingSession, currentScreen, profile, loadingProfile, goal, loadingGoal, setScreen]);
 
   const title = TITLES[currentScreen] || 'Physique AI';
 
