@@ -4,7 +4,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileService } from '../services/profileService';
 import { mealService } from '../services/mealService';
 import { weightService } from '../services/weightService';
-import { complianceService } from '../services/complianceService';
 import { waterService } from '../services/waterService';
 import { calculateProjections } from '../lib/projectionEngine';
 import { useEffect } from 'react';
@@ -20,24 +19,12 @@ export function DashboardScreen() {
   const { data: weightLogs = [] } = useQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
   const { data: todaysWaterTotal = 0, isError: isWaterError, refetch: refetchWater } = useQuery({ queryKey: ['waterTotal', 'today'], queryFn: () => waterService.getTodaysWaterTotal() });
   
-  const { data: scores } = useQuery({ 
-    queryKey: ['scores'], 
-    queryFn: () => complianceService.getScores(),
-    staleTime: 5 * 60 * 1000
-  });
-
   const addWaterMutation = useMutation({
     mutationFn: (amountMl: number) => waterService.addWater(amountMl),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['waterTotal', 'today'] });
-      queryClient.invalidateQueries({ queryKey: ['scores'] });
     }
   });
-
-  const handleRefreshScore = async () => {
-    await complianceService.updateTodayScore(0);
-    queryClient.invalidateQueries({ queryKey: ['scores'] });
-  };
 
   if (isProfileError || isGoalError) {
     return (
@@ -72,7 +59,33 @@ export function DashboardScreen() {
   const remainingKcal = dailyTargetKcal !== undefined ? Math.max(0, dailyTargetKcal - eatenKcal) : undefined;
   const remainingProtein = proteinTarget !== undefined ? Math.max(0, proteinTarget - eatenProtein) : undefined;
 
-  let projectedDateString = onboardingData?.estimatedCompletionDate || goal?.target_date || 'Unknown';
+  let projectedDateString = onboardingData?.estimatedCompletionDate || 'Unknown';
+  if (goal?.target_date) {
+    const targetDateObj = new Date(goal.target_date);
+    if (!isNaN(targetDateObj.getTime())) {
+       projectedDateString = targetDateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    }
+  }
+
+  // Calculate Days
+  let currentDay = 0;
+  let totalDays = 0;
+  
+  if (goal?.created_at && goal?.target_date) {
+    const start = new Date(goal.created_at);
+    start.setHours(0,0,0,0);
+    const end = new Date(goal.target_date);
+    end.setHours(0,0,0,0);
+    const now = new Date();
+    now.setHours(0,0,0,0);
+    
+    totalDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+    currentDay = Math.max(0, Math.round((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+    if (currentDay > totalDays) currentDay = totalDays;
+  } else if (onboardingData?.estimatedWeeks) {
+    totalDays = onboardingData.estimatedWeeks * 7;
+    currentDay = 0; // Just started
+  }
 
   // Recommendations
   let recommendation = '';
@@ -102,16 +115,11 @@ export function DashboardScreen() {
           <div className="text-[18px] font-medium text-text-primary">{name}</div>
         </div>
         <div className="flex flex-col items-end">
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={handleRefreshScore} 
-              className="text-[10px] bg-purple/10 text-purple border border-purple/30 px-2 py-1 rounded hover:bg-purple/20 transition-colors"
-            >
-              Refresh score
-            </button>
-            <div className="text-[24px] font-medium text-purple leading-none">{scores?.todayScore || 0}</div>
+          <div className="flex items-baseline gap-1">
+            <div className="text-[24px] font-medium text-purple leading-none">Day {currentDay}</div>
+            <div className="text-[12px] text-text-secondary">/ {totalDays}</div>
           </div>
-          <div className="text-[10px] text-text-secondary uppercase tracking-widest mt-1">Today's Score</div>
+          <div className="text-[10px] text-text-secondary uppercase tracking-widest mt-1">Timeline Progress</div>
         </div>
       </div>
 
