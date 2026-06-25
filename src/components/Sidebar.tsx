@@ -4,7 +4,7 @@ import { LayoutDashboard, MessageSquare, TrendingUp, FileBarChart, CreditCard, L
 import { supabase } from '../lib/supabase';
 
 export function Sidebar() {
-  const { currentScreen, setScreen } = useAppStore();
+  const { currentScreen, setScreen, clearStore } = useAppStore();
 
   const navItems = [
     { id: 'dash', icon: LayoutDashboard, label: 'Dashboard' },
@@ -14,6 +14,7 @@ export function Sidebar() {
   ];
 
   const handleLogout = async () => {
+    clearStore();
     await supabase.auth.signOut();
   };
 
