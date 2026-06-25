@@ -79,11 +79,19 @@ export function WeeklyReportScreen() {
         throw new Error('PRO_REQUIRED');
       }
       
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("No active session. Please log in again.");
+      }
+      
       const { data, error } = await supabase.functions.invoke('generate-weekly-report', {
         body: {
           metrics: dayStats,
           weights: weightLogs.filter(w => new Date(w.date) >= new Date(past7Days[0])),
           meals: meals.filter(m => new Date(m.meal_time) >= new Date(past7Days[0]))
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
         }
       });
       if (error) throw new Error(error.message || 'Failed to generate report');
