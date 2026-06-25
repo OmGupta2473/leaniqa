@@ -11,7 +11,7 @@ import { useEffect } from 'react';
 import { QueryError } from '../components/QueryError';
 
 export function DashboardScreen() {
-  const { setScreen } = useAppStore();
+  const { setScreen, onboardingData } = useAppStore();
   const queryClient = useQueryClient();
 
   const { data: profile, isError: isProfileError, error: profileError, refetch: refetchProfile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
@@ -53,14 +53,12 @@ export function DashboardScreen() {
     );
   }
 
-  const name = profile?.name || 'User';
-  const currentBf = goal?.current_bf ?? 20; // fallback if body fat not tracked
-  const targetBf = goal?.target_bf || 12;
-  const maintKcal = profile?.maintenance_kcal || 2200;
-  const proteinTarget = profile?.protein_target || 150;
+  const name = onboardingData?.name || profile?.name || 'User';
+  const targetBf = onboardingData?.targetBodyFatPct || goal?.target_bf || 12;
+  const proteinTarget = onboardingData?.proteinMid || profile?.protein_target || 150;
   
-  const dailyTargetKcal = maintKcal - (goal?.deficit_kcal ?? 400);
-  const waterTargetLiters = 3.0; // Fixed generic target for now
+  const dailyTargetKcal = onboardingData?.dailyCalorieGoal || (profile?.maintenance_kcal || 2200) - (goal?.deficit_kcal ?? 400);
+  const waterTargetLiters = parseFloat(onboardingData?.waterLitres || "3.0");
   
   // Calculate today's intake
   const todaysMeals = meals || [];
@@ -72,27 +70,29 @@ export function DashboardScreen() {
   const remainingKcal = Math.max(0, dailyTargetKcal - eatenKcal);
   const remainingProtein = Math.max(0, proteinTarget - eatenProtein);
 
-  // Projected Date Calculation using Engine
-  const currentWeight = weightLogs.length > 0 ? weightLogs[weightLogs.length - 1].weight : profile?.weight || 80;
-  const weeklyDeficitKcal = (goal?.deficit_kcal ?? 400) * 7;
-  const complianceScore = scores?.weeklyAverage || 80; // Use actual weekly average for projection!
-  
-  const projections = calculateProjections({
-    currentWeight,
-    currentBf,
-    targetBf,
-    weeklyDeficitKcal,
-    complianceScore: Math.max(complianceScore, 10), // minimum 10% to avoid infinity
-  });
-  
-  const targetProjection = projections.find(p => p.bfTarget === targetBf);
-  
-  let projectedDateString = 'Unknown';
-  if (targetProjection) {
-    if (targetProjection.status === 'completed') {
-      projectedDateString = 'Completed!';
-    } else {
-      projectedDateString = targetProjection.date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+  let projectedDateString = onboardingData?.estimatedCompletionDate || 'Unknown';
+  if (!onboardingData?.estimatedCompletionDate) {
+    const currentBf = goal?.current_bf ?? 20;
+    const currentWeight = weightLogs.length > 0 ? weightLogs[weightLogs.length - 1].weight : profile?.weight || 80;
+    const weeklyDeficitKcal = (goal?.deficit_kcal ?? 400) * 7;
+    const complianceScore = scores?.weeklyAverage || 80; 
+    
+    const projections = calculateProjections({
+      currentWeight,
+      currentBf,
+      targetBf,
+      weeklyDeficitKcal,
+      complianceScore: Math.max(complianceScore, 10),
+    });
+    
+    const targetProjection = projections.find(p => p.bfTarget === targetBf);
+    
+    if (targetProjection) {
+      if (targetProjection.status === 'completed') {
+        projectedDateString = 'Completed!';
+      } else {
+        projectedDateString = targetProjection.date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+      }
     }
   }
 

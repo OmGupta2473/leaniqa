@@ -54,7 +54,15 @@ export function OnboardingScreen() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
-      setOnboardingData(results);
+      setOnboardingData({
+        ...results,
+        weightKg: parseFloat(weight) || 80,
+        heightCm: getComputedHeight(),
+        age: parseFloat(age) || 30,
+        gender,
+        activityLevel: activity,
+        name: name.trim() || 'User'
+      });
       setScreen('goal');
     }
   });
@@ -142,7 +150,7 @@ export function OnboardingScreen() {
       'Very Active': 1.725, 
       'Athlete': 1.9 
     };
-    const tdee = Math.round(maintBase * multipliers[activity || 'Lightly Active']);
+    const tdee = Math.round((maintBase * multipliers[activity || 'Lightly Active']) / 10) * 10;
     
     // Protein: 2.0-2.2 g/kg
     const proteinMin = Math.round(w * 2.0);
@@ -155,7 +163,9 @@ export function OnboardingScreen() {
     const fatMid = Math.round((tdee * 0.275) / 9);
 
     // Carbs: Remainder
-    const carbMid = Math.round((tdee - (proteinMid * 4) - (fatMid * 9)) / 4);
+    const carbMid = Math.round(((tdee - (proteinMid * 4) - (fatMid * 9)) / 4) / 5) * 5;
+    const carbMin = carbMid - 20;
+    const carbMax = carbMid + 20;
 
     // Fiber
     const fiberMin = gender === 'Female' ? 25 : 35;
@@ -171,25 +181,25 @@ export function OnboardingScreen() {
       tdee,
       proteinMin,
       proteinMax,
+      proteinMid,
       fatMin,
       fatMax,
-      carbMid,
+      fatMid,
+      carbMin,
+      carbMax,
       fiberMin,
       fiberMax,
-      water: water.toFixed(1)
+      waterLitres: water.toFixed(1)
     });
     setShowResults(true);
   };
 
   const handleSave = () => {
-    if (!validateStep1()) return;
+    if (!validateStep1() || !results) return;
 
     const w = parseFloat(weight) || 80;
     const h = getComputedHeight();
     const a = parseFloat(age) || 30;
-    const waistVal = showStep2 && waist ? parseFloat(waist) : undefined;
-    const neckVal = showStep2 && neck ? parseFloat(neck) : undefined;
-    const hipVal = showStep2 && hip && gender === 'Female' ? parseFloat(hip) : undefined;
 
     saveMutation.mutate({
       name: name.trim() || 'User', 
@@ -197,12 +207,9 @@ export function OnboardingScreen() {
       height: h, 
       weight: w, 
       gender: gender || 'Male', 
-      waist: waistVal, 
-      neck: neckVal, 
-      hip: hipVal, 
       activity_level: activity || 'Lightly Active',
-      maintenance_kcal: results?.tdee || 0, 
-      protein_target: results?.proteinMid || 0
+      maintenance_kcal: results.tdee, 
+      protein_target: results.proteinMid
     });
   };
 
@@ -340,13 +347,13 @@ export function OnboardingScreen() {
               </div>
               <div className="flex justify-between items-center p-3">
                 <span className="text-[12px] text-text-secondary">Water</span>
-                <span className="text-[13px] font-medium text-text-primary">{results.water} L/day</span>
+                <span className="text-[13px] font-medium text-text-primary">{results.waterLitres} L/day</span>
               </div>
             </div>
           </div>
 
           <div className="bg-background-secondary border border-border-tertiary mb-4 p-3">
-            <h3 className="text-[12px] font-medium text-text-primary mb-2">Your Estimated Stats</h3>
+            <h3 className="text-[12px] font-medium text-text-primary mb-2">Your Stats</h3>
             <div className="grid grid-cols-2 gap-y-2">
               <div className="flex flex-col">
                 <span className="text-[10px] text-text-secondary uppercase tracking-wider">Current Weight</span>
@@ -355,6 +362,16 @@ export function OnboardingScreen() {
               <div className="flex flex-col">
                 <span className="text-[10px] text-text-secondary uppercase tracking-wider">Maintenance Calories</span>
                 <span className="text-[13px] text-text-primary font-medium">{results.tdee} kcal</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-text-secondary uppercase tracking-wider">Height</span>
+                <span className="text-[13px] text-text-primary font-medium">
+                  {heightUnit === 'cm' ? `${height || '—'} cm` : `${heightFt || '—'}'${heightIn || '—'}"`}
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-text-secondary uppercase tracking-wider">Activity Level</span>
+                <span className="text-[13px] text-text-primary font-medium">{activity || '—'}</span>
               </div>
             </div>
           </div>
