@@ -54,12 +54,12 @@ export function DashboardScreen() {
   }
 
   const name = onboardingData?.name || profile?.name || 'User';
-  const targetBf = onboardingData?.targetBodyFatPct;
-  const currentBf = onboardingData?.currentBodyFatPct;
-  const proteinTarget = onboardingData?.proteinMid;
-  const strategyName = onboardingData?.chosenStrategyName ?? 'Recommended';
+  const targetBf = onboardingData?.targetBodyFatPct ?? goal?.target_bf;
+  const currentBf = onboardingData?.currentBodyFatPct ?? goal?.current_bf;
+  const proteinTarget = onboardingData?.proteinMid ?? profile?.protein_target;
+  const strategyName = onboardingData?.chosenStrategyName ?? goal?.strategy ?? 'Recommended';
   
-  const dailyTargetKcal = onboardingData?.dailyCalorieGoal;
+  const dailyTargetKcal = onboardingData?.dailyCalorieGoal ?? (profile?.maintenance_kcal ? profile.maintenance_kcal - (goal?.deficit_kcal ?? 400) : undefined);
   const waterTargetLiters = onboardingData?.waterLitres ? parseFloat(onboardingData.waterLitres) : undefined;
   
   // Calculate today's intake
@@ -72,7 +72,7 @@ export function DashboardScreen() {
   const remainingKcal = dailyTargetKcal !== undefined ? Math.max(0, dailyTargetKcal - eatenKcal) : undefined;
   const remainingProtein = proteinTarget !== undefined ? Math.max(0, proteinTarget - eatenProtein) : undefined;
 
-  let projectedDateString = onboardingData?.estimatedCompletionDate || 'Unknown';
+  let projectedDateString = onboardingData?.estimatedCompletionDate || goal?.target_date || 'Unknown';
 
   // Recommendations
   let recommendation = '';
