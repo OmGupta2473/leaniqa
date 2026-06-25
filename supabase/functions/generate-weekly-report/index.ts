@@ -13,6 +13,15 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  let bodyData: any = {};
+  try {
+    bodyData = await req.json();
+  } catch {
+    return new Response(JSON.stringify({ error: "Invalid request body" }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+  const { metrics, weights, meals } = bodyData;
+
   try {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
@@ -61,7 +70,6 @@ serve(async (req) => {
 
     await supabase.from('api_usage').insert({ user_id: user.id, endpoint })
 
-    const { metrics, weights, meals } = await req.json()
     const apiKey = Deno.env.get('GEMINI_API_KEY')
     
     if (!apiKey) {
@@ -105,7 +113,10 @@ Respond with JSON:
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
-  } catch (error) {
+  } catch (error: any) {
+    if (error.status === 400 || error.status === 401 || error.status === 403) {
+      throw error; // Don't swallow auth/validation errors
+    }
     console.warn("AI failed, falling back", error);
     const fallbackData = {
       bestHabit: "Consistent tracking",
