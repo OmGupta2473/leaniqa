@@ -17,6 +17,7 @@ export function OnboardingScreen() {
   const [neck, setNeck] = useState('');
   const [hip, setHip] = useState('');
   const [gender, setGender] = useState<'Male'|'Female'>('Male');
+  const [activity, setActivity] = useState<'Light'|'Moderate'|'Active'>('Light');
   
   const [showResults, setShowResults] = useState(false);
   const [showStep2, setShowStep2] = useState(false);
@@ -41,7 +42,8 @@ export function OnboardingScreen() {
 
     // Maintenance Mifflin-St Jeor
     const maintBase = (w * 10) + (h * 6.25) - (a * 5) + (gender === 'Male' ? 5 : -161);
-    const maint = Math.round(maintBase * 1.375); // Light activity default
+    const multipliers = { Light: 1.375, Moderate: 1.55, Active: 1.725 };
+    const maint = Math.round(maintBase * multipliers[activity]);
     
     // Rough BF formula
     let bf = ((w - (h - 100) * 0.9) / w) * 100;
@@ -63,7 +65,8 @@ export function OnboardingScreen() {
     const hipVal = parseFloat(hip) || 100;
 
     const maintBase = (w * 10) + (h * 6.25) - (a * 5) + (gender === 'Male' ? 5 : -161);
-    const maint = Math.round(maintBase * 1.375); // Light activity default
+    const multipliers = { Light: 1.375, Moderate: 1.55, Active: 1.725 };
+    const maint = Math.round(maintBase * multipliers[activity]);
     
     let bf = 0;
     if (gender === 'Male') {
@@ -100,7 +103,7 @@ export function OnboardingScreen() {
         waist: waistVal, 
         neck: neckVal, 
         hip: hipVal, 
-        activity_level: 'Light',
+        activity_level: activity,
         maintenance_kcal: results.maint, 
         protein_target: results.protein
       },
@@ -125,7 +128,7 @@ export function OnboardingScreen() {
           <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Gender</span>
           <div className="flex gap-1.5 flex-wrap">
             {['Male', 'Female'].map(g => (
-              <button key={g} onClick={() => setGender(g as any)} className={cn("px-3 py-1.5 border-[0.5px] border-border-secondary text-[12px] cursor-pointer transition-all bg-background-primary", gender === g ? "bg-purple text-background-primary font-medium border-purple" : "text-text-secondary hover:bg-background-secondary")}>{g}</button>
+              <button key={g} onClick={() => setGender(g as any)} className={cn("px-3 py-1.5 border-[0.5px] border-border-secondary text-[12px] cursor-pointer transition-all bg-background-primary flex-1", gender === g ? "bg-purple text-background-primary font-medium border-purple" : "text-text-secondary hover:bg-background-secondary")}>{g}</button>
             ))}
           </div>
         </div>
@@ -146,6 +149,15 @@ export function OnboardingScreen() {
         <div className="flex flex-col gap-1">
           <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Weight (kg)</span>
           <input className="px-2.5 py-1.5 border-[0.5px] border-border-secondary text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple" type="number" value={weight} onChange={e => setWeight(e.target.value)} placeholder="kg" />
+        </div>
+
+        <div className="flex flex-col gap-1 col-span-2">
+          <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Activity level</span>
+          <div className="flex gap-1.5">
+            {['Light', 'Moderate', 'Active'].map(a => (
+              <button key={a} onClick={() => setActivity(a as any)} className={cn("px-3 py-1.5 border-[0.5px] border-border-secondary text-[12px] cursor-pointer transition-all bg-background-primary flex-1", activity === a ? "bg-purple text-background-primary font-medium border-purple" : "text-text-secondary hover:bg-background-secondary")}>{a}</button>
+            ))}
+          </div>
         </div>
       </div>
       
