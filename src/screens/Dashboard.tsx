@@ -54,11 +54,13 @@ export function DashboardScreen() {
   }
 
   const name = onboardingData?.name || profile?.name || 'User';
-  const targetBf = onboardingData?.targetBodyFatPct || goal?.target_bf || 12;
-  const proteinTarget = onboardingData?.proteinMid || profile?.protein_target || 150;
+  const targetBf = onboardingData?.targetBodyFatPct;
+  const currentBf = onboardingData?.currentBodyFatPct;
+  const proteinTarget = onboardingData?.proteinMid;
+  const strategyName = onboardingData?.chosenStrategyName ?? 'Recommended';
   
-  const dailyTargetKcal = onboardingData?.dailyCalorieGoal || (profile?.maintenance_kcal || 2200) - (goal?.deficit_kcal ?? 400);
-  const waterTargetLiters = parseFloat(onboardingData?.waterLitres || "3.0");
+  const dailyTargetKcal = onboardingData?.dailyCalorieGoal;
+  const waterTargetLiters = onboardingData?.waterLitres ? parseFloat(onboardingData.waterLitres) : undefined;
   
   // Calculate today's intake
   const todaysMeals = meals || [];
@@ -67,45 +69,25 @@ export function DashboardScreen() {
   
   const todaysWaterLiters = todaysWaterTotal / 1000;
   
-  const remainingKcal = Math.max(0, dailyTargetKcal - eatenKcal);
-  const remainingProtein = Math.max(0, proteinTarget - eatenProtein);
+  const remainingKcal = dailyTargetKcal !== undefined ? Math.max(0, dailyTargetKcal - eatenKcal) : undefined;
+  const remainingProtein = proteinTarget !== undefined ? Math.max(0, proteinTarget - eatenProtein) : undefined;
 
   let projectedDateString = onboardingData?.estimatedCompletionDate || 'Unknown';
-  if (!onboardingData?.estimatedCompletionDate) {
-    const currentBf = goal?.current_bf ?? 20;
-    const currentWeight = weightLogs.length > 0 ? weightLogs[weightLogs.length - 1].weight : profile?.weight || 80;
-    const weeklyDeficitKcal = (goal?.deficit_kcal ?? 400) * 7;
-    const complianceScore = scores?.weeklyAverage || 80; 
-    
-    const projections = calculateProjections({
-      currentWeight,
-      currentBf,
-      targetBf,
-      weeklyDeficitKcal,
-      complianceScore: Math.max(complianceScore, 10),
-    });
-    
-    const targetProjection = projections.find(p => p.bfTarget === targetBf);
-    
-    if (targetProjection) {
-      if (targetProjection.status === 'completed') {
-        projectedDateString = 'Completed!';
-      } else {
-        projectedDateString = targetProjection.date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
-      }
-    }
-  }
 
   // Recommendations
   let recommendation = '';
-  if (remainingProtein > 40) {
-    recommendation = `${Math.round(remainingProtein / 0.31)}g chicken breast or ${Math.round(remainingProtein / 0.25)}g paneer`;
-  } else if (remainingProtein > 20) {
-    recommendation = `1 scoop of whey protein or ${Math.round(remainingProtein / 0.06)}g eggs`;
-  } else if (remainingProtein > 0) {
-    recommendation = `A small high-protein snack, like greek yogurt`;
+  if (remainingProtein !== undefined) {
+    if (remainingProtein > 40) {
+      recommendation = `${Math.round(remainingProtein / 0.31)}g chicken breast or ${Math.round(remainingProtein / 0.25)}g paneer`;
+    } else if (remainingProtein > 20) {
+      recommendation = `1 scoop of whey protein or ${Math.round(remainingProtein / 0.06)}g eggs`;
+    } else if (remainingProtein > 0) {
+      recommendation = `A small high-protein snack, like greek yogurt`;
+    } else {
+      recommendation = `Targets hit! Keep calories under ${remainingKcal ?? 'your target'} if you want a snack.`;
+    }
   } else {
-    recommendation = `Targets hit! Keep calories under ${remainingKcal} if you want a snack.`;
+    recommendation = '—';
   }
 
   return (
@@ -137,15 +119,15 @@ export function DashboardScreen() {
       <div className="bg-gradient-to-br from-purple/20 via-purple/5 to-background-secondary p-5 mb-4 border border-purple/30 rounded-lg shadow-[0_4px_20px_rgba(167,139,250,0.1)] relative overflow-hidden">
         <div className="absolute -right-6 -top-6 w-24 h-24 bg-purple/10 rounded-full blur-2xl"></div>
         <div className="flex justify-between text-[11px] text-text-secondary uppercase tracking-widest mb-3 font-medium relative z-10">
-          <span className="text-purple flex items-center gap-1.5"><Target size={12} /> {targetBf}% Target</span>
+          <span className="text-purple flex items-center gap-1.5"><Target size={12} /> {targetBf !== undefined ? targetBf : '—'}% Target</span>
           <span className="text-purple bg-purple/10 px-2 py-0.5 rounded-sm">Projected: {projectedDateString}</span>
         </div>
         <div className="flex items-baseline gap-2 mb-2 relative z-10">
-          <span className="text-[36px] font-bold text-text-primary tracking-tight leading-none">{currentBf.toFixed(1)}%</span>
+          <span className="text-[36px] font-bold text-text-primary tracking-tight leading-none">{currentBf !== undefined ? currentBf.toFixed(1) : '—'}%</span>
           <span className="text-[12px] text-text-secondary font-medium">Current Body Fat</span>
         </div>
         <div className="h-2 bg-background-primary/50 overflow-hidden mt-4 border border-purple/10 rounded-full relative z-10">
-          <div className="h-full bg-purple rounded-full shadow-[0_0_10px_rgba(167,139,250,0.5)]" style={{ width: `${Math.min(100, Math.max(5, (100 - (currentBf - targetBf) * 5)))}%` }}></div>
+          <div className="h-full bg-purple rounded-full shadow-[0_0_10px_rgba(167,139,250,0.5)]" style={{ width: `${currentBf !== undefined && targetBf !== undefined ? Math.min(100, Math.max(5, (100 - (currentBf - targetBf) * 5))) : 0}%` }}></div>
         </div>
       </div>
 
@@ -153,7 +135,7 @@ export function DashboardScreen() {
       <div className="mb-3">
         <div className="flex items-center justify-between px-1 mb-1.5">
           <div className="text-[11px] text-text-secondary uppercase tracking-widest font-medium">
-            Today's Targets <span className="text-purple ml-1">({goal?.strategy || 'Recommended'})</span>
+            Today's Targets <span className="text-purple ml-1">({strategyName})</span>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-2">
@@ -162,7 +144,7 @@ export function DashboardScreen() {
               <div className="text-[10px] text-red-500 my-auto cursor-pointer" onClick={() => refetchMeals()}>Retry</div>
             ) : (
               <>
-                <div className="text-[18px] font-medium text-amber">{eatenKcal} <span className="text-[10px] text-text-secondary font-normal">/ {dailyTargetKcal}</span></div>
+                <div className="text-[18px] font-medium text-amber">{eatenKcal} <span className="text-[10px] text-text-secondary font-normal">/ {dailyTargetKcal !== undefined ? dailyTargetKcal : '—'}</span></div>
                 <div className="text-[10px] text-text-secondary mt-1 uppercase tracking-wider">Calories</div>
               </>
             )}
@@ -172,7 +154,7 @@ export function DashboardScreen() {
               <div className="text-[10px] text-red-500 my-auto cursor-pointer" onClick={() => refetchMeals()}>Retry</div>
             ) : (
               <>
-                <div className="text-[18px] font-medium text-blue">{eatenProtein}g <span className="text-[10px] text-text-secondary font-normal">/ {proteinTarget}g</span></div>
+                <div className="text-[18px] font-medium text-blue">{eatenProtein}g <span className="text-[10px] text-text-secondary font-normal">/ {proteinTarget !== undefined ? proteinTarget : '—'}g</span></div>
                 <div className="text-[10px] text-text-secondary mt-1 uppercase tracking-wider">Protein</div>
               </>
             )}
@@ -182,7 +164,7 @@ export function DashboardScreen() {
               <div className="text-[10px] text-red-500 my-auto cursor-pointer" onClick={() => refetchWater()}>Retry</div>
             ) : (
               <>
-                <div className="text-[18px] font-medium text-teal">{todaysWaterLiters.toFixed(1)}L <span className="text-[10px] text-text-secondary font-normal">/ {waterTargetLiters}L</span></div>
+                <div className="text-[18px] font-medium text-teal">{todaysWaterLiters.toFixed(1)}L <span className="text-[10px] text-text-secondary font-normal">/ {waterTargetLiters !== undefined ? waterTargetLiters : '—'}L</span></div>
                 <div className="flex justify-center gap-1 mt-2">
                   <button onClick={() => addWaterMutation.mutate(250)} className="bg-background-primary border border-border-tertiary rounded px-1.5 py-0.5 text-[9px] hover:bg-border-secondary transition-colors">+250</button>
                   <button onClick={() => addWaterMutation.mutate(500)} className="bg-background-primary border border-border-tertiary rounded px-1.5 py-0.5 text-[9px] hover:bg-border-secondary transition-colors">+500</button>
@@ -199,7 +181,11 @@ export function DashboardScreen() {
           <AlertCircle size={14} /> What to do next
         </div>
         <div className="text-[14px] text-text-primary mb-1">
-          You need <strong className="font-medium text-purple">{remainingProtein}g</strong> more protein today.
+          {remainingProtein !== undefined ? (
+            <>You need <strong className="font-medium text-purple">{remainingProtein}g</strong> more protein today.</>
+          ) : (
+            <>Your daily targets are not fully set yet.</>
+          )}
         </div>
         <div className="text-[13px] text-text-secondary">
           Recommendation: <span className="font-medium text-text-primary">{recommendation}</span>
