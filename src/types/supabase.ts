@@ -23,7 +23,6 @@ export interface DbGoal {
   strategy: string;
   deficit_kcal: number;
   target_date?: string;
-  target_weight?: number;
   created_at?: string;
 }
 
