@@ -1,6 +1,6 @@
 import { useAppStore } from '../store';
 import { cn } from '../lib/utils';
-import { LayoutDashboard, MessageSquare, TrendingUp, FileBarChart, CreditCard, LogOut } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, TrendingUp, FileBarChart, CreditCard, LogOut, Target } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export function Sidebar() {
@@ -8,6 +8,7 @@ export function Sidebar() {
 
   const navItems = [
     { id: 'dash', icon: LayoutDashboard, label: 'Dashboard' },
+    { id: 'goal', icon: Target, label: 'Goal Setter' },
     { id: 'meal', icon: MessageSquare, label: 'Meals', dot: true },
     { id: 'progress', icon: TrendingUp, label: 'Progress' },
     { id: 'week', icon: FileBarChart, label: 'Reports' },
