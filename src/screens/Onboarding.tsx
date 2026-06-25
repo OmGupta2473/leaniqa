@@ -21,7 +21,6 @@ export function OnboardingScreen() {
   const [hip, setHip] = useState('');
   const [gender, setGender] = useState<'Male'|'Female'|''>('');
   const [activity, setActivity] = useState<'Sedentary'|'Lightly Active'|'Moderately Active'|'Very Active'|'Athlete'|''>('');
-  const [goal, setGoal] = useState<'Fat Loss'|'Muscle Gain'|'Maintenance'|''>('');
   
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showResults, setShowResults] = useState(false);
@@ -43,12 +42,11 @@ export function OnboardingScreen() {
     if (gender === 'Female' && hip && newErrors.hip) delete newErrors.hip;
     if (gender && newErrors.gender) delete newErrors.gender;
     if (activity && newErrors.activity) delete newErrors.activity;
-    if (goal && newErrors.goal) delete newErrors.goal;
     
     if (Object.keys(newErrors).length !== Object.keys(errors).length) {
       setErrors(newErrors);
     }
-  }, [name, age, weight, height, heightFt, heightIn, waist, neck, hip, heightUnit, gender, activity, goal, errors]);
+  }, [name, age, weight, height, heightFt, heightIn, waist, neck, hip, heightUnit, gender, activity, errors]);
 
   const saveMutation = useMutation({
     mutationFn: async (profile: any) => {
@@ -101,7 +99,6 @@ export function OnboardingScreen() {
       if (!heightFt || !heightIn) newErrors.height = 'Height is required';
     }
     if (!activity) newErrors.activity = 'Please select your activity level';
-    if (!goal) newErrors.goal = 'Please select a goal';
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -170,15 +167,6 @@ export function OnboardingScreen() {
       water += 0.5;
     }
 
-    // Estimated Goal Weight
-    let goalWeight = w;
-    if (goal === 'Fat Loss') {
-      const heightInMeters = h / 100;
-      goalWeight = Math.round(22 * (heightInMeters * heightInMeters));
-    } else if (goal === 'Muscle Gain') {
-      goalWeight = w + 3;
-    }
-
     setResults({
       tdee,
       proteinMin,
@@ -188,8 +176,7 @@ export function OnboardingScreen() {
       carbMid,
       fiberMin,
       fiberMax,
-      water: water.toFixed(1),
-      goalWeight
+      water: water.toFixed(1)
     });
     setShowResults(true);
   };
@@ -214,7 +201,6 @@ export function OnboardingScreen() {
       neck: neckVal, 
       hip: hipVal, 
       activity_level: activity || 'Lightly Active',
-      goal: goal || 'Fat Loss',
       maintenance_kcal: results?.tdee || 0, 
       protein_target: results?.proteinMid || 0
     });
@@ -319,36 +305,6 @@ export function OnboardingScreen() {
           </div>
           {errors.activity && <span className="text-[10px] text-red-500 mt-0.5">{errors.activity}</span>}
         </div>
-        <div className="flex flex-col gap-2 col-span-2 mt-2">
-          <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Goal</span>
-          <div className="flex flex-col gap-2">
-            {[
-              { label: 'Fat Loss', desc: 'Lose body fat while preserving muscle mass' },
-              { label: 'Muscle Gain', desc: 'Build lean muscle mass with minimal fat gain' },
-              { label: 'Maintenance', desc: 'Maintain current body composition' }
-            ].map(g => (
-              <button 
-                key={g.label} 
-                onClick={() => setGoal(g.label as any)} 
-                className={cn(
-                  "p-3 border-[0.5px] cursor-pointer transition-all text-left flex flex-col gap-1", 
-                  goal === g.label 
-                    ? "bg-purple/5 border-purple" 
-                    : "bg-background-primary text-text-secondary hover:bg-background-secondary",
-                  errors.goal && goal !== g.label ? "border-red-500" : (goal !== g.label ? "border-border-secondary" : "")
-                )}
-              >
-                <div className={cn("text-[13px] font-medium", goal === g.label ? "text-purple" : "text-text-primary")}>
-                  {g.label}
-                </div>
-                <div className="text-[11px] leading-snug text-text-secondary">
-                  {g.desc}
-                </div>
-              </button>
-            ))}
-          </div>
-          {errors.goal && <span className="text-[10px] text-red-500 mt-0.5">{errors.goal}</span>}
-        </div>
       </div>
       
       {!showResults && <button onClick={calculateResults} disabled={saveMutation.isPending} className="w-full p-2.5 border-none bg-purple text-background-primary text-[14px] font-bold tracking-tight uppercase cursor-pointer transition-opacity hover:opacity-90 mb-3.5 disabled:opacity-50">Calculate</button>}
@@ -358,7 +314,7 @@ export function OnboardingScreen() {
           <div className="bg-background-secondary border border-border-tertiary mb-3">
             <div className="p-3 border-b border-border-tertiary">
               <h3 className="text-[14px] font-medium text-text-primary">Daily Nutrition Targets</h3>
-              <p className="text-[11px] text-text-secondary mt-0.5">Based on your stats and goal — here's what your body needs each day</p>
+              <p className="text-[11px] text-text-secondary mt-0.5">Based on your stats — here's what your body needs each day</p>
             </div>
             
             <div className="p-0">
@@ -399,14 +355,6 @@ export function OnboardingScreen() {
               <div className="flex flex-col">
                 <span className="text-[10px] text-text-secondary uppercase tracking-wider">Maintenance Calories</span>
                 <span className="text-[13px] text-text-primary font-medium">{results.tdee} kcal</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] text-text-secondary uppercase tracking-wider">Goal</span>
-                <span className="text-[13px] text-text-primary font-medium">{goal || '—'}</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] text-text-secondary uppercase tracking-wider">Estimated Goal Weight</span>
-                <span className="text-[13px] text-text-primary font-medium">~{results.goalWeight} kg</span>
               </div>
             </div>
           </div>
