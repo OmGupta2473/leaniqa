@@ -333,7 +333,7 @@ export function OnboardingScreen() {
           <div className="text-[10px] font-bold uppercase tracking-widest text-purple mb-2.5">
             {showStep2 ? 'US Navy Projection' : 'Estimated Projection'}
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <div className="bg-background-primary p-2.5 text-center border-[0.5px] border-border-tertiary">
               <div className="text-[18px] font-medium text-text-primary">{results.maint.toLocaleString()}</div>
               <div className="text-[10px] text-text-secondary mt-0.5">MAINTENANCE</div>
@@ -341,10 +341,6 @@ export function OnboardingScreen() {
             <div className="bg-background-primary p-2.5 text-center border-[0.5px] border-border-tertiary">
               <div className="text-[18px] font-medium text-text-primary">{results.protein}g</div>
               <div className="text-[10px] text-text-secondary mt-0.5">PROTEIN TARGET</div>
-            </div>
-            <div className="bg-background-primary p-2.5 text-center border-[0.5px] border-border-tertiary">
-              <div className="text-[18px] font-medium text-text-primary">{results.bf}%</div>
-              <div className="text-[10px] text-text-secondary mt-0.5">BODY FAT</div>
             </div>
           </div>
           <div className="mt-4 pt-4 border-t border-border-tertiary">
