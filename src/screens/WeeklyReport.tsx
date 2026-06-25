@@ -14,7 +14,7 @@ export function WeeklyReportScreen() {
   const { setScreen } = useAppStore();
   const queryClient = useQueryClient();
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
-  const { data: meals = [] } = useQuery({ queryKey: ['meals'], queryFn: () => mealService.getMeals() });
+  const { data: meals = [] } = useQuery({ queryKey: ['meals', 'week'], queryFn: () => mealService.getMealsForWeeklyReport() });
   const { data: weightLogs = [] } = useQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
   const { data: dailyMetrics = [] } = useQuery({ queryKey: ['dailyMetrics'], queryFn: () => reportService.getDailyMetrics() });
   const { data: scores } = useQuery({ queryKey: ['scores'], queryFn: () => complianceService.getScores() });
