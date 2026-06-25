@@ -50,11 +50,15 @@ export function OnboardingScreen() {
 
   const saveMutation = useMutation({
     mutationFn: async (profile: any) => {
-      await profileService.upsertProfile(profile);
+      return await profileService.upsertProfile(profile);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       console.log('Navigating to Screen 2');
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      if (data) {
+        queryClient.setQueryData(['profile'], data);
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['profile'] });
+      }
       setOnboardingData({
         ...results,
         weightKg: parseFloat(weight) || 80,
