@@ -5,6 +5,7 @@ import { cn } from '../lib/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { mealService } from '../services/mealService';
 import { profileService } from '../services/profileService';
+import { complianceService } from '../services/complianceService';
 import { supabase } from '../lib/supabase';
 
 export function MealLoggerScreen() {
@@ -68,6 +69,8 @@ export function MealLoggerScreen() {
     },
     onSuccess: (data, text) => {
       queryClient.invalidateQueries({ queryKey: ['meals'] });
+      // Fire-and-forget score update
+      complianceService.updateTodayScore(0);
       
       const foodsDetected = data.foods_detected?.join(', ') || text;
       

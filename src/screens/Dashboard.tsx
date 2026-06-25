@@ -21,29 +21,23 @@ export function DashboardScreen() {
   
   const { data: scores } = useQuery({ 
     queryKey: ['scores'], 
-    queryFn: () => complianceService.getScores() 
-  });
-
-  const updateScoreMutation = useMutation({
-    mutationFn: () => complianceService.updateTodayScore(0), // water is now handled in the query or backend
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['scores'] })
+    queryFn: () => complianceService.getScores(),
+    staleTime: 5 * 60 * 1000
   });
 
   const addWaterMutation = useMutation({
     mutationFn: (amountMl: number) => waterService.addWater(amountMl),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['waterLogs'] });
-      updateScoreMutation.mutate();
+      // Fire-and-forget score update
+      complianceService.updateTodayScore(0);
     }
   });
 
-  const mealsLength = meals?.length || 0;
-  const weightLogsLength = weightLogs?.length || 0;
-
-  useEffect(() => {
-    // Update daily score whenever meals or weight logs change
-    updateScoreMutation.mutate();
-  }, [mealsLength, weightLogsLength]);
+  const handleRefreshScore = async () => {
+    await complianceService.updateTodayScore(0);
+    queryClient.invalidateQueries({ queryKey: ['scores'] });
+  };
 
   const name = profile?.name || 'User';
   const currentBf = goal?.current_bf ?? 20; // fallback if body fat not tracked
@@ -114,7 +108,15 @@ export function DashboardScreen() {
           <div className="text-[18px] font-medium text-text-primary">{name}</div>
         </div>
         <div className="flex flex-col items-end">
-          <div className="text-[24px] font-medium text-purple leading-none">{scores?.todayScore || 0}</div>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={handleRefreshScore} 
+              className="text-[10px] bg-purple/10 text-purple border border-purple/30 px-2 py-1 rounded hover:bg-purple/20 transition-colors"
+            >
+              Refresh score
+            </button>
+            <div className="text-[24px] font-medium text-purple leading-none">{scores?.todayScore || 0}</div>
+          </div>
           <div className="text-[10px] text-text-secondary uppercase tracking-widest mt-1">Today's Score</div>
         </div>
       </div>
