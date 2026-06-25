@@ -98,6 +98,10 @@ export function GoalSetterScreen() {
         estimatedCompletionDate: data.strategyData.estimatedCompletionDate
       });
       setScreen('dash');
+    },
+    onError: (error) => {
+      console.error("saveMutation error:", error);
+      alert("Failed to save goal: " + error.message);
     }
   });
 
