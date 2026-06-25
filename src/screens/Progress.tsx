@@ -37,7 +37,7 @@ export function ProgressScreen() {
       return weightService.addWeightLog({
         weight: val,
         date: new Date().toISOString()
-      });
+      }, showAdvanced);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['weightLogs'] });
@@ -104,7 +104,7 @@ export function ProgressScreen() {
             onClick={() => setShowAdvanced(!showAdvanced)} 
             className="text-[11px] text-purple hover:underline bg-transparent border-none cursor-pointer p-0"
           >
-            {showAdvanced ? '- Hide Measurements Check-in' : '+ Add Monthly Measurements Check-in'}
+            {showAdvanced ? '- Hide Measurements Check-in' : '+ Update body measurements (monthly)'}
           </button>
           
           {showAdvanced && (

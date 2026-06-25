@@ -20,21 +20,22 @@ export const weightService = {
     return data || [];
   },
 
-  async addWeightLog(logData: Omit<DbWeightLog, 'id' | 'user_id' | 'body_fat'>): Promise<DbWeightLog | null> {
+  async addWeightLog(logData: Omit<DbWeightLog, 'id' | 'user_id' | 'body_fat'>, measurementsUpdated: boolean = false): Promise<DbWeightLog | null> {
     const userId = await authService.getUserId();
     const profile = await profileService.getProfile();
     
     let bodyFatEstimate = undefined;
     
     // Auto-calculate body fat if measurements exist
-    if (profile && profile.height && profile.waist && profile.neck) {
-      bodyFatEstimate = calculateBodyFat(
+    if (measurementsUpdated && profile && profile.height && profile.waist && profile.neck) {
+      const rawEstimate = calculateBodyFat(
         profile.gender,
         profile.height,
         profile.waist,
         profile.neck,
         profile.hip
       );
+      bodyFatEstimate = Math.max(3, Math.min(60, Math.round(rawEstimate * 10) / 10));
     }
     
     const payload = {
