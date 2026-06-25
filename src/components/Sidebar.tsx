@@ -7,8 +7,8 @@ export function Sidebar() {
   const { currentScreen, setScreen, clearStore } = useAppStore();
 
   const navItems = [
-    { id: 'dash', icon: LayoutDashboard, label: 'Dashboard' },
     { id: 'goal', icon: Target, label: 'Goal Setter' },
+    { id: 'dash', icon: LayoutDashboard, label: 'Dashboard' },
     { id: 'meal', icon: MessageSquare, label: 'Meals', dot: true },
     { id: 'progress', icon: TrendingUp, label: 'Progress' },
     { id: 'week', icon: FileBarChart, label: 'Reports' },
