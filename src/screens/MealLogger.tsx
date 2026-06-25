@@ -109,12 +109,20 @@ export function MealLoggerScreen() {
           else if (hour < 17) mealType = 'snack';
           else mealType = 'dinner';
 
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) {
+            throw new Error("No active session. Please log in again.");
+          }
+
           const { data, error } = await supabase.functions.invoke('parse-meal', {
             body: { 
               text,
               remainingCalories,
               remainingProtein,
               mealType
+            },
+            headers: {
+              Authorization: `Bearer ${session.access_token}`
             }
           });
           
