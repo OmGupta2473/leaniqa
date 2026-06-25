@@ -30,6 +30,9 @@ export const waterService = {
 
   async addWater(amountMl: number): Promise<DbWaterLog | null> {
     const userId = await authService.getUserId();
+    
+    const previousTotalMl = await this.getTodaysWaterTotal();
+
     const payload = {
       user_id: userId,
       amount_ml: amountMl,
@@ -47,7 +50,7 @@ export const waterService = {
       return null;
     }
     
-    const newTotalLiters = (await this.getTodaysWaterTotal()) / 1000;
+    const newTotalLiters = (previousTotalMl + amountMl) / 1000;
     await complianceService.updateTodayScore(newTotalLiters);
     
     return data;
