@@ -24,7 +24,18 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  let text = "Unknown";
+  let body: any = {};
+  try {
+    body = await req.json();
+  } catch {
+    return new Response(JSON.stringify({ error: "Invalid request body" }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+
+  let text = body.text || "Unknown";
+  const remainingCalories = body.remainingCalories;
+  const remainingProtein = body.remainingProtein;
+  const mealType = body.mealType;
 
   try {
     const authHeader = req.headers.get('Authorization')
@@ -57,11 +68,6 @@ serve(async (req) => {
 
     await supabase.from('api_usage').insert({ user_id: user.id, endpoint })
 
-    const body = await req.json();
-    text = body.text;
-    const remainingCalories = body.remainingCalories;
-    const remainingProtein = body.remainingProtein;
-    const mealType = body.mealType;
     const apiKey = Deno.env.get('GEMINI_API_KEY')
     
     if (!apiKey) {
