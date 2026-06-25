@@ -8,6 +8,53 @@ import { profileService } from '../services/profileService';
 import { complianceService } from '../services/complianceService';
 import { supabase } from '../lib/supabase';
 
+const getDeterministicFallback = (text: string) => {
+  const normalizedText = text.toLowerCase();
+  let calories = 300, protein = 10, fat = 10, carbs = 40;
+  let detected = [text];
+
+  const foodDb: Record<string, { calories: number, protein: number, fat: number, carbs: number }> = {
+    'chicken': { calories: 250, protein: 30, fat: 10, carbs: 0 },
+    'dal': { calories: 200, protein: 12, fat: 4, carbs: 30 },
+    'chawal': { calories: 240, protein: 4, fat: 0, carbs: 53 },
+    'rice': { calories: 240, protein: 4, fat: 0, carbs: 53 },
+    'paneer': { calories: 350, protein: 20, fat: 28, carbs: 4 },
+    'fish': { calories: 200, protein: 25, fat: 10, carbs: 0 },
+    'idli': { calories: 150, protein: 4, fat: 0, carbs: 30 },
+    'roti': { calories: 120, protein: 4, fat: 1, carbs: 25 },
+    'egg': { calories: 140, protein: 12, fat: 10, carbs: 1 },
+    'salad': { calories: 50, protein: 2, fat: 0, carbs: 10 },
+    'chai': { calories: 100, protein: 2, fat: 3, carbs: 15 },
+    'biscuit': { calories: 150, protein: 2, fat: 5, carbs: 20 }
+  };
+
+  let foundMatch = false;
+  for (const [key, macros] of Object.entries(foodDb)) {
+    if (normalizedText.includes(key)) {
+      if (!foundMatch) {
+        calories = 0; protein = 0; fat = 0; carbs = 0;
+        detected = [];
+        foundMatch = true;
+      }
+      calories += macros.calories;
+      protein += macros.protein;
+      fat += macros.fat;
+      carbs += macros.carbs;
+      detected.push(key);
+    }
+  }
+
+  return {
+    calories,
+    protein,
+    fat,
+    carbs,
+    confidence: foundMatch ? 80 : 30,
+    foods_detected: detected,
+    coaching_tip: "Stay consistent with your portions to hit your goals."
+  };
+};
+
 export function MealLoggerScreen() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -71,25 +118,86 @@ export function MealLoggerScreen() {
             }
           });
           
-          if (error) throw new Error(error.message || 'API Error');
-          
-          if (data.calories !== undefined && data.confidence !== undefined) {
+          let errorMessage = null;
+          let shouldRetry = true;
+
+          if (error) {
+            console.error("Function invoke error:", error);
+            const msg = error.message || '';
+            const status = error.status || (error as any).context?.status;
+            
+            if (status === 401 || msg.includes('401') || msg.includes('Unauthorized')) { errorMessage = "Authorization failed (401)."; shouldRetry = false; }
+            else if (status === 403 || msg.includes('403') || msg.includes('Forbidden')) { errorMessage = "Forbidden (403)."; shouldRetry = false; }
+            else if (status === 429 || msg.includes('429') || msg.includes('limit')) { errorMessage = "Daily limit reached (429). Upgrade to Pro for unlimited logging."; shouldRetry = false; }
+            else if (status >= 500 || msg.includes('500') || msg.includes('Internal')) errorMessage = "Edge Function encountered a server error (500).";
+            else if (msg.includes('timeout') || msg.includes('Timeout')) errorMessage = "Gemini AI timed out.";
+            else if (msg.includes('JSON')) errorMessage = "Received invalid JSON from AI.";
+            else if (msg.includes('fetch') || msg.includes('Network')) errorMessage = "Network failure.";
+            else errorMessage = `Edge Function unavailable (${msg || 'Unknown error'}).`;
+          }
+
+          if (error || !data || typeof data.calories !== 'number') {
+            if (!shouldRetry || retries === 1) {
+              if (!errorMessage) {
+                errorMessage = "Could not parse meal properly from AI.";
+              }
+              const fallbackData = getDeterministicFallback(text);
+              const tip = `${errorMessage} Using offline estimate.`;
+              
+              await mealService.addMeal({
+                meal_text: text,
+                calories: fallbackData.calories,
+                protein: fallbackData.protein,
+                fat: fallbackData.fat,
+                carbs: fallbackData.carbs,
+                meal_time: new Date().toISOString(),
+                tip: fallbackData.foods_detected?.join(', ') || text
+              });
+
+              return { ...fallbackData, _errorMessage: tip };
+            }
+            throw new Error(errorMessage || "API Error");
+          }
+
+          // Success Case
+          await mealService.addMeal({
+            meal_text: text,
+            calories: data.calories,
+            protein: data.protein,
+            fat: data.fat,
+            carbs: data.carbs,
+            meal_time: new Date().toISOString(),
+            tip: data.foods_detected?.join(', ') || text
+          });
+          return data;
+
+        } catch (err: any) {
+          retries--;
+          if (retries === 0) {
+            console.error("All retries failed:", err);
+            const msg = err.message || '';
+            let errorMessage = '';
+            
+            if (msg.includes('timeout') || msg.includes('Timeout')) errorMessage = "Gemini AI timed out.";
+            else if (msg.includes('JSON')) errorMessage = "Received invalid JSON from AI.";
+            else if (msg.includes('fetch') || msg.includes('Network')) errorMessage = "Network failure.";
+            else errorMessage = `Edge Function unavailable (${msg || 'Unknown error'}).`;
+
+            const fallbackData = getDeterministicFallback(text);
+            const tip = `${errorMessage} Using offline estimate.`;
+            
             await mealService.addMeal({
               meal_text: text,
-              calories: data.calories,
-              protein: data.protein,
-              fat: data.fat,
-              carbs: data.carbs,
+              calories: fallbackData.calories,
+              protein: fallbackData.protein,
+              fat: fallbackData.fat,
+              carbs: fallbackData.carbs,
               meal_time: new Date().toISOString(),
-              tip: data.foods_detected?.join(', ') || text // store foods detected in tip column temporarily
+              tip: fallbackData.foods_detected?.join(', ') || text
             });
-            return data;
-          } else {
-            throw new Error("Could not parse meal");
+
+            return { ...fallbackData, _errorMessage: tip };
           }
-        } catch (err) {
-          retries--;
-          if (retries === 0) throw err;
           await new Promise(r => setTimeout(r, 1000));
         }
       }
@@ -101,11 +209,19 @@ export function MealLoggerScreen() {
       
       const foodsDetected = data.foods_detected?.join(', ') || text;
       
-      setChat(prev => [...prev, { 
-        role: 'ai', 
-        text: `Got it. Logged: ${foodsDetected}. (Confidence: ${data.confidence}%)`,
-        data 
-      }]);
+      if (data._errorMessage) {
+        setChat(prev => [...prev, { 
+          role: 'ai', 
+          text: `${data._errorMessage} Logged: ${foodsDetected}. (Confidence: ${data.confidence}%)`,
+          data 
+        }]);
+      } else {
+        setChat(prev => [...prev, { 
+          role: 'ai', 
+          text: `Got it. Logged: ${foodsDetected}. (Confidence: ${data.confidence}%)`,
+          data 
+        }]);
+      }
       setLoading(false);
     },
     onError: () => {
