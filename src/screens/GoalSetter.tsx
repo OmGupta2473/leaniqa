@@ -66,9 +66,7 @@ export function GoalSetterScreen() {
         current_bf: strategyData.current_bf,
         target_bf: strategyData.target_bf,
         strategy: strategyData.strategy,
-        deficit_kcal: strategyData.deficit_kcal,
-        target_date: strategyData.estimatedCompletionDate,
-        target_weight: strategyData.targetWeightKg
+        deficit_kcal: strategyData.deficit_kcal
       });
       return { strategyData, savedGoal };
     },
