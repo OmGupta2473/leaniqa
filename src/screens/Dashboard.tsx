@@ -5,15 +5,46 @@ import { profileService } from '../services/profileService';
 import { mealService } from '../services/mealService';
 import { weightService } from '../services/weightService';
 import { complianceService } from '../services/complianceService';
-import { calculateProjections } from '../lib/projectionEngine';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { QueryError } from '../components/QueryError';
 import { motion } from 'motion/react';
+
+function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: number }) {
+  const [displayValue, setDisplayValue] = useState(0);
+  const elementRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    let start: number | null = null;
+    let animationFrameId: number;
+
+    const update = (time: number) => {
+      if (!start) start = time;
+      const elapsed = time - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const ease = 1 - Math.pow(1 - progress, 4); // easeOutExpo
+      setDisplayValue(Math.round(ease * value));
+
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(update);
+      }
+    };
+
+    animationFrameId = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [value, duration]);
+
+  return <span ref={elementRef}>{displayValue}</span>;
+}
 
 export function DashboardScreen() {
   const { setScreen, onboardingData } = useAppStore();
   const queryClient = useQueryClient();
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const { data: profile, isError: isProfileError, error: profileError, refetch: refetchProfile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
   const { data: goal, isError: isGoalError, error: goalError, refetch: refetchGoal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
@@ -93,23 +124,27 @@ export function DashboardScreen() {
   const dateString = new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'short' });
   const todayScore = scores?.todayScore ?? 0;
 
+  const progressPercent = currentBf !== undefined && targetBf !== undefined 
+    ? Math.min(100, Math.max(5, (100 - (currentBf - targetBf) * 5))) 
+    : 0;
+
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 pb-2">
+    <div className="screen-container screen-enter">
       {!bannerDismissed && (
-        <div className="bg-purple/10 border-[0.5px] border-purple/30 text-purple px-4 py-2 text-[11px] font-medium mb-3 rounded-md flex justify-between items-center">
-          <span>Founding Member Beta - Premium features unlocked.</span>
-          <button onClick={() => setBannerDismissed(true)} className="text-purple hover:opacity-70">
-            <X size={14} />
+        <div className="bg-[rgba(212,255,0,0.1)] border-[0.5px] border-[#D4FF00]/30 text-[#D4FF00] p-[12px_16px] text-[13px] font-medium mb-[20px] rounded-xl flex justify-between items-center">
+          <span>Founding Member Beta - Premium unlocked.</span>
+          <button onClick={() => setBannerDismissed(true)} className="text-[#D4FF00] hover:opacity-70 transition-opacity">
+            <X size={16} />
           </button>
         </div>
       )}
       
       {!goalSetCompleted && (
-        <div className="bg-amber/10 border border-amber/30 text-amber p-4 text-center mb-3 rounded-md flex flex-col items-center gap-2">
-          <div className="text-[13px] font-medium">Set your physique goal to unlock all features</div>
+        <div className="glass-card text-white p-[16px_20px] text-center mb-[20px] flex flex-col items-center gap-[12px]">
+          <div className="text-[15px] font-medium text-[#EBEBF5CC]">Set your physique goal to unlock all features</div>
           <button 
             onClick={() => setScreen('goal')} 
-            className="text-[11px] font-bold uppercase tracking-widest bg-amber text-background-primary px-3 py-1.5 rounded-sm shadow-sm"
+            className="bg-[#D4FF00] text-[#0A0A0A] font-bold text-[15px] rounded-[100px] p-[12px_24px] border-none tracking-[-0.2px] hover:scale-[1.02] active:scale-[0.97] transition-all"
           >
             Set goal →
           </button>
@@ -117,10 +152,10 @@ export function DashboardScreen() {
       )}
 
       {/* SECTION 2 — Hero greeting row */}
-      <div className="flex justify-between items-center mb-3">
+      <div className="flex justify-between items-center mb-[24px]">
         <div>
-          <div className="text-[16px] font-medium text-text-primary">Hi, {name}</div>
-          <div className="text-[13px] text-text-secondary mt-0.5">{dateString}</div>
+          <h2 className="text-[22px] font-semibold text-white tracking-[-0.3px] mb-1">Hi, {name}</h2>
+          <div className="text-[13px] font-medium uppercase tracking-[0.06em] text-[#EBEBF599]">{dateString}</div>
         </div>
         <div className="flex flex-col items-center">
           <motion.div 
@@ -128,70 +163,100 @@ export function DashboardScreen() {
             initial={{ scale: 1.3, rotate: -10 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 15 }}
-            className="w-9 h-9 rounded-full border-2 border-purple flex items-center justify-center text-purple text-[14px] font-bold"
+            className="w-[44px] h-[44px] rounded-[100px] border-[1.5px] border-[#D4FF00] flex items-center justify-center text-[#D4FF00] text-[17px] font-bold shadow-[0_0_15px_rgba(212,255,0,0.2)] bg-[rgba(212,255,0,0.05)]"
           >
             {todayScore}
           </motion.div>
-          <div className="text-[10px] text-text-secondary mt-1 uppercase tracking-widest">Score</div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599] mt-[8px]">Score</div>
         </div>
       </div>
 
       {/* SECTION 3 — Body fat hero card */}
-      <div className="bg-gradient-to-br from-purple/20 via-purple/5 to-background-secondary p-4 mb-3 border border-purple/30 rounded-lg shadow-[0_4px_20px_rgba(167,139,250,0.1)] relative overflow-hidden">
-        <div className="absolute -right-6 -top-6 w-24 h-24 bg-purple/10 rounded-full blur-2xl"></div>
-        <div className="flex justify-between text-[11px] text-text-secondary uppercase tracking-widest mb-3 font-medium relative z-10">
-          <span className="text-purple flex items-center gap-1.5"><Target size={12} /> {targetBf !== undefined ? targetBf : '—'}% Target</span>
-          <span className="text-purple bg-purple/10 px-2 py-0.5 rounded-sm">Projected: {projectedDateString}</span>
+      <div className="glass-card mb-[24px] p-[20px] relative overflow-hidden">
+        <div className="absolute -right-6 -top-6 w-[100px] h-[100px] bg-[#D4FF00]/10 rounded-full blur-[40px]"></div>
+        <div className="flex justify-between items-center mb-[16px] relative z-10">
+          <span className="text-[13px] font-semibold uppercase tracking-[0.05em] text-[#EBEBF599] flex items-center gap-[6px]">
+            <Target size={14} /> {targetBf !== undefined ? targetBf : '—'}% Target
+          </span>
+          <span className="bg-[rgba(212,255,0,0.1)] text-[#D4FF00] px-[10px] py-[4px] text-[11px] font-bold rounded-[100px] uppercase tracking-[0.04em]">
+            {projectedDateString}
+          </span>
         </div>
-        <div className="flex items-baseline gap-2 mb-2 relative z-10">
-          <span className="text-[32px] font-bold text-text-primary tracking-tight leading-none">{currentBf !== undefined ? currentBf.toFixed(1) : '—'}%</span>
-          <span className="text-[12px] text-text-secondary font-medium">Current Body Fat</span>
+        <div className="flex items-baseline gap-[12px] mb-[16px] relative z-10">
+          <span className="text-[40px] font-bold tracking-[-1px] text-white leading-none">
+            {currentBf !== undefined ? currentBf.toFixed(1) : '—'}%
+          </span>
+          <span className="text-[15px] font-medium text-[#EBEBF5CC]">Current Body Fat</span>
         </div>
-        <div className="h-2 bg-background-primary/50 overflow-hidden mt-4 border border-purple/10 rounded-full relative z-10">
-          <div className="h-full bg-purple rounded-full shadow-[0_0_10px_rgba(167,139,250,0.5)]" style={{ width: `${currentBf !== undefined && targetBf !== undefined ? Math.min(100, Math.max(5, (100 - (currentBf - targetBf) * 5))) : 0}%` }}></div>
+        
+        {/* Animated Progress Bar */}
+        <div className="h-[4px] bg-[rgba(255,255,255,0.1)] rounded-[100px] overflow-hidden mt-[20px] relative z-10">
+          <div 
+            className="h-full rounded-[100px] bg-gradient-to-r from-[#D4FF00] to-[#A8CC00]" 
+            style={{ 
+              width: mounted ? `${progressPercent}%` : '0%',
+              transition: 'width 0.8s cubic-bezier(0.34,1.56,0.64,1) 0.3s'
+            }}
+          ></div>
         </div>
-        <div className="text-[11px] text-text-secondary mt-2 text-center relative z-10">
+        <div className="text-[13px] font-normal text-[#EBEBF599] mt-[12px] text-center relative z-10">
           {isMaintenance ? 'Maintenance Progress' : `Day ${currentDay} of ${totalDays} · ${totalDays > 0 ? Math.round((currentDay/totalDays)*100) : 0}% complete`}
         </div>
       </div>
 
       {/* Card 2: Today's Targets */}
-      <div className="mb-3">
-        <div className="flex items-center justify-between px-1 mb-1.5">
-          <div className="text-[11px] text-text-secondary uppercase tracking-widest font-medium">
-            Today's Targets <span className="text-purple ml-1">({strategyName})</span>
+      <div className="mb-[24px]">
+        <div className="flex items-center justify-between mb-[12px]">
+          <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599]">
+            Today's Targets <span className="text-[#D4FF00] ml-[4px]">({strategyName})</span>
           </div>
         </div>
         
         {/* 2-column grid */}
-        <div className="grid grid-cols-2 gap-2 mb-2">
+        <div className="grid grid-cols-2 gap-[12px] mb-[12px]">
           {/* Calories */}
-          <div className="bg-background-secondary p-4 border border-border-tertiary rounded-md text-center flex flex-col justify-center relative overflow-hidden">
+          <div className="glass-card p-[16px] text-center flex flex-col justify-center relative overflow-hidden">
             {isMealsError ? (
-              <div className="text-[10px] text-red-500 my-auto cursor-pointer" onClick={() => refetchMeals()}>Retry</div>
+              <div className="text-[13px] text-[#FF4D1C] my-auto cursor-pointer" onClick={() => refetchMeals()}>Retry</div>
             ) : (
               <>
-                <div className="text-[22px] font-medium text-amber leading-none">{eatenKcal}</div>
-                <div className="text-[11px] text-text-secondary mt-1">/ {dailyTargetKcal !== undefined ? dailyTargetKcal : '—'} kcal</div>
-                <div className="text-[10px] text-text-secondary mt-2 uppercase tracking-wider font-medium">Calories</div>
-                <div className="absolute bottom-0 left-0 h-1 bg-amber/20 w-full">
-                  <div className="h-full bg-amber" style={{ width: `${dailyTargetKcal ? Math.min(100, (eatenKcal/dailyTargetKcal)*100) : 0}%` }}></div>
+                <div className="text-[24px] font-bold tracking-[-0.5px] text-[#FF4D1C] leading-none mb-[4px]">
+                  <AnimatedNumber value={eatenKcal} duration={1000} />
+                </div>
+                <div className="text-[13px] font-normal text-[#EBEBF599]">/ {dailyTargetKcal !== undefined ? dailyTargetKcal : '—'} kcal</div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[#EBEBF5CC] mt-[12px]">Calories</div>
+                <div className="absolute bottom-0 left-0 h-[4px] bg-[#FF4D1C]/20 w-full">
+                  <div 
+                    className="h-full bg-[#FF4D1C]" 
+                    style={{ 
+                      width: mounted && dailyTargetKcal ? `${Math.min(100, (eatenKcal/dailyTargetKcal)*100)}%` : '0%',
+                      transition: 'width 0.8s cubic-bezier(0.34,1.56,0.64,1) 0.4s'
+                    }}
+                  ></div>
                 </div>
               </>
             )}
           </div>
           
           {/* Protein */}
-          <div className="bg-background-secondary p-4 border border-border-tertiary rounded-md text-center flex flex-col justify-center relative overflow-hidden">
+          <div className="glass-card p-[16px] text-center flex flex-col justify-center relative overflow-hidden">
             {isMealsError ? (
-              <div className="text-[10px] text-red-500 my-auto cursor-pointer" onClick={() => refetchMeals()}>Retry</div>
+              <div className="text-[13px] text-[#FF4D1C] my-auto cursor-pointer" onClick={() => refetchMeals()}>Retry</div>
             ) : (
               <>
-                <div className="text-[22px] font-medium text-blue leading-none">{eatenProtein}g</div>
-                <div className="text-[11px] text-text-secondary mt-1">/ {proteinTarget !== undefined ? proteinTarget : '—'}g</div>
-                <div className="text-[10px] text-text-secondary mt-2 uppercase tracking-wider font-medium">Protein</div>
-                <div className="absolute bottom-0 left-0 h-1 bg-blue/20 w-full">
-                  <div className="h-full bg-blue" style={{ width: `${proteinTarget ? Math.min(100, (eatenProtein/proteinTarget)*100) : 0}%` }}></div>
+                <div className="text-[24px] font-bold tracking-[-0.5px] text-[#378ADD] leading-none mb-[4px]">
+                  <AnimatedNumber value={eatenProtein} duration={1000} />g
+                </div>
+                <div className="text-[13px] font-normal text-[#EBEBF599]">/ {proteinTarget !== undefined ? proteinTarget : '—'}g</div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[#EBEBF5CC] mt-[12px]">Protein</div>
+                <div className="absolute bottom-0 left-0 h-[4px] bg-[#378ADD]/20 w-full">
+                  <div 
+                    className="h-full bg-[#378ADD]" 
+                    style={{ 
+                      width: mounted && proteinTarget ? `${Math.min(100, (eatenProtein/proteinTarget)*100)}%` : '0%',
+                      transition: 'width 0.8s cubic-bezier(0.34,1.56,0.64,1) 0.5s'
+                    }}
+                  ></div>
                 </div>
               </>
             )}
@@ -199,50 +264,52 @@ export function DashboardScreen() {
         </div>
 
         {/* Steps Reminder */}
-        <div className="bg-background-secondary border border-border-tertiary p-3 rounded-md flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <Footprints size={16} className="text-amber" />
-            <div className="text-[14px] font-medium text-text-primary">12,000 steps</div>
-            <div className="text-[8px] bg-amber/10 text-amber px-1.5 py-0.5 rounded-sm uppercase tracking-widest">Reminder only</div>
+        <div className="glass-card p-[16px] flex justify-between items-center">
+          <div className="flex items-center gap-[12px]">
+            <Footprints size={18} className="text-[#FF4D1C]" />
+            <div>
+              <div className="text-[15px] font-semibold text-white tracking-[-0.1px]">12,000 steps</div>
+              <div className="text-[13px] font-normal text-[#EBEBF599] mt-[2px]">Move more, recover better.</div>
+            </div>
           </div>
-          <div className="text-[11px] text-text-secondary italic">Move more, recover better.</div>
+          <div className="text-[11px] font-bold uppercase tracking-[0.04em] bg-[#FF4D1C]/10 text-[#FF4D1C] px-[10px] py-[4px] rounded-[100px]">Reminder</div>
         </div>
       </div>
 
       {/* Card 3: Today's meal ideas */}
-      <div className="bg-purple/5 p-4 mb-3 border border-purple/20 rounded-lg">
-        <div className="flex items-center gap-1.5 text-[11px] text-purple uppercase tracking-widest mb-2 font-medium">
+      <div className="glass-card p-[20px] mb-[28px]">
+        <div className="flex items-center gap-[8px] text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599] mb-[16px]">
           <Utensils size={14} /> Meal ideas to hit your protein
         </div>
         {remainingProtein !== undefined && remainingProtein <= 0 ? (
-          <div className="text-[14px] text-green flex items-center gap-2 mt-3 font-medium">
-            <CheckCircle2 size={16} /> Protein target hit! Great work today.
+          <div className="text-[15px] font-medium text-[#D4FF00] flex items-center gap-[8px] mt-[12px]">
+            <CheckCircle2 size={18} /> Protein target hit! Great work today.
           </div>
         ) : (
           <>
-            <div className="text-[13px] text-text-secondary mb-4">
+            <div className="text-[15px] font-normal text-[#EBEBF5CC] mb-[16px]">
               ~{remainingProtein !== undefined ? remainingProtein : 0}g protein remaining
             </div>
-            <div className="space-y-3">
+            <div className="space-y-[12px]">
               {/* Option A */}
-              <div className="bg-background-primary border border-border-secondary rounded-md p-3 flex flex-col gap-2">
-                <div className="text-[10px] text-text-secondary uppercase tracking-widest font-semibold">Option A</div>
-                <div className="text-[13px] text-text-primary font-medium">
+              <div className="bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-[12px] p-[16px] flex flex-col gap-[8px]">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[#EBEBF599]">Option A</div>
+                <div className="text-[15px] font-semibold text-white tracking-[-0.1px]">
                   {remainingProtein !== undefined && remainingProtein > 30 
                     ? "4 whole eggs + 1 cup milk" 
                     : remainingProtein !== undefined && remainingProtein > 15
                     ? "2 boiled eggs + 100g Greek yogurt"
                     : "1 boiled egg"}
                 </div>
-                <div className="flex gap-2">
-                  <span className="bg-blue/10 text-blue text-[10px] px-2 py-0.5 rounded-sm font-medium">
+                <div className="flex gap-[8px] mt-[4px]">
+                  <span className="bg-[rgba(55,138,221,0.15)] text-[#378ADD] text-[11px] font-semibold uppercase tracking-[0.04em] px-[10px] py-[4px] rounded-[100px]">
                     {remainingProtein !== undefined && remainingProtein > 30 
                     ? "~28g protein" 
                     : remainingProtein !== undefined && remainingProtein > 15
                     ? "~20g protein"
                     : "~6g protein"}
                   </span>
-                  <span className="bg-amber/10 text-amber text-[10px] px-2 py-0.5 rounded-sm font-medium">
+                  <span className="bg-[rgba(255,77,28,0.15)] text-[#FF4D1C] text-[11px] font-semibold uppercase tracking-[0.04em] px-[10px] py-[4px] rounded-[100px]">
                     {remainingProtein !== undefined && remainingProtein > 30 
                     ? "~350 kcal" 
                     : remainingProtein !== undefined && remainingProtein > 15
@@ -253,24 +320,24 @@ export function DashboardScreen() {
               </div>
 
               {/* Option B */}
-              <div className="bg-background-primary border border-border-secondary rounded-md p-3 flex flex-col gap-2">
-                <div className="text-[10px] text-text-secondary uppercase tracking-widest font-semibold">Option B</div>
-                <div className="text-[13px] text-text-primary font-medium">
+              <div className="bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-[12px] p-[16px] flex flex-col gap-[8px]">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[#EBEBF599]">Option B</div>
+                <div className="text-[15px] font-semibold text-white tracking-[-0.1px]">
                   {remainingProtein !== undefined && remainingProtein > 40 
                     ? "250g chicken breast (grilled)" 
                     : remainingProtein !== undefined && remainingProtein > 20
                     ? "150g chicken breast"
                     : "100g chicken breast"}
                 </div>
-                <div className="flex gap-2">
-                  <span className="bg-blue/10 text-blue text-[10px] px-2 py-0.5 rounded-sm font-medium">
+                <div className="flex gap-[8px] mt-[4px]">
+                  <span className="bg-[rgba(55,138,221,0.15)] text-[#378ADD] text-[11px] font-semibold uppercase tracking-[0.04em] px-[10px] py-[4px] rounded-[100px]">
                     {remainingProtein !== undefined && remainingProtein > 40 
                     ? "~55g protein" 
                     : remainingProtein !== undefined && remainingProtein > 20
                     ? "~33g protein"
                     : "~22g protein"}
                   </span>
-                  <span className="bg-amber/10 text-amber text-[10px] px-2 py-0.5 rounded-sm font-medium">
+                  <span className="bg-[rgba(255,77,28,0.15)] text-[#FF4D1C] text-[11px] font-semibold uppercase tracking-[0.04em] px-[10px] py-[4px] rounded-[100px]">
                     {remainingProtein !== undefined && remainingProtein > 40 
                     ? "~280 kcal" 
                     : remainingProtein !== undefined && remainingProtein > 20
@@ -280,30 +347,30 @@ export function DashboardScreen() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-center relative py-1">
-                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border-tertiary"></div></div>
-                <div className="relative bg-purple/5 px-2 text-[10px] text-text-tertiary font-medium uppercase tracking-widest">OR</div>
+              <div className="flex items-center justify-center relative py-[4px]">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-[rgba(255,255,255,0.06)]"></div></div>
+                <div className="relative bg-[#1C1C1E] px-[12px] text-[11px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599]">OR</div>
               </div>
 
               {/* Option C */}
-              <div className="bg-background-primary border border-border-secondary rounded-md p-3 flex flex-col gap-2">
-                <div className="text-[10px] text-text-secondary uppercase tracking-widest font-semibold">Option C</div>
-                <div className="text-[13px] text-text-primary font-medium">
+              <div className="bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-[12px] p-[16px] flex flex-col gap-[8px]">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[#EBEBF599]">Option C</div>
+                <div className="text-[15px] font-semibold text-white tracking-[-0.1px]">
                   {remainingProtein !== undefined && remainingProtein > 40 
                     ? "300g low-fat paneer OR 150g soya chunks" 
                     : remainingProtein !== undefined && remainingProtein > 20
                     ? "200g low-fat paneer OR 100g soya chunks"
                     : "100g paneer OR 50g soya chunks"}
                 </div>
-                <div className="flex gap-2">
-                  <span className="bg-blue/10 text-blue text-[10px] px-2 py-0.5 rounded-sm font-medium">
+                <div className="flex gap-[8px] mt-[4px]">
+                  <span className="bg-[rgba(55,138,221,0.15)] text-[#378ADD] text-[11px] font-semibold uppercase tracking-[0.04em] px-[10px] py-[4px] rounded-[100px]">
                     {remainingProtein !== undefined && remainingProtein > 40 
                     ? "~54g or ~52g protein" 
                     : remainingProtein !== undefined && remainingProtein > 20
                     ? "~36g protein"
                     : "~18g protein"}
                   </span>
-                  <span className="bg-amber/10 text-amber text-[10px] px-2 py-0.5 rounded-sm font-medium">
+                  <span className="bg-[rgba(255,77,28,0.15)] text-[#FF4D1C] text-[11px] font-semibold uppercase tracking-[0.04em] px-[10px] py-[4px] rounded-[100px]">
                     {remainingProtein !== undefined && remainingProtein > 40 
                     ? "~400 kcal" 
                     : remainingProtein !== undefined && remainingProtein > 20
@@ -318,7 +385,13 @@ export function DashboardScreen() {
         )}
       </div>
 
-      <button onClick={() => setScreen('meal')} className="w-full p-3 border-none bg-purple text-background-primary text-[14px] font-bold uppercase tracking-widest cursor-pointer transition-opacity hover:opacity-90 shadow-lg shadow-purple/20 mb-3">Log Meal</button>
+      <button 
+        onClick={() => setScreen('meal')} 
+        className="w-full bg-[#D4FF00] text-[#0A0A0A] font-bold text-[17px] rounded-[100px] p-[16px_32px] border-none tracking-[-0.2px] hover:scale-[1.02] hover:opacity-[0.95] active:scale-[0.97] transition-all"
+      >
+        Log Meal
+      </button>
     </div>
   );
 }
+

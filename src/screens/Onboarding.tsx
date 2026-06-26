@@ -1,10 +1,37 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '../store';
 import { cn } from '../lib/utils';
-import { Sparkles, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, ArrowRight } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileService } from '../services/profileService';
 import { complianceService } from '../services/complianceService';
+
+function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: number }) {
+  const [displayValue, setDisplayValue] = useState(0);
+  const elementRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    let start: number | null = null;
+    let animationFrameId: number;
+
+    const update = (time: number) => {
+      if (!start) start = time;
+      const elapsed = time - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const ease = 1 - Math.pow(1 - progress, 4); // easeOutExpo
+      setDisplayValue(Math.round(ease * value));
+
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(update);
+      }
+    };
+
+    animationFrameId = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [value, duration]);
+
+  return <span ref={elementRef}>{displayValue}</span>;
+}
 
 export function OnboardingScreen() {
   const { setScreen, setOnboardingData, onboardingCompleted, setOnboardingCompleted, onboardingData, clearStore } = useAppStore();
@@ -25,7 +52,6 @@ export function OnboardingScreen() {
   
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showResults, setShowResults] = useState(false);
-  const [showStep2, setShowStep2] = useState(false);
   
   // Results
   const [results, setResults] = useState<any>(null);
@@ -119,16 +145,6 @@ export function OnboardingScreen() {
     if (!activity) newErrors.activity = 'Please select your activity level';
     
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const validateStep2 = () => {
-    const newErrors: Record<string, string> = {};
-    if (!waist) newErrors.waist = 'Waist is required';
-    if (!neck) newErrors.neck = 'Neck is required';
-    if (gender === 'Female' && !hip) newErrors.hip = 'Hip is required';
-    
-    setErrors(prev => ({ ...prev, ...newErrors }));
     return Object.keys(newErrors).length === 0;
   };
 
@@ -260,45 +276,51 @@ export function OnboardingScreen() {
     });
   };
 
+  const inputClass = (hasError: boolean) => cn(
+    "w-full bg-[rgba(255,255,255,0.07)] border-[0.5px] border-[rgba(255,255,255,0.12)] rounded-xl text-[17px] p-[14px_16px] text-white",
+    "focus:bg-[rgba(255,255,255,0.1)] focus:border-[rgba(212,255,0,0.6)] focus:outline-none focus:shadow-[0_0_0_3px_rgba(212,255,0,0.12)] transition-all",
+    hasError && "border-[rgba(255,59,48,0.6)] bg-[rgba(255,59,48,0.05)] focus:border-[rgba(255,59,48,0.6)] focus:shadow-[0_0_0_3px_rgba(255,59,48,0.12)]"
+  );
+
   if (onboardingCompleted) {
     return (
-      <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 p-4 max-w-md mx-auto">
+      <div className="screen-container animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="text-center py-6">
-          <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-4" />
-          <h2 className="text-[20px] font-medium text-text-primary mb-2">Profile Completed</h2>
-          <p className="text-[14px] text-text-secondary">You have already set up your profile and goals.</p>
+          <CheckCircle2 className="w-16 h-16 text-[#D4FF00] mx-auto mb-4" />
+          <h2 className="text-[34px] font-bold text-white tracking-[-0.5px] mb-2">Profile Completed</h2>
+          <p className="text-[15px] font-normal tracking-[-0.1px] text-[#EBEBF5CC]">You have already set up your profile and goals.</p>
         </div>
 
-        <div className="bg-background-secondary rounded-xl p-5 mb-6 border border-border-secondary">
-          <h3 className="text-[12px] font-bold tracking-widest uppercase text-text-secondary mb-4">Current Profile Data</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-[13px] text-text-secondary">Name</span>
-              <span className="text-[13px] font-medium text-text-primary">{onboardingData?.name || '-'}</span>
+        <div className="glass-card p-[16px_20px] mb-6">
+          <h3 className="text-[13px] font-semibold tracking-[0.06em] uppercase text-[#EBEBF599] mb-[12px]">Current Profile Data</h3>
+          <div className="space-y-[12px]">
+            <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-[12px]">
+              <span className="text-[15px] font-normal text-[#EBEBF5CC]">Name</span>
+              <span className="text-[17px] font-semibold text-white">{onboardingData?.name || '-'}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-[13px] text-text-secondary">Age</span>
-              <span className="text-[13px] font-medium text-text-primary">{onboardingData?.age || '-'}</span>
+            <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-[12px]">
+              <span className="text-[15px] font-normal text-[#EBEBF5CC]">Age</span>
+              <span className="text-[17px] font-semibold text-white">{onboardingData?.age || '-'}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-[13px] text-text-secondary">Weight</span>
-              <span className="text-[13px] font-medium text-text-primary">{onboardingData?.weightKg || '-'} kg</span>
+            <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-[12px]">
+              <span className="text-[15px] font-normal text-[#EBEBF5CC]">Weight</span>
+              <span className="text-[17px] font-semibold text-white">{onboardingData?.weightKg || '-'} <span className="text-[13px] font-normal text-[#EBEBF599]">kg</span></span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-[13px] text-text-secondary">Height</span>
-              <span className="text-[13px] font-medium text-text-primary">{onboardingData?.heightCm || '-'} cm</span>
+            <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-[12px]">
+              <span className="text-[15px] font-normal text-[#EBEBF5CC]">Height</span>
+              <span className="text-[17px] font-semibold text-white">{onboardingData?.heightCm || '-'} <span className="text-[13px] font-normal text-[#EBEBF599]">cm</span></span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-[13px] text-text-secondary">Activity</span>
-              <span className="text-[13px] font-medium text-text-primary">{onboardingData?.activityLevel || '-'}</span>
+            <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-[12px]">
+              <span className="text-[15px] font-normal text-[#EBEBF5CC]">Activity</span>
+              <span className="text-[17px] font-semibold text-white">{onboardingData?.activityLevel || '-'}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-[13px] text-text-secondary">TDEE</span>
-              <span className="text-[13px] font-medium text-text-primary">{onboardingData?.tdee || '-'} kcal</span>
+            <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-[12px]">
+              <span className="text-[15px] font-normal text-[#EBEBF5CC]">TDEE</span>
+              <span className="text-[17px] font-semibold text-white">{onboardingData?.tdee || '-'} <span className="text-[13px] font-normal text-[#EBEBF599]">kcal</span></span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-[13px] text-text-secondary">Protein Target</span>
-              <span className="text-[13px] font-medium text-text-primary">{onboardingData?.proteinMid || '-'} g</span>
+            <div className="flex justify-between items-center">
+              <span className="text-[15px] font-normal text-[#EBEBF5CC]">Protein Target</span>
+              <span className="text-[17px] font-semibold text-white">{onboardingData?.proteinMid || '-'} <span className="text-[13px] font-normal text-[#EBEBF599]">g</span></span>
             </div>
           </div>
         </div>
@@ -312,7 +334,7 @@ export function OnboardingScreen() {
               window.location.reload();
             }
           }}
-          className="w-full py-3 bg-red-500/10 text-red-500 font-medium rounded-xl hover:bg-red-500/20 transition-colors"
+          className="w-full py-[14px] bg-[rgba(255,255,255,0.1)] text-white font-semibold text-[15px] rounded-[100px] border-[0.5px] border-[rgba(255,255,255,0.2)] transition-transform active:scale-[0.96]"
         >
           Reset profile
         </button>
@@ -321,76 +343,136 @@ export function OnboardingScreen() {
   }
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <div className="text-center py-4 pb-5">
-        <div className="text-[10px] text-purple font-bold tracking-widest uppercase mb-2">Step 1 of 2</div>
-        <h2 className="text-[20px] font-medium text-text-primary mb-1.5">Personal Information</h2>
-        <p className="text-[13px] text-text-secondary max-w-[320px] mx-auto">We use US Navy standards for precision targeting.</p>
+    <div className="screen-container screen-enter">
+      <div className="py-[28px] mb-[12px]">
+        <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599] mb-[8px]">Step 1 of 2</div>
+        <h2 className="text-[34px] font-bold text-white tracking-[-0.5px] leading-tight mb-[8px]">Personal Information</h2>
+        <p className="text-[15px] font-normal text-[#EBEBF5CC] tracking-[-0.1px]">We use US Navy standards for precision targeting.</p>
       </div>
 
       {Object.keys(errors).length > 0 && (
-        <div className="mb-4 p-2.5 bg-red-500/10 border border-red-500/20 text-red-500 text-[13px] text-center font-medium">
+        <div className="mb-[20px] p-[12px] rounded-xl bg-[rgba(255,59,48,0.05)] border-[0.5px] border-[rgba(255,59,48,0.6)] text-[#FF3B30] text-[13px] text-center font-normal">
           Please fill in all fields to get your plan
         </div>
       )}
       
-      <div className="grid grid-cols-2 gap-2.5 mb-4">
-        <div className="flex flex-col gap-1 col-span-2 mt-1">
-          <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Gender</span>
-          <div className="flex gap-1.5 flex-wrap">
+      <div className="flex flex-col gap-[20px] mb-[28px]">
+        {/* Gender */}
+        <div className="flex flex-col gap-[8px]">
+          <span className="text-[15px] font-medium text-white">Gender</span>
+          <div className="flex gap-[12px]">
             {['Male', 'Female'].map(g => (
-              <button key={g} onClick={() => setGender(g as any)} className={cn("px-3 py-1.5 border-[0.5px] border-border-secondary text-[12px] cursor-pointer transition-all bg-background-primary flex-1", gender === g ? "bg-purple text-background-primary font-medium border-purple" : "text-text-secondary hover:bg-background-secondary", errors.gender && "border-red-500")}>{g}</button>
+              <button 
+                key={g} 
+                onClick={() => setGender(g as any)} 
+                className={cn(
+                  "flex-1 py-[14px] px-[16px] rounded-xl text-[17px] font-medium transition-all",
+                  gender === g 
+                    ? "bg-[rgba(212,255,0,0.1)] border border-[rgba(212,255,0,0.5)] text-white" 
+                    : "bg-[rgba(255,255,255,0.07)] border border-[rgba(255,255,255,0.12)] text-[#EBEBF5CC] hover:bg-[rgba(255,255,255,0.1)]",
+                  errors.gender && "border-[rgba(255,59,48,0.6)] bg-[rgba(255,59,48,0.05)]"
+                )}
+              >
+                {g}
+              </button>
             ))}
           </div>
-          {errors.gender && <span className="text-[10px] text-red-500 mt-0.5">{errors.gender}</span>}
+          {errors.gender && <span className="text-[13px] text-[#FF3B30] mt-[6px]">{errors.gender}</span>}
         </div>
 
-        <div className="flex flex-col gap-1 col-span-2">
-          <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Your name</span>
-          <input className={cn("px-2.5 py-1.5 border-[0.5px] text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple", errors.name ? "border-red-500" : "border-border-secondary")} type="text" value={name} onChange={e => setName(e.target.value)} placeholder="First name" />
-          {errors.name && <span className="text-[10px] text-red-500 mt-0.5">{errors.name}</span>}
+        {/* Name */}
+        <div className="flex flex-col gap-[8px]">
+          <span className="text-[15px] font-medium text-white">Your name</span>
+          <input 
+            className={inputClass(!!errors.name)} 
+            type="text" 
+            value={name} 
+            onChange={e => setName(e.target.value)} 
+            placeholder="First name" 
+          />
+          {errors.name && <span className="text-[13px] text-[#FF3B30] mt-[6px]">{errors.name}</span>}
         </div>
 
-        <div className="flex flex-col gap-1 col-span-2">
-          <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Age</span>
-          <input className={cn("px-2.5 py-1.5 border-[0.5px] text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple", errors.age ? "border-red-500" : "border-border-secondary")} type="number" value={age} onChange={e => setAge(e.target.value)} placeholder="Age" />
-          {errors.age && <span className="text-[10px] text-red-500 mt-0.5">{errors.age}</span>}
+        {/* Age */}
+        <div className="flex flex-col gap-[8px]">
+          <span className="text-[15px] font-medium text-white">Age</span>
+          <input 
+            className={inputClass(!!errors.age)} 
+            type="number" 
+            value={age} 
+            onChange={e => setAge(e.target.value)} 
+            placeholder="Age" 
+          />
+          {errors.age && <span className="text-[13px] text-[#FF3B30] mt-[6px]">{errors.age}</span>}
         </div>
-        <div className="flex flex-col gap-1">
-          <div className="flex justify-between items-center h-[16px]">
-            <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Height</span>
-            <div className="flex bg-background-secondary rounded-sm p-[2px] border-[0.5px] border-border-secondary">
+
+        {/* Height */}
+        <div className="flex flex-col gap-[8px]">
+          <div className="flex justify-between items-center mb-[4px]">
+            <span className="text-[15px] font-medium text-white">Height</span>
+            <div className="bg-[rgba(255,255,255,0.08)] rounded-[100px] p-[3px] inline-flex">
               <button 
                 onClick={() => toggleHeightUnit('cm')} 
-                className={cn("px-1.5 py-0.5 text-[9px] rounded-[1px] transition-colors leading-none font-medium uppercase tracking-wider", heightUnit === 'cm' ? "bg-purple text-background-primary" : "text-text-secondary hover:text-text-primary")}
+                className={cn("px-[16px] py-[6px] rounded-[100px] text-[14px] font-medium transition-all", heightUnit === 'cm' ? "bg-[#D4FF00] text-[#0A0A0A] font-bold" : "text-[#EBEBF599]")}
               >cm</button>
               <button 
                 onClick={() => toggleHeightUnit('ft')} 
-                className={cn("px-1.5 py-0.5 text-[9px] rounded-[1px] transition-colors leading-none font-medium uppercase tracking-wider", heightUnit === 'ft' ? "bg-purple text-background-primary" : "text-text-secondary hover:text-text-primary")}
+                className={cn("px-[16px] py-[6px] rounded-[100px] text-[14px] font-medium transition-all", heightUnit === 'ft' ? "bg-[#D4FF00] text-[#0A0A0A] font-bold" : "text-[#EBEBF599]")}
               >ft / in</button>
             </div>
           </div>
           {heightUnit === 'cm' ? (
-            <input className={cn("px-2.5 py-1.5 border-[0.5px] text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple", errors.height ? "border-red-500" : "border-border-secondary")} type="number" value={height} onChange={e => setHeight(e.target.value)} placeholder="e.g. 172" />
+            <input 
+              className={inputClass(!!errors.height)} 
+              type="number" 
+              value={height} 
+              onChange={e => setHeight(e.target.value)} 
+              placeholder="e.g. 172" 
+            />
           ) : (
-            <div className="flex items-center gap-1.5">
-              <input className={cn("px-2.5 py-1.5 border-[0.5px] text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple w-full min-w-0", errors.height ? "border-red-500" : "border-border-secondary")} type="number" value={heightFt} onChange={e => setHeightFt(e.target.value)} placeholder="5" />
-              <span className="text-text-secondary font-medium text-[13px]">'</span>
-              <input className={cn("px-2.5 py-1.5 border-[0.5px] text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple w-full min-w-0", errors.height ? "border-red-500" : "border-border-secondary")} type="number" value={heightIn} onChange={e => setHeightIn(e.target.value)} placeholder="10" />
-              <span className="text-text-secondary font-medium text-[13px]">"</span>
+            <div className="flex gap-[12px]">
+              <div className="flex-1 relative">
+                <input 
+                  className={inputClass(!!errors.height)} 
+                  type="number" 
+                  value={heightFt} 
+                  onChange={e => setHeightFt(e.target.value)} 
+                  placeholder="5" 
+                />
+                <span className="absolute right-[16px] top-[14px] text-[#EBEBF599] text-[17px]">ft</span>
+              </div>
+              <div className="flex-1 relative">
+                <input 
+                  className={inputClass(!!errors.height)} 
+                  type="number" 
+                  value={heightIn} 
+                  onChange={e => setHeightIn(e.target.value)} 
+                  placeholder="10" 
+                />
+                <span className="absolute right-[16px] top-[14px] text-[#EBEBF599] text-[17px]">in</span>
+              </div>
             </div>
           )}
-          {errors.height && <span className="text-[10px] text-red-500 mt-0.5">{errors.height}</span>}
-        </div>
-        <div className="flex flex-col gap-1">
-          <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Weight (kg)</span>
-          <input className={cn("px-2.5 py-1.5 border-[0.5px] text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple", errors.weight ? "border-red-500" : "border-border-secondary")} type="number" value={weight} onChange={e => setWeight(e.target.value)} placeholder="kg" />
-          {errors.weight && <span className="text-[10px] text-red-500 mt-0.5">{errors.weight}</span>}
+          {errors.height && <span className="text-[13px] text-[#FF3B30] mt-[6px]">{errors.height}</span>}
         </div>
 
-        <div className="flex flex-col gap-2 col-span-2 mt-2">
-          <span className="text-[11px] text-text-secondary font-medium uppercase tracking-widest">Activity level</span>
-          <div className="flex flex-col gap-2">
+        {/* Weight */}
+        <div className="flex flex-col gap-[8px]">
+          <span className="text-[15px] font-medium text-white">Weight (kg)</span>
+          <input 
+            className={inputClass(!!errors.weight)} 
+            type="number" 
+            value={weight} 
+            onChange={e => setWeight(e.target.value)} 
+            placeholder="e.g. 80" 
+          />
+          {errors.weight && <span className="text-[13px] text-[#FF3B30] mt-[6px]">{errors.weight}</span>}
+        </div>
+
+        {/* Activity level */}
+        <div className="flex flex-col gap-[8px] mt-[8px]">
+          <span className="text-[15px] font-medium text-white">Activity level</span>
+          <div className="flex flex-col gap-[12px]">
             {[
               { label: 'Sedentary', desc: 'Desk job, little or no exercise, mostly sitting through the day' },
               { label: 'Lightly Active', desc: 'Daily walks, light home workouts, occasional stretching or yoga' },
@@ -402,94 +484,115 @@ export function OnboardingScreen() {
                 key={a.label} 
                 onClick={() => setActivity(a.label as any)} 
                 className={cn(
-                  "p-3 border-[0.5px] cursor-pointer transition-all text-left flex flex-col gap-1", 
-                  activity === a.label 
-                    ? "bg-purple/5 border-purple" 
-                    : "bg-background-primary text-text-secondary hover:bg-background-secondary",
-                  errors.activity && activity !== a.label ? "border-red-500" : (activity !== a.label ? "border-border-secondary" : "")
+                  "bg-[rgba(44,44,46,0.6)] border-[0.5px] border-[rgba(255,255,255,0.1)] rounded-[14px] p-[14px_16px] cursor-pointer transition-all text-left flex flex-col gap-[4px]",
+                  activity === a.label && "bg-[rgba(212,255,0,0.1)] border-[rgba(212,255,0,0.5)]",
+                  errors.activity && activity !== a.label && "border-[rgba(255,59,48,0.6)] bg-[rgba(255,59,48,0.05)]"
                 )}
               >
-                <div className={cn("text-[13px] font-medium", activity === a.label ? "text-purple" : "text-text-primary")}>
+                <div className="text-[15px] font-semibold text-white">
                   {a.label}
                 </div>
-                <div className="text-[11px] leading-snug text-text-secondary">
+                <div className="text-[13px] font-normal text-[#EBEBF599]">
                   {a.desc}
                 </div>
               </button>
             ))}
           </div>
-          {errors.activity && <span className="text-[10px] text-red-500 mt-0.5">{errors.activity}</span>}
+          {errors.activity && <span className="text-[13px] text-[#FF3B30] mt-[6px]">{errors.activity}</span>}
         </div>
       </div>
       
-      {!showResults && <button onClick={calculateResults} disabled={saveMutation.isPending} className="w-full p-2.5 border-none bg-purple text-background-primary text-[14px] font-bold tracking-tight uppercase cursor-pointer transition-opacity hover:opacity-90 mb-3.5 disabled:opacity-50">Calculate</button>}
+      {!showResults && (
+        <button 
+          onClick={calculateResults} 
+          disabled={saveMutation.isPending} 
+          className="w-full bg-[#D4FF00] text-[#0A0A0A] font-bold text-[17px] rounded-[100px] p-[16px_32px] border-none tracking-[-0.2px] transition-all hover:scale-[1.02] hover:opacity-[0.95] active:scale-[0.97] disabled:opacity-50"
+        >
+          Calculate targets
+        </button>
+      )}
       
       {showResults && results && (
-        <div className="mb-4 animate-in fade-in slide-in-from-top-2">
-          <div className="bg-background-secondary border border-border-tertiary mb-3">
-            <div className="p-3 border-b border-border-tertiary">
-              <h3 className="text-[14px] font-medium text-text-primary">Daily Nutrition Targets</h3>
-              <p className="text-[11px] text-text-secondary mt-0.5">Based on your stats — here's what your body needs each day</p>
-            </div>
-            
-            <div className="p-0">
-              <div className="flex justify-between items-center p-3 border-b border-border-tertiary">
-                <span className="text-[12px] text-text-secondary">Calories</span>
-                <span className="text-[13px] font-medium text-text-primary">{results.tdee} kcal <span className="text-[11px] font-normal text-text-secondary ml-1">(maintenance)</span></span>
-              </div>
-              <div className="flex justify-between items-center p-3 border-b border-border-tertiary">
-                <span className="text-[12px] text-text-secondary">Protein</span>
-                <span className="text-[13px] font-medium text-text-primary">{results.proteinMin}–{results.proteinMax} g/day <span className="text-[11px] font-normal text-text-secondary ml-1">(≈2.0–2.2 g/kg)</span></span>
-              </div>
-              <div className="flex justify-between items-center p-3 border-b border-border-tertiary">
-                <span className="text-[12px] text-text-secondary">Fat</span>
-                <span className="text-[13px] font-medium text-text-primary">{results.fatMin}–{results.fatMax} g/day</span>
-              </div>
-              <div className="flex justify-between items-center p-3 border-b border-border-tertiary">
-                <span className="text-[12px] text-text-secondary">Carbohydrates</span>
-                <span className="text-[13px] font-medium text-text-primary">{results.carbMin}–{results.carbMax} g/day <span className="text-[11px] font-normal text-text-secondary ml-1">(remainder)</span></span>
-              </div>
-              <div className="flex justify-between items-center p-3 border-b border-border-tertiary">
-                <span className="text-[12px] text-text-secondary">Fiber</span>
-                <span className="text-[13px] font-medium text-text-primary">{results.fiberMin}–{results.fiberMax} g/day</span>
-              </div>
-              <div className="flex justify-between items-center p-3">
-                <span className="text-[12px] text-text-secondary">Water</span>
-                <span className="text-[13px] font-medium text-text-primary">{results.waterLitres} L/day</span>
-              </div>
-            </div>
+        <div className="mb-[28px] card-reveal">
+          {/* Header */}
+          <div className="mb-[20px]">
+            <h2 className="text-[22px] font-semibold text-white tracking-[-0.3px]">Good work, {name.trim() || 'there'}</h2>
+            <p className="text-[15px] font-normal text-[#EBEBF5CC] tracking-[-0.1px]">Here's what your body needs daily</p>
           </div>
-
-          <div className="bg-background-secondary border border-border-tertiary mb-4 p-3">
-            <h3 className="text-[12px] font-medium text-text-primary mb-2">Your Stats</h3>
-            <div className="grid grid-cols-2 gap-y-2">
-              <div className="flex flex-col">
-                <span className="text-[10px] text-text-secondary uppercase tracking-wider">Current Weight</span>
-                <span className="text-[13px] text-text-primary font-medium">{weight || '—'} kg</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] text-text-secondary uppercase tracking-wider">Maintenance Calories</span>
-                <span className="text-[13px] text-text-primary font-medium">{results.tdee} kcal</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] text-text-secondary uppercase tracking-wider">Height</span>
-                <span className="text-[13px] text-text-primary font-medium">
-                  {heightUnit === 'cm' ? `${height || '—'} cm` : `${heightFt || '—'}'${heightIn || '—'}"`}
+          
+          <div className="glass-card mb-[28px] overflow-hidden">
+            <div className="p-[16px_20px]">
+              <div className="flex justify-between items-center py-[12px] border-b border-[rgba(255,255,255,0.06)]">
+                <span className="text-[15px] font-normal text-[#EBEBF5CC]">Calories</span>
+                <span className="text-[17px] font-semibold text-[#D4FF00]">
+                  <AnimatedNumber value={results.tdee} /> <span className="text-[13px] font-normal text-[#EBEBF599]">kcal</span>
                 </span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] text-text-secondary uppercase tracking-wider">Activity Level</span>
-                <span className="text-[13px] text-text-primary font-medium">{activity || '—'}</span>
+              <div className="flex justify-between items-center py-[12px] border-b border-[rgba(255,255,255,0.06)]">
+                <span className="text-[15px] font-normal text-[#EBEBF5CC]">Protein</span>
+                <span className="text-[17px] font-semibold text-white">
+                  <AnimatedNumber value={results.proteinMin} />–<AnimatedNumber value={results.proteinMax} /> <span className="text-[13px] font-normal text-[#EBEBF599]">g/day</span>
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-[12px] border-b border-[rgba(255,255,255,0.06)]">
+                <span className="text-[15px] font-normal text-[#EBEBF5CC]">Fat</span>
+                <span className="text-[17px] font-semibold text-white">
+                  <AnimatedNumber value={results.fatMin} />–<AnimatedNumber value={results.fatMax} /> <span className="text-[13px] font-normal text-[#EBEBF599]">g/day</span>
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-[12px] border-b border-[rgba(255,255,255,0.06)]">
+                <span className="text-[15px] font-normal text-[#EBEBF5CC]">Carbohydrates</span>
+                <span className="text-[17px] font-semibold text-white">
+                  <AnimatedNumber value={results.carbMin} />–<AnimatedNumber value={results.carbMax} /> <span className="text-[13px] font-normal text-[#EBEBF599]">g/day</span>
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-[12px] border-b border-[rgba(255,255,255,0.06)]">
+                <span className="text-[15px] font-normal text-[#EBEBF5CC]">Fiber</span>
+                <span className="text-[17px] font-semibold text-white">
+                  <AnimatedNumber value={results.fiberMin} />–<AnimatedNumber value={results.fiberMax} /> <span className="text-[13px] font-normal text-[#EBEBF599]">g/day</span>
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-[12px]">
+                <span className="text-[15px] font-normal text-[#EBEBF5CC]">Water</span>
+                <span className="text-[17px] font-semibold text-white">
+                  <AnimatedNumber value={parseFloat(results.waterLitres)} /> <span className="text-[13px] font-normal text-[#EBEBF599]">L/day</span>
+                </span>
               </div>
             </div>
           </div>
 
-          <button onClick={handleSave} disabled={saveMutation.isPending} className="w-full p-2.5 border-[0.5px] border-purple bg-purple/10 text-purple text-[14px] font-bold tracking-tight uppercase cursor-pointer transition-opacity hover:bg-purple/20 disabled:opacity-50">
-            {saveMutation.isPending ? 'Saving...' : 'Continue'}
+          <div className="mb-[28px]">
+            <h3 className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599] mb-[12px]">Your Stats</h3>
+            <div className="grid grid-cols-3 gap-[12px]">
+              <div className="bg-[rgba(255,255,255,0.05)] rounded-[12px] p-[12px] flex flex-col items-center text-center">
+                <span className="text-[24px] font-semibold tracking-[-0.5px] text-white leading-none mb-[4px]">{weight || '—'}</span>
+                <span className="text-[13px] font-normal text-[#EBEBF599] uppercase">Current<br/>Weight</span>
+              </div>
+              
+              <div className="bg-[rgba(212,255,0,0.12)] border-[0.5px] border-[rgba(212,255,0,0.3)] rounded-[12px] p-[12px] flex flex-col items-center text-center">
+                <span className="text-[24px] font-bold tracking-[-0.5px] text-[#D4FF00] leading-none mb-[4px]"><AnimatedNumber value={results.tdee} /></span>
+                <span className="text-[13px] font-normal text-[#D4FF00]/70 uppercase">Maint.<br/>Calories</span>
+              </div>
+
+              <div className="bg-[rgba(255,255,255,0.05)] rounded-[12px] p-[12px] flex flex-col items-center text-center">
+                <span className="text-[24px] font-semibold tracking-[-0.5px] text-white leading-none mb-[4px]">
+                  {heightUnit === 'cm' ? height : `${heightFt}'${heightIn}"`}
+                </span>
+                <span className="text-[13px] font-normal text-[#EBEBF599] uppercase">Current<br/>Height</span>
+              </div>
+            </div>
+          </div>
+
+          <button 
+            onClick={handleSave} 
+            disabled={saveMutation.isPending} 
+            className="w-full bg-[#D4FF00] text-[#0A0A0A] font-bold text-[17px] rounded-[100px] p-[16px_32px] border-none tracking-[-0.2px] transition-all hover:scale-[1.02] hover:opacity-[0.95] active:scale-[0.97] disabled:opacity-50 flex items-center justify-center gap-[8px] group"
+          >
+            {saveMutation.isPending ? 'Saving...' : 'Set my physique goal'}
+            <ArrowRight size={20} className="transition-transform duration-200 group-hover:translate-x-[3px]" />
           </button>
         </div>
       )}
     </div>
   );
 }
-

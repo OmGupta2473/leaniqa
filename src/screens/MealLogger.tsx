@@ -265,44 +265,44 @@ export function MealLoggerScreen() {
     const isExpanded = expandedSlots[slot];
 
     return (
-      <div className="bg-background-secondary border border-border-secondary rounded-lg mb-2 overflow-hidden">
+      <div className="glass-card mb-[12px] overflow-hidden">
         <div 
-          className="p-3 flex justify-between items-center cursor-pointer hover:bg-background-tertiary transition-colors"
+          className="p-[16px] flex justify-between items-center cursor-pointer hover:bg-[rgba(255,255,255,0.02)] transition-colors"
           onClick={() => toggleSlot(slot)}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-[12px]">
             <div className={cn(
-              "w-8 h-8 rounded-full flex items-center justify-center",
-              selectedMealSlot === slot ? "bg-purple text-background-primary" : "bg-purple/10 text-purple"
+              "w-[36px] h-[36px] rounded-[100px] flex items-center justify-center transition-colors",
+              selectedMealSlot === slot ? "bg-[#D4FF00] text-[#0A0A0A]" : "bg-[rgba(255,255,255,0.1)] text-white"
             )}>
               {icon}
             </div>
             <div>
-              <div className="text-[14px] font-medium text-text-primary leading-tight">{title}</div>
-              <div className="text-[11px] text-text-secondary">{timeRange}</div>
+              <div className="text-[15px] font-semibold text-white leading-tight tracking-[-0.1px]">{title}</div>
+              <div className="text-[12px] text-[#EBEBF599] mt-[2px]">{timeRange}</div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-[16px]">
             <div className="text-right">
-              <div className="text-[13px] font-bold text-text-primary">{slotKcal} kcal</div>
-              <div className="text-[11px] text-text-secondary">{slotProtein}g protein</div>
+              <div className="text-[15px] font-bold text-white tracking-[-0.2px]">{slotKcal} <span className="text-[11px] font-normal text-[#EBEBF599]">kcal</span></div>
+              <div className="text-[12px] text-[#EBEBF5CC] mt-[2px]">{slotProtein}g pro</div>
             </div>
-            {isExpanded ? <ChevronDown size={16} className="text-text-tertiary" /> : <ChevronRight size={16} className="text-text-tertiary" />}
+            {isExpanded ? <ChevronDown size={18} className="text-[#EBEBF599]" /> : <ChevronRight size={18} className="text-[#EBEBF599]" />}
           </div>
         </div>
         
         {isExpanded && (
-          <div className="bg-background-primary p-3 border-t border-border-secondary">
+          <div className="bg-[rgba(20,20,20,0.5)] p-[16px] border-t border-[rgba(255,255,255,0.06)]">
             {slotMeals.length === 0 ? (
-              <div className="text-[12px] text-text-tertiary text-center py-2 italic">Nothing logged yet</div>
+              <div className="text-[13px] text-[#EBEBF599] text-center py-[8px] italic">Nothing logged yet</div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-[12px]">
                 {slotMeals.map((m, i) => (
-                  <div key={i} className="flex justify-between items-center">
-                    <div className="text-[13px] text-text-primary capitalize truncate max-w-[50%]">{m.meal_text}</div>
-                    <div className="flex gap-1.5">
-                      <span className="text-[10px] bg-amber/10 text-amber px-1.5 py-0.5 rounded font-medium">{m.calories} kcal</span>
-                      <span className="text-[10px] bg-blue/10 text-blue px-1.5 py-0.5 rounded font-medium">{m.protein}g</span>
+                  <div key={i} className="flex justify-between items-center bg-[rgba(255,255,255,0.03)] p-[10px_12px] rounded-lg">
+                    <div className="text-[14px] font-medium text-white capitalize truncate max-w-[50%]">{m.meal_text}</div>
+                    <div className="flex gap-[8px]">
+                      <span className="text-[11px] bg-[rgba(255,77,28,0.15)] text-[#FF4D1C] px-[8px] py-[2px] rounded-[100px] font-semibold tracking-[0.02em]">{m.calories} kcal</span>
+                      <span className="text-[11px] bg-[rgba(55,138,221,0.15)] text-[#378ADD] px-[8px] py-[2px] rounded-[100px] font-semibold tracking-[0.02em]">{m.protein}g</span>
                     </div>
                   </div>
                 ))}
@@ -315,92 +315,92 @@ export function MealLoggerScreen() {
   };
 
   return (
-    <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <div className="mb-4">
-        <div className="text-[11px] font-medium uppercase tracking-wider text-text-tertiary mb-3 text-center">Select Meal Slot</div>
-        <div className="flex justify-center gap-2 mb-4">
+    <div className="screen-container screen-enter flex flex-col h-full !pb-4">
+      <div className="mb-[24px]">
+        <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599] mb-[12px] mt-[12px] text-center">Select Meal Slot</div>
+        <div className="flex justify-center gap-[8px] mb-[24px]">
           <button 
             onClick={() => setSelectedMealSlot('breakfast')}
             className={cn(
-              "flex-1 py-2 px-1 rounded-full border transition-all text-[12px] font-medium flex items-center justify-center gap-1.5",
+              "flex-1 py-[10px] px-[8px] rounded-[100px] transition-all text-[13px] font-semibold flex items-center justify-center gap-[6px] border",
               selectedMealSlot === 'breakfast' 
-                ? "bg-purple text-background-primary border-purple shadow-sm" 
-                : "bg-background-secondary text-text-secondary border-border-tertiary hover:border-border-secondary"
+                ? "bg-[rgba(212,255,0,0.1)] text-[#D4FF00] border-[#D4FF00] shadow-[0_0_10px_rgba(212,255,0,0.1)]" 
+                : "bg-[rgba(255,255,255,0.05)] text-[#EBEBF5CC] border-transparent hover:bg-[rgba(255,255,255,0.08)]"
             )}
           >
-            <Sunrise size={14} /> Breakfast
+            <Sunrise size={16} /> Breakfast
           </button>
           <button 
             onClick={() => setSelectedMealSlot('lunch')}
             className={cn(
-              "flex-1 py-2 px-1 rounded-full border transition-all text-[12px] font-medium flex items-center justify-center gap-1.5",
+              "flex-1 py-[10px] px-[8px] rounded-[100px] transition-all text-[13px] font-semibold flex items-center justify-center gap-[6px] border",
               selectedMealSlot === 'lunch' 
-                ? "bg-purple text-background-primary border-purple shadow-sm" 
-                : "bg-background-secondary text-text-secondary border-border-tertiary hover:border-border-secondary"
+                ? "bg-[rgba(212,255,0,0.1)] text-[#D4FF00] border-[#D4FF00] shadow-[0_0_10px_rgba(212,255,0,0.1)]" 
+                : "bg-[rgba(255,255,255,0.05)] text-[#EBEBF5CC] border-transparent hover:bg-[rgba(255,255,255,0.08)]"
             )}
           >
-            <Sun size={14} /> Lunch
+            <Sun size={16} /> Lunch
           </button>
           <button 
             onClick={() => setSelectedMealSlot('dinner')}
             className={cn(
-              "flex-1 py-2 px-1 rounded-full border transition-all text-[12px] font-medium flex items-center justify-center gap-1.5",
+              "flex-1 py-[10px] px-[8px] rounded-[100px] transition-all text-[13px] font-semibold flex items-center justify-center gap-[6px] border",
               selectedMealSlot === 'dinner' 
-                ? "bg-purple text-background-primary border-purple shadow-sm" 
-                : "bg-background-secondary text-text-secondary border-border-tertiary hover:border-border-secondary"
+                ? "bg-[rgba(212,255,0,0.1)] text-[#D4FF00] border-[#D4FF00] shadow-[0_0_10px_rgba(212,255,0,0.1)]" 
+                : "bg-[rgba(255,255,255,0.05)] text-[#EBEBF5CC] border-transparent hover:bg-[rgba(255,255,255,0.08)]"
             )}
           >
-            <Moon size={14} /> Dinner
+            <Moon size={16} /> Dinner
           </button>
         </div>
 
-        {renderMealBox('breakfast', <Sunrise size={16} />, 'Breakfast', '6 am–12 pm')}
-        {renderMealBox('lunch', <Sun size={16} />, 'Lunch', '12 pm–6 pm')}
-        {renderMealBox('dinner', <Moon size={16} />, 'Dinner', '6 pm–10 pm')}
+        {renderMealBox('breakfast', <Sunrise size={18} />, 'Breakfast', '6 am–12 pm')}
+        {renderMealBox('lunch', <Sun size={18} />, 'Lunch', '12 pm–6 pm')}
+        {renderMealBox('dinner', <Moon size={18} />, 'Dinner', '6 pm–10 pm')}
       </div>
       
-      <div className="flex flex-col gap-2 mb-3 flex-1 overflow-y-auto pr-1" ref={chatRef}>
+      <div className="flex flex-col gap-[12px] mb-[20px] flex-1 overflow-y-auto pr-[4px] hide-scrollbar" ref={chatRef}>
         {chat.map((msg, i) => (
           <div key={i} className={cn(
-            "p-2 px-3 text-[13px] leading-relaxed max-w-[85%]",
+            "p-[12px_16px] text-[15px] leading-relaxed max-w-[85%] font-normal tracking-[-0.1px]",
             msg.role === 'user' 
-              ? "bg-purple text-background-primary rounded-t-xl rounded-bl-xl self-end"
-              : "bg-background-secondary border-[0.5px] border-border-tertiary text-text-primary rounded-t-xl rounded-br-xl self-start"
+              ? "bg-[#D4FF00] text-[#0A0A0A] rounded-[16px] rounded-br-[4px] self-end shadow-sm"
+              : "glass-card text-white rounded-[16px] rounded-bl-[4px] self-start"
           )}>
             <div>{msg.text}</div>
             {msg.data && (
-              <div className="flex gap-1.5 flex-wrap mt-1.5">
-                <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-amber-bg text-text-primary">~{msg.data.calories} kcal</span>
-                <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-blue-bg text-text-primary">{msg.data.protein}g protein</span>
-                <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-pink-bg text-text-primary">{msg.data.fat}g fat</span>
-                <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-green-bg text-text-primary">{msg.data.carbs}g carbs</span>
+              <div className="flex gap-[8px] flex-wrap mt-[12px]">
+                <span className="text-[11px] px-[8px] py-[2px] rounded-[100px] font-semibold uppercase tracking-[0.04em] bg-[rgba(255,77,28,0.15)] text-[#FF4D1C]">~{msg.data.calories} kcal</span>
+                <span className="text-[11px] px-[8px] py-[2px] rounded-[100px] font-semibold uppercase tracking-[0.04em] bg-[rgba(55,138,221,0.15)] text-[#378ADD]">{msg.data.protein}g pro</span>
+                <span className="text-[11px] px-[8px] py-[2px] rounded-[100px] font-semibold uppercase tracking-[0.04em] bg-[rgba(255,255,255,0.1)] text-[#EBEBF5CC]">{msg.data.fat}g fat</span>
+                <span className="text-[11px] px-[8px] py-[2px] rounded-[100px] font-semibold uppercase tracking-[0.04em] bg-[rgba(255,255,255,0.1)] text-[#EBEBF5CC]">{msg.data.carbs}g carb</span>
               </div>
             )}
             {msg.data?.coaching_tip && (
-              <div className="mt-2.5 pt-2.5 border-t border-border-tertiary flex gap-2">
-                <Dumbbell size={14} className="text-teal mt-0.5 shrink-0" />
-                <div className="text-[12px] text-teal italic pl-1 border-l-2 border-teal/30">
+              <div className="mt-[16px] pt-[12px] border-t border-[rgba(255,255,255,0.06)] flex gap-[8px]">
+                <Dumbbell size={16} className="text-[#D4FF00] mt-[2px] shrink-0" />
+                <div className="text-[13px] text-[#EBEBF5CC] italic pl-[8px] border-l-[1.5px] border-[#D4FF00]/40 leading-[1.4]">
                   {msg.data.coaching_tip}
                 </div>
               </div>
             )}
             {msg.data?.tip && !msg.data?.coaching_tip && (
-              <div className="mt-2 pt-2 border-t border-border-tertiary text-[12px] text-text-secondary italic">
+              <div className="mt-[12px] pt-[8px] border-t border-[rgba(255,255,255,0.06)] text-[12px] text-[#EBEBF599] italic">
                 Detected: {msg.data.tip}
               </div>
             )}
           </div>
         ))}
         {loading && (
-          <div className="bg-background-secondary border-[0.5px] border-border-tertiary text-text-primary rounded-t-xl rounded-br-xl self-start p-2 px-3 text-[13px] max-w-[85%] flex items-center gap-1.5">
-            <Loader2 size={14} className="animate-spin text-purple" /> Parsing meal...
+          <div className="glass-card text-white rounded-[16px] rounded-bl-[4px] self-start p-[12px_16px] text-[15px] font-normal tracking-[-0.1px] max-w-[85%] flex items-center gap-[8px]">
+            <Loader2 size={16} className="animate-spin text-[#D4FF00]" /> Parsing meal...
           </div>
         )}
       </div>
 
-      <div className="flex gap-2 items-center mb-3">
+      <div className="flex gap-[12px] items-center mb-[20px] shrink-0">
         <input 
-          className="flex-1 px-3 py-2 border-[0.5px] border-border-secondary rounded-md text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple disabled:opacity-50" 
+          className="input-field flex-1 !p-[14px_16px] !rounded-[100px]" 
           type="text" 
           placeholder={selectedMealSlot ? "What did you eat? Type naturally..." : "Select a meal slot above first"}
           value={input} 
@@ -408,29 +408,34 @@ export function MealLoggerScreen() {
           onKeyDown={e => e.key === 'Enter' && handleSend()}
           disabled={loading || !selectedMealSlot}
         />
-        <button onClick={() => handleSend()} disabled={loading || !selectedMealSlot} aria-label="Log meal" className="w-9 h-9 rounded-md border-none bg-purple text-background-primary flex items-center justify-center cursor-pointer disabled:opacity-50">
-          <Send size={16} />
+        <button 
+          onClick={() => handleSend()} 
+          disabled={loading || !selectedMealSlot} 
+          aria-label="Log meal" 
+          className="w-[48px] h-[48px] rounded-[100px] border-none bg-[#D4FF00] text-[#0A0A0A] flex items-center justify-center cursor-pointer disabled:opacity-50 transition-transform active:scale-[0.96]"
+        >
+          <Send size={20} className="ml-[2px]" />
         </button>
       </div>
 
-      <div className="bg-background-secondary rounded-md p-3 border-[0.5px] border-border-tertiary shrink-0">
-        <div className="text-[11px] font-medium uppercase tracking-wider text-text-tertiary mb-2">Today so far</div>
-        <div className="grid grid-cols-4 gap-1.5">
+      <div className="glass-card p-[16px] shrink-0">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599] mb-[12px]">Today so far</div>
+        <div className="grid grid-cols-4 gap-[8px]">
           <div className="text-center">
-            <div className="text-[16px] font-medium text-amber">{eatenKcal.toLocaleString()}</div>
-            <div className="text-[10px] text-text-secondary">kcal eaten</div>
+            <div className="text-[17px] font-bold text-[#FF4D1C] tracking-[-0.2px]">{eatenKcal.toLocaleString()}</div>
+            <div className="text-[11px] text-[#EBEBF599] mt-[2px]">kcal</div>
           </div>
           <div className="text-center">
-            <div className="text-[16px] font-medium text-blue">{eatenProtein}g</div>
-            <div className="text-[10px] text-text-secondary">protein</div>
+            <div className="text-[17px] font-bold text-[#378ADD] tracking-[-0.2px]">{eatenProtein}g</div>
+            <div className="text-[11px] text-[#EBEBF599] mt-[2px]">pro</div>
           </div>
           <div className="text-center">
-            <div className="text-[16px] font-medium text-pink">{eatenFat}g</div>
-            <div className="text-[10px] text-text-secondary">fat</div>
+            <div className="text-[17px] font-bold text-white tracking-[-0.2px]">{eatenFat}g</div>
+            <div className="text-[11px] text-[#EBEBF599] mt-[2px]">fat</div>
           </div>
           <div className="text-center">
-            <div className="text-[16px] font-medium text-green">{eatenCarbs}g</div>
-            <div className="text-[10px] text-text-secondary">carbs</div>
+            <div className="text-[17px] font-bold text-white tracking-[-0.2px]">{eatenCarbs}g</div>
+            <div className="text-[11px] text-[#EBEBF599] mt-[2px]">carbs</div>
           </div>
         </div>
       </div>
