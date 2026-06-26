@@ -51,7 +51,7 @@ export const waterService = {
     }
     
     const newTotalLiters = (previousTotalMl + amountMl) / 1000;
-    await complianceService.updateTodayScore(newTotalLiters);
+    await complianceService.updateTodayScore();
     
     return data;
   }

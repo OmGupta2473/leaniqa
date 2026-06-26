@@ -8,7 +8,7 @@ import { authService } from './authService';
 import { DbDailyMetric } from '../types/supabase';
 
 export const complianceService = {
-  async updateTodayScore(waterLiters: number = 0): Promise<DbDailyMetric | null> {
+  async updateTodayScore(): Promise<DbDailyMetric | null> {
     try {
       const userId = await authService.getUserId();
       const profile = await profileService.getProfile();
@@ -21,6 +21,9 @@ export const complianceService = {
       // Fetch today's data
       const meals = await mealService.getTodaysMeals();
       const weightLogs = await weightService.getWeightLogs();
+      const waterServiceRef = (await import('./waterService')).waterService;
+      const waterTotalMl = await waterServiceRef.getTodaysWaterTotal();
+      const waterLiters = waterTotalMl / 1000;
       
       const hasWeightLogged = weightLogs.some(w => w.date.startsWith(today));
       const actualCalories = meals.reduce((acc, m) => acc + m.calories, 0);
@@ -48,25 +51,14 @@ export const complianceService = {
         score
       };
       
-      // Check existing
-      const { data: existing } = await supabase
-        .from('daily_metrics')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('date', today)
-        .maybeSingle();
-        
       const payload: any = {
         ...metricPayload,
         user_id: userId,
       };
-      if (existing?.id) {
-        payload.id = existing.id;
-      }
       
       const { data, error } = await supabase
         .from('daily_metrics')
-        .upsert(payload)
+        .upsert(payload, { onConflict: 'user_id,date' })
         .select()
         .single();
         

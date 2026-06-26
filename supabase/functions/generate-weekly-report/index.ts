@@ -117,10 +117,7 @@ Respond with JSON:
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error: any) {
-    if (error.status === 400 || error.status === 401 || error.status === 403) {
-      throw error; // Don't swallow auth/validation errors
-    }
-    console.warn("AI failed, falling back", error);
+    console.warn("AI failed or internal error, falling back", error);
     const fallbackData = {
       bestHabit: "Consistent tracking",
       worstHabit: "Missed some protein goals",
