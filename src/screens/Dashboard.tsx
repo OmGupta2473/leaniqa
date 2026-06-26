@@ -102,7 +102,7 @@ export function DashboardScreen() {
   const strategyName = goal?.strategy ?? onboardingData?.chosenStrategyName ?? "Recommended";
 
   const dailyTargetKcal =
-    profile?.maintenance_kcal && goal?.deficit_kcal
+    profile?.maintenance_kcal && goal?.deficit_kcal !== undefined
       ? profile.maintenance_kcal - goal.deficit_kcal
       : onboardingData?.dailyCalorieGoal;
 

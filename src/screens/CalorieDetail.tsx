@@ -29,7 +29,7 @@ export function CalorieDetailScreen() {
   });
 
   const dailyCalorieGoal =
-    profile?.maintenance_kcal && goal?.deficit_kcal
+    profile?.maintenance_kcal && goal?.deficit_kcal !== undefined
       ? profile.maintenance_kcal - goal.deficit_kcal
       : (onboardingData?.dailyCalorieGoal ?? 2000);
 
