@@ -608,6 +608,55 @@ button.bf-card .text-\[22px\] {
   overflow: hidden;
 }
 
+.streaks-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 0 20px clamp(10px, 2.5vw, 14px);
+}
+
+.awards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(12px, 3vw, 16px);
+  padding: 0 20px;
+  margin-bottom: clamp(16px, 4vw, 24px);
+}
+
+.award-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+  position: relative;
+}
+.award-cell:active {
+  transform: scale(0.94);
+}
+
+.award-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: awardFadeIn 0.25s ease both;
+}
+
+@keyframes awardFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .profile-screen {
   width: 100%;
   min-height: 100dvh;
