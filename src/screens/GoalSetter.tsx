@@ -223,11 +223,16 @@ export function GoalSetterScreen() {
         </div>
 
         <button 
-          onClick={() => {
+          onClick={async () => {
             if (window.confirm("Are you sure? Once reset, your goal history cannot be recovered.")) {
-              setGoalSetCompleted(false);
-              setScreen('goal');
-              queryClient.invalidateQueries({ queryKey: ['goal'] });
+              try {
+                await profileService.deleteGoal();
+                setGoalSetCompleted(false);
+                setScreen('goal');
+                queryClient.setQueryData(['goal'], null);
+              } catch (err) {
+                alert("Failed to reset goal.");
+              }
             }
           }}
           className="w-full py-[14px] bg-[rgba(255,255,255,0.1)] text-white font-semibold text-[15px] rounded-[100px] border-[0.5px] border-[rgba(255,255,255,0.2)] transition-transform active:scale-[0.96]"

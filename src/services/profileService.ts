@@ -75,5 +75,18 @@ export const profileService = {
       throw error;
     }
     return data;
+  },
+
+  async deleteGoal(): Promise<void> {
+    const userId = await authService.getUserId();
+    const { error } = await supabase
+      .from('goals')
+      .delete()
+      .eq('user_id', userId);
+    
+    if (error) {
+      console.error('Error deleting goal:', error);
+      throw error;
+    }
   }
 };
