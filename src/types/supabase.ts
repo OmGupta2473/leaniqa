@@ -36,6 +36,7 @@ export interface DbMealLog {
   carbs: number;
   meal_time: string;
   tip?: string;
+  meal_slot?: 'breakfast' | 'lunch' | 'dinner';
 }
 
 export interface DbWeightLog {

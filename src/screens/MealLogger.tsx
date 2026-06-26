@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '../store';
-import { Send, Loader2, Dumbbell } from 'lucide-react';
+import { Send, Loader2, Dumbbell, ChevronDown, ChevronRight, Sun, Sunrise, Moon } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { mealService } from '../services/mealService';
@@ -56,13 +56,28 @@ const getDeterministicFallback = (text: string) => {
 };
 
 export function MealLoggerScreen() {
+  const { chatHistory, addChatMessage, clearOldChats } = useAppStore();
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [selectedMealSlot, setSelectedMealSlot] = useState<'breakfast'|'lunch'|'dinner'|null>(null);
+  const [expandedSlots, setExpandedSlots] = useState<Record<string, boolean>>({});
   
+  useEffect(() => {
+    clearOldChats();
+    const hour = new Date().getHours();
+    if (hour < 12) setSelectedMealSlot('breakfast');
+    else if (hour < 18) setSelectedMealSlot('lunch');
+    else setSelectedMealSlot('dinner');
+  }, [clearOldChats]);
+
   const queryClient = useQueryClient();
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
   const { data: meals = [] } = useQuery({ queryKey: ['meals', 'today'], queryFn: () => mealService.getTodaysMeals() });
+
+  const toggleSlot = (slot: string) => {
+    setExpandedSlots(prev => ({ ...prev, [slot]: !prev[slot] }));
+  };
 
   const todaysMeals = meals;
   
@@ -71,6 +86,10 @@ export function MealLoggerScreen() {
   const eatenFat = todaysMeals.reduce((acc, m) => acc + m.fat, 0);
   const eatenCarbs = todaysMeals.reduce((acc, m) => acc + m.carbs, 0);
 
+  const breakfastMeals = todaysMeals.filter(m => m.meal_slot === 'breakfast');
+  const lunchMeals = todaysMeals.filter(m => m.meal_slot === 'lunch');
+  const dinnerMeals = todaysMeals.filter(m => m.meal_slot === 'dinner');
+
   const maintKcal = profile?.maintenance_kcal || 2200;
   const dailyTargetKcal = maintKcal - (goal?.deficit_kcal ?? 400);
   const proteinTarget = profile?.protein_target || 150;
@@ -78,18 +97,10 @@ export function MealLoggerScreen() {
   const remainingCalories = dailyTargetKcal - eatenKcal;
   const remainingProtein = proteinTarget - eatenProtein;
 
-  const [chat, setChat] = useState<{role: 'user'|'ai', text: string, data?: any}[]>([
-    { role: 'ai', text: `Good morning! What did you eat first today? Just type it naturally — I'll handle the rest.` }
-  ]);
+  const chat = chatHistory.length > 0 ? chatHistory : [
+    { role: 'ai' as const, text: "Log a meal below — I'll calculate the macros and give coaching advice." }
+  ];
   const chatRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (profile?.name && chat.length === 1 && chat[0].role === 'ai') {
-      setChat([
-        { role: 'ai', text: `Good morning, ${profile.name}! What did you eat first today? Just type it naturally — I'll handle the rest.` }
-      ]);
-    }
-  }, [profile?.name]);
 
   useEffect(() => {
     if (chatRef.current) {
@@ -102,13 +113,6 @@ export function MealLoggerScreen() {
       let retries = 3;
       while (retries > 0) {
         try {
-          const hour = new Date().getHours();
-          let mealType = 'snack';
-          if (hour < 10) mealType = 'breakfast';
-          else if (hour < 14) mealType = 'lunch';
-          else if (hour < 17) mealType = 'snack';
-          else mealType = 'dinner';
-
           const { data: { session } } = await supabase.auth.getSession();
           if (!session) {
             throw new Error("Authentication failed");
@@ -119,7 +123,7 @@ export function MealLoggerScreen() {
               text,
               remainingCalories,
               remainingProtein,
-              mealType
+              mealType: selectedMealSlot
             },
             headers: {
               Authorization: `Bearer ${session.access_token}`
@@ -159,7 +163,8 @@ export function MealLoggerScreen() {
                 fat: fallbackData.fat,
                 carbs: fallbackData.carbs,
                 meal_time: new Date().toISOString(),
-                tip: fallbackData.foods_detected?.join(', ') || text
+                tip: fallbackData.foods_detected?.join(', ') || text,
+                meal_slot: selectedMealSlot || undefined
               });
 
               return { ...fallbackData, _errorMessage: tip };
@@ -175,7 +180,8 @@ export function MealLoggerScreen() {
             fat: data.fat,
             carbs: data.carbs,
             meal_time: new Date().toISOString(),
-            tip: data.foods_detected?.join(', ') || text
+            tip: data.foods_detected?.join(', ') || text,
+            meal_slot: selectedMealSlot || undefined
           });
           return data;
 
@@ -201,7 +207,8 @@ export function MealLoggerScreen() {
               fat: fallbackData.fat,
               carbs: fallbackData.carbs,
               meal_time: new Date().toISOString(),
-              tip: fallbackData.foods_detected?.join(', ') || text
+              tip: fallbackData.foods_detected?.join(', ') || text,
+              meal_slot: selectedMealSlot || undefined
             });
 
             return { ...fallbackData, _errorMessage: tip };
@@ -220,46 +227,136 @@ export function MealLoggerScreen() {
       const foodsDetected = data.foods_detected?.join(', ') || text;
       
       if (data._errorMessage) {
-        setChat(prev => [...prev, { 
+        addChatMessage({ 
           role: 'ai', 
           text: `${data._errorMessage} Logged: ${foodsDetected}. (Confidence: ${data.confidence}%)`,
           data 
-        }]);
+        });
       } else {
-        setChat(prev => [...prev, { 
+        addChatMessage({ 
           role: 'ai', 
           text: `Got it. Logged: ${foodsDetected}. (Confidence: ${data.confidence}%)`,
           data 
-        }]);
+        });
       }
       setLoading(false);
     },
     onError: () => {
-      setChat(prev => [...prev, { role: 'ai', text: "Sorry, I had trouble connecting to the nutrition database after multiple attempts." }]);
+      addChatMessage({ role: 'ai', text: "Sorry, I had trouble connecting to the nutrition database after multiple attempts." });
       setLoading(false);
     }
   });
 
   const handleSend = (textOverride?: string) => {
     const text = textOverride || input.trim();
-    if (!text || loading) return;
+    if (!text || loading || !selectedMealSlot) return;
     
     setInput('');
-    setChat(prev => [...prev, { role: 'user', text }]);
+    addChatMessage({ role: 'user', text });
     setLoading(true);
 
     addMealMutation.mutate(text);
   };
 
+  const renderMealBox = (slot: 'breakfast' | 'lunch' | 'dinner', icon: React.ReactNode, title: string, timeRange: string) => {
+    const slotMeals = slot === 'breakfast' ? breakfastMeals : slot === 'lunch' ? lunchMeals : dinnerMeals;
+    const slotKcal = slotMeals.reduce((sum, m) => sum + m.calories, 0);
+    const slotProtein = slotMeals.reduce((sum, m) => sum + m.protein, 0);
+    const isExpanded = expandedSlots[slot];
+
+    return (
+      <div className="bg-background-secondary border border-border-secondary rounded-lg mb-2 overflow-hidden">
+        <div 
+          className="p-3 flex justify-between items-center cursor-pointer hover:bg-background-tertiary transition-colors"
+          onClick={() => toggleSlot(slot)}
+        >
+          <div className="flex items-center gap-2">
+            <div className={cn(
+              "w-8 h-8 rounded-full flex items-center justify-center",
+              selectedMealSlot === slot ? "bg-purple text-background-primary" : "bg-purple/10 text-purple"
+            )}>
+              {icon}
+            </div>
+            <div>
+              <div className="text-[14px] font-medium text-text-primary leading-tight">{title}</div>
+              <div className="text-[11px] text-text-secondary">{timeRange}</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <div className="text-[13px] font-bold text-text-primary">{slotKcal} kcal</div>
+              <div className="text-[11px] text-text-secondary">{slotProtein}g protein</div>
+            </div>
+            {isExpanded ? <ChevronDown size={16} className="text-text-tertiary" /> : <ChevronRight size={16} className="text-text-tertiary" />}
+          </div>
+        </div>
+        
+        {isExpanded && (
+          <div className="bg-background-primary p-3 border-t border-border-secondary">
+            {slotMeals.length === 0 ? (
+              <div className="text-[12px] text-text-tertiary text-center py-2 italic">Nothing logged yet</div>
+            ) : (
+              <div className="space-y-2">
+                {slotMeals.map((m, i) => (
+                  <div key={i} className="flex justify-between items-center">
+                    <div className="text-[13px] text-text-primary capitalize truncate max-w-[50%]">{m.meal_text}</div>
+                    <div className="flex gap-1.5">
+                      <span className="text-[10px] bg-amber/10 text-amber px-1.5 py-0.5 rounded font-medium">{m.calories} kcal</span>
+                      <span className="text-[10px] bg-blue/10 text-blue px-1.5 py-0.5 rounded font-medium">{m.protein}g</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <div className="text-[11px] font-medium uppercase tracking-wider text-text-tertiary mb-2">Today's meals</div>
-      <div className="flex gap-1.5 flex-wrap mb-2.5">
-        {['Dal chawal (1 plate)', '2 rotis with sabzi', '1 cup chai with 2 biscuits', 'Boiled eggs (2)', 'Paneer tikka 150g'].map(q => (
-          <div key={q} onClick={() => handleSend(q)} className="px-2.5 py-1 rounded-full border-[0.5px] border-border-secondary text-[11px] text-text-secondary cursor-pointer bg-background-primary transition-all hover:border-purple hover:text-text-primary hover:bg-purple-bg">
-            + {q.split(' (')[0].split(' with')[0]}
-          </div>
-        ))}
+      <div className="mb-4">
+        <div className="text-[11px] font-medium uppercase tracking-wider text-text-tertiary mb-3 text-center">Select Meal Slot</div>
+        <div className="flex justify-center gap-2 mb-4">
+          <button 
+            onClick={() => setSelectedMealSlot('breakfast')}
+            className={cn(
+              "flex-1 py-2 px-1 rounded-full border transition-all text-[12px] font-medium flex items-center justify-center gap-1.5",
+              selectedMealSlot === 'breakfast' 
+                ? "bg-purple text-background-primary border-purple shadow-sm" 
+                : "bg-background-secondary text-text-secondary border-border-tertiary hover:border-border-secondary"
+            )}
+          >
+            <Sunrise size={14} /> Breakfast
+          </button>
+          <button 
+            onClick={() => setSelectedMealSlot('lunch')}
+            className={cn(
+              "flex-1 py-2 px-1 rounded-full border transition-all text-[12px] font-medium flex items-center justify-center gap-1.5",
+              selectedMealSlot === 'lunch' 
+                ? "bg-purple text-background-primary border-purple shadow-sm" 
+                : "bg-background-secondary text-text-secondary border-border-tertiary hover:border-border-secondary"
+            )}
+          >
+            <Sun size={14} /> Lunch
+          </button>
+          <button 
+            onClick={() => setSelectedMealSlot('dinner')}
+            className={cn(
+              "flex-1 py-2 px-1 rounded-full border transition-all text-[12px] font-medium flex items-center justify-center gap-1.5",
+              selectedMealSlot === 'dinner' 
+                ? "bg-purple text-background-primary border-purple shadow-sm" 
+                : "bg-background-secondary text-text-secondary border-border-tertiary hover:border-border-secondary"
+            )}
+          >
+            <Moon size={14} /> Dinner
+          </button>
+        </div>
+
+        {renderMealBox('breakfast', <Sunrise size={16} />, 'Breakfast', '6 am–12 pm')}
+        {renderMealBox('lunch', <Sun size={16} />, 'Lunch', '12 pm–6 pm')}
+        {renderMealBox('dinner', <Moon size={16} />, 'Dinner', '6 pm–10 pm')}
       </div>
       
       <div className="flex flex-col gap-2 mb-3 flex-1 overflow-y-auto pr-1" ref={chatRef}>
@@ -305,13 +402,13 @@ export function MealLoggerScreen() {
         <input 
           className="flex-1 px-3 py-2 border-[0.5px] border-border-secondary rounded-md text-[13px] text-text-primary bg-background-primary focus:outline-none focus:border-purple disabled:opacity-50" 
           type="text" 
-          placeholder="What did you eat? Type naturally..." 
+          placeholder={selectedMealSlot ? "What did you eat? Type naturally..." : "Select a meal slot above first"}
           value={input} 
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSend()}
-          disabled={loading}
+          disabled={loading || !selectedMealSlot}
         />
-        <button onClick={() => handleSend()} disabled={loading} aria-label="Log meal" className="w-9 h-9 rounded-md border-none bg-purple text-background-primary flex items-center justify-center cursor-pointer disabled:opacity-50">
+        <button onClick={() => handleSend()} disabled={loading || !selectedMealSlot} aria-label="Log meal" className="w-9 h-9 rounded-md border-none bg-purple text-background-primary flex items-center justify-center cursor-pointer disabled:opacity-50">
           <Send size={16} />
         </button>
       </div>
