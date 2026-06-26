@@ -1,10 +1,9 @@
 import { useAppStore } from '../store';
-import { Target, Droplets, Utensils, AlertCircle } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Target, Footprints, Utensils, CheckCircle2 } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { profileService } from '../services/profileService';
 import { mealService } from '../services/mealService';
 import { weightService } from '../services/weightService';
-import { waterService } from '../services/waterService';
 import { complianceService } from '../services/complianceService';
 import { calculateProjections } from '../lib/projectionEngine';
 import { useEffect } from 'react';
@@ -18,17 +17,6 @@ export function DashboardScreen() {
   const { data: goal, isError: isGoalError, error: goalError, refetch: refetchGoal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
   const { data: meals, isError: isMealsError, refetch: refetchMeals } = useQuery({ queryKey: ['meals', 'today'], queryFn: () => mealService.getTodaysMeals() });
   const { data: weightLogs = [] } = useQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
-  const { data: todaysWaterTotal = 0, isError: isWaterError, refetch: refetchWater } = useQuery({ queryKey: ['waterTotal', 'today'], queryFn: () => waterService.getTodaysWaterTotal() });
-  
-  const addWaterMutation = useMutation({
-    mutationFn: (amountMl: number) => waterService.addWater(amountMl),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['waterTotal', 'today'] });
-      complianceService.updateTodayScore().then(() => {
-        queryClient.invalidateQueries({ queryKey: ['complianceScore'] });
-      }).catch(console.error);
-    }
-  });
 
   if (isProfileError || isGoalError) {
     return (
@@ -54,21 +42,10 @@ export function DashboardScreen() {
     ? profile.maintenance_kcal - goal.deficit_kcal 
     : onboardingData?.dailyCalorieGoal;
 
-  let waterTargetLiters: number | undefined;
-  if (profile?.weight) {
-    let water = (profile.weight * 35) / 1000;
-    if (profile.activity_level === 'Very active') water += 0.5;
-    waterTargetLiters = parseFloat(water.toFixed(1));
-  } else {
-    waterTargetLiters = onboardingData?.waterLitres ? parseFloat(onboardingData.waterLitres) : undefined;
-  }
-  
   // Calculate today's intake
   const todaysMeals = meals || [];
   const eatenKcal = todaysMeals.reduce((acc, m) => acc + m.calories, 0);
   const eatenProtein = todaysMeals.reduce((acc, m) => acc + m.protein, 0);
-  
-  const todaysWaterLiters = todaysWaterTotal / 1000;
   
   const remainingKcal = dailyTargetKcal !== undefined ? Math.max(0, dailyTargetKcal - eatenKcal) : undefined;
   const remainingProtein = proteinTarget !== undefined ? Math.max(0, proteinTarget - eatenProtein) : undefined;
@@ -111,20 +88,7 @@ export function DashboardScreen() {
   }
 
   // Recommendations
-  let recommendation = '';
-  if (remainingProtein !== undefined) {
-    if (remainingProtein > 40) {
-      recommendation = `${Math.round(remainingProtein / 0.31)}g chicken breast or ${Math.round(remainingProtein / 0.25)}g paneer`;
-    } else if (remainingProtein > 20) {
-      recommendation = `1 scoop of whey protein or ${Math.round(remainingProtein / 0.06)}g eggs`;
-    } else if (remainingProtein > 0) {
-      recommendation = `A small high-protein snack, like greek yogurt`;
-    } else {
-      recommendation = `Targets hit! Keep calories under ${remainingKcal ?? 'your target'} if you want a snack.`;
-    }
-  } else {
-    recommendation = '—';
-  }
+  // recommendation calculation removed
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -205,36 +169,123 @@ export function DashboardScreen() {
             )}
           </div>
           <div className="bg-background-secondary p-2 border border-border-tertiary text-center flex flex-col justify-between">
-            {isWaterError ? (
-              <div className="text-[10px] text-red-500 my-auto cursor-pointer" onClick={() => refetchWater()}>Retry</div>
-            ) : (
-              <>
-                <div className="text-[18px] font-medium text-teal">{todaysWaterLiters.toFixed(1)}L <span className="text-[10px] text-text-secondary font-normal">/ {waterTargetLiters !== undefined ? waterTargetLiters : '—'}L</span></div>
-                <div className="flex justify-center gap-1 mt-2">
-                  <button onClick={() => addWaterMutation.mutate(250)} disabled={addWaterMutation.isPending} className="bg-background-primary border border-border-tertiary rounded px-1.5 py-0.5 text-[9px] hover:bg-border-secondary transition-colors disabled:opacity-50">{addWaterMutation.isPending ? '...' : '+250'}</button>
-                  <button onClick={() => addWaterMutation.mutate(500)} disabled={addWaterMutation.isPending} className="bg-background-primary border border-border-tertiary rounded px-1.5 py-0.5 text-[9px] hover:bg-border-secondary transition-colors disabled:opacity-50">{addWaterMutation.isPending ? '...' : '+500'}</button>
-                </div>
-              </>
-            )}
+            <div className="flex flex-col items-center gap-1 my-auto">
+              <div className="text-amber"><Footprints size={18} /></div>
+              <div className="text-[18px] font-medium text-text-primary leading-none">12,000</div>
+              <div className="text-[10px] text-text-secondary uppercase tracking-wider">Steps Goal</div>
+              <div className="text-[8px] bg-amber/10 text-amber px-1.5 py-0.5 rounded-sm uppercase tracking-widest mt-1">Reminder only</div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Card 3: What To Do Next */}
-      <div className="bg-purple/5 p-4 mb-4 border border-purple/20">
+      {/* Card 3: Today's meal ideas */}
+      <div className="bg-purple/5 p-4 mb-4 border border-purple/20 rounded-lg">
         <div className="flex items-center gap-1.5 text-[11px] text-purple uppercase tracking-widest mb-2 font-medium">
-          <AlertCircle size={14} /> What to do next
+          <Utensils size={14} /> Meal ideas to hit your protein
         </div>
-        <div className="text-[14px] text-text-primary mb-1">
-          {remainingProtein !== undefined ? (
-            <>You need <strong className="font-medium text-purple">{remainingProtein}g</strong> more protein today.</>
-          ) : (
-            <>Your daily targets are not fully set yet.</>
-          )}
-        </div>
-        <div className="text-[13px] text-text-secondary">
-          Recommendation: <span className="font-medium text-text-primary">{recommendation}</span>
-        </div>
+        {remainingProtein !== undefined && remainingProtein <= 0 ? (
+          <div className="text-[14px] text-green flex items-center gap-2 mt-3 font-medium">
+            <CheckCircle2 size={16} /> Protein target hit! Great work today.
+          </div>
+        ) : (
+          <>
+            <div className="text-[13px] text-text-secondary mb-4">
+              ~{remainingProtein !== undefined ? remainingProtein : 0}g protein remaining
+            </div>
+            <div className="space-y-3">
+              {/* Option A */}
+              <div className="bg-background-primary border border-border-secondary rounded-md p-3 flex flex-col gap-2">
+                <div className="text-[10px] text-text-secondary uppercase tracking-widest font-semibold">Option A</div>
+                <div className="text-[13px] text-text-primary font-medium">
+                  {remainingProtein !== undefined && remainingProtein > 30 
+                    ? "4 whole eggs + 1 cup milk" 
+                    : remainingProtein !== undefined && remainingProtein > 15
+                    ? "2 boiled eggs + 100g Greek yogurt"
+                    : "1 boiled egg"}
+                </div>
+                <div className="flex gap-2">
+                  <span className="bg-blue/10 text-blue text-[10px] px-2 py-0.5 rounded-sm font-medium">
+                    {remainingProtein !== undefined && remainingProtein > 30 
+                    ? "~28g protein" 
+                    : remainingProtein !== undefined && remainingProtein > 15
+                    ? "~20g protein"
+                    : "~6g protein"}
+                  </span>
+                  <span className="bg-amber/10 text-amber text-[10px] px-2 py-0.5 rounded-sm font-medium">
+                    {remainingProtein !== undefined && remainingProtein > 30 
+                    ? "~350 kcal" 
+                    : remainingProtein !== undefined && remainingProtein > 15
+                    ? "~200 kcal"
+                    : "~70 kcal"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Option B */}
+              <div className="bg-background-primary border border-border-secondary rounded-md p-3 flex flex-col gap-2">
+                <div className="text-[10px] text-text-secondary uppercase tracking-widest font-semibold">Option B</div>
+                <div className="text-[13px] text-text-primary font-medium">
+                  {remainingProtein !== undefined && remainingProtein > 40 
+                    ? "250g chicken breast (grilled)" 
+                    : remainingProtein !== undefined && remainingProtein > 20
+                    ? "150g chicken breast"
+                    : "100g chicken breast"}
+                </div>
+                <div className="flex gap-2">
+                  <span className="bg-blue/10 text-blue text-[10px] px-2 py-0.5 rounded-sm font-medium">
+                    {remainingProtein !== undefined && remainingProtein > 40 
+                    ? "~55g protein" 
+                    : remainingProtein !== undefined && remainingProtein > 20
+                    ? "~33g protein"
+                    : "~22g protein"}
+                  </span>
+                  <span className="bg-amber/10 text-amber text-[10px] px-2 py-0.5 rounded-sm font-medium">
+                    {remainingProtein !== undefined && remainingProtein > 40 
+                    ? "~280 kcal" 
+                    : remainingProtein !== undefined && remainingProtein > 20
+                    ? "~165 kcal"
+                    : "~110 kcal"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center relative py-1">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border-tertiary"></div></div>
+                <div className="relative bg-purple/5 px-2 text-[10px] text-text-tertiary font-medium uppercase tracking-widest">OR</div>
+              </div>
+
+              {/* Option C */}
+              <div className="bg-background-primary border border-border-secondary rounded-md p-3 flex flex-col gap-2">
+                <div className="text-[10px] text-text-secondary uppercase tracking-widest font-semibold">Option C</div>
+                <div className="text-[13px] text-text-primary font-medium">
+                  {remainingProtein !== undefined && remainingProtein > 40 
+                    ? "300g low-fat paneer OR 150g soya chunks" 
+                    : remainingProtein !== undefined && remainingProtein > 20
+                    ? "200g low-fat paneer OR 100g soya chunks"
+                    : "100g paneer OR 50g soya chunks"}
+                </div>
+                <div className="flex gap-2">
+                  <span className="bg-blue/10 text-blue text-[10px] px-2 py-0.5 rounded-sm font-medium">
+                    {remainingProtein !== undefined && remainingProtein > 40 
+                    ? "~54g or ~52g protein" 
+                    : remainingProtein !== undefined && remainingProtein > 20
+                    ? "~36g protein"
+                    : "~18g protein"}
+                  </span>
+                  <span className="bg-amber/10 text-amber text-[10px] px-2 py-0.5 rounded-sm font-medium">
+                    {remainingProtein !== undefined && remainingProtein > 40 
+                    ? "~400 kcal" 
+                    : remainingProtein !== undefined && remainingProtein > 20
+                    ? "~250 kcal"
+                    : "~130 kcal"}
+                  </span>
+                </div>
+              </div>
+
+            </div>
+          </>
+        )}
       </div>
 
       <button onClick={() => setScreen('meal')} className="w-full p-3 border-none bg-purple text-background-primary text-[14px] font-bold uppercase tracking-widest cursor-pointer transition-opacity hover:opacity-90 shadow-lg shadow-purple/20">Log Meal</button>
