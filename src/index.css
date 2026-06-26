@@ -50,43 +50,6 @@
     max-width: 480px;
     margin: 0 auto;
   }
-
-  .screen-bg {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .screen-bg::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background-image: var(--bg-img, none);
-    background-size: cover;
-    background-position: var(--bg-pos, center top);
-    background-repeat: no-repeat;
-    opacity: var(--bg-opacity, 0.18);
-    z-index: 0;
-    filter: brightness(0.7) contrast(1.1);
-  }
-
-  .screen-bg::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      to bottom,
-      rgba(28,28,30,0.6) 0%,
-      rgba(28,28,30,0.3) 30%,
-      rgba(28,28,30,0.5) 70%,
-      rgba(28,28,30,0.95) 100%
-    );
-    z-index: 1;
-  }
-
-  .screen-bg > * {
-    position: relative;
-    z-index: 2;
-  }
 }
 
 @keyframes slideUpFade {
