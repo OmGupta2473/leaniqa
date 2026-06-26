@@ -130,12 +130,6 @@ export function DashboardScreen() {
 
   return (
     <div className="screen-container screen-enter">
-      <div className="top-left-icons">
-        <button className="profile-icon-btn" onClick={() => setScreen('profile')} aria-label="Profile">
-          <i className="ti ti-user-circle" style={{ fontSize: '18px', color: '#FFFFFF' }} aria-hidden="true"></i>
-        </button>
-      </div>
-
       {!bannerDismissed && (
         <div className="bg-[rgba(212,255,0,0.1)] border-[0.5px] border-[#D4FF00]/30 text-[#D4FF00] p-[12px_16px] text-[13px] font-medium mb-[20px] rounded-xl flex justify-between items-center">
           <span>Founding Member Beta - Premium unlocked.</span>
