@@ -1,3 +1,13 @@
+// OAUTH SETUP REQUIRED:
+// 1. Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client ID
+// 2. Authorized JavaScript origins: http://localhost:3000 (dev) + https://yourdomain.com (prod)
+// 3. Authorized redirect URIs: https://YOUR_PROJECT.supabase.co/auth/v1/callback
+//    (Get exact URL from: Supabase Dashboard → Authentication → Providers → Google → Callback URL)
+// 4. Supabase Dashboard → Authentication → URL Configuration:
+//    Site URL: http://localhost:3000
+//    Redirect URLs: http://localhost:3000/** (note the /** wildcard)
+// 5. If OAuth consent screen is in "Testing" mode, add your email as a test user.
+
 import { useState, FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import { Dumbbell, Mail, Apple, Chrome } from 'lucide-react'; // Fallback icons for providers
@@ -44,6 +54,7 @@ export function AuthScreen() {
 
   const handleOAuthLogin = async (provider: 'google' | 'apple') => {
     setLoading(true);
+    setMessage('');
     const { error } = await supabase.auth.signInWithOAuth({ 
       provider,
       options: {
@@ -52,10 +63,13 @@ export function AuthScreen() {
     });
     if (error) {
       if (error.message.includes('fetch') || error.message.includes('Network')) setMessage("Network offline");
+      else if (error.message.toLowerCase().includes('exchange') || error.message.toLowerCase().includes('redirect_uri_mismatch')) setMessage("Google sign-in configuration error. Please contact support or use email sign-in.");
       else setMessage("Authentication failed");
       setLoading(false);
     }
   };
+
+  const showEmailSuggestion = message.includes("Authentication failed") || message.includes("configuration error");
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -84,6 +98,12 @@ export function AuthScreen() {
           >
             <Apple className="w-4 h-4" /> Continue with Apple
           </button>
+
+          {showEmailSuggestion && (
+            <div className="border border-blue bg-blue/10 text-blue p-3 rounded-md text-[12px] text-center">
+              Having trouble with Google? Try email sign-in below — enter your email and we'll send a one-time code.
+            </div>
+          )}
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
