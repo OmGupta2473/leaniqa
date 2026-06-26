@@ -19,6 +19,12 @@ const MealSchema = z.object({
   coaching_tip: z.string().optional(),
 });
 
+const apiKey = Deno.env.get("GEMINI_API_KEY");
+if (!apiKey) {
+  console.warn("GEMINI_API_KEY is not set in environment variables");
+}
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -91,13 +97,9 @@ serve(async (req) => {
 
     await supabase.from("api_usage").insert({ user_id: user.id, endpoint });
 
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
-
-    if (!apiKey) {
+    if (!ai) {
       throw new Error("GEMINI_API_KEY is not set");
     }
-
-    const ai = new GoogleGenAI({ apiKey });
 
     let attempts = 0;
     let success = false;

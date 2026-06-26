@@ -295,6 +295,7 @@ export function MealLoggerScreen() {
         .updateTodayScore()
         .then(() => {
           queryClient.invalidateQueries({ queryKey: ["complianceScore"] });
+          queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] });
         })
         .catch(console.error);
 

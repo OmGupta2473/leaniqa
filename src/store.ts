@@ -361,6 +361,7 @@ interface AppState {
   proteinStreak: number;
   earnedAwards: Award[];
   updateDailyLogs: (logs: DailyLog[]) => void;
+  syncFromMetrics: (metrics: any[]) => void;
 }
 
 function getWeekKey(date: Date = new Date()): string {
@@ -423,6 +424,52 @@ export const useAppStore = create<AppState>()(
           let newAwards = computeEarnedAwards(logs);
           
           // Check for newly earned awards and save their dates
+          const currentEarnedDates = loadEarnedDates();
+          let datesUpdated = false;
+          const todayIso = new Date().toISOString().split('T')[0];
+          
+          newAwards = newAwards.map(award => {
+            if (award.earned) {
+              if (currentEarnedDates[award.id]) {
+                return { ...award, earnedDate: currentEarnedDates[award.id] };
+              } else {
+                currentEarnedDates[award.id] = todayIso;
+                datesUpdated = true;
+                return { ...award, earnedDate: todayIso };
+              }
+            }
+            return award;
+          });
+          
+          if (datesUpdated) {
+            saveEarnedDates(currentEarnedDates);
+          }
+          
+          set({
+            dailyLogs: logs,
+            calorieStreak: calStreak,
+            proteinStreak: proStreak,
+            earnedAwards: newAwards
+          });
+        },
+
+        syncFromMetrics: (metrics) => {
+          const logs: DailyLog[] = metrics.map(m => ({
+            date: m.date,
+            caloriesConsumed: m.actual_calories,
+            proteinConsumed: m.actual_protein,
+            calorieTarget: m.target_calories,
+            proteinTarget: m.target_protein,
+            calorieUnderTarget: m.actual_calories > 0 && m.actual_calories <= m.target_calories,
+            proteinHitTarget: m.actual_protein >= m.target_protein
+          }));
+          
+          // Still save to localStorage just in case of offline, but the source of truth becomes DB
+          saveDailyLogs(logs);
+          const calStreak = calculateCalorieStreak(logs);
+          const proStreak = calculateProteinStreak(logs);
+          let newAwards = computeEarnedAwards(logs);
+          
           const currentEarnedDates = loadEarnedDates();
           let datesUpdated = false;
           const todayIso = new Date().toISOString().split('T')[0];
