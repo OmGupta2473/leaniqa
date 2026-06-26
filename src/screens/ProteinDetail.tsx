@@ -22,7 +22,8 @@ export function ProteinDetailScreen() {
   const isTargetHit = proteinConsumed >= proteinTarget;
 
   const allTimeBestProStreak = useMemo(() => {
-    const sorted = [...dailyLogs].sort(
+    const logsToConsider = dailyLogs.filter(l => l.date !== todayStr);
+    const sorted = [...logsToConsider].sort(
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
     );
     let best = 0,

@@ -229,15 +229,23 @@ function saveEarnedDates(dates: Record<string, string>) {
 }
 
 function calculateCalorieStreak(dailyLogs: DailyLog[]): number {
-  const sorted = [...dailyLogs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const todayStr = new Date().toISOString().split('T')[0];
+  const logsToConsider = dailyLogs.filter(l => l.date !== todayStr);
+  const sorted = [...logsToConsider].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  
   let streak = 0;
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   for (let i = 0; i < sorted.length; i++) {
     const logDate = new Date(sorted[i].date);
+    logDate.setHours(0, 0, 0, 0);
+    
     const expectedDate = new Date(today);
-    expectedDate.setDate(today.getDate() - i);
-    const isSameDay = logDate.toDateString() === expectedDate.toDateString();
-    if (!isSameDay) break;
+    expectedDate.setDate(today.getDate() - (i + 1));
+    
+    if (logDate.getTime() !== expectedDate.getTime()) break;
+    
     if (sorted[i].calorieUnderTarget) {
       streak++;
     } else {
@@ -248,15 +256,23 @@ function calculateCalorieStreak(dailyLogs: DailyLog[]): number {
 }
 
 function calculateProteinStreak(dailyLogs: DailyLog[]): number {
-  const sorted = [...dailyLogs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const todayStr = new Date().toISOString().split('T')[0];
+  const logsToConsider = dailyLogs.filter(l => l.date !== todayStr);
+  const sorted = [...logsToConsider].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  
   let streak = 0;
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   for (let i = 0; i < sorted.length; i++) {
     const logDate = new Date(sorted[i].date);
+    logDate.setHours(0, 0, 0, 0);
+    
     const expectedDate = new Date(today);
-    expectedDate.setDate(today.getDate() - i);
-    const isSameDay = logDate.toDateString() === expectedDate.toDateString();
-    if (!isSameDay) break;
+    expectedDate.setDate(today.getDate() - (i + 1));
+    
+    if (logDate.getTime() !== expectedDate.getTime()) break;
+    
     if (sorted[i].proteinHitTarget) {
       streak++;
     } else {
@@ -267,6 +283,9 @@ function calculateProteinStreak(dailyLogs: DailyLog[]): number {
 }
 
 function computeEarnedAwards(dailyLogs: DailyLog[]): Award[] {
+  const todayStr = new Date().toISOString().split('T')[0];
+  const logsToConsider = dailyLogs.filter(l => l.date !== todayStr);
+
   function allTimeBestCalStreak(logs: DailyLog[]) {
     const sorted = [...logs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     let best = 0, current = 0;
@@ -303,8 +322,8 @@ function computeEarnedAwards(dailyLogs: DailyLog[]): Award[] {
     return Math.max(best, current);
   }
 
-  const bestCal = allTimeBestCalStreak(dailyLogs);
-  const bestPro = allTimeBestProStreak(dailyLogs);
+  const bestCal = allTimeBestCalStreak(logsToConsider);
+  const bestPro = allTimeBestProStreak(logsToConsider);
 
   return AWARDS_CATALOG.map(award => ({
     ...award,
