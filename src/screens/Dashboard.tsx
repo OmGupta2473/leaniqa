@@ -43,10 +43,13 @@ function AnimatedNumber({
 }
 
 export function DashboardScreen() {
-  const { setScreen, onboardingData } = useAppStore();
+  const { setScreen, onboardingData, calorieStreak, proteinStreak, dailyLogs, updateDailyLogs, goalSetCompleted } = useAppStore();
   const queryClient = useQueryClient();
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [showLogSheet, setShowLogSheet] = useState(false);
+  const [logCalories, setLogCalories] = useState("");
+  const [logProtein, setLogProtein] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -124,7 +127,31 @@ export function DashboardScreen() {
       ? Math.max(0, proteinTarget - eatenProtein)
       : undefined;
 
-  const { goalSetCompleted } = useAppStore();
+  const handleSaveLog = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const existing = dailyLogs.findIndex(l => l.date === today);
+    const entry = {
+      date: today,
+      caloriesConsumed: Number(logCalories),
+      proteinConsumed: Number(logProtein),
+      calorieTarget: dailyTargetKcal || 2000,
+      proteinTarget: proteinTarget || 120,
+      calorieUnderTarget: Number(logCalories) <= (dailyTargetKcal || 2000),
+      proteinHitTarget: Number(logProtein) >= (proteinTarget || 120)
+    };
+    
+    const newLogs = [...dailyLogs];
+    if (existing >= 0) {
+      newLogs[existing] = entry;
+    } else {
+      newLogs.push(entry);
+    }
+    
+    updateDailyLogs(newLogs);
+    setShowLogSheet(false);
+    setLogCalories("");
+    setLogProtein("");
+  };
 
   let projectedDateString = "Unknown";
   if (goal?.deficit_kcal === 0 || onboardingData?.dailyDeficit === 0) {
@@ -233,6 +260,28 @@ export function DashboardScreen() {
           </motion.div>
           <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599] mt-[8px]">
             Score
+          </div>
+        </div>
+      </div>
+
+      {/* Streak row */}
+      <div className="streak-row">
+        <div className={`streak-chip ${calorieStreak >= 7 ? 'hot' : ''}`}>
+          <div className="text-[18px]">🔥</div>
+          <div>
+            <div className="text-[var(--font-xl)] font-bold text-[#D4FF00] leading-none">
+              {calorieStreak > 0 ? calorieStreak : <span className="text-[rgba(235,235,245,0.5)]">—</span>}
+            </div>
+            <div className="text-[var(--font-xs)] text-[rgba(235,235,245,0.5)] uppercase tracking-wide mt-1">cal streak</div>
+          </div>
+        </div>
+        <div className={`streak-chip ${proteinStreak >= 7 ? 'hot-protein' : ''}`}>
+          <div className="text-[18px]">💪</div>
+          <div>
+            <div className="text-[var(--font-xl)] font-bold text-[#FF4D1C] leading-none">
+              {proteinStreak > 0 ? proteinStreak : <span className="text-[rgba(235,235,245,0.5)]">—</span>}
+            </div>
+            <div className="text-[var(--font-xs)] text-[rgba(235,235,245,0.5)] uppercase tracking-wide mt-1">protein streak</div>
           </div>
         </div>
       </div>
@@ -547,12 +596,64 @@ export function DashboardScreen() {
         )}
       </div>
 
-      <button
-        onClick={() => setScreen("meal")}
-        className="w-full bg-[#D4FF00] text-[#0A0A0A] font-bold text-[17px] rounded-[100px] p-[16px_32px] border-none tracking-[-0.2px] hover:scale-[1.02] hover:opacity-[0.95] active:scale-[0.97] transition-all"
-      >
-        Log Meal
-      </button>
+      <div className="flex gap-[12px]">
+        <button
+          onClick={() => setShowLogSheet(true)}
+          className="flex-1 bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.1)] text-white font-bold text-[15px] rounded-[100px] p-[16px_20px] tracking-[-0.2px] hover:scale-[1.02] active:scale-[0.97] transition-all"
+        >
+          Log Today
+        </button>
+        <button
+          onClick={() => setScreen("meal")}
+          className="flex-1 bg-[#D4FF00] text-[#0A0A0A] font-bold text-[15px] rounded-[100px] p-[16px_20px] border-none tracking-[-0.2px] hover:scale-[1.02] hover:opacity-[0.95] active:scale-[0.97] transition-all"
+        >
+          Log Meal
+        </button>
+      </div>
+
+      {showLogSheet && (
+        <>
+          <div 
+            className="fixed inset-0 bg-black/60 z-40"
+            onClick={() => setShowLogSheet(false)}
+          ></div>
+          <div className="log-sheet">
+            <div className="flex justify-between items-center mb-[20px]">
+              <div className="text-[18px] font-bold text-white tracking-[-0.3px]">Log Today</div>
+              <i className="ti ti-x text-[20px] text-[rgba(235,235,245,0.6)] cursor-pointer" onClick={() => setShowLogSheet(false)}></i>
+            </div>
+            <div className="flex flex-col gap-[16px]">
+              <div>
+                <label className="block text-[13px] font-semibold text-[#EBEBF599] mb-[8px] uppercase tracking-[0.05em]">Calories today</label>
+                <input 
+                  type="number"
+                  value={logCalories}
+                  onChange={(e) => setLogCalories(e.target.value)}
+                  className="w-full bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-[12px] p-[14px_16px] text-white text-[16px] outline-none focus:border-[#D4FF00]"
+                  placeholder="e.g. 2100"
+                />
+              </div>
+              <div>
+                <label className="block text-[13px] font-semibold text-[#EBEBF599] mb-[8px] uppercase tracking-[0.05em]">Protein today (g)</label>
+                <input 
+                  type="number"
+                  value={logProtein}
+                  onChange={(e) => setLogProtein(e.target.value)}
+                  className="w-full bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-[12px] p-[14px_16px] text-white text-[16px] outline-none focus:border-[#FF4D1C]"
+                  placeholder="e.g. 150"
+                />
+              </div>
+              <button
+                onClick={handleSaveLog}
+                disabled={!logCalories || !logProtein}
+                className="w-full bg-[#D4FF00] text-[#0A0A0A] font-bold text-[16px] rounded-[100px] p-[16px] border-none tracking-[-0.2px] hover:opacity-[0.95] active:scale-[0.97] transition-all mt-[8px] disabled:opacity-50 disabled:active:scale-100 disabled:cursor-not-allowed"
+              >
+                Save Day
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
