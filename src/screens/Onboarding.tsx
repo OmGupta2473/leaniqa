@@ -343,7 +343,13 @@ export function OnboardingScreen() {
   }
 
   return (
-    <div className="screen-container screen-enter">
+    <div 
+      className={cn("screen-container screen-enter", !showResults && "screen-bg")}
+      style={!showResults ? { 
+        '--bg-img': `url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop')`,
+        '--bg-pos': 'center top'
+      } as React.CSSProperties : undefined}
+    >
       <div className="py-[28px] mb-[12px]">
         <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599] mb-[8px]">Step 1 of 2</div>
         <h2 className="text-[34px] font-bold text-white tracking-[-0.5px] leading-tight mb-[8px]">Personal Information</h2>
@@ -513,14 +519,21 @@ export function OnboardingScreen() {
       )}
       
       {showResults && results && (
-        <div className="mb-[28px] card-reveal">
+        <div 
+          className="mb-[28px] card-reveal screen-bg rounded-2xl"
+          style={{ 
+            '--bg-img': `url('https://images.unsplash.com/photo-1490645935967-10de6ba17061?q=80&w=1453&auto=format&fit=crop')`,
+            '--bg-pos': 'center center',
+            '--bg-opacity': '0.12'
+          } as React.CSSProperties}
+        >
           {/* Header */}
-          <div className="mb-[20px]">
+          <div className="mb-[20px] p-[20px] pb-0">
             <h2 className="text-[22px] font-semibold text-white tracking-[-0.3px]">Good work, {name.trim() || 'there'}</h2>
             <p className="text-[15px] font-normal text-[#EBEBF5CC] tracking-[-0.1px]">Here's what your body needs daily</p>
           </div>
           
-          <div className="glass-card mb-[28px] overflow-hidden">
+          <div className="glass-card mb-[28px] overflow-hidden mx-[20px]">
             <div className="p-[16px_20px]">
               <div className="flex justify-between items-center py-[12px] border-b border-[rgba(255,255,255,0.06)]">
                 <span className="text-[15px] font-normal text-[#EBEBF5CC]">Calories</span>
@@ -561,7 +574,7 @@ export function OnboardingScreen() {
             </div>
           </div>
 
-          <div className="mb-[28px]">
+          <div className="mb-[28px] px-[20px]">
             <h3 className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599] mb-[12px]">Your Stats</h3>
             <div className="grid grid-cols-3 gap-[12px]">
               <div className="bg-[rgba(255,255,255,0.05)] rounded-[12px] p-[12px] flex flex-col items-center text-center">
@@ -583,14 +596,16 @@ export function OnboardingScreen() {
             </div>
           </div>
 
-          <button 
-            onClick={handleSave} 
-            disabled={saveMutation.isPending} 
-            className="w-full bg-[#D4FF00] text-[#0A0A0A] font-bold text-[17px] rounded-[100px] p-[16px_32px] border-none tracking-[-0.2px] transition-all hover:scale-[1.02] hover:opacity-[0.95] active:scale-[0.97] disabled:opacity-50 flex items-center justify-center gap-[8px] group"
-          >
-            {saveMutation.isPending ? 'Saving...' : 'Set my physique goal'}
-            <ArrowRight size={20} className="transition-transform duration-200 group-hover:translate-x-[3px]" />
-          </button>
+          <div className="px-[20px] pb-[20px]">
+            <button 
+              onClick={handleSave} 
+              disabled={saveMutation.isPending} 
+              className="w-full bg-[#D4FF00] text-[#0A0A0A] font-bold text-[17px] rounded-[100px] p-[16px_32px] border-none tracking-[-0.2px] transition-all hover:scale-[1.02] hover:opacity-[0.95] active:scale-[0.97] disabled:opacity-50 flex items-center justify-center gap-[8px] group"
+            >
+              {saveMutation.isPending ? 'Saving...' : 'Set my physique goal'}
+              <ArrowRight size={20} className="transition-transform duration-200 group-hover:translate-x-[3px]" />
+            </button>
+          </div>
         </div>
       )}
     </div>
