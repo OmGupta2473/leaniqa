@@ -7,6 +7,8 @@ interface AppState {
   clearStore: () => void;
   onboardingData?: any;
   setOnboardingData: (data: any) => void;
+  onboardingCompleted: boolean;
+  setOnboardingCompleted: (completed: boolean) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -14,12 +16,14 @@ export const useAppStore = create<AppState>()(
     (set) => ({
       currentScreen: 'onboard',
       setScreen: (screen) => set({ currentScreen: screen }),
-      clearStore: () => set({ currentScreen: 'onboard', onboardingData: undefined }),
+      clearStore: () => set({ currentScreen: 'onboard', onboardingData: undefined, onboardingCompleted: false }),
       setOnboardingData: (data) => set({ onboardingData: data }),
+      onboardingCompleted: false,
+      setOnboardingCompleted: (completed) => set({ onboardingCompleted: completed }),
     }),
     {
       name: 'physique-nav',
-      partialize: (state) => ({ currentScreen: state.currentScreen, onboardingData: state.onboardingData }),
+      partialize: (state) => ({ currentScreen: state.currentScreen, onboardingData: state.onboardingData, onboardingCompleted: state.onboardingCompleted }),
     }
   )
 );

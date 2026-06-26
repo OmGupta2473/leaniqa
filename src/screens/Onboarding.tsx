@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAppStore } from '../store';
 import { cn } from '../lib/utils';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, CheckCircle2 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileService } from '../services/profileService';
 import { complianceService } from '../services/complianceService';
 
 export function OnboardingScreen() {
-  const { setScreen, setOnboardingData } = useAppStore();
+  const { setScreen, setOnboardingData, onboardingCompleted, setOnboardingCompleted, onboardingData, clearStore } = useAppStore();
   const queryClient = useQueryClient();
 
   const [name, setName] = useState('');
@@ -72,6 +72,7 @@ export function OnboardingScreen() {
         activityLevel: activity,
         name: name.trim() || 'User'
       });
+      setOnboardingCompleted(true);
       setScreen('goal');
     }
   });
@@ -152,6 +153,7 @@ export function OnboardingScreen() {
 
     // Maintenance Mifflin-St Jeor
     const maintBase = (w * 10) + (h * 6.25) - (a * 5) + (gender === 'Male' ? 5 : -161);
+    const activityLevel = activity || 'Lightly Active';
     const multipliers: Record<string, number> = { 
       'Sedentary': 1.2, 
       'Lightly Active': 1.375, 
@@ -159,24 +161,55 @@ export function OnboardingScreen() {
       'Very Active': 1.725, 
       'Athlete': 1.9 
     };
-    const tdee = Math.round((maintBase * multipliers[activity || 'Lightly Active']) / 10) * 10;
+    const tdee = Math.round((maintBase * multipliers[activityLevel]) / 10) * 10;
     
-    // Protein: 2.0-2.2 g/kg
-    const proteinMin = Math.round(w * 2.0);
-    const proteinMax = Math.round(w * 2.2);
-    const proteinMid = Math.round(w * 2.1);
+    // Protein and Fat by activity level
+    let proteinFactor = 1.8;
+    let fatPercentageMid = 0.265;
+    let fatPercentageMin = 0.25;
+    let fatPercentageMax = 0.28;
 
-    // Fat: 25-30% of TDEE
-    const fatMin = Math.round((tdee * 0.25) / 9);
-    const fatMax = Math.round((tdee * 0.30) / 9);
-    const fatMid = Math.round((tdee * 0.275) / 9);
+    if (activityLevel === 'Sedentary') {
+      proteinFactor = 1.6;
+      fatPercentageMid = 0.25;
+      fatPercentageMin = 0.22;
+      fatPercentageMax = 0.28;
+    } else if (activityLevel === 'Lightly Active') {
+      proteinFactor = 1.8;
+      fatPercentageMid = 0.265;
+      fatPercentageMin = 0.25;
+      fatPercentageMax = 0.28;
+    } else if (activityLevel === 'Moderately Active') {
+      proteinFactor = 2.0;
+      fatPercentageMid = 0.275;
+      fatPercentageMin = 0.26;
+      fatPercentageMax = 0.29;
+    } else if (activityLevel === 'Very Active') {
+      proteinFactor = 2.2;
+      fatPercentageMid = 0.285;
+      fatPercentageMin = 0.27;
+      fatPercentageMax = 0.30;
+    } else if (activityLevel === 'Athlete') {
+      proteinFactor = 2.4;
+      fatPercentageMid = 0.30;
+      fatPercentageMin = 0.28;
+      fatPercentageMax = 0.32;
+    }
+
+    const proteinMid = Math.round(w * proteinFactor);
+    const proteinMin = Math.round(w * (proteinFactor - 0.1));
+    const proteinMax = Math.round(w * (proteinFactor + 0.1));
+
+    const fatMid = Math.round((tdee * fatPercentageMid) / 9);
+    const fatMin = Math.round((tdee * fatPercentageMin) / 9);
+    const fatMax = Math.round((tdee * fatPercentageMax) / 9);
 
     // Carbs: Remainder
     let carbKcal = tdee - (proteinMid * 4) - (fatMid * 9);
     if (isNaN(carbKcal) || !isFinite(carbKcal) || carbKcal < 0) {
       carbKcal = 0;
     }
-    const carbMid = Math.round(carbKcal / 4);
+    const carbMid = Math.max(0, Math.round(carbKcal / 4));
     const carbMin = Math.max(0, carbMid - 20);
     const carbMax = carbMid + 20;
 
@@ -226,6 +259,66 @@ export function OnboardingScreen() {
       protein_target: results.proteinMid
     });
   };
+
+  if (onboardingCompleted) {
+    return (
+      <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 p-4 max-w-md mx-auto">
+        <div className="text-center py-6">
+          <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-4" />
+          <h2 className="text-[20px] font-medium text-text-primary mb-2">Profile Completed</h2>
+          <p className="text-[14px] text-text-secondary">You have already set up your profile and goals.</p>
+        </div>
+
+        <div className="bg-background-secondary rounded-xl p-5 mb-6 border border-border-secondary">
+          <h3 className="text-[12px] font-bold tracking-widest uppercase text-text-secondary mb-4">Current Profile Data</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-[13px] text-text-secondary">Name</span>
+              <span className="text-[13px] font-medium text-text-primary">{onboardingData?.name || '-'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[13px] text-text-secondary">Age</span>
+              <span className="text-[13px] font-medium text-text-primary">{onboardingData?.age || '-'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[13px] text-text-secondary">Weight</span>
+              <span className="text-[13px] font-medium text-text-primary">{onboardingData?.weightKg || '-'} kg</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[13px] text-text-secondary">Height</span>
+              <span className="text-[13px] font-medium text-text-primary">{onboardingData?.heightCm || '-'} cm</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[13px] text-text-secondary">Activity</span>
+              <span className="text-[13px] font-medium text-text-primary">{onboardingData?.activityLevel || '-'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[13px] text-text-secondary">TDEE</span>
+              <span className="text-[13px] font-medium text-text-primary">{onboardingData?.tdee || '-'} kcal</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[13px] text-text-secondary">Protein Target</span>
+              <span className="text-[13px] font-medium text-text-primary">{onboardingData?.proteinMid || '-'} g</span>
+            </div>
+          </div>
+        </div>
+
+        <button 
+          onClick={() => {
+            if (window.confirm("Are you sure? Once reset, your current profile data cannot be recovered.")) {
+              setOnboardingCompleted(false);
+              setOnboardingData(undefined);
+              clearStore();
+              window.location.reload();
+            }
+          }}
+          className="w-full py-3 bg-red-500/10 text-red-500 font-medium rounded-xl hover:bg-red-500/20 transition-colors"
+        >
+          Reset profile
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
