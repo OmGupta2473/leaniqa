@@ -265,44 +265,47 @@ export function MealLoggerScreen() {
     const isExpanded = expandedSlots[slot];
 
     return (
-      <div className="glass-card mb-[12px] overflow-hidden">
+      <div className="glass-card mb-[8px] sm:mb-0 overflow-hidden flex-1 flex flex-col">
         <div 
-          className="p-[16px] flex justify-between items-center cursor-pointer hover:bg-[rgba(255,255,255,0.02)] transition-colors"
+          className="p-[10px_12px] sm:p-[8px] flex sm:flex-col justify-between sm:justify-center items-center cursor-pointer hover:bg-[rgba(255,255,255,0.02)] transition-colors relative"
           onClick={() => toggleSlot(slot)}
         >
-          <div className="flex items-center gap-[12px]">
+          <div className="flex sm:flex-col items-center gap-[10px] sm:gap-[4px]">
             <div className={cn(
-              "w-[36px] h-[36px] rounded-[100px] flex items-center justify-center transition-colors",
+              "w-[28px] h-[28px] rounded-[100px] flex items-center justify-center transition-colors",
               selectedMealSlot === slot ? "bg-[#D4FF00] text-[#0A0A0A]" : "bg-[rgba(255,255,255,0.1)] text-white"
             )}>
               {icon}
             </div>
-            <div>
-              <div className="text-[15px] font-semibold text-white leading-tight tracking-[-0.1px]">{title}</div>
-              <div className="text-[12px] text-[#EBEBF599] mt-[2px]">{timeRange}</div>
+            <div className="sm:text-center">
+              <div className="text-[13px] sm:text-[12px] font-semibold text-white leading-tight tracking-[-0.1px]">{title}</div>
+              <div className="text-[11px] sm:text-[10px] text-[#EBEBF599] mt-[2px] sm:mt-[0]">{timeRange}</div>
             </div>
           </div>
-          <div className="flex items-center gap-[16px]">
-            <div className="text-right">
-              <div className="text-[15px] font-bold text-white tracking-[-0.2px]">{slotKcal} <span className="text-[11px] font-normal text-[#EBEBF599]">kcal</span></div>
-              <div className="text-[12px] text-[#EBEBF5CC] mt-[2px]">{slotProtein}g pro</div>
+          
+          <div className="flex sm:flex-col items-center gap-[12px] sm:gap-[4px] sm:mt-[6px]">
+            <div className="text-right sm:text-center flex sm:flex-col items-center gap-[8px] sm:gap-[2px]">
+              <div className="text-[14px] sm:text-[13px] font-bold text-white tracking-[-0.2px] leading-none">{slotKcal} <span className="text-[10px] font-normal text-[#EBEBF599]">kcal</span></div>
+              <div className="text-[11px] sm:text-[10px] text-[#EBEBF5CC] bg-[rgba(255,255,255,0.05)] sm:bg-transparent px-[6px] sm:px-0 py-[2px] rounded-md">{slotProtein}g pro</div>
             </div>
-            {isExpanded ? <ChevronDown size={18} className="text-[#EBEBF599]" /> : <ChevronRight size={18} className="text-[#EBEBF599]" />}
+            <div className="sm:absolute sm:top-[8px] sm:right-[8px]">
+              {isExpanded ? <ChevronDown size={16} className="text-[#EBEBF599]" /> : <ChevronRight size={16} className="text-[#EBEBF599]" />}
+            </div>
           </div>
         </div>
         
         {isExpanded && (
-          <div className="bg-[rgba(20,20,20,0.5)] p-[16px] border-t border-[rgba(255,255,255,0.06)]">
+          <div className="bg-[rgba(20,20,20,0.5)] p-[12px] sm:p-[8px] border-t border-[rgba(255,255,255,0.06)] flex-1">
             {slotMeals.length === 0 ? (
-              <div className="text-[13px] text-[#EBEBF599] text-center py-[8px] italic">Nothing logged yet</div>
+              <div className="text-[12px] text-[#EBEBF599] text-center py-[8px] italic">Nothing logged yet</div>
             ) : (
-              <div className="space-y-[12px]">
+              <div className="space-y-[8px]">
                 {slotMeals.map((m, i) => (
-                  <div key={i} className="flex justify-between items-center bg-[rgba(255,255,255,0.03)] p-[10px_12px] rounded-lg">
-                    <div className="text-[14px] font-medium text-white capitalize truncate max-w-[50%]">{m.meal_text}</div>
-                    <div className="flex gap-[8px]">
-                      <span className="text-[11px] bg-[rgba(255,77,28,0.15)] text-[#FF4D1C] px-[8px] py-[2px] rounded-[100px] font-semibold tracking-[0.02em]">{m.calories} kcal</span>
-                      <span className="text-[11px] bg-[rgba(55,138,221,0.15)] text-[#378ADD] px-[8px] py-[2px] rounded-[100px] font-semibold tracking-[0.02em]">{m.protein}g</span>
+                  <div key={i} className="flex sm:flex-col justify-between sm:justify-start items-center sm:items-start bg-[rgba(255,255,255,0.03)] p-[8px_10px] sm:p-[6px] rounded-lg sm:gap-[4px]">
+                    <div className="text-[13px] sm:text-[11px] font-medium text-white capitalize truncate max-w-[50%] sm:max-w-full w-full">{m.meal_text}</div>
+                    <div className="flex gap-[6px]">
+                      <span className="text-[10px] bg-[rgba(255,77,28,0.15)] text-[#FF4D1C] px-[6px] py-[2px] rounded-[100px] font-semibold tracking-[0.02em] leading-none">{m.calories} kcal</span>
+                      <span className="text-[10px] bg-[rgba(55,138,221,0.15)] text-[#378ADD] px-[6px] py-[2px] rounded-[100px] font-semibold tracking-[0.02em] leading-none">{m.protein}g</span>
                     </div>
                   </div>
                 ))}
@@ -354,9 +357,11 @@ export function MealLoggerScreen() {
           </button>
         </div>
 
-        {renderMealBox('breakfast', <Sunrise size={18} />, 'Breakfast', '6 am–12 pm')}
-        {renderMealBox('lunch', <Sun size={18} />, 'Lunch', '12 pm–6 pm')}
-        {renderMealBox('dinner', <Moon size={18} />, 'Dinner', '6 pm–10 pm')}
+        <div className="flex flex-col sm:flex-row gap-[8px] mb-[12px] sm:mb-[16px]">
+          {renderMealBox('breakfast', <Sunrise size={14} />, 'Breakfast', '6 am–12 pm')}
+          {renderMealBox('lunch', <Sun size={14} />, 'Lunch', '12 pm–6 pm')}
+          {renderMealBox('dinner', <Moon size={14} />, 'Dinner', '6 pm–10 pm')}
+        </div>
       </div>
       
       <div className="flex flex-col gap-[12px] mb-[20px] flex-1 overflow-y-auto pr-[4px] hide-scrollbar" ref={chatRef}>
