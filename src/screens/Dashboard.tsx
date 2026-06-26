@@ -73,8 +73,12 @@ export function DashboardScreen() {
   const remainingKcal = dailyTargetKcal !== undefined ? Math.max(0, dailyTargetKcal - eatenKcal) : undefined;
   const remainingProtein = proteinTarget !== undefined ? Math.max(0, proteinTarget - eatenProtein) : undefined;
 
+  const { goalSetCompleted } = useAppStore();
+
   let projectedDateString = 'Unknown';
-  if (goal?.target_date) {
+  if (goal?.deficit_kcal === 0 || onboardingData?.dailyDeficit === 0) {
+    projectedDateString = 'Ongoing';
+  } else if (goal?.target_date) {
     const targetDateObj = new Date(goal.target_date);
     if (!isNaN(targetDateObj.getTime())) {
        projectedDateString = targetDateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -86,19 +90,22 @@ export function DashboardScreen() {
   // Calculate Days
   let currentDay = 0;
   let totalDays = 0;
+  let isMaintenance = goal?.deficit_kcal === 0 || onboardingData?.dailyDeficit === 0;
   
-  if (goal?.created_at && goal?.target_date) {
+  if (goal?.created_at) {
     const start = new Date(goal.created_at);
     start.setHours(0,0,0,0);
-    const end = new Date(goal.target_date);
-    end.setHours(0,0,0,0);
     const now = new Date();
     now.setHours(0,0,0,0);
-    
-    totalDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
     currentDay = Math.max(0, Math.round((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
-    if (currentDay > totalDays) currentDay = totalDays;
-  } else if (onboardingData?.estimatedWeeks) {
+    
+    if (goal?.target_date && !isMaintenance) {
+      const end = new Date(goal.target_date);
+      end.setHours(0,0,0,0);
+      totalDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+      if (currentDay > totalDays) currentDay = totalDays;
+    }
+  } else if (onboardingData?.estimatedWeeks && !isMaintenance) {
     totalDays = onboardingData.estimatedWeeks * 7;
     currentDay = 0; // Just started
   }
@@ -125,6 +132,18 @@ export function DashboardScreen() {
         Founding Member Beta - Premium features unlocked.
       </div>
       
+      {!goalSetCompleted && (
+        <div className="bg-amber/10 border border-amber/30 text-amber p-4 text-center mb-4 rounded-md flex flex-col items-center gap-2">
+          <div className="text-[13px] font-medium">Set your physique goal to unlock all features</div>
+          <button 
+            onClick={() => setScreen('goal')} 
+            className="text-[11px] font-bold uppercase tracking-widest bg-amber text-background-primary px-3 py-1.5 rounded-sm shadow-sm"
+          >
+            Set goal →
+          </button>
+        </div>
+      )}
+
       <div className="flex justify-between items-center mb-4">
         <div>
           <div className="text-[12px] text-text-secondary">Welcome back,</div>
@@ -133,9 +152,11 @@ export function DashboardScreen() {
         <div className="flex flex-col items-end">
           <div className="flex items-baseline gap-1">
             <div className="text-[24px] font-medium text-purple leading-none">Day {currentDay}</div>
-            <div className="text-[12px] text-text-secondary">/ {totalDays}</div>
+            {!isMaintenance && <div className="text-[12px] text-text-secondary">/ {totalDays}</div>}
           </div>
-          <div className="text-[10px] text-text-secondary uppercase tracking-widest mt-1">Timeline Progress</div>
+          <div className="text-[10px] text-text-secondary uppercase tracking-widest mt-1">
+            {isMaintenance ? 'Maintenance Progress' : 'Timeline Progress'}
+          </div>
         </div>
       </div>
 

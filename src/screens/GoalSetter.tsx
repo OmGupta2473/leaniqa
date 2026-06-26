@@ -25,9 +25,10 @@ const Silhouette = ({ active }: { active: boolean }) => (
 );
 
 export function GoalSetterScreen() {
-  const { setScreen, onboardingData, setOnboardingData } = useAppStore();
+  const { setScreen, onboardingData, setOnboardingData, goalSetCompleted, setGoalSetCompleted } = useAppStore();
   const queryClient = useQueryClient();
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
+  const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
   
   const [currentBfMid, setCurrentBfMid] = useState<number | null>(null);
   const [targetBfMid, setTargetBfMid] = useState<number | null>(null);
@@ -96,6 +97,7 @@ export function GoalSetterScreen() {
         estimatedWeeks: data.strategyData.estimatedWeeks,
         estimatedCompletionDate: data.strategyData.estimatedCompletionDate
       });
+      setGoalSetCompleted(true);
       setScreen('dash');
     },
     onError: (error) => {
@@ -119,7 +121,19 @@ export function GoalSetterScreen() {
     });
   };
 
-  const strategies = fatToLoseKg > 0 ? [
+  const strategies = targetBfMid === currentBfMid ? [
+    {
+      name: 'Maintenance',
+      deficit: 0,
+      tagColor: 'text-purple',
+      tagBg: 'bg-purple/10',
+      tagBorder: 'border-purple/20',
+      pros: 'No deficit needed, full energy',
+      cons: 'Requires consistent nutrition discipline',
+      proteinNote: `Aim for ${proteinMid || proteinMax}g/day protein to maintain muscle mass`,
+      isRecommended: true
+    }
+  ] : fatToLoseKg > 0 ? [
     {
       name: 'Aggressive Cut',
       deficit: 600,
@@ -155,12 +169,12 @@ export function GoalSetterScreen() {
 
   const calculatedStrategies = strategies.map(s => {
     const dailyTarget = Math.round((tdee - s.deficit) / 10) * 10;
-    const weeklyRate = (s.deficit * 7) / 7700;
-    const weeks = Math.round(fatToLoseKg / weeklyRate);
+    const weeklyRate = s.deficit > 0 ? (s.deficit * 7) / 7700 : 0;
+    const weeks = s.deficit > 0 ? Math.round(fatToLoseKg / weeklyRate) : 0;
     
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() + weeks * 7);
-    const dateStr = targetDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const dateStr = s.deficit > 0 ? targetDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Ongoing';
     const targetDateIso = targetDate.toISOString().split('T')[0];
 
     return {
@@ -171,6 +185,66 @@ export function GoalSetterScreen() {
       targetDateIso
     };
   });
+
+  if (goalSetCompleted) {
+    const activeGoal = goal || onboardingData;
+    const dailyKcal = profile?.maintenance_kcal && goal?.deficit_kcal !== undefined 
+      ? profile.maintenance_kcal - goal.deficit_kcal 
+      : activeGoal?.dailyCalorieGoal;
+
+    return (
+      <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 p-4 max-w-md mx-auto">
+        <div className="text-center py-6">
+          <Check className="w-12 h-12 text-green mx-auto mb-4" />
+          <h2 className="text-[20px] font-medium text-text-primary mb-2">Goal Set</h2>
+          <p className="text-[14px] text-text-secondary">You have already set your physique goal.</p>
+        </div>
+
+        <div className="bg-background-secondary rounded-xl p-5 mb-6 border border-border-secondary">
+          <h3 className="text-[12px] font-bold tracking-widest uppercase text-text-secondary mb-4">Current Goal Data</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-[13px] text-text-secondary">Current BF%</span>
+              <span className="text-[13px] font-medium text-text-primary">{activeGoal?.current_bf || activeGoal?.currentBodyFatPct || '-'}%</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[13px] text-text-secondary">Target BF%</span>
+              <span className="text-[13px] font-medium text-text-primary">{activeGoal?.target_bf || activeGoal?.targetBodyFatPct || '-'}%</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[13px] text-text-secondary">Strategy</span>
+              <span className="text-[13px] font-medium text-text-primary">{activeGoal?.strategy || activeGoal?.chosenStrategyName || '-'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[13px] text-text-secondary">Daily Target</span>
+              <span className="text-[13px] font-medium text-text-primary">{dailyKcal || '-'} kcal</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[13px] text-text-secondary">Estimated Time</span>
+              <span className="text-[13px] font-medium text-text-primary">
+                {activeGoal?.deficit_kcal === 0 || activeGoal?.dailyDeficit === 0 ? 'Ongoing' : 
+                 activeGoal?.target_date ? new Date(activeGoal.target_date).toLocaleDateString() : 
+                 activeGoal?.estimatedWeeks ? `~${activeGoal.estimatedWeeks} weeks` : '-'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <button 
+          onClick={() => {
+            if (window.confirm("Are you sure? Once reset, your goal history cannot be recovered.")) {
+              setGoalSetCompleted(false);
+              setScreen('goal');
+              queryClient.invalidateQueries({ queryKey: ['goal'] });
+            }
+          }}
+          className="w-full py-3 bg-coral/10 text-coral font-medium rounded-xl hover:bg-coral/20 transition-colors"
+        >
+          Reset goal
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="pb-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -220,6 +294,12 @@ export function GoalSetterScreen() {
           </div>
         )}
 
+        {currentBfMid === 2.5 && (
+          <div className="text-[13px] text-purple flex items-center gap-1 mb-4 p-3 bg-purple/10 border border-purple/20">
+            You're already at elite level. Only maintenance is available.
+          </div>
+        )}
+
         <div className="flex gap-3 overflow-x-auto pb-4 snap-x hide-scrollbar">
           {bodyFatOptions.filter(opt => !currentBfMid || opt.mid < currentBfMid).map((opt) => (
             <button
@@ -238,6 +318,23 @@ export function GoalSetterScreen() {
               <div className="text-[11px] text-text-tertiary mt-2 leading-relaxed">{opt.desc}</div>
             </button>
           ))}
+          {currentBfMid && (
+            <button
+              key="maintain"
+              onClick={() => setTargetBfMid(currentBfMid)}
+              className={cn(
+                "flex-none w-[180px] p-4 border-[0.5px] cursor-pointer transition-all snap-center flex flex-col text-left",
+                targetBfMid === currentBfMid 
+                  ? "border-purple bg-purple/10 border-2 ring-0 text-purple" 
+                  : "border-purple bg-background-primary hover:bg-purple/5 border-2"
+              )}
+            >
+              <Silhouette active={targetBfMid === currentBfMid} />
+              <div className="mt-2 text-[16px] font-bold text-text-primary">Maintain current physique</div>
+              <div className="text-[13px] font-medium text-text-secondary mt-1">Stay at {currentBfMid}%</div>
+              <div className="text-[11px] text-text-tertiary mt-2 leading-relaxed">Keep your current physique and maintain weight</div>
+            </button>
+          )}
         </div>
 
         {currentBfMid && targetBfMid && targetBfMid < currentBfMid && (
@@ -278,13 +375,13 @@ export function GoalSetterScreen() {
           </div>
         )}
 
-        {currentBfMid && targetBfMid && targetBfMid >= currentBfMid && (
+        {currentBfMid && targetBfMid && targetBfMid > currentBfMid && (
           <div className="text-[13px] text-coral flex items-center gap-1 mb-4 p-3 bg-coral/10 border border-coral/20">
-            <AlertTriangle size={14} /> Please select a target body fat % lower than your current level.
+            <AlertTriangle size={14} /> Please select a target body fat % lower than or equal to your current level.
           </div>
         )}
 
-        {currentBfMid && targetBfMid && targetBfMid < currentBfMid && (
+        {currentBfMid && targetBfMid && targetBfMid <= currentBfMid && (
           <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
             {calculatedStrategies.map((s) => (
             <div 
@@ -315,7 +412,11 @@ export function GoalSetterScreen() {
 
               <div className="mb-4">
                 <div className="text-[12px] font-medium text-text-primary mb-1">
-                  ~{s.weeks} weeks <span className="text-text-secondary font-normal">(by {s.dateStr})</span>
+                  {s.deficit === 0 ? (
+                    <span className="text-purple">Ongoing Maintenance</span>
+                  ) : (
+                    <>~{s.weeks} weeks <span className="text-text-secondary font-normal">(by {s.dateStr})</span></>
+                  )}
                 </div>
               </div>
 
