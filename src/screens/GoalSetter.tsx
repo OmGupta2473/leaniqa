@@ -246,110 +246,119 @@ export function GoalSetterScreen() {
         <p className="text-[15px] font-normal text-[#EBEBF5CC] tracking-[-0.1px]">Set your target body fat and choose a timeline.</p>
       </div>
 
-      {/* SECTION A */}
-      <div className="mb-[28px]">
-        <div className="flex items-center gap-2 mb-[12px] mt-[28px]">
-          <h2 className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599]">Current Body</h2>
-          {currentBfMid && <div className="flex items-center gap-1 text-[#D4FF00] text-[11px] font-bold uppercase tracking-widest bg-[rgba(212,255,0,0.1)] px-2 py-0.5 rounded-full"><CheckCircle2 size={12} /> Step complete</div>}
-        </div>
-        <h3 className="text-[22px] font-semibold text-white tracking-[-0.3px] mb-1">Select your current physique</h3>
-        <p className="text-[15px] text-[#EBEBF5CC] mb-4 tracking-[-0.1px]">This helps us calculate how much fat you're actually carrying</p>
-        
-        <div className="flex gap-[12px] overflow-x-auto pb-4 snap-x hide-scrollbar">
-          {bodyFatOptions.map((opt) => (
-            <button
-              key={opt.range}
-              onClick={() => setCurrentBfMid(opt.mid)}
-              className={cn(
-                "bf-card flex-none w-[200px] p-[16px] rounded-[16px] cursor-pointer transition-all snap-start flex flex-col text-left",
-                currentBfMid === opt.mid 
-                  ? "bg-[rgba(212,255,0,0.1)] border-[1.5px] border-[#D4FF00] scale-[1.03]" 
-                  : "bg-[rgba(44,44,46,0.7)] border-[0.5px] border-[rgba(255,255,255,0.1)] hover:bg-[rgba(44,44,46,0.9)]"
-              )}
-            >
-              <Silhouette active={currentBfMid === opt.mid} />
-              <div className="mt-2 text-[28px] font-bold text-white tracking-[-0.5px]">{opt.range}</div>
-              <div className="text-[15px] font-semibold text-[#EBEBF5CC] mt-1">{opt.label}</div>
-              <div className="text-[12px] font-normal text-[#EBEBF599] mt-2 leading-relaxed">{opt.desc}</div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* SECTION B */}
-      <div className={cn("mb-[28px] transition-all duration-300", !currentBfMid ? "opacity-[0.35] pointer-events-none grayscale-[0.5]" : "opacity-100 card-reveal")}>
-        <div className="flex items-center gap-2 mb-[12px] mt-[28px]">
-          <h2 className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599]">Target Body</h2>
-          {targetBfMid && <div className="flex items-center gap-1 text-[#D4FF00] text-[11px] font-bold uppercase tracking-widest bg-[rgba(212,255,0,0.1)] px-2 py-0.5 rounded-full"><CheckCircle2 size={12} /> Step complete</div>}
-        </div>
-        <h3 className="text-[22px] font-semibold text-white tracking-[-0.3px] mb-1">Now choose your target</h3>
-        <p className="text-[15px] text-[#EBEBF5CC] mb-4 tracking-[-0.1px]">You can only target a lower body fat % than where you are now</p>
-
-        {currentBfMid === 2.5 && (
-          <div className="text-[15px] font-medium text-[#D4FF00] flex items-center gap-2 mb-4 p-[16px] bg-[rgba(212,255,0,0.08)] border border-[rgba(212,255,0,0.4)] rounded-xl">
-            You're already at elite level. Only maintenance is available.
+      <div 
+        className="screen-bg rounded-2xl mb-[28px] mx-[-20px] px-[20px] pt-[12px] pb-[28px]"
+        style={{
+          '--bg-img': `url('https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=1470&auto=format&fit=crop')`,
+          '--bg-pos': 'center center',
+          '--bg-opacity': '0.15'
+        } as React.CSSProperties}
+      >
+        {/* SECTION A */}
+        <div className="mb-[28px]">
+          <div className="flex items-center gap-2 mb-[12px] mt-[16px]">
+            <h2 className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599]">Current Body</h2>
+            {currentBfMid && <div className="flex items-center gap-1 text-[#D4FF00] text-[11px] font-bold uppercase tracking-widest bg-[rgba(212,255,0,0.1)] px-2 py-0.5 rounded-full"><CheckCircle2 size={12} /> Step complete</div>}
           </div>
-        )}
-
-        <div className="flex gap-[12px] overflow-x-auto pb-4 snap-x hide-scrollbar">
-          {bodyFatOptions.filter(opt => !currentBfMid || opt.mid < currentBfMid).map((opt) => (
-            <button
-              key={opt.range}
-              onClick={() => setTargetBfMid(opt.mid)}
-              className={cn(
-                "bf-card flex-none w-[200px] p-[16px] rounded-[16px] cursor-pointer transition-all snap-start flex flex-col text-left",
-                targetBfMid === opt.mid 
-                  ? "bg-[rgba(212,255,0,0.1)] border-[1.5px] border-[#D4FF00] scale-[1.03]" 
-                  : "bg-[rgba(44,44,46,0.7)] border-[0.5px] border-[rgba(255,255,255,0.1)] hover:bg-[rgba(44,44,46,0.9)]"
-              )}
-            >
-              <Silhouette active={targetBfMid === opt.mid} />
-              <div className="mt-2 text-[28px] font-bold text-white tracking-[-0.5px]">{opt.range}</div>
-              <div className="text-[15px] font-semibold text-[#EBEBF5CC] mt-1">{opt.label}</div>
-              <div className="text-[12px] font-normal text-[#EBEBF599] mt-2 leading-relaxed">{opt.desc}</div>
-            </button>
-          ))}
-          {currentBfMid && (
-            <button
-              key="maintain"
-              onClick={() => setTargetBfMid(currentBfMid)}
-              className={cn(
-                "bf-card flex-none w-[200px] p-[16px] rounded-[16px] cursor-pointer transition-all snap-start flex flex-col text-left",
-                targetBfMid === currentBfMid 
-                  ? "bg-[rgba(212,255,0,0.1)] border-[1.5px] border-[#D4FF00] scale-[1.03]" 
-                  : "bg-[rgba(44,44,46,0.7)] border-[0.5px] border-[rgba(255,255,255,0.1)] hover:bg-[rgba(44,44,46,0.9)]"
-              )}
-            >
-              <Silhouette active={targetBfMid === currentBfMid} />
-              <div className="mt-2 text-[22px] font-bold text-white tracking-[-0.5px] leading-tight mb-[6px]">Maintain current</div>
-              <div className="text-[15px] font-semibold text-[#EBEBF5CC] mt-1">Stay at {currentBfMid}%</div>
-              <div className="text-[12px] font-normal text-[#EBEBF599] mt-2 leading-relaxed">Keep your current physique and maintain weight</div>
-            </button>
-          )}
+          <h3 className="text-[22px] font-semibold text-white tracking-[-0.3px] mb-1">Select your current physique</h3>
+          <p className="text-[15px] text-[#EBEBF5CC] mb-4 tracking-[-0.1px]">This helps us calculate how much fat you're actually carrying</p>
+          
+          <div className="flex gap-[12px] overflow-x-auto pb-4 snap-x hide-scrollbar mx-[-20px] px-[20px]">
+            {bodyFatOptions.map((opt) => (
+              <button
+                key={opt.range}
+                onClick={() => setCurrentBfMid(opt.mid)}
+                className={cn(
+                  "bf-card flex-none w-[200px] p-[16px] rounded-[16px] cursor-pointer transition-all snap-start flex flex-col text-left",
+                  currentBfMid === opt.mid 
+                    ? "bg-[rgba(212,255,0,0.1)] border-[1.5px] border-[#D4FF00] scale-[1.03]" 
+                    : "bg-[rgba(44,44,46,0.7)] border-[0.5px] border-[rgba(255,255,255,0.1)] hover:bg-[rgba(44,44,46,0.9)]"
+                )}
+              >
+                <Silhouette active={currentBfMid === opt.mid} />
+                <div className="mt-2 text-[28px] font-bold text-white tracking-[-0.5px]">{opt.range}</div>
+                <div className="text-[15px] font-semibold text-[#EBEBF5CC] mt-1">{opt.label}</div>
+                <div className="text-[12px] font-normal text-[#EBEBF599] mt-2 leading-relaxed">{opt.desc}</div>
+              </button>
+            ))}
+          </div>
         </div>
 
-        {currentBfMid && targetBfMid && targetBfMid < currentBfMid && (
-          <div className="glass-card p-[16px_20px] mt-[12px] animate-in fade-in slide-in-from-top-2">
-            <div className="grid grid-cols-2 gap-y-[16px] gap-x-[20px]">
-              <div>
-                <div className="text-[13px] font-medium text-[#EBEBF599] uppercase tracking-[0.05em] mb-[4px]">Current</div>
-                <div className="text-[17px] font-semibold text-white">{currentBfMid}% <span className="text-[15px] text-[#EBEBF5CC] font-normal">({currentFatMass.toFixed(1)}kg fat)</span></div>
-              </div>
-              <div>
-                <div className="text-[13px] font-medium text-[#EBEBF599] uppercase tracking-[0.05em] mb-[4px]">Target</div>
-                <div className="text-[17px] font-semibold text-white">{targetBfMid}% <span className="text-[15px] text-[#EBEBF5CC] font-normal">({targetFatMass.toFixed(1)}kg fat)</span></div>
-              </div>
-              <div>
-                <div className="text-[13px] font-medium text-[#EBEBF599] uppercase tracking-[0.05em] mb-[4px]">Fat to lose</div>
-                <div className="text-[17px] font-semibold text-[#FF4D1C]">{fatToLoseKg.toFixed(1)} kg</div>
-              </div>
-              <div>
-                <div className="text-[13px] font-medium text-[#EBEBF599] uppercase tracking-[0.05em] mb-[4px]">New body weight</div>
-                <div className="text-[17px] font-semibold text-white">~{targetWeightKg.toFixed(1)} kg</div>
+        {/* SECTION B */}
+        <div className={cn("transition-all duration-300", !currentBfMid ? "opacity-[0.35] pointer-events-none grayscale-[0.5]" : "opacity-100 card-reveal")}>
+          <div className="flex items-center gap-2 mb-[12px] mt-[28px]">
+            <h2 className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599]">Target Body</h2>
+            {targetBfMid && <div className="flex items-center gap-1 text-[#D4FF00] text-[11px] font-bold uppercase tracking-widest bg-[rgba(212,255,0,0.1)] px-2 py-0.5 rounded-full"><CheckCircle2 size={12} /> Step complete</div>}
+          </div>
+          <h3 className="text-[22px] font-semibold text-white tracking-[-0.3px] mb-1">Now choose your target</h3>
+          <p className="text-[15px] text-[#EBEBF5CC] mb-4 tracking-[-0.1px]">You can only target a lower body fat % than where you are now</p>
+
+          {currentBfMid === 2.5 && (
+            <div className="text-[15px] font-medium text-[#D4FF00] flex items-center gap-2 mb-4 p-[16px] bg-[rgba(212,255,0,0.08)] border border-[rgba(212,255,0,0.4)] rounded-xl">
+              You're already at elite level. Only maintenance is available.
+            </div>
+          )}
+
+          <div className="flex gap-[12px] overflow-x-auto pb-4 snap-x hide-scrollbar mx-[-20px] px-[20px]">
+            {bodyFatOptions.filter(opt => !currentBfMid || opt.mid < currentBfMid).map((opt) => (
+              <button
+                key={opt.range}
+                onClick={() => setTargetBfMid(opt.mid)}
+                className={cn(
+                  "bf-card flex-none w-[200px] p-[16px] rounded-[16px] cursor-pointer transition-all snap-start flex flex-col text-left",
+                  targetBfMid === opt.mid 
+                    ? "bg-[rgba(212,255,0,0.1)] border-[1.5px] border-[#D4FF00] scale-[1.03]" 
+                    : "bg-[rgba(44,44,46,0.7)] border-[0.5px] border-[rgba(255,255,255,0.1)] hover:bg-[rgba(44,44,46,0.9)]"
+                )}
+              >
+                <Silhouette active={targetBfMid === opt.mid} />
+                <div className="mt-2 text-[28px] font-bold text-white tracking-[-0.5px]">{opt.range}</div>
+                <div className="text-[15px] font-semibold text-[#EBEBF5CC] mt-1">{opt.label}</div>
+                <div className="text-[12px] font-normal text-[#EBEBF599] mt-2 leading-relaxed">{opt.desc}</div>
+              </button>
+            ))}
+            {currentBfMid && (
+              <button
+                key="maintain"
+                onClick={() => setTargetBfMid(currentBfMid)}
+                className={cn(
+                  "bf-card flex-none w-[200px] p-[16px] rounded-[16px] cursor-pointer transition-all snap-start flex flex-col text-left",
+                  targetBfMid === currentBfMid 
+                    ? "bg-[rgba(212,255,0,0.1)] border-[1.5px] border-[#D4FF00] scale-[1.03]" 
+                    : "bg-[rgba(44,44,46,0.7)] border-[0.5px] border-[rgba(255,255,255,0.1)] hover:bg-[rgba(44,44,46,0.9)]"
+                )}
+              >
+                <Silhouette active={targetBfMid === currentBfMid} />
+                <div className="mt-2 text-[22px] font-bold text-white tracking-[-0.5px] leading-tight mb-[6px]">Maintain current</div>
+                <div className="text-[15px] font-semibold text-[#EBEBF5CC] mt-1">Stay at {currentBfMid}%</div>
+                <div className="text-[12px] font-normal text-[#EBEBF599] mt-2 leading-relaxed">Keep your current physique and maintain weight</div>
+              </button>
+            )}
+          </div>
+
+          {currentBfMid && targetBfMid && targetBfMid < currentBfMid && (
+            <div className="glass-card p-[16px_20px] mt-[12px] animate-in fade-in slide-in-from-top-2">
+              <div className="grid grid-cols-2 gap-y-[16px] gap-x-[20px]">
+                <div>
+                  <div className="text-[13px] font-medium text-[#EBEBF599] uppercase tracking-[0.05em] mb-[4px]">Current</div>
+                  <div className="text-[17px] font-semibold text-white">{currentBfMid}% <span className="text-[15px] text-[#EBEBF5CC] font-normal">({currentFatMass.toFixed(1)}kg fat)</span></div>
+                </div>
+                <div>
+                  <div className="text-[13px] font-medium text-[#EBEBF599] uppercase tracking-[0.05em] mb-[4px]">Target</div>
+                  <div className="text-[17px] font-semibold text-white">{targetBfMid}% <span className="text-[15px] text-[#EBEBF5CC] font-normal">({targetFatMass.toFixed(1)}kg fat)</span></div>
+                </div>
+                <div>
+                  <div className="text-[13px] font-medium text-[#EBEBF599] uppercase tracking-[0.05em] mb-[4px]">Fat to lose</div>
+                  <div className="text-[17px] font-semibold text-[#FF4D1C]">{fatToLoseKg.toFixed(1)} kg</div>
+                </div>
+                <div>
+                  <div className="text-[13px] font-medium text-[#EBEBF599] uppercase tracking-[0.05em] mb-[4px]">New body weight</div>
+                  <div className="text-[17px] font-semibold text-white">~{targetWeightKg.toFixed(1)} kg</div>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* SECTION C */}
