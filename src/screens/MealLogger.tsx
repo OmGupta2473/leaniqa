@@ -446,43 +446,40 @@ export function MealLoggerScreen() {
 
   return (
     <div className="screen-container screen-enter flex flex-col h-full !pb-4">
-      <div className="mb-[24px]">
-        <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599] mb-[12px] mt-[12px] text-center">
-          Select Meal Slot
-        </div>
-        <div className="flex justify-center gap-[8px] mb-[24px]">
+      <div className="mb-[12px] sm:mb-[16px]">
+        <div className="flex justify-center gap-[6px] mb-[8px] sm:mb-[12px]">
           <button
             onClick={() => setSelectedMealSlot("breakfast")}
             className={cn(
-              "flex-1 py-[10px] px-[8px] rounded-[100px] transition-all text-[13px] font-semibold flex items-center justify-center gap-[6px] border",
+              "flex-1 py-[6px] px-[8px] rounded-[100px] transition-all text-[11px] sm:text-[12px] font-semibold flex items-center justify-center gap-[4px] border",
               selectedMealSlot === "breakfast"
                 ? "bg-[rgba(212,255,0,0.1)] text-[#D4FF00] border-[#D4FF00] shadow-[0_0_10px_rgba(212,255,0,0.1)]"
                 : "bg-[rgba(255,255,255,0.05)] text-[#EBEBF5CC] border-transparent hover:bg-[rgba(255,255,255,0.08)]",
             )}
           >
-            <Sunrise size={16} /> Breakfast
+            <Sunrise size={14} /> Breakfast
           </button>
           <button
             onClick={() => setSelectedMealSlot("lunch")}
             className={cn(
-              "flex-1 py-[10px] px-[8px] rounded-[100px] transition-all text-[13px] font-semibold flex items-center justify-center gap-[6px] border",
+              "flex-1 py-[6px] px-[8px] rounded-[100px] transition-all text-[11px] sm:text-[12px] font-semibold flex items-center justify-center gap-[4px] border",
               selectedMealSlot === "lunch"
                 ? "bg-[rgba(212,255,0,0.1)] text-[#D4FF00] border-[#D4FF00] shadow-[0_0_10px_rgba(212,255,0,0.1)]"
                 : "bg-[rgba(255,255,255,0.05)] text-[#EBEBF5CC] border-transparent hover:bg-[rgba(255,255,255,0.08)]",
             )}
           >
-            <Sun size={16} /> Lunch
+            <Sun size={14} /> Lunch
           </button>
           <button
             onClick={() => setSelectedMealSlot("dinner")}
             className={cn(
-              "flex-1 py-[10px] px-[8px] rounded-[100px] transition-all text-[13px] font-semibold flex items-center justify-center gap-[6px] border",
+              "flex-1 py-[6px] px-[8px] rounded-[100px] transition-all text-[11px] sm:text-[12px] font-semibold flex items-center justify-center gap-[4px] border",
               selectedMealSlot === "dinner"
                 ? "bg-[rgba(212,255,0,0.1)] text-[#D4FF00] border-[#D4FF00] shadow-[0_0_10px_rgba(212,255,0,0.1)]"
                 : "bg-[rgba(255,255,255,0.05)] text-[#EBEBF5CC] border-transparent hover:bg-[rgba(255,255,255,0.08)]",
             )}
           >
-            <Moon size={16} /> Dinner
+            <Moon size={14} /> Dinner
           </button>
         </div>
 
