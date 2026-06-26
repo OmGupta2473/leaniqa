@@ -33,6 +33,14 @@ const TITLES: Record<string, string> = {
   pricing: 'Plans & pricing'
 };
 
+function getLocalDateString() {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export default function App() {
   const { currentScreen, setScreen, onboardingCompleted } = useAppStore();
   const [session, setSession] = useState<Session | null>(null);
@@ -80,7 +88,7 @@ export default function App() {
     }
   }, [dailyMetrics, syncFromMetrics]);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateString();
   const hasNewAwards = earnedAwards.some(a => a.earned && a.earnedDate === todayStr);
 
   useEffect(() => {

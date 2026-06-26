@@ -228,23 +228,24 @@ function saveEarnedDates(dates: Record<string, string>) {
   } catch { console.warn('Storage write failed'); }
 }
 
+function getLocalDateDaysAgo(daysAgo: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function calculateCalorieStreak(dailyLogs: DailyLog[]): number {
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateDaysAgo(0);
   const logsToConsider = dailyLogs.filter(l => l.date !== todayStr);
   const sorted = [...logsToConsider].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   
   let streak = 0;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
   for (let i = 0; i < sorted.length; i++) {
-    const logDate = new Date(sorted[i].date);
-    logDate.setHours(0, 0, 0, 0);
-    
-    const expectedDate = new Date(today);
-    expectedDate.setDate(today.getDate() - (i + 1));
-    
-    if (logDate.getTime() !== expectedDate.getTime()) break;
+    const expectedDate = getLocalDateDaysAgo(i + 1);
+    if (sorted[i].date !== expectedDate) break;
     
     if (sorted[i].calorieUnderTarget) {
       streak++;
@@ -256,22 +257,14 @@ function calculateCalorieStreak(dailyLogs: DailyLog[]): number {
 }
 
 function calculateProteinStreak(dailyLogs: DailyLog[]): number {
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateDaysAgo(0);
   const logsToConsider = dailyLogs.filter(l => l.date !== todayStr);
   const sorted = [...logsToConsider].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   
   let streak = 0;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
   for (let i = 0; i < sorted.length; i++) {
-    const logDate = new Date(sorted[i].date);
-    logDate.setHours(0, 0, 0, 0);
-    
-    const expectedDate = new Date(today);
-    expectedDate.setDate(today.getDate() - (i + 1));
-    
-    if (logDate.getTime() !== expectedDate.getTime()) break;
+    const expectedDate = getLocalDateDaysAgo(i + 1);
+    if (sorted[i].date !== expectedDate) break;
     
     if (sorted[i].proteinHitTarget) {
       streak++;
@@ -283,7 +276,7 @@ function calculateProteinStreak(dailyLogs: DailyLog[]): number {
 }
 
 function computeEarnedAwards(dailyLogs: DailyLog[]): Award[] {
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateDaysAgo(0);
   const logsToConsider = dailyLogs.filter(l => l.date !== todayStr);
 
   function allTimeBestCalStreak(logs: DailyLog[]) {
@@ -426,7 +419,7 @@ export const useAppStore = create<AppState>()(
           // Check for newly earned awards and save their dates
           const currentEarnedDates = loadEarnedDates();
           let datesUpdated = false;
-          const todayIso = new Date().toISOString().split('T')[0];
+          const todayIso = getLocalDateDaysAgo(0);
           
           newAwards = newAwards.map(award => {
             if (award.earned) {
@@ -472,7 +465,7 @@ export const useAppStore = create<AppState>()(
           
           const currentEarnedDates = loadEarnedDates();
           let datesUpdated = false;
-          const todayIso = new Date().toISOString().split('T')[0];
+          const todayIso = getLocalDateDaysAgo(0);
           
           newAwards = newAwards.map(award => {
             if (award.earned) {
