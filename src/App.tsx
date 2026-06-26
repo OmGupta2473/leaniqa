@@ -11,6 +11,7 @@ import { WeeklyReportScreen } from './screens/WeeklyReport';
 import { PricingScreen } from './screens/Pricing';
 import { AuthScreen } from './screens/Auth';
 import { ProfileScreen } from './screens/Profile';
+import { TransformationScreen } from './screens/Transformation';
 import { useQuery } from '@tanstack/react-query';
 import { profileService } from './services/profileService';
 import { supabase } from './lib/supabase';
@@ -117,6 +118,7 @@ export default function App() {
               {currentScreen === 'week' && <WeeklyReportScreen />}
               {currentScreen === 'pricing' && <PricingScreen />}
               {currentScreen === 'profile' && <ProfileScreen />}
+              {currentScreen === 'transformation' && <TransformationScreen />}
             </ErrorBoundary>
           </div>
         </div>

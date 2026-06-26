@@ -314,7 +314,285 @@ button.bf-card .text-\[22px\] {
   z-index: 10;
 }
 
-/* Profile Screen Layout */
+.progress-section-tappable {
+  background: rgba(44, 44, 46, 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: clamp(16px, 4vw, 20px);
+  margin-bottom: clamp(10px, 2.5vw, 14px);
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease,
+    border-color 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-section-tappable:hover {
+  background: rgba(55, 55, 58, 0.8);
+  border-color: rgba(212, 255, 0, 0.2);
+}
+
+.progress-section-tappable:active {
+  transform: scale(0.98);
+}
+
+.progress-view-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-xs);
+  font-weight: 500;
+  color: rgba(212, 255, 0, 0.7);
+  margin-bottom: 10px;
+  justify-content: flex-end;
+}
+
+.progress-arrow {
+  position: absolute;
+  bottom: clamp(12px, 3vw, 16px);
+  right: clamp(14px, 3.5vw, 18px);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(212, 255, 0, 0.12);
+  border: 0.5px solid rgba(212, 255, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Transformation Screen Layout */
+.transformation-screen {
+  width: 100%;
+  min-height: 100dvh;
+  background: #1c1c1e;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  animation: transformSlideIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes transformSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.transformation-scroll-area {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.transform-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(12px, 3vw, 16px) 20px;
+  padding-top: calc(env(safe-area-inset-top) + clamp(12px, 3vw, 16px));
+}
+
+.physique-card {
+  background: rgba(28, 28, 30, 0.9);
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  overflow: hidden;
+  margin: 0 20px clamp(12px, 3vw, 16px);
+  position: relative;
+}
+
+.physique-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: clamp(220px, 55vw, 280px);
+  position: relative;
+}
+
+.physique-current {
+  background: linear-gradient(
+    180deg,
+    rgba(44, 44, 46, 0.9) 0%,
+    rgba(28, 28, 30, 0.95) 100%
+  );
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: clamp(12px, 3vw, 16px);
+  position: relative;
+  border-right: 0.5px solid rgba(255, 255, 255, 0.06);
+}
+
+.physique-label {
+  text-align: center;
+  margin-top: 8px;
+}
+.physique-pct {
+  font-size: var(--font-2xl);
+  font-weight: 700;
+  color: rgba(235, 235, 245, 0.85);
+  letter-spacing: -0.3px;
+}
+.physique-sublabel {
+  font-size: var(--font-xs);
+  font-weight: 500;
+  color: rgba(235, 235, 245, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 2px;
+}
+
+.physique-divider {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #d4ff00;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  box-shadow:
+    0 0 0 4px rgba(28, 28, 30, 0.9),
+    0 0 20px rgba(212, 255, 0, 0.3);
+}
+
+.physique-bottom-strip {
+  background: rgba(20, 20, 22, 0.95);
+  border-top: 0.5px solid rgba(255, 255, 255, 0.06);
+  padding: clamp(10px, 2.5vw, 14px) clamp(16px, 4vw, 20px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.timeline-section {
+  margin: 0 20px clamp(12px, 3vw, 16px);
+}
+
+.timeline-track {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 100px;
+  height: 8px;
+  margin: 10px 0 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+.timeline-fill {
+  height: 8px;
+  border-radius: 100px;
+  background: linear-gradient(90deg, #d4ff00 0%, rgba(212, 255, 0, 0.7) 100%);
+  transition: width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s;
+  min-width: 3px;
+}
+
+.milestone-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+.milestone {
+  font-size: var(--font-xs);
+  color: rgba(235, 235, 245, 0.35);
+  font-weight: 400;
+}
+.milestone.active {
+  color: #d4ff00;
+  font-weight: 600;
+}
+
+.goal-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(11px, 2.8vw, 13px) 0;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.06);
+}
+.goal-row:last-child {
+  border-bottom: none;
+}
+.goal-row-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.goal-icon-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.goal-row-label {
+  font-size: var(--font-base);
+  color: rgba(235, 235, 245, 0.65);
+  font-weight: 400;
+}
+.goal-row-value {
+  font-size: var(--font-md);
+  font-weight: 600;
+  color: #ffffff;
+  text-align: right;
+}
+
+.strategy-highlight {
+  margin: 0 20px clamp(12px, 3vw, 16px);
+  background: rgba(212, 255, 0, 0.07);
+  border: 1px solid rgba(212, 255, 0, 0.2);
+  border-radius: 16px;
+  padding: clamp(16px, 4vw, 20px);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.strategy-icon-large {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(212, 255, 0, 0.15);
+  border: 0.5px solid rgba(212, 255, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.transform-bottom-spacer {
+  height: calc(env(safe-area-inset-bottom) + clamp(24px, 6vw, 40px));
+}
+
+.transformation-screen .transform-header {
+  animation-delay: 0s;
+}
+.transformation-screen .physique-card {
+  animation-delay: 0.06s;
+}
+.transformation-screen .timeline-section {
+  animation-delay: 0.12s;
+}
+.transformation-screen .goals-card {
+  animation-delay: 0.18s;
+}
+.transformation-screen .strategy-highlight {
+  animation-delay: 0.24s;
+}
+
 .profile-screen {
   width: 100%;
   min-height: 100dvh;
