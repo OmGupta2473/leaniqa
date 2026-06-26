@@ -10,6 +10,13 @@ import { subscriptionService } from '../services/subscriptionService';
 import { supabase } from '../lib/supabase';
 import { useAppStore } from '../store';
 
+function getLocalDateString(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export function WeeklyReportScreen() {
   const { setScreen } = useAppStore();
   const queryClient = useQueryClient();
@@ -28,12 +35,12 @@ export function WeeklyReportScreen() {
   // Calculate week start (Sunday)
   const weekStart = new Date(today);
   weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-  const weekStartStr = weekStart.toISOString().split('T')[0];
+  const weekStartStr = getLocalDateString(weekStart);
 
   const past7Days = Array.from({length: 7}, (_, i) => {
     const d = new Date(today);
     d.setDate(d.getDate() - (6 - i));
-    return d.toISOString().split('T')[0];
+    return getLocalDateString(d);
   });
 
   const dayStats = past7Days.map(dateStr => {

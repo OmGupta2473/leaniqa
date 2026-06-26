@@ -7,6 +7,14 @@ import { reportService } from './reportService';
 import { authService } from './authService';
 import { DbDailyMetric } from '../types/supabase';
 
+function getLocalDateString() {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export const complianceService = {
   async updateTodayScore(): Promise<DbDailyMetric | null> {
     try {
@@ -16,7 +24,7 @@ export const complianceService = {
       
       if (!profile) return null;
       
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
       
       // Fetch today's data
       const meals = await mealService.getTodaysMeals();
@@ -81,7 +89,7 @@ export const complianceService = {
       return { todayScore: 0, weeklyAverage: 0, monthlyAverage: 0 };
     }
     
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateString();
     const todayMetric = metrics.find(m => m.date === todayStr);
     const todayScore = todayMetric ? todayMetric.score : 0;
     
