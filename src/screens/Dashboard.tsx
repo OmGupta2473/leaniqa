@@ -1,6 +1,6 @@
 import { useAppStore } from "../store";
 import { Target, Footprints, Utensils, CheckCircle2, X } from "lucide-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { profileService } from "../services/profileService";
 import { mealService } from "../services/mealService";
 import { weightService } from "../services/weightService";
@@ -43,7 +43,7 @@ function AnimatedNumber({
 }
 
 export function DashboardScreen() {
-  const { setScreen, onboardingData, calorieStreak, proteinStreak, dailyLogs, updateDailyLogs, goalSetCompleted } = useAppStore();
+  const { setScreen, onboardingData, goalSetCompleted } = useAppStore();
   const queryClient = useQueryClient();
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -78,13 +78,29 @@ export function DashboardScreen() {
     queryKey: ["meals", "today"],
     queryFn: () => mealService.getTodaysMeals(),
   });
-  const { data: weightLogs = [] } = useQuery({
-    queryKey: ["weightLogs"],
-    queryFn: () => weightService.getWeightLogs(),
-  });
+
   const { data: scores } = useQuery({
     queryKey: ["complianceScore"],
     queryFn: () => complianceService.getScores(),
+  });
+
+  const addMealMutation = useMutation({
+    mutationFn: async ({ kcal, protein }: { kcal: number; protein: number }) => {
+      await mealService.addMeal({
+        meal_text: "Manual Entry",
+        calories: kcal,
+        protein: protein,
+        fat: 0,
+        carbs: 0,
+        meal_time: new Date().toISOString()
+      });
+      await complianceService.updateTodayScore();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["meals", "today"] });
+      queryClient.invalidateQueries({ queryKey: ["complianceScore"] });
+      queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] });
+    },
   });
 
   if (isProfileError || isGoalError) {
@@ -105,81 +121,31 @@ export function DashboardScreen() {
   const targetBf = goal?.target_bf ?? onboardingData?.targetBodyFatPct;
   const currentBf = goal?.current_bf ?? onboardingData?.currentBodyFatPct;
   const proteinTarget = profile?.protein_target ?? onboardingData?.proteinMid;
-  const strategyName =
-    goal?.strategy ?? onboardingData?.chosenStrategyName ?? "Recommended";
+  const strategyName = goal?.strategy ?? onboardingData?.chosenStrategyName ?? "Recommended";
 
   const dailyTargetKcal =
     profile?.maintenance_kcal && goal?.deficit_kcal
       ? profile.maintenance_kcal - goal.deficit_kcal
       : onboardingData?.dailyCalorieGoal;
 
-  // Calculate today's intake
+  // Calculate today's intake directly from DB meals
   const todaysMeals = meals || [];
-  const dbKcal = todaysMeals.reduce((acc, m) => acc + m.calories, 0);
-  const dbProtein = todaysMeals.reduce((acc, m) => acc + m.protein, 0);
+  const eatenKcal = todaysMeals.reduce((acc, m) => acc + m.calories, 0);
+  const eatenProtein = todaysMeals.reduce((acc, m) => acc + m.protein, 0);
 
-  const todayStr = new Date().toISOString().split('T')[0];
-  const existingLog = dailyLogs.find(l => l.date === todayStr);
-
-  const eatenKcal = Math.max(dbKcal, existingLog ? existingLog.caloriesConsumed : 0);
-  const eatenProtein = Math.max(dbProtein, existingLog ? existingLog.proteinConsumed : 0);
-
-  // Automatically sync today's tracked meals to dailyLogs so history stays updated
-  useEffect(() => {
-    if (meals) {
-      if ((eatenKcal > 0 || eatenProtein > 0) && (!existingLog || existingLog.caloriesConsumed !== eatenKcal || existingLog.proteinConsumed !== eatenProtein)) {
-        const entry = {
-          date: todayStr,
-          caloriesConsumed: eatenKcal,
-          proteinConsumed: eatenProtein,
-          calorieTarget: dailyTargetKcal || 2000,
-          proteinTarget: proteinTarget || 120,
-          calorieUnderTarget: eatenKcal > 0 ? (eatenKcal <= (dailyTargetKcal || 2000)) : true,
-          proteinHitTarget: eatenProtein >= (proteinTarget || 120)
-        };
-        const newLogs = [...dailyLogs];
-        const existingIdx = newLogs.findIndex(l => l.date === todayStr);
-        if (existingIdx >= 0) {
-          newLogs[existingIdx] = entry;
-        } else {
-          newLogs.push(entry);
-        }
-        updateDailyLogs(newLogs);
-      }
-    }
-  }, [meals, eatenKcal, eatenProtein, dailyLogs, dailyTargetKcal, proteinTarget, updateDailyLogs, todayStr, existingLog]);
-
-
-  const remainingKcal =
-    dailyTargetKcal !== undefined
-      ? Math.max(0, dailyTargetKcal - eatenKcal)
-      : undefined;
-  const remainingProtein =
-    proteinTarget !== undefined
-      ? Math.max(0, proteinTarget - eatenProtein)
-      : undefined;
+  const remainingKcal = dailyTargetKcal !== undefined ? Math.max(0, dailyTargetKcal - eatenKcal) : undefined;
+  const remainingProtein = proteinTarget !== undefined ? Math.max(0, proteinTarget - eatenProtein) : undefined;
 
   const handleSaveLog = () => {
-    const today = new Date().toISOString().split('T')[0];
-    const existing = dailyLogs.findIndex(l => l.date === today);
-    const entry = {
-      date: today,
-      caloriesConsumed: Number(logCalories),
-      proteinConsumed: Number(logProtein),
-      calorieTarget: dailyTargetKcal || 2000,
-      proteinTarget: proteinTarget || 120,
-      calorieUnderTarget: Number(logCalories) <= (dailyTargetKcal || 2000),
-      proteinHitTarget: Number(logProtein) >= (proteinTarget || 120)
-    };
-    
-    const newLogs = [...dailyLogs];
-    if (existing >= 0) {
-      newLogs[existing] = entry;
-    } else {
-      newLogs.push(entry);
+    const inputKcal = Number(logCalories);
+    const inputPro = Number(logProtein);
+    const kcalToAdd = Math.max(0, inputKcal - eatenKcal);
+    const proToAdd = Math.max(0, inputPro - eatenProtein);
+
+    if (kcalToAdd > 0 || proToAdd > 0) {
+      addMealMutation.mutate({ kcal: kcalToAdd, protein: proToAdd });
     }
-    
-    updateDailyLogs(newLogs);
+
     setShowLogSheet(false);
     setLogCalories("");
     setLogProtein("");

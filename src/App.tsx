@@ -66,7 +66,20 @@ export default function App() {
     enabled: !!session && !!profile,
   });
 
-  const { earnedAwards } = useAppStore();
+  const { data: dailyMetrics } = useQuery({
+    queryKey: ['dailyMetrics'],
+    queryFn: () => import('./services/reportService').then(m => m.reportService.getDailyMetrics()),
+    enabled: !!session,
+  });
+
+  const { earnedAwards, syncFromMetrics } = useAppStore();
+
+  useEffect(() => {
+    if (dailyMetrics) {
+      syncFromMetrics(dailyMetrics);
+    }
+  }, [dailyMetrics, syncFromMetrics]);
+
   const todayStr = new Date().toISOString().split('T')[0];
   const hasNewAwards = earnedAwards.some(a => a.earned && a.earnedDate === todayStr);
 
