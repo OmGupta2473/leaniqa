@@ -66,6 +66,10 @@ export default function App() {
     enabled: !!session && !!profile,
   });
 
+  const { earnedAwards } = useAppStore();
+  const todayStr = new Date().toISOString().split('T')[0];
+  const hasNewAwards = earnedAwards.some(a => a.earned && a.earnedDate === todayStr);
+
   useEffect(() => {
     if (!loadingSession && !session && currentScreen !== 'auth') {
       setScreen('auth');
@@ -105,11 +109,14 @@ export default function App() {
           <div className="px-5 py-4 border-b-[0.5px] border-border-tertiary flex items-center justify-between shrink-0 bg-background-primary z-10">
             <div className="text-[15px] font-medium text-text-primary">{title}</div>
             <div className="flex items-center gap-3">
-              <i 
-                className="ti ti-trophy text-[22px] text-[#D4FF00] cursor-pointer hover:opacity-80 transition-opacity" 
+              <div 
+                className="awards-nav-btn"
                 onClick={() => setScreen('awards')}
                 title="Awards Hall"
-              ></i>
+              >
+                <i className="ti ti-trophy text-[18px] text-[#D4FF00]"></i>
+                {hasNewAwards && <div className="notif-dot"></div>}
+              </div>
               <div 
                 className="w-8 h-8 rounded-full bg-purple-bg flex items-center justify-center text-[12px] font-medium text-purple cursor-pointer"
                 onClick={() => setScreen('profile')}

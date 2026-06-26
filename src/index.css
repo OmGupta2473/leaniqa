@@ -657,6 +657,83 @@ button.bf-card .text-\[22px\] {
   }
 }
 
+.streak-row {
+  display: flex;
+  gap: 10px;
+  margin: clamp(10px, 2.5vw, 14px) 0;
+}
+
+.streak-chip {
+  flex: 1;
+  background: rgba(44, 44, 46, 0.7);
+  backdrop-filter: blur(12px);
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: clamp(10px, 2.5vw, 12px) clamp(12px, 3vw, 14px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.streak-chip.hot {
+  border-color: rgba(212, 255, 0, 0.3);
+  box-shadow: 0 0 12px rgba(212, 255, 0, 0.12);
+}
+
+.streak-chip.hot-protein {
+  border-color: rgba(255, 77, 28, 0.3);
+  box-shadow: 0 0 12px rgba(255, 77, 28, 0.12);
+}
+
+.awards-nav-btn {
+  width: clamp(36px, 9vw, 42px);
+  height: clamp(36px, 9vw, 42px);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 0.5px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+  position: relative;
+}
+
+.notif-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #D4FF00;
+  border: 1.5px solid #1C1C1E;
+}
+
+.log-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(28, 28, 30, 0.97);
+  backdrop-filter: blur(30px);
+  border-top: 0.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px 20px 0 0;
+  padding: clamp(20px, 5vw, 28px) 20px calc(env(safe-area-inset-bottom) + 20px);
+  z-index: 50;
+  animation: sheetSlideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes sheetSlideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
 .profile-screen {
   width: 100%;
   min-height: 100dvh;
