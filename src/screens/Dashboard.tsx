@@ -296,27 +296,7 @@ export function DashboardScreen() {
         </div>
       </div>
 
-      {/* Streak row */}
-      <div className="streak-row">
-        <div className={`streak-chip ${calorieStreak >= 7 ? 'hot' : ''}`}>
-          <div className="text-[18px]">🔥</div>
-          <div>
-            <div className="text-[var(--font-xl)] font-bold text-[#D4FF00] leading-none">
-              {calorieStreak > 0 ? calorieStreak : <span className="text-[rgba(235,235,245,0.5)]">—</span>}
-            </div>
-            <div className="text-[var(--font-xs)] text-[rgba(235,235,245,0.5)] uppercase tracking-wide mt-1">cal streak</div>
-          </div>
-        </div>
-        <div className={`streak-chip ${proteinStreak >= 7 ? 'hot-protein' : ''}`}>
-          <div className="text-[18px]">💪</div>
-          <div>
-            <div className="text-[var(--font-xl)] font-bold text-[#FF4D1C] leading-none">
-              {proteinStreak > 0 ? proteinStreak : <span className="text-[rgba(235,235,245,0.5)]">—</span>}
-            </div>
-            <div className="text-[var(--font-xs)] text-[rgba(235,235,245,0.5)] uppercase tracking-wide mt-1">protein streak</div>
-          </div>
-        </div>
-      </div>
+
 
       {/* SECTION 3 — Body fat hero card */}
       <div
