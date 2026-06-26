@@ -29,7 +29,7 @@ const TITLES: Record<string, string> = {
 };
 
 export default function App() {
-  const { currentScreen, setScreen } = useAppStore();
+  const { currentScreen, setScreen, onboardingCompleted } = useAppStore();
   const [session, setSession] = useState<Session | null>(null);
   const [loadingSession, setLoadingSession] = useState(true);
   const { isOnline } = useNetworkStatus();
@@ -69,11 +69,11 @@ export default function App() {
         setScreen('onboard');
       } else if (profile && !goal && currentScreen !== 'goal') {
         setScreen('goal');
-      } else if (profile && goal && currentScreen === 'auth') {
+      } else if (profile && goal && (currentScreen === 'auth' || (currentScreen === 'onboard' && onboardingCompleted))) {
         setScreen('dash');
       }
     }
-  }, [session, loadingSession, currentScreen, profile, loadingProfile, goal, loadingGoal, setScreen]);
+  }, [session, loadingSession, currentScreen, profile, loadingProfile, goal, loadingGoal, setScreen, onboardingCompleted]);
 
   const title = TITLES[currentScreen] || 'Physique AI';
 
