@@ -1,7 +1,16 @@
 import React, { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { profileService } from "../services/profileService";
+import { mealService } from "../services/mealService";
 import { useAppStore } from "../store";
+
+function getLocalDateString() {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 export function CalorieDetailScreen() {
   const { setScreen, dailyLogs, calorieStreak, earnedAwards, onboardingData } =
@@ -14,6 +23,10 @@ export function CalorieDetailScreen() {
     queryKey: ["goal"],
     queryFn: () => profileService.getGoal(),
   });
+  const { data: meals } = useQuery({
+    queryKey: ["meals", "today"],
+    queryFn: () => mealService.getTodaysMeals(),
+  });
 
   const dailyCalorieGoal =
     profile?.maintenance_kcal && goal?.deficit_kcal
@@ -21,9 +34,8 @@ export function CalorieDetailScreen() {
       : (onboardingData?.dailyCalorieGoal ?? 2000);
 
   // find today's log, if it exists
-  const todayStr = new Date().toISOString().split("T")[0];
-  const todayLog = dailyLogs.find((l) => l.date === todayStr);
-  const caloriesConsumed = todayLog ? todayLog.caloriesConsumed : 0;
+  const todayStr = getLocalDateString();
+  const caloriesConsumed = meals ? meals.reduce((acc, m) => acc + m.calories, 0) : 0;
 
   const isUnderTarget = caloriesConsumed <= dailyCalorieGoal;
 
@@ -50,7 +62,27 @@ export function CalorieDetailScreen() {
       best = Math.max(best, current);
     }
     return Math.max(best, current);
-  }, [dailyLogs]);
+  }, [dailyLogs, todayStr]);
+
+  // Inject live data for today's chart entry
+  const chartLogs = useMemo(() => {
+    const logs = [...dailyLogs];
+    const todayIdx = logs.findIndex(l => l.date === todayStr);
+    if (todayIdx >= 0) {
+      logs[todayIdx] = { ...logs[todayIdx], caloriesConsumed, calorieUnderTarget: isUnderTarget };
+    } else {
+      logs.push({
+        date: todayStr,
+        caloriesConsumed,
+        proteinConsumed: 0,
+        calorieTarget: dailyCalorieGoal,
+        proteinTarget: 0,
+        calorieUnderTarget: isUnderTarget,
+        proteinHitTarget: false,
+      });
+    }
+    return logs;
+  }, [dailyLogs, todayStr, caloriesConsumed, dailyCalorieGoal, isUnderTarget]);
 
   // Build chart
   const buildCalorieBarChart = (logs: typeof dailyLogs, target: number) => {
@@ -96,7 +128,7 @@ export function CalorieDetailScreen() {
     </svg>`;
   };
 
-  const chartHtml = buildCalorieBarChart(dailyLogs, dailyCalorieGoal);
+  const chartHtml = buildCalorieBarChart(chartLogs, dailyCalorieGoal);
   const calAwards = earnedAwards.filter((a) => a.category === "calories");
 
   return (

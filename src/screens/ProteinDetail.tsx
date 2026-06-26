@@ -1,7 +1,16 @@
 import React, { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { profileService } from "../services/profileService";
+import { mealService } from "../services/mealService";
 import { useAppStore } from "../store";
+
+function getLocalDateString() {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 export function ProteinDetailScreen() {
   const { setScreen, dailyLogs, proteinStreak, earnedAwards, onboardingData } =
@@ -10,14 +19,17 @@ export function ProteinDetailScreen() {
     queryKey: ["profile"],
     queryFn: () => profileService.getProfile(),
   });
+  const { data: meals } = useQuery({
+    queryKey: ["meals", "today"],
+    queryFn: () => mealService.getTodaysMeals(),
+  });
 
   const proteinTarget =
     profile?.protein_target ?? onboardingData?.proteinMid ?? 150;
 
   // find today's log, if it exists
-  const todayStr = new Date().toISOString().split("T")[0];
-  const todayLog = dailyLogs.find((l) => l.date === todayStr);
-  const proteinConsumed = todayLog ? todayLog.proteinConsumed : 0;
+  const todayStr = getLocalDateString();
+  const proteinConsumed = meals ? meals.reduce((acc, m) => acc + m.protein, 0) : 0;
 
   const isTargetHit = proteinConsumed >= proteinTarget;
 
@@ -44,7 +56,27 @@ export function ProteinDetailScreen() {
       best = Math.max(best, current);
     }
     return Math.max(best, current);
-  }, [dailyLogs]);
+  }, [dailyLogs, todayStr]);
+
+  // Inject live data for today's chart entry
+  const chartLogs = useMemo(() => {
+    const logs = [...dailyLogs];
+    const todayIdx = logs.findIndex(l => l.date === todayStr);
+    if (todayIdx >= 0) {
+      logs[todayIdx] = { ...logs[todayIdx], proteinConsumed, proteinHitTarget: isTargetHit };
+    } else {
+      logs.push({
+        date: todayStr,
+        caloriesConsumed: 0,
+        proteinConsumed,
+        calorieTarget: 0,
+        proteinTarget,
+        calorieUnderTarget: false,
+        proteinHitTarget: isTargetHit,
+      });
+    }
+    return logs;
+  }, [dailyLogs, todayStr, proteinConsumed, proteinTarget, isTargetHit]);
 
   // Build chart
   const buildProteinBarChart = (logs: typeof dailyLogs, target: number) => {
@@ -88,7 +120,7 @@ export function ProteinDetailScreen() {
     </svg>`;
   };
 
-  const chartHtml = buildProteinBarChart(dailyLogs, proteinTarget);
+  const chartHtml = buildProteinBarChart(chartLogs, proteinTarget);
   const proAwards = earnedAwards.filter((a) => a.category === "protein");
 
   return (
