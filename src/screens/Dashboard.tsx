@@ -307,11 +307,20 @@ export function DashboardScreen() {
         {/* 2-column grid */}
         <div className="grid grid-cols-2 gap-[12px] mb-[12px]">
           {/* Calories */}
-          <div className="glass-card p-[16px] text-center flex flex-col justify-center relative overflow-hidden">
+          <div 
+            className="progress-section-tappable text-center flex flex-col justify-center relative !mb-0 !p-[16px] !pt-[28px]" 
+            onClick={() => setScreen('calorieDetail')}
+          >
+            <div className="absolute top-[8px] right-[8px] text-[10px] font-medium text-[#D4FF00]/70 flex items-center gap-[2px]">
+              View history <i className="ti ti-arrow-right" style={{ fontSize: '10px' }} aria-hidden="true"></i>
+            </div>
             {isMealsError ? (
               <div
                 className="text-[13px] text-[#FF4D1C] my-auto cursor-pointer"
-                onClick={() => refetchMeals()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  refetchMeals();
+                }}
               >
                 Retry
               </div>
@@ -326,6 +335,11 @@ export function DashboardScreen() {
                 <div className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[#EBEBF5CC] mt-[12px]">
                   Calories
                 </div>
+                
+                <div className="progress-arrow" style={{ bottom: '8px', right: '8px', width: '22px', height: '22px' }}>
+                  <i className="ti ti-chevron-right" style={{ fontSize: '12px', color: '#D4FF00' }} aria-hidden="true"></i>
+                </div>
+
                 <div className="absolute bottom-0 left-0 h-[4px] bg-[#FF4D1C]/20 w-full">
                   <div
                     className="h-full bg-[#FF4D1C]"
@@ -344,11 +358,20 @@ export function DashboardScreen() {
           </div>
 
           {/* Protein */}
-          <div className="glass-card p-[16px] text-center flex flex-col justify-center relative overflow-hidden">
+          <div 
+            className="progress-section-tappable text-center flex flex-col justify-center relative !mb-0 !p-[16px] !pt-[28px]" 
+            onClick={() => setScreen('proteinDetail')}
+          >
+            <div className="absolute top-[8px] right-[8px] text-[10px] font-medium text-[#D4FF00]/70 flex items-center gap-[2px]">
+              View history <i className="ti ti-arrow-right" style={{ fontSize: '10px' }} aria-hidden="true"></i>
+            </div>
             {isMealsError ? (
               <div
                 className="text-[13px] text-[#FF4D1C] my-auto cursor-pointer"
-                onClick={() => refetchMeals()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  refetchMeals();
+                }}
               >
                 Retry
               </div>
@@ -363,6 +386,11 @@ export function DashboardScreen() {
                 <div className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[#EBEBF5CC] mt-[12px]">
                   Protein
                 </div>
+
+                <div className="progress-arrow" style={{ bottom: '8px', right: '8px', width: '22px', height: '22px' }}>
+                  <i className="ti ti-chevron-right" style={{ fontSize: '12px', color: '#D4FF00' }} aria-hidden="true"></i>
+                </div>
+
                 <div className="absolute bottom-0 left-0 h-[4px] bg-[#378ADD]/20 w-full">
                   <div
                     className="h-full bg-[#378ADD]"

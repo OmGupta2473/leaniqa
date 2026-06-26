@@ -12,6 +12,8 @@ import { PricingScreen } from './screens/Pricing';
 import { AuthScreen } from './screens/Auth';
 import { ProfileScreen } from './screens/Profile';
 import { TransformationScreen } from './screens/Transformation';
+import { CalorieDetailScreen } from './screens/CalorieDetail';
+import { ProteinDetailScreen } from './screens/ProteinDetail';
 import { useQuery } from '@tanstack/react-query';
 import { profileService } from './services/profileService';
 import { supabase } from './lib/supabase';
@@ -119,6 +121,8 @@ export default function App() {
               {currentScreen === 'pricing' && <PricingScreen />}
               {currentScreen === 'profile' && <ProfileScreen />}
               {currentScreen === 'transformation' && <TransformationScreen />}
+              {currentScreen === 'calorieDetail' && <CalorieDetailScreen />}
+              {currentScreen === 'proteinDetail' && <ProteinDetailScreen />}
             </ErrorBoundary>
           </div>
         </div>

@@ -593,6 +593,21 @@ button.bf-card .text-\[22px\] {
   animation-delay: 0.24s;
 }
 
+.streak-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.chart-container {
+  background: rgba(44, 44, 46, 0.7);
+  backdrop-filter: blur(20px);
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: clamp(14px, 3.5vw, 18px);
+  overflow: hidden;
+}
+
 .profile-screen {
   width: 100%;
   min-height: 100dvh;
