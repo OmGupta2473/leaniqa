@@ -42,7 +42,7 @@ function getLocalDateString() {
 }
 
 export default function App() {
-  const { currentScreen, setScreen, onboardingCompleted } = useAppStore();
+  const { currentScreen, setScreen, onboardingCompleted, setOnboardingCompleted, goalSetCompleted, setGoalSetCompleted } = useAppStore();
   const [session, setSession] = useState<Session | null>(null);
   const [loadingSession, setLoadingSession] = useState(true);
   const { isOnline } = useNetworkStatus();
@@ -92,6 +92,15 @@ export default function App() {
   const hasNewAwards = earnedAwards.some(a => a.earned && a.earnedDate === todayStr);
 
   useEffect(() => {
+    if (!loadingSession && session && !loadingProfile && !loadingGoal) {
+      if (profile && !onboardingCompleted) {
+        setOnboardingCompleted(true);
+      }
+      if (goal && !goalSetCompleted) {
+        setGoalSetCompleted(true);
+      }
+    }
+
     if (!loadingSession && !session && currentScreen !== 'auth') {
       setScreen('auth');
     } else if (!loadingSession && session && !loadingProfile && !loadingGoal) {
@@ -99,11 +108,11 @@ export default function App() {
         setScreen('onboard');
       } else if (profile && !goal && currentScreen !== 'goal') {
         setScreen('goal');
-      } else if (profile && goal && (currentScreen === 'auth' || (currentScreen === 'onboard' && onboardingCompleted))) {
+      } else if (profile && goal && (currentScreen === 'auth' || (currentScreen === 'onboard' && onboardingCompleted) || (currentScreen === 'goal' && goalSetCompleted))) {
         setScreen('dash');
       }
     }
-  }, [session, loadingSession, currentScreen, profile, loadingProfile, goal, loadingGoal, setScreen, onboardingCompleted]);
+  }, [session, loadingSession, currentScreen, profile, loadingProfile, goal, loadingGoal, setScreen, onboardingCompleted, setOnboardingCompleted, goalSetCompleted, setGoalSetCompleted]);
 
   const title = TITLES[currentScreen] || 'Physique AI';
 
