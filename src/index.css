@@ -1,55 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --color-purple: #C7FF24;
-  --color-teal: #C7FF24;
-  --color-blue: #38bdf8;
-  --color-green: #C7FF24;
-  --color-amber: #fbbf24;
-  --color-coral: #ef4444;
-  --color-pink: #C7FF24;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', system-ui, sans-serif;
+
+  --color-primary: #D4FF00;
+  --color-secondary: #FF4D1C;
+  --color-blue: #378ADD;
   
-  --color-purple-bg: rgba(255, 255, 255, 0.05);
-  --color-teal-bg: rgba(255, 255, 255, 0.05);
-  --color-blue-bg: rgba(56, 189, 248, 0.1);
-  --color-green-bg: rgba(199, 255, 36, 0.1);
-  --color-amber-bg: rgba(251, 191, 36, 0.1);
-  --color-coral-bg: rgba(239, 68, 68, 0.1);
-  --color-pink-bg: rgba(255, 255, 255, 0.05);
+  --color-background-primary: #1C1C1E;
+  --color-background-secondary: #2C2C2E;
+  --color-background-hover: #3A3A3C;
   
-  --color-border-primary: rgba(255, 255, 255, 0.1);
-  --color-border-secondary: rgba(255, 255, 255, 0.05);
-  --color-border-tertiary: rgba(255, 255, 255, 0.05);
+  --color-border-primary: #38383A;
+  --color-border-secondary: rgba(255, 255, 255, 0.12);
+  --color-border-tertiary: rgba(255, 255, 255, 0.06);
   
-  --color-background-primary: #050505;
-  --color-background-secondary: #0A0A0A;
-  
-  --color-text-primary: #f1f5f9;
-  --color-text-secondary: #94a3b8;
-  --color-text-tertiary: #64748b;
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: rgba(235, 235, 245, 0.8); /* #EBEBF5CC */
+  --color-text-tertiary: rgba(235, 235, 245, 0.6); /* #EBEBF599 */
 }
 
 @layer base {
-  :root {
-    --purple: #C7FF24; --teal: #C7FF24; --blue: #38bdf8; --green: #C7FF24;
-    --amber: #fbbf24; --coral: #ef4444; --pink: #C7FF24;
-    --purple-bg: rgba(255, 255, 255, 0.05); --teal-bg: rgba(255, 255, 255, 0.05); --blue-bg: rgba(56, 189, 248, 0.1);
-    --green-bg: rgba(199, 255, 36, 0.1); --amber-bg: rgba(251, 191, 36, 0.1); --coral-bg: rgba(239, 68, 68, 0.1); --pink-bg: rgba(255, 255, 255, 0.05);
-    
-    --color-border-primary: rgba(255, 255, 255, 0.1);
-    --color-border-secondary: rgba(255, 255, 255, 0.05);
-    --color-border-tertiary: rgba(255, 255, 255, 0.05);
-    
-    --color-background-primary: #050505;
-    --color-background-secondary: #0A0A0A;
-    --color-text-primary: #f1f5f9;
-    --color-text-secondary: #94a3b8;
-    --color-text-tertiary: #64748b;
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--color-background-primary);
+    color: var(--color-text-primary);
+    min-height: 100vh;
   }
 }
 
-body {
-  font-family: var(--font-sans, sans-serif);
-  background-color: #050505; /* Dark background */
-  color: var(--color-text-primary);
+@layer utilities {
+  .glass-card {
+    background: rgba(44, 44, 46, 0.7);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 0.5px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+  }
+  
+  .glass-card-highlight {
+    background: rgba(212, 255, 0, 0.08);
+    border: 1.5px solid rgba(212, 255, 0, 0.4);
+    border-radius: 16px;
+  }
+
+  .screen-container {
+    padding: 24px 20px 40px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+}
+
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes revealCard {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.screen-enter { 
+  animation: slideUpFade 0.4s cubic-bezier(0.22,1,0.36,1) both; 
+}
+
+.card-reveal { 
+  animation: revealCard 0.35s cubic-bezier(0.22,1,0.36,1) both; 
+}
+
+.bf-card:active { 
+  transform: scale(0.96); 
+  transition: transform 0.1s ease; 
+}
+
+.strategy-card:nth-child(1) { animation-delay: 0s; }
+.strategy-card:nth-child(2) { animation-delay: 0.08s; }
+.strategy-card:nth-child(3) { animation-delay: 0.16s; }
+
+::-webkit-scrollbar {
+  display: none;
 }

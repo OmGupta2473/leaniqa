@@ -4,7 +4,7 @@ import { cn } from '../lib/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileService } from '../services/profileService';
 import { complianceService } from '../services/complianceService';
-import { Lock, Check, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
 
 const bodyFatOptions = [
   { range: 'Under 5%', label: 'Essential fat', desc: 'Extremely lean, visible striations, competition level', mid: 2.5 },
@@ -17,7 +17,7 @@ const bodyFatOptions = [
 ];
 
 const Silhouette = ({ active }: { active: boolean }) => (
-  <div className={cn("flex justify-center items-center py-2 mb-2 opacity-80", active ? "text-purple" : "text-text-tertiary")}>
+  <div className={cn("flex justify-center items-center py-2 mb-2 opacity-80", active ? "text-[#D4FF00]" : "text-[#EBEBF599]")}>
     <svg width="40" height="60" viewBox="0 0 24 36" fill="currentColor">
       <path d="M12,2 C10.3431458,2 9,3.34314575 9,5 C9,6.65685425 10.3431458,8 12,8 C13.6568542,8 15,6.65685425 15,5 C15,3.34314575 13.6568542,2 12,2 Z M8,9 C6.34314575,9 5,10.3431458 5,12 L5,20 C5,21.1045695 5.8954305,22 7,22 L7,34 C7,35.1045695 7.8954305,36 9,36 L11,36 C11.5522847,36 12,35.5522847 12,35 L12,24 L13,24 L13,35 C13,35.5522847 13.4477153,36 14,36 L16,36 C17.1045695,36 18,35.1045695 18,34 L18,22 C19.1045695,22 20,21.1045695 20,20 L20,12 C20,10.3431458 18.6568542,9 17,9 L8,9 Z" />
     </svg>
@@ -39,7 +39,6 @@ export function GoalSetterScreen() {
   const proteinMid = onboardingData?.proteinMid || 150;
   const proteinMin = onboardingData?.proteinMin || 140;
 
-  // Clear target if current changes to be <= target
   useEffect(() => {
     if (currentBfMid && targetBfMid && targetBfMid >= currentBfMid) {
       setTargetBfMid(null);
@@ -84,7 +83,6 @@ export function GoalSetterScreen() {
         queryClient.invalidateQueries({ queryKey: ['complianceScore'] });
       }).catch(console.error);
       
-      // Pass accumulated user data
       setOnboardingData({
         ...onboardingData,
         currentBodyFatPct: data.strategyData.current_bf,
@@ -125,9 +123,6 @@ export function GoalSetterScreen() {
     {
       name: 'Maintenance',
       deficit: 0,
-      tagColor: 'text-purple',
-      tagBg: 'bg-purple/10',
-      tagBorder: 'border-purple/20',
       pros: 'No deficit needed, full energy',
       cons: 'Requires consistent nutrition discipline',
       proteinNote: `Aim for ${proteinMid || proteinMax}g/day protein to maintain muscle mass`,
@@ -137,33 +132,30 @@ export function GoalSetterScreen() {
     {
       name: 'Aggressive Cut',
       deficit: 600,
-      tagColor: 'text-amber',
-      tagBg: 'bg-amber-bg',
-      tagBorder: 'border-amber/20',
       pros: 'Fastest route to your goal',
       cons: 'Higher risk of muscle loss, fatigue, harder to sustain',
-      proteinNote: `Protein becomes critical — stay above ${proteinMax}g/day to protect muscle`
+      proteinNote: `Protein becomes critical — stay above ${proteinMax}g/day to protect muscle`,
+      styleClass: 'bg-[rgba(255,77,28,0.08)] border-[0.5px] border-[rgba(255,77,28,0.25)]',
+      btnClass: 'bg-[rgba(255,255,255,0.1)] text-white border-[0.5px] border-[rgba(255,255,255,0.2)] rounded-[100px] p-[14px_28px] font-semibold text-[15px]'
     },
     {
       name: 'Recommended',
       deficit: 400,
-      tagColor: 'text-green',
-      tagBg: 'bg-green-bg',
-      tagBorder: 'border-green',
       isRecommended: true,
       pros: 'Best balance of speed and muscle retention',
       cons: 'Requires consistency but very sustainable',
-      proteinNote: `Aim for ${proteinMid || proteinMax}g/day protein — muscle loss is minimal at this pace`
+      proteinNote: `Aim for ${proteinMid || proteinMax}g/day protein — muscle loss is minimal at this pace`,
+      styleClass: 'bg-[rgba(212,255,0,0.08)] border-[1.5px] border-[rgba(212,255,0,0.4)]',
+      btnClass: 'bg-[#D4FF00] text-[#0A0A0A] font-bold text-[17px] rounded-[100px] p-[16px_32px] border-none tracking-[-0.2px] hover:scale-[1.02] hover:opacity-[0.95] active:scale-[0.97]'
     },
     {
       name: 'Steady & Sustainable',
       deficit: 200,
-      tagColor: 'text-blue',
-      tagBg: 'bg-blue-bg',
-      tagBorder: 'border-blue/20',
       pros: 'Easiest to maintain, almost no muscle loss risk',
       cons: 'Slowest — requires patience and long-term commitment',
-      proteinNote: `Protein target is ${proteinMin || proteinMax}g/day — muscle preservation is excellent`
+      proteinNote: `Protein target is ${proteinMin || proteinMax}g/day — muscle preservation is excellent`,
+      styleClass: 'bg-[rgba(55,138,221,0.08)] border-[0.5px] border-[rgba(55,138,221,0.25)]',
+      btnClass: 'bg-[rgba(255,255,255,0.1)] text-white border-[0.5px] border-[rgba(255,255,255,0.2)] rounded-[100px] p-[14px_28px] font-semibold text-[15px]'
     }
   ] : [];
 
@@ -193,35 +185,35 @@ export function GoalSetterScreen() {
       : activeGoal?.dailyCalorieGoal;
 
     return (
-      <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 p-4 max-w-md mx-auto">
+      <div className="screen-container animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="text-center py-6">
-          <Check className="w-12 h-12 text-green mx-auto mb-4" />
-          <h2 className="text-[20px] font-medium text-text-primary mb-2">Goal Set</h2>
-          <p className="text-[14px] text-text-secondary">You have already set your physique goal.</p>
+          <CheckCircle2 className="w-16 h-16 text-[#D4FF00] mx-auto mb-4" />
+          <h2 className="text-[34px] font-bold text-white tracking-[-0.5px] mb-2">Goal Set</h2>
+          <p className="text-[15px] font-normal tracking-[-0.1px] text-[#EBEBF5CC]">You have already set your physique goal.</p>
         </div>
 
-        <div className="bg-background-secondary rounded-xl p-5 mb-6 border border-border-secondary">
-          <h3 className="text-[12px] font-bold tracking-widest uppercase text-text-secondary mb-4">Current Goal Data</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-[13px] text-text-secondary">Current BF%</span>
-              <span className="text-[13px] font-medium text-text-primary">{activeGoal?.current_bf || activeGoal?.currentBodyFatPct || '-'}%</span>
+        <div className="glass-card p-[16px_20px] mb-6">
+          <h3 className="text-[13px] font-semibold tracking-[0.06em] uppercase text-[#EBEBF599] mb-[12px]">Current Goal Data</h3>
+          <div className="space-y-[12px]">
+            <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-[12px]">
+              <span className="text-[15px] font-normal text-[#EBEBF5CC]">Current BF%</span>
+              <span className="text-[17px] font-semibold text-white">{activeGoal?.current_bf || activeGoal?.currentBodyFatPct || '-'}%</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-[13px] text-text-secondary">Target BF%</span>
-              <span className="text-[13px] font-medium text-text-primary">{activeGoal?.target_bf || activeGoal?.targetBodyFatPct || '-'}%</span>
+            <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-[12px]">
+              <span className="text-[15px] font-normal text-[#EBEBF5CC]">Target BF%</span>
+              <span className="text-[17px] font-semibold text-white">{activeGoal?.target_bf || activeGoal?.targetBodyFatPct || '-'}%</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-[13px] text-text-secondary">Strategy</span>
-              <span className="text-[13px] font-medium text-text-primary">{activeGoal?.strategy || activeGoal?.chosenStrategyName || '-'}</span>
+            <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-[12px]">
+              <span className="text-[15px] font-normal text-[#EBEBF5CC]">Strategy</span>
+              <span className="text-[17px] font-semibold text-white">{activeGoal?.strategy || activeGoal?.chosenStrategyName || '-'}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-[13px] text-text-secondary">Daily Target</span>
-              <span className="text-[13px] font-medium text-text-primary">{dailyKcal || '-'} kcal</span>
+            <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-[12px]">
+              <span className="text-[15px] font-normal text-[#EBEBF5CC]">Daily Target</span>
+              <span className="text-[17px] font-semibold text-white">{dailyKcal || '-'} <span className="text-[13px] font-normal text-[#EBEBF599]">kcal</span></span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-[13px] text-text-secondary">Estimated Time</span>
-              <span className="text-[13px] font-medium text-text-primary">
+            <div className="flex justify-between items-center">
+              <span className="text-[15px] font-normal text-[#EBEBF5CC]">Estimated Time</span>
+              <span className="text-[17px] font-semibold text-white">
                 {activeGoal?.deficit_kcal === 0 || activeGoal?.dailyDeficit === 0 ? 'Ongoing' : 
                  activeGoal?.target_date ? new Date(activeGoal.target_date).toLocaleDateString() : 
                  activeGoal?.estimatedWeeks ? `~${activeGoal.estimatedWeeks} weeks` : '-'}
@@ -238,7 +230,7 @@ export function GoalSetterScreen() {
               queryClient.invalidateQueries({ queryKey: ['goal'] });
             }
           }}
-          className="w-full py-3 bg-coral/10 text-coral font-medium rounded-xl hover:bg-coral/20 transition-colors"
+          className="w-full py-[14px] bg-[rgba(255,255,255,0.1)] text-white font-semibold text-[15px] rounded-[100px] border-[0.5px] border-[rgba(255,255,255,0.2)] transition-transform active:scale-[0.96]"
         >
           Reset goal
         </button>
@@ -247,75 +239,74 @@ export function GoalSetterScreen() {
   }
 
   return (
-    <div className="pb-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <div className="text-center py-4 pb-5">
-        <div className="text-[10px] text-purple font-bold tracking-widest uppercase mb-2">Step 2 of 2</div>
-        <h2 className="text-[20px] font-medium text-text-primary mb-1.5">Physique Goals</h2>
-        <p className="text-[13px] text-text-secondary max-w-[320px] mx-auto">Set your target body fat and choose a timeline.</p>
+    <div className="screen-container screen-enter">
+      <div className="py-[28px] mb-[12px]">
+        <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599] mb-[8px]">Step 2 of 2</div>
+        <h2 className="text-[34px] font-bold text-white tracking-[-0.5px] leading-tight mb-[8px]">Physique Goals</h2>
+        <p className="text-[15px] font-normal text-[#EBEBF5CC] tracking-[-0.1px]">Set your target body fat and choose a timeline.</p>
       </div>
 
       {/* SECTION A */}
-      <div className="mb-8">
-        <h2 className="text-[16px] font-medium text-text-primary mb-1">Select the image that looks most like your current body</h2>
-        <p className="text-[13px] text-text-secondary mb-4">This helps us calculate how much fat you're actually carrying</p>
+      <div className="mb-[28px]">
+        <div className="flex items-center gap-2 mb-[12px] mt-[28px]">
+          <h2 className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599]">Current Body</h2>
+          {currentBfMid && <div className="flex items-center gap-1 text-[#D4FF00] text-[11px] font-bold uppercase tracking-widest bg-[rgba(212,255,0,0.1)] px-2 py-0.5 rounded-full"><CheckCircle2 size={12} /> Step complete</div>}
+        </div>
+        <h3 className="text-[22px] font-semibold text-white tracking-[-0.3px] mb-1">Select your current physique</h3>
+        <p className="text-[15px] text-[#EBEBF5CC] mb-4 tracking-[-0.1px]">This helps us calculate how much fat you're actually carrying</p>
         
-        <div className="flex gap-3 overflow-x-auto pb-4 snap-x hide-scrollbar">
+        <div className="flex gap-[12px] overflow-x-auto pb-4 snap-x hide-scrollbar">
           {bodyFatOptions.map((opt) => (
             <button
               key={opt.range}
               onClick={() => setCurrentBfMid(opt.mid)}
               className={cn(
-                "flex-none w-[180px] p-4 border-[0.5px] cursor-pointer transition-all snap-center flex flex-col text-left",
+                "bf-card flex-none w-[200px] p-[16px] rounded-[16px] cursor-pointer transition-all snap-start flex flex-col text-left",
                 currentBfMid === opt.mid 
-                  ? "border-blue bg-blue-bg border-2 ring-0" 
-                  : "border-border-secondary bg-background-primary hover:bg-background-secondary"
+                  ? "bg-[rgba(212,255,0,0.1)] border-[1.5px] border-[#D4FF00] scale-[1.03]" 
+                  : "bg-[rgba(44,44,46,0.7)] border-[0.5px] border-[rgba(255,255,255,0.1)] hover:bg-[rgba(44,44,46,0.9)]"
               )}
             >
               <Silhouette active={currentBfMid === opt.mid} />
-              <div className="mt-2 text-[16px] font-bold text-text-primary">{opt.range}</div>
-              <div className="text-[13px] font-medium text-text-secondary mt-1">{opt.label}</div>
-              <div className="text-[11px] text-text-tertiary mt-2 leading-relaxed">{opt.desc}</div>
+              <div className="mt-2 text-[28px] font-bold text-white tracking-[-0.5px]">{opt.range}</div>
+              <div className="text-[15px] font-semibold text-[#EBEBF5CC] mt-1">{opt.label}</div>
+              <div className="text-[12px] font-normal text-[#EBEBF599] mt-2 leading-relaxed">{opt.desc}</div>
             </button>
           ))}
         </div>
       </div>
 
       {/* SECTION B */}
-      <div className={cn("mb-8 transition-opacity duration-300", !currentBfMid ? "opacity-40 pointer-events-none" : "opacity-100")}>
-        <div className="flex items-center gap-2 mb-1">
-          {!currentBfMid && <Lock size={16} className="text-text-secondary" />}
-          <h2 className="text-[16px] font-medium text-text-primary">Now choose your target physique</h2>
+      <div className={cn("mb-[28px] transition-all duration-300", !currentBfMid ? "opacity-[0.35] pointer-events-none grayscale-[0.5]" : "opacity-100 card-reveal")}>
+        <div className="flex items-center gap-2 mb-[12px] mt-[28px]">
+          <h2 className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599]">Target Body</h2>
+          {targetBfMid && <div className="flex items-center gap-1 text-[#D4FF00] text-[11px] font-bold uppercase tracking-widest bg-[rgba(212,255,0,0.1)] px-2 py-0.5 rounded-full"><CheckCircle2 size={12} /> Step complete</div>}
         </div>
-        <p className="text-[13px] text-text-secondary mb-4">You can only target a lower body fat % than where you are now</p>
-
-        {!currentBfMid && (
-          <div className="text-[13px] text-text-secondary flex items-center gap-1 mb-4 p-3 bg-background-secondary border border-border-secondary">
-            <Lock size={14} /> Complete the step above first
-          </div>
-        )}
+        <h3 className="text-[22px] font-semibold text-white tracking-[-0.3px] mb-1">Now choose your target</h3>
+        <p className="text-[15px] text-[#EBEBF5CC] mb-4 tracking-[-0.1px]">You can only target a lower body fat % than where you are now</p>
 
         {currentBfMid === 2.5 && (
-          <div className="text-[13px] text-purple flex items-center gap-1 mb-4 p-3 bg-purple/10 border border-purple/20">
+          <div className="text-[15px] font-medium text-[#D4FF00] flex items-center gap-2 mb-4 p-[16px] bg-[rgba(212,255,0,0.08)] border border-[rgba(212,255,0,0.4)] rounded-xl">
             You're already at elite level. Only maintenance is available.
           </div>
         )}
 
-        <div className="flex gap-3 overflow-x-auto pb-4 snap-x hide-scrollbar">
+        <div className="flex gap-[12px] overflow-x-auto pb-4 snap-x hide-scrollbar">
           {bodyFatOptions.filter(opt => !currentBfMid || opt.mid < currentBfMid).map((opt) => (
             <button
               key={opt.range}
               onClick={() => setTargetBfMid(opt.mid)}
               className={cn(
-                "flex-none w-[180px] p-4 border-[0.5px] cursor-pointer transition-all snap-center flex flex-col text-left",
+                "bf-card flex-none w-[200px] p-[16px] rounded-[16px] cursor-pointer transition-all snap-start flex flex-col text-left",
                 targetBfMid === opt.mid 
-                  ? "border-blue bg-blue-bg border-2 ring-0" 
-                  : "border-border-secondary bg-background-primary hover:bg-background-secondary"
+                  ? "bg-[rgba(212,255,0,0.1)] border-[1.5px] border-[#D4FF00] scale-[1.03]" 
+                  : "bg-[rgba(44,44,46,0.7)] border-[0.5px] border-[rgba(255,255,255,0.1)] hover:bg-[rgba(44,44,46,0.9)]"
               )}
             >
               <Silhouette active={targetBfMid === opt.mid} />
-              <div className="mt-2 text-[16px] font-bold text-text-primary">{opt.range}</div>
-              <div className="text-[13px] font-medium text-text-secondary mt-1">{opt.label}</div>
-              <div className="text-[11px] text-text-tertiary mt-2 leading-relaxed">{opt.desc}</div>
+              <div className="mt-2 text-[28px] font-bold text-white tracking-[-0.5px]">{opt.range}</div>
+              <div className="text-[15px] font-semibold text-[#EBEBF5CC] mt-1">{opt.label}</div>
+              <div className="text-[12px] font-normal text-[#EBEBF599] mt-2 leading-relaxed">{opt.desc}</div>
             </button>
           ))}
           {currentBfMid && (
@@ -323,38 +314,38 @@ export function GoalSetterScreen() {
               key="maintain"
               onClick={() => setTargetBfMid(currentBfMid)}
               className={cn(
-                "flex-none w-[180px] p-4 border-[0.5px] cursor-pointer transition-all snap-center flex flex-col text-left",
+                "bf-card flex-none w-[200px] p-[16px] rounded-[16px] cursor-pointer transition-all snap-start flex flex-col text-left",
                 targetBfMid === currentBfMid 
-                  ? "border-purple bg-purple/10 border-2 ring-0 text-purple" 
-                  : "border-purple bg-background-primary hover:bg-purple/5 border-2"
+                  ? "bg-[rgba(212,255,0,0.1)] border-[1.5px] border-[#D4FF00] scale-[1.03]" 
+                  : "bg-[rgba(44,44,46,0.7)] border-[0.5px] border-[rgba(255,255,255,0.1)] hover:bg-[rgba(44,44,46,0.9)]"
               )}
             >
               <Silhouette active={targetBfMid === currentBfMid} />
-              <div className="mt-2 text-[16px] font-bold text-text-primary">Maintain current physique</div>
-              <div className="text-[13px] font-medium text-text-secondary mt-1">Stay at {currentBfMid}%</div>
-              <div className="text-[11px] text-text-tertiary mt-2 leading-relaxed">Keep your current physique and maintain weight</div>
+              <div className="mt-2 text-[22px] font-bold text-white tracking-[-0.5px] leading-tight mb-[6px]">Maintain current</div>
+              <div className="text-[15px] font-semibold text-[#EBEBF5CC] mt-1">Stay at {currentBfMid}%</div>
+              <div className="text-[12px] font-normal text-[#EBEBF599] mt-2 leading-relaxed">Keep your current physique and maintain weight</div>
             </button>
           )}
         </div>
 
         {currentBfMid && targetBfMid && targetBfMid < currentBfMid && (
-          <div className="bg-background-secondary border border-border-tertiary p-4 mt-2 animate-in fade-in slide-in-from-top-2">
-            <div className="grid grid-cols-2 gap-y-3 gap-x-4">
+          <div className="glass-card p-[16px_20px] mt-[12px] animate-in fade-in slide-in-from-top-2">
+            <div className="grid grid-cols-2 gap-y-[16px] gap-x-[20px]">
               <div>
-                <div className="text-[11px] text-text-secondary uppercase tracking-widest mb-1">Current</div>
-                <div className="text-[13px] font-medium text-text-primary">{currentBfMid}% body fat <span className="text-[11px] text-text-secondary font-normal">({currentFatMass.toFixed(1)} kg fat mass)</span></div>
+                <div className="text-[13px] font-medium text-[#EBEBF599] uppercase tracking-[0.05em] mb-[4px]">Current</div>
+                <div className="text-[17px] font-semibold text-white">{currentBfMid}% <span className="text-[15px] text-[#EBEBF5CC] font-normal">({currentFatMass.toFixed(1)}kg fat)</span></div>
               </div>
               <div>
-                <div className="text-[11px] text-text-secondary uppercase tracking-widest mb-1">Target</div>
-                <div className="text-[13px] font-medium text-text-primary">{targetBfMid}% body fat <span className="text-[11px] text-text-secondary font-normal">({targetFatMass.toFixed(1)} kg fat mass)</span></div>
+                <div className="text-[13px] font-medium text-[#EBEBF599] uppercase tracking-[0.05em] mb-[4px]">Target</div>
+                <div className="text-[17px] font-semibold text-white">{targetBfMid}% <span className="text-[15px] text-[#EBEBF5CC] font-normal">({targetFatMass.toFixed(1)}kg fat)</span></div>
               </div>
               <div>
-                <div className="text-[11px] text-text-secondary uppercase tracking-widest mb-1">Fat to lose</div>
-                <div className="text-[13px] font-medium text-text-primary">{fatToLoseKg.toFixed(1)} kg</div>
+                <div className="text-[13px] font-medium text-[#EBEBF599] uppercase tracking-[0.05em] mb-[4px]">Fat to lose</div>
+                <div className="text-[17px] font-semibold text-[#FF4D1C]">{fatToLoseKg.toFixed(1)} kg</div>
               </div>
               <div>
-                <div className="text-[11px] text-text-secondary uppercase tracking-widest mb-1">New target body weight</div>
-                <div className="text-[13px] font-medium text-text-primary">~{targetWeightKg.toFixed(1)} kg</div>
+                <div className="text-[13px] font-medium text-[#EBEBF599] uppercase tracking-[0.05em] mb-[4px]">New body weight</div>
+                <div className="text-[17px] font-semibold text-white">~{targetWeightKg.toFixed(1)} kg</div>
               </div>
             </div>
           </div>
@@ -362,77 +353,75 @@ export function GoalSetterScreen() {
       </div>
 
       {/* SECTION C */}
-      <div className={cn("transition-opacity duration-300", (!currentBfMid || !targetBfMid) ? "opacity-40 pointer-events-none" : "opacity-100")}>
-        <div className="flex items-center gap-2 mb-1">
-          {(!currentBfMid || !targetBfMid) && <Lock size={16} className="text-text-secondary" />}
-          <h2 className="text-[16px] font-medium text-text-primary">How do you want to get there?</h2>
+      <div className={cn("transition-all duration-300", (!currentBfMid || !targetBfMid) ? "opacity-[0.35] pointer-events-none grayscale-[0.5]" : "opacity-100")}>
+        <div className="flex items-center gap-2 mb-[12px] mt-[28px]">
+          <h2 className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599]">Plan Strategy</h2>
         </div>
-        <p className="text-[13px] text-text-secondary mb-4">Each approach has a different speed, risk, and lifestyle demand</p>
-
-        {(!currentBfMid || !targetBfMid) && (
-          <div className="text-[13px] text-text-secondary flex items-center gap-1 mb-4 p-3 bg-background-secondary border border-border-secondary">
-            <Lock size={14} /> Complete the step above first
-          </div>
-        )}
+        <h3 className="text-[22px] font-semibold text-white tracking-[-0.3px] mb-1">How do you want to get there?</h3>
+        <p className="text-[15px] text-[#EBEBF5CC] mb-4 tracking-[-0.1px]">Each approach has a different speed, risk, and lifestyle demand</p>
 
         {currentBfMid && targetBfMid && targetBfMid > currentBfMid && (
-          <div className="text-[13px] text-coral flex items-center gap-1 mb-4 p-3 bg-coral/10 border border-coral/20">
-            <AlertTriangle size={14} /> Please select a target body fat % lower than or equal to your current level.
+          <div className="text-[15px] text-[#FF3B30] flex items-center gap-2 mb-4 p-[16px] bg-[rgba(255,59,48,0.05)] border border-[rgba(255,59,48,0.6)] rounded-xl">
+            <AlertTriangle size={16} /> Please select a target body fat % lower than or equal to your current level.
           </div>
         )}
 
         {currentBfMid && targetBfMid && targetBfMid <= currentBfMid && (
-          <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-            {calculatedStrategies.map((s) => (
+          <div className="flex flex-col gap-[16px]">
+            {calculatedStrategies.map((s, i) => (
             <div 
               key={s.name} 
               className={cn(
-                "relative flex flex-col bg-background-primary border-[0.5px] p-5",
-                s.isRecommended ? "border-2 border-green" : "border-border-secondary"
+                "strategy-card card-reveal relative flex flex-col p-[20px_24px] rounded-[16px]",
+                s.styleClass || "glass-card"
               )}
             >
               {s.isRecommended && (
-                <div className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/2">
-                  <div className="bg-green text-background-primary text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-sm shadow-sm">
+                <div className="absolute top-[-10px] right-[24px]">
+                  <div className="bg-[#D4FF00] text-[#0A0A0A] text-[11px] font-bold px-[10px] py-[4px] rounded-[100px] shadow-sm uppercase tracking-[0.04em]">
                     Recommended
                   </div>
                 </div>
               )}
               
-              <div className="mb-4">
-                <h3 className="text-[16px] font-bold text-text-primary">{s.name}</h3>
-                <div className="mt-3 flex items-baseline gap-2">
-                  <span className="text-[32px] font-bold tracking-tight text-text-primary leading-none">{s.dailyTarget}</span>
-                  <span className="text-[13px] text-text-secondary font-medium">kcal/day</span>
+              <div className="mb-[16px]">
+                <h3 className="text-[17px] font-semibold text-white mb-[8px] tracking-[-0.2px]">{s.name}</h3>
+                <div className="flex items-baseline gap-[8px]">
+                  <span className="text-[40px] font-bold tracking-[-1px] text-white leading-none">{s.dailyTarget}</span>
+                  <span className="text-[15px] text-[#EBEBF5CC] font-medium">kcal/day</span>
                 </div>
-                <div className="text-[12px] text-text-secondary mt-1 border-b border-border-tertiary pb-4">
+                <div className="text-[15px] text-[#EBEBF5CC] mt-[4px] border-b border-[rgba(255,255,255,0.1)] pb-[16px]">
                   {s.deficit} kcal deficit
                 </div>
               </div>
 
-              <div className="mb-4">
-                <div className="text-[12px] font-medium text-text-primary mb-1">
+              <div className="mb-[16px]">
+                <div className="text-[17px] font-semibold text-white mb-[4px]">
                   {s.deficit === 0 ? (
-                    <span className="text-purple">Ongoing Maintenance</span>
+                    <span className="text-[#D4FF00]">Ongoing Maintenance</span>
                   ) : (
-                    <>~{s.weeks} weeks <span className="text-text-secondary font-normal">(by {s.dateStr})</span></>
+                    <>~{s.weeks} weeks <span className="text-[#EBEBF599] font-normal text-[15px]">(by {s.dateStr})</span></>
                   )}
                 </div>
               </div>
 
-              <div className="flex-grow flex flex-col gap-3 mb-5">
-                <div className="flex items-start gap-2">
-                  <Check size={16} className="text-green shrink-0 mt-0.5" />
-                  <span className="text-[12px] text-text-primary leading-snug">{s.pros}</span>
+              <div className="flex-grow flex flex-col gap-[12px] mb-[20px]">
+                <div className="flex items-start gap-[12px]">
+                  <div className="bg-[rgba(255,255,255,0.1)] rounded-full p-[2px] shrink-0 mt-[2px]">
+                    <CheckCircle2 size={16} className="text-white" />
+                  </div>
+                  <span className="text-[15px] text-white font-normal leading-[1.4]">{s.pros}</span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <AlertTriangle size={16} className="text-coral shrink-0 mt-0.5" />
-                  <span className="text-[12px] text-text-primary leading-snug">{s.cons}</span>
+                <div className="flex items-start gap-[12px]">
+                  <div className="bg-[rgba(255,77,28,0.1)] rounded-full p-[2px] shrink-0 mt-[2px]">
+                    <AlertTriangle size={16} className="text-[#FF4D1C]" />
+                  </div>
+                  <span className="text-[15px] text-[#EBEBF5CC] font-normal leading-[1.4]">{s.cons}</span>
                 </div>
               </div>
 
-              <div className="bg-background-secondary p-3 text-[11px] text-text-secondary leading-snug mb-4 border border-border-tertiary rounded-sm">
-                <span className="font-medium text-text-primary block mb-1">Protein Note</span>
+              <div className="bg-[rgba(255,255,255,0.05)] p-[12px_16px] text-[13px] text-[#EBEBF5CC] leading-[1.4] mb-[20px] border border-[rgba(255,255,255,0.1)] rounded-[12px]">
+                <span className="font-semibold text-white block mb-[2px]">Protein Note</span>
                 {s.proteinNote}
               </div>
 
@@ -440,13 +429,12 @@ export function GoalSetterScreen() {
                 onClick={() => handleChooseStrategy(s)}
                 disabled={saveMutation.isPending}
                 className={cn(
-                  "w-full py-3 px-4 text-[13px] font-bold uppercase tracking-wider transition-opacity cursor-pointer text-center",
-                  s.isRecommended 
-                    ? "bg-purple text-background-primary border-none hover:opacity-90" 
-                    : "bg-background-secondary text-text-primary border-[0.5px] border-border-secondary hover:border-border-tertiary"
+                  "w-full transition-transform active:scale-[0.96] flex items-center justify-center gap-[8px] group",
+                  s.btnClass || "bg-[rgba(255,255,255,0.1)] text-white border-[0.5px] border-[rgba(255,255,255,0.2)] rounded-[100px] p-[14px_28px] font-semibold text-[15px]"
                 )}
               >
-                {saveMutation.isPending ? 'Saving...' : 'Continue'}
+                {saveMutation.isPending ? 'Saving...' : 'Choose this plan'}
+                {s.isRecommended && <ArrowRight size={20} className="transition-transform duration-200 group-hover:translate-x-[3px]" />}
               </button>
             </div>
           ))}
