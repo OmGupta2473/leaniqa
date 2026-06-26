@@ -8,6 +8,7 @@ import { complianceService } from '../services/complianceService';
 import { calculateProjections } from '../lib/projectionEngine';
 import { useEffect, useState } from 'react';
 import { QueryError } from '../components/QueryError';
+import { motion } from 'motion/react';
 
 export function DashboardScreen() {
   const { setScreen, onboardingData } = useAppStore();
@@ -122,9 +123,15 @@ export function DashboardScreen() {
           <div className="text-[13px] text-text-secondary mt-0.5">{dateString}</div>
         </div>
         <div className="flex flex-col items-center">
-          <div className="w-9 h-9 rounded-full border-2 border-purple flex items-center justify-center text-purple text-[14px] font-bold">
+          <motion.div 
+            key={todayScore}
+            initial={{ scale: 1.3, rotate: -10 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 15 }}
+            className="w-9 h-9 rounded-full border-2 border-purple flex items-center justify-center text-purple text-[14px] font-bold"
+          >
             {todayScore}
-          </div>
+          </motion.div>
           <div className="text-[10px] text-text-secondary mt-1 uppercase tracking-widest">Score</div>
         </div>
       </div>
