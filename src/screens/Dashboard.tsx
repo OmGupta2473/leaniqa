@@ -115,8 +115,40 @@ export function DashboardScreen() {
 
   // Calculate today's intake
   const todaysMeals = meals || [];
-  const eatenKcal = todaysMeals.reduce((acc, m) => acc + m.calories, 0);
-  const eatenProtein = todaysMeals.reduce((acc, m) => acc + m.protein, 0);
+  const dbKcal = todaysMeals.reduce((acc, m) => acc + m.calories, 0);
+  const dbProtein = todaysMeals.reduce((acc, m) => acc + m.protein, 0);
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const existingLog = dailyLogs.find(l => l.date === todayStr);
+
+  const eatenKcal = Math.max(dbKcal, existingLog ? existingLog.caloriesConsumed : 0);
+  const eatenProtein = Math.max(dbProtein, existingLog ? existingLog.proteinConsumed : 0);
+
+  // Automatically sync today's tracked meals to dailyLogs so history stays updated
+  useEffect(() => {
+    if (meals) {
+      if ((eatenKcal > 0 || eatenProtein > 0) && (!existingLog || existingLog.caloriesConsumed !== eatenKcal || existingLog.proteinConsumed !== eatenProtein)) {
+        const entry = {
+          date: todayStr,
+          caloriesConsumed: eatenKcal,
+          proteinConsumed: eatenProtein,
+          calorieTarget: dailyTargetKcal || 2000,
+          proteinTarget: proteinTarget || 120,
+          calorieUnderTarget: eatenKcal > 0 ? (eatenKcal <= (dailyTargetKcal || 2000)) : true,
+          proteinHitTarget: eatenProtein >= (proteinTarget || 120)
+        };
+        const newLogs = [...dailyLogs];
+        const existingIdx = newLogs.findIndex(l => l.date === todayStr);
+        if (existingIdx >= 0) {
+          newLogs[existingIdx] = entry;
+        } else {
+          newLogs.push(entry);
+        }
+        updateDailyLogs(newLogs);
+      }
+    }
+  }, [meals, eatenKcal, eatenProtein, dailyLogs, dailyTargetKcal, proteinTarget, updateDailyLogs, todayStr, existingLog]);
+
 
   const remainingKcal =
     dailyTargetKcal !== undefined
