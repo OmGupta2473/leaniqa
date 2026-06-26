@@ -64,15 +64,9 @@ export const profileService = {
       user_id: userId,
     };
 
-    // Try to get existing to get its ID
-    const existing = await this.getGoal();
-    if (existing) {
-      payload.id = existing.id;
-    }
-
     const { data, error } = await supabase
       .from('goals')
-      .upsert(payload)
+      .upsert(payload, { onConflict: 'user_id' })
       .select()
       .single();
       
