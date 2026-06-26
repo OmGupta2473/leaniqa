@@ -1,22 +1,24 @@
 import { useAppStore } from '../store';
-import { Target, Footprints, Utensils, CheckCircle2 } from 'lucide-react';
+import { Target, Footprints, Utensils, CheckCircle2, X } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { profileService } from '../services/profileService';
 import { mealService } from '../services/mealService';
 import { weightService } from '../services/weightService';
 import { complianceService } from '../services/complianceService';
 import { calculateProjections } from '../lib/projectionEngine';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { QueryError } from '../components/QueryError';
 
 export function DashboardScreen() {
   const { setScreen, onboardingData } = useAppStore();
   const queryClient = useQueryClient();
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   const { data: profile, isError: isProfileError, error: profileError, refetch: refetchProfile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
   const { data: goal, isError: isGoalError, error: goalError, refetch: refetchGoal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
   const { data: meals, isError: isMealsError, refetch: refetchMeals } = useQuery({ queryKey: ['meals', 'today'], queryFn: () => mealService.getTodaysMeals() });
   const { data: weightLogs = [] } = useQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
+  const { data: scores } = useQuery({ queryKey: ['complianceScore'], queryFn: () => complianceService.getScores() });
 
   if (isProfileError || isGoalError) {
     return (
@@ -87,17 +89,22 @@ export function DashboardScreen() {
     currentDay = 0; // Just started
   }
 
-  // Recommendations
-  // recommendation calculation removed
+  const dateString = new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'short' });
+  const todayScore = scores?.todayScore ?? 0;
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <div className="bg-purple/10 border-[0.5px] border-purple/30 text-purple px-4 py-2 text-center text-[11px] font-medium mb-4 rounded-md">
-        Founding Member Beta - Premium features unlocked.
-      </div>
+    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 pb-2">
+      {!bannerDismissed && (
+        <div className="bg-purple/10 border-[0.5px] border-purple/30 text-purple px-4 py-2 text-[11px] font-medium mb-3 rounded-md flex justify-between items-center">
+          <span>Founding Member Beta - Premium features unlocked.</span>
+          <button onClick={() => setBannerDismissed(true)} className="text-purple hover:opacity-70">
+            <X size={14} />
+          </button>
+        </div>
+      )}
       
       {!goalSetCompleted && (
-        <div className="bg-amber/10 border border-amber/30 text-amber p-4 text-center mb-4 rounded-md flex flex-col items-center gap-2">
+        <div className="bg-amber/10 border border-amber/30 text-amber p-4 text-center mb-3 rounded-md flex flex-col items-center gap-2">
           <div className="text-[13px] font-medium">Set your physique goal to unlock all features</div>
           <button 
             onClick={() => setScreen('goal')} 
@@ -108,35 +115,36 @@ export function DashboardScreen() {
         </div>
       )}
 
-      <div className="flex justify-between items-center mb-4">
+      {/* SECTION 2 — Hero greeting row */}
+      <div className="flex justify-between items-center mb-3">
         <div>
-          <div className="text-[12px] text-text-secondary">Welcome back,</div>
-          <div className="text-[18px] font-medium text-text-primary">{name}</div>
+          <div className="text-[16px] font-medium text-text-primary">Hi, {name}</div>
+          <div className="text-[13px] text-text-secondary mt-0.5">{dateString}</div>
         </div>
-        <div className="flex flex-col items-end">
-          <div className="flex items-baseline gap-1">
-            <div className="text-[24px] font-medium text-purple leading-none">Day {currentDay}</div>
-            {!isMaintenance && <div className="text-[12px] text-text-secondary">/ {totalDays}</div>}
+        <div className="flex flex-col items-center">
+          <div className="w-9 h-9 rounded-full border-2 border-purple flex items-center justify-center text-purple text-[14px] font-bold">
+            {todayScore}
           </div>
-          <div className="text-[10px] text-text-secondary uppercase tracking-widest mt-1">
-            {isMaintenance ? 'Maintenance Progress' : 'Timeline Progress'}
-          </div>
+          <div className="text-[10px] text-text-secondary mt-1 uppercase tracking-widest">Score</div>
         </div>
       </div>
 
-      {/* Card 1: Goal */}
-      <div className="bg-gradient-to-br from-purple/20 via-purple/5 to-background-secondary p-5 mb-4 border border-purple/30 rounded-lg shadow-[0_4px_20px_rgba(167,139,250,0.1)] relative overflow-hidden">
+      {/* SECTION 3 — Body fat hero card */}
+      <div className="bg-gradient-to-br from-purple/20 via-purple/5 to-background-secondary p-4 mb-3 border border-purple/30 rounded-lg shadow-[0_4px_20px_rgba(167,139,250,0.1)] relative overflow-hidden">
         <div className="absolute -right-6 -top-6 w-24 h-24 bg-purple/10 rounded-full blur-2xl"></div>
         <div className="flex justify-between text-[11px] text-text-secondary uppercase tracking-widest mb-3 font-medium relative z-10">
           <span className="text-purple flex items-center gap-1.5"><Target size={12} /> {targetBf !== undefined ? targetBf : '—'}% Target</span>
           <span className="text-purple bg-purple/10 px-2 py-0.5 rounded-sm">Projected: {projectedDateString}</span>
         </div>
         <div className="flex items-baseline gap-2 mb-2 relative z-10">
-          <span className="text-[36px] font-bold text-text-primary tracking-tight leading-none">{currentBf !== undefined ? currentBf.toFixed(1) : '—'}%</span>
+          <span className="text-[32px] font-bold text-text-primary tracking-tight leading-none">{currentBf !== undefined ? currentBf.toFixed(1) : '—'}%</span>
           <span className="text-[12px] text-text-secondary font-medium">Current Body Fat</span>
         </div>
         <div className="h-2 bg-background-primary/50 overflow-hidden mt-4 border border-purple/10 rounded-full relative z-10">
           <div className="h-full bg-purple rounded-full shadow-[0_0_10px_rgba(167,139,250,0.5)]" style={{ width: `${currentBf !== undefined && targetBf !== undefined ? Math.min(100, Math.max(5, (100 - (currentBf - targetBf) * 5))) : 0}%` }}></div>
+        </div>
+        <div className="text-[11px] text-text-secondary mt-2 text-center relative z-10">
+          {isMaintenance ? 'Maintenance Progress' : `Day ${currentDay} of ${totalDays} · ${totalDays > 0 ? Math.round((currentDay/totalDays)*100) : 0}% complete`}
         </div>
       </div>
 
@@ -147,40 +155,55 @@ export function DashboardScreen() {
             Today's Targets <span className="text-purple ml-1">({strategyName})</span>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          <div className="bg-background-secondary p-3 border border-border-tertiary text-center flex flex-col justify-between">
+        
+        {/* 2-column grid */}
+        <div className="grid grid-cols-2 gap-2 mb-2">
+          {/* Calories */}
+          <div className="bg-background-secondary p-4 border border-border-tertiary rounded-md text-center flex flex-col justify-center relative overflow-hidden">
             {isMealsError ? (
               <div className="text-[10px] text-red-500 my-auto cursor-pointer" onClick={() => refetchMeals()}>Retry</div>
             ) : (
               <>
-                <div className="text-[18px] font-medium text-amber">{eatenKcal} <span className="text-[10px] text-text-secondary font-normal">/ {dailyTargetKcal !== undefined ? dailyTargetKcal : '—'}</span></div>
-                <div className="text-[10px] text-text-secondary mt-1 uppercase tracking-wider">Calories</div>
+                <div className="text-[22px] font-medium text-amber leading-none">{eatenKcal}</div>
+                <div className="text-[11px] text-text-secondary mt-1">/ {dailyTargetKcal !== undefined ? dailyTargetKcal : '—'} kcal</div>
+                <div className="text-[10px] text-text-secondary mt-2 uppercase tracking-wider font-medium">Calories</div>
+                <div className="absolute bottom-0 left-0 h-1 bg-amber/20 w-full">
+                  <div className="h-full bg-amber" style={{ width: `${dailyTargetKcal ? Math.min(100, (eatenKcal/dailyTargetKcal)*100) : 0}%` }}></div>
+                </div>
               </>
             )}
           </div>
-          <div className="bg-background-secondary p-3 border border-border-tertiary text-center flex flex-col justify-between">
+          
+          {/* Protein */}
+          <div className="bg-background-secondary p-4 border border-border-tertiary rounded-md text-center flex flex-col justify-center relative overflow-hidden">
             {isMealsError ? (
               <div className="text-[10px] text-red-500 my-auto cursor-pointer" onClick={() => refetchMeals()}>Retry</div>
             ) : (
               <>
-                <div className="text-[18px] font-medium text-blue">{eatenProtein}g <span className="text-[10px] text-text-secondary font-normal">/ {proteinTarget !== undefined ? proteinTarget : '—'}g</span></div>
-                <div className="text-[10px] text-text-secondary mt-1 uppercase tracking-wider">Protein</div>
+                <div className="text-[22px] font-medium text-blue leading-none">{eatenProtein}g</div>
+                <div className="text-[11px] text-text-secondary mt-1">/ {proteinTarget !== undefined ? proteinTarget : '—'}g</div>
+                <div className="text-[10px] text-text-secondary mt-2 uppercase tracking-wider font-medium">Protein</div>
+                <div className="absolute bottom-0 left-0 h-1 bg-blue/20 w-full">
+                  <div className="h-full bg-blue" style={{ width: `${proteinTarget ? Math.min(100, (eatenProtein/proteinTarget)*100) : 0}%` }}></div>
+                </div>
               </>
             )}
           </div>
-          <div className="bg-background-secondary p-2 border border-border-tertiary text-center flex flex-col justify-between">
-            <div className="flex flex-col items-center gap-1 my-auto">
-              <div className="text-amber"><Footprints size={18} /></div>
-              <div className="text-[18px] font-medium text-text-primary leading-none">12,000</div>
-              <div className="text-[10px] text-text-secondary uppercase tracking-wider">Steps Goal</div>
-              <div className="text-[8px] bg-amber/10 text-amber px-1.5 py-0.5 rounded-sm uppercase tracking-widest mt-1">Reminder only</div>
-            </div>
+        </div>
+
+        {/* Steps Reminder */}
+        <div className="bg-background-secondary border border-border-tertiary p-3 rounded-md flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Footprints size={16} className="text-amber" />
+            <div className="text-[14px] font-medium text-text-primary">12,000 steps</div>
+            <div className="text-[8px] bg-amber/10 text-amber px-1.5 py-0.5 rounded-sm uppercase tracking-widest">Reminder only</div>
           </div>
+          <div className="text-[11px] text-text-secondary italic">Move more, recover better.</div>
         </div>
       </div>
 
       {/* Card 3: Today's meal ideas */}
-      <div className="bg-purple/5 p-4 mb-4 border border-purple/20 rounded-lg">
+      <div className="bg-purple/5 p-4 mb-3 border border-purple/20 rounded-lg">
         <div className="flex items-center gap-1.5 text-[11px] text-purple uppercase tracking-widest mb-2 font-medium">
           <Utensils size={14} /> Meal ideas to hit your protein
         </div>
@@ -288,7 +311,7 @@ export function DashboardScreen() {
         )}
       </div>
 
-      <button onClick={() => setScreen('meal')} className="w-full p-3 border-none bg-purple text-background-primary text-[14px] font-bold uppercase tracking-widest cursor-pointer transition-opacity hover:opacity-90 shadow-lg shadow-purple/20">Log Meal</button>
+      <button onClick={() => setScreen('meal')} className="w-full p-3 border-none bg-purple text-background-primary text-[14px] font-bold uppercase tracking-widest cursor-pointer transition-opacity hover:opacity-90 shadow-lg shadow-purple/20 mb-3">Log Meal</button>
     </div>
   );
 }
