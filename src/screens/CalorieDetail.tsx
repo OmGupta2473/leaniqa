@@ -285,11 +285,11 @@ export function CalorieDetailScreen() {
         <div className="mb-[12px] text-[13px] font-semibold uppercase tracking-[0.05em] text-[#EBEBF599] ml-[4px]">
           Awards Progress
         </div>
-        <div className="glass-card p-[16px] flex flex-col gap-[16px]">
+        <div className="flex flex-col gap-[12px]">
           {calAwards.map((award) => {
             const isEarned = award.earned;
             return (
-              <div key={award.id} className="flex items-center gap-[12px]">
+              <div key={award.id} className="glass-card p-[16px] flex items-center gap-[12px]">
                 <div
                   style={{
                     width: "36px",
