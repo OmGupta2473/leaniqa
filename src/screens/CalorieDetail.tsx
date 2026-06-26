@@ -28,7 +28,8 @@ export function CalorieDetailScreen() {
   const isUnderTarget = caloriesConsumed <= dailyCalorieGoal;
 
   const allTimeBestCalStreak = useMemo(() => {
-    const sorted = [...dailyLogs].sort(
+    const logsToConsider = dailyLogs.filter(l => l.date !== todayStr);
+    const sorted = [...logsToConsider].sort(
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
     );
     let best = 0,
