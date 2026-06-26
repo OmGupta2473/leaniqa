@@ -16,7 +16,7 @@ const MealSchema = z.object({
   carbs: z.number(),
   confidence: z.number(),
   foods_detected: z.array(z.string()),
-  coaching_tip: z.string().optional(),
+  coaching_tip: z.string(),
 });
 
 const apiKey = Deno.env.get("GEMINI_API_KEY");
@@ -30,6 +30,10 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  const requestId = crypto.randomUUID();
+  const startTime = Date.now();
+  let userId = 'anonymous';
+
   let body: any = {};
   try {
     body = await req.json();
@@ -40,18 +44,16 @@ serve(async (req) => {
     });
   }
 
-  let text = body.text || "Unknown";
+  const text = body.text || "Unknown";
   const remainingCalories = body.remainingCalories;
   const remainingProtein = body.remainingProtein;
   const mealType = body.mealType;
 
   try {
+    // Authentication
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      throw new Error("Unauthorized");
     }
 
     const token = authHeader.replace("Bearer ", "");
@@ -66,12 +68,11 @@ serve(async (req) => {
       error: authError,
     } = await supabase.auth.getUser(token);
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      throw new Error("Unauthorized");
     }
+    userId = user.id;
 
+    // Rate Limiting
     const endpoint = "parse-meal";
     const twentyFourHoursAgo = new Date(
       Date.now() - 24 * 60 * 60 * 1000,
@@ -101,16 +102,22 @@ serve(async (req) => {
       throw new Error("GEMINI_API_KEY is not set");
     }
 
+    // AI Logic (Single Call)
     let attempts = 0;
-    let success = false;
     let data = null;
+    let lastError = null;
 
-    while (attempts < 3 && !success) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+    while (attempts < 3 && !data) {
       try {
         attempts++;
+        const aiStart = Date.now();
+        
         const response = await ai.models.generateContent({
           model: "gemini-2.5-flash",
-          contents: `Analyze this meal description: "${text}". Meal type: ${mealType}. Remaining calories for today: ${remainingCalories}. Remaining protein: ${remainingProtein}g. Provide a reasonable estimate for macros. Use Indian food context where applicable. Provide your confidence level (0-100) and an array of detected food items. Also provide a short, encouraging coaching tip based on remaining macros.`,
+          contents: `Analyze this meal description: "${text}". Meal type: ${mealType}. Remaining calories for today: ${remainingCalories}. Remaining protein: ${remainingProtein}g. Provide a reasonable estimate for macros. Use Indian food context where applicable. Provide your confidence level (0-100) and an array of detected food items. Based on the remaining macros, provide ONE short specific coaching tip for their next snack or meal.`,
           config: {
             responseMimeType: "application/json",
             responseSchema: {
@@ -125,6 +132,7 @@ serve(async (req) => {
                   type: Type.ARRAY,
                   items: { type: Type.STRING },
                 },
+                coaching_tip: { type: Type.STRING },
               },
               required: [
                 "calories",
@@ -133,49 +141,64 @@ serve(async (req) => {
                 "carbs",
                 "confidence",
                 "foods_detected",
+                "coaching_tip"
               ],
             },
           },
         });
 
+        const aiLatency = Date.now() - aiStart;
+        
+        console.log(JSON.stringify({
+          level: "info",
+          request_id: requestId,
+          user_id: userId,
+          endpoint: endpoint,
+          ai_duration_ms: aiLatency,
+          attempts: attempts
+        }));
+
         const parsed = JSON.parse(response.text || "{}");
-
-        let coaching_tip = "Good job logging your meal!";
-        if (
-          remainingCalories !== undefined &&
-          remainingProtein !== undefined &&
-          mealType !== undefined
-        ) {
-          const tipResponse = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: `The user just ate: ${parsed.foods_detected?.join(", ") || text}. They have ${remainingCalories} kcal and ${remainingProtein}g protein left today. 
-Suggest ONE specific next meal or snack using Indian food to help them hit their targets. 
-Be direct: give a food name, quantity, and expected macros. Keep it under 2 sentences. 
-If they're already at their targets, say they're on track and suggest staying light.
-Tone: like a PT friend, never judgmental.`,
-          });
-          coaching_tip = tipResponse.text || coaching_tip;
-        }
-
-        parsed.coaching_tip = coaching_tip;
-
-        // Zod validation
         data = MealSchema.parse(parsed);
-        success = true;
-      } catch (err) {
+        clearTimeout(timeoutId);
+        
+      } catch (err: any) {
+        lastError = err;
+        if (err.name === 'AbortError') {
+          console.error("AI Request timed out");
+          break;
+        }
         if (attempts >= 3) {
           console.error("Gemini failed after 3 attempts", err);
-          throw err;
+          break;
         }
-        await new Promise((r) => setTimeout(r, 1000));
+        await new Promise((r) => setTimeout(r, Math.pow(2, attempts) * 500)); // Exponential backoff: 1s, 2s
       }
+    }
+
+    if (!data) {
+      throw lastError || new Error("AI parsing failed completely");
     }
 
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (error) {
-    console.warn("AI failed, falling back to basic DB estimate", error);
+  } catch (error: any) {
+    if (error.message === "Unauthorized") {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    console.warn(JSON.stringify({
+      level: "warn",
+      request_id: requestId,
+      user_id: userId,
+      endpoint: "parse-meal",
+      message: "AI failed, falling back to basic DB estimate",
+      error: error.message
+    }));
 
     // Deterministic Fallback Logic
     const normalizedText = text.toLowerCase();
@@ -234,5 +257,12 @@ Tone: like a PT friend, never judgmental.`,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
+  } finally {
+     console.log(JSON.stringify({
+       level: "info",
+       request_id: requestId,
+       user_id: userId,
+       latency_ms: Date.now() - startTime
+     }));
   }
 });

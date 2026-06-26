@@ -18,6 +18,10 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  const requestId = crypto.randomUUID();
+  const startTime = Date.now();
+  let userId = 'anonymous';
+
   let bodyData: any = {};
   try {
     bodyData = await req.json();
@@ -30,7 +34,7 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      throw new Error("Unauthorized");
     }
 
     const token = authHeader.replace('Bearer ', '')
@@ -42,8 +46,9 @@ serve(async (req) => {
 
     const { data: { user }, error: authError } = await supabase.auth.getUser(token)
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      throw new Error("Unauthorized");
     }
+    userId = user.id;
 
     const { data: sub } = await supabase
       .from('subscriptions')
@@ -94,30 +99,86 @@ Respond with JSON:
   "nextWeekPlan": "short paragraph"
 }`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents,
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            bestHabit: { type: Type.STRING },
-            worstHabit: { type: Type.STRING },
-            progressSummary: { type: Type.STRING },
-            nextWeekPlan: { type: Type.STRING }
-          },
-          required: ['bestHabit', 'worstHabit', 'progressSummary', 'nextWeekPlan']
-        }
-      }
-    });
+    let attempts = 0;
+    let data = null;
+    let lastError = null;
 
-    const parsed = JSON.parse(response.text || '{}');
-    return new Response(JSON.stringify(parsed), {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
+    while (attempts < 3 && !data) {
+      try {
+        attempts++;
+        const aiStart = Date.now();
+
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents,
+          config: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                bestHabit: { type: Type.STRING },
+                worstHabit: { type: Type.STRING },
+                progressSummary: { type: Type.STRING },
+                nextWeekPlan: { type: Type.STRING }
+              },
+              required: ['bestHabit', 'worstHabit', 'progressSummary', 'nextWeekPlan']
+            }
+          }
+        });
+
+        const aiLatency = Date.now() - aiStart;
+        console.log(JSON.stringify({
+          level: "info",
+          request_id: requestId,
+          user_id: userId,
+          endpoint: endpoint,
+          ai_duration_ms: aiLatency,
+          attempts: attempts
+        }));
+
+        data = JSON.parse(response.text || '{}');
+        clearTimeout(timeoutId);
+      } catch (err: any) {
+        lastError = err;
+        if (err.name === 'AbortError') {
+          console.error("AI Request timed out");
+          break;
+        }
+        if (attempts >= 3) {
+          console.error("Gemini failed after 3 attempts", err);
+          break;
+        }
+        await new Promise((r) => setTimeout(r, Math.pow(2, attempts) * 500));
+      }
+    }
+
+    if (!data) {
+      throw lastError || new Error("AI parsing failed completely");
+    }
+
+    return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error: any) {
-    console.warn("AI failed or internal error, falling back", error);
+    if (error.message === "Unauthorized") {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    console.warn(JSON.stringify({
+      level: "warn",
+      request_id: requestId,
+      user_id: userId,
+      endpoint: "generate-weekly-report",
+      message: "AI failed or internal error, falling back",
+      error: error.message
+    }));
+
     const fallbackData = {
       bestHabit: "Consistent tracking",
       worstHabit: "Missed some protein goals",
@@ -128,5 +189,12 @@ Respond with JSON:
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200
     })
+  } finally {
+     console.log(JSON.stringify({
+       level: "info",
+       request_id: requestId,
+       user_id: userId,
+       latency_ms: Date.now() - startTime
+     }));
   }
 })
