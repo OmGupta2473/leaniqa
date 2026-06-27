@@ -266,7 +266,7 @@ export function GoalSetterScreen() {
               key={opt.range}
               onClick={() => setCurrentBfMid(opt.mid)}
               className={cn(
-                "bf-card flex-none w-[200px] p-[16px] rounded-[16px] cursor-pointer transition-all snap-start flex flex-col text-left",
+                "bf-card flex-none w-[clamp(160px,44vw,200px)] p-[16px] rounded-[16px] cursor-pointer transition-all snap-start flex flex-col text-left",
                 currentBfMid === opt.mid 
                   ? "bg-[rgba(212,255,0,0.1)] border-[1.5px] border-[#D4FF00] scale-[1.03]" 
                   : "bg-[rgba(44,44,46,0.7)] border-[0.5px] border-[rgba(255,255,255,0.1)] hover:bg-[rgba(44,44,46,0.9)]"
@@ -302,7 +302,7 @@ export function GoalSetterScreen() {
               key={opt.range}
               onClick={() => setTargetBfMid(opt.mid)}
               className={cn(
-                "bf-card flex-none w-[200px] p-[16px] rounded-[16px] cursor-pointer transition-all snap-start flex flex-col text-left",
+                "bf-card flex-none w-[clamp(160px,44vw,200px)] p-[16px] rounded-[16px] cursor-pointer transition-all snap-start flex flex-col text-left",
                 targetBfMid === opt.mid 
                   ? "bg-[rgba(212,255,0,0.1)] border-[1.5px] border-[#D4FF00] scale-[1.03]" 
                   : "bg-[rgba(44,44,46,0.7)] border-[0.5px] border-[rgba(255,255,255,0.1)] hover:bg-[rgba(44,44,46,0.9)]"
@@ -319,7 +319,7 @@ export function GoalSetterScreen() {
               key="maintain"
               onClick={() => setTargetBfMid(currentBfMid)}
               className={cn(
-                "bf-card flex-none w-[200px] p-[16px] rounded-[16px] cursor-pointer transition-all snap-start flex flex-col text-left",
+                "bf-card flex-none w-[clamp(160px,44vw,200px)] p-[16px] rounded-[16px] cursor-pointer transition-all snap-start flex flex-col text-left",
                 targetBfMid === currentBfMid 
                   ? "bg-[rgba(212,255,0,0.1)] border-[1.5px] border-[#D4FF00] scale-[1.03]" 
                   : "bg-[rgba(44,44,46,0.7)] border-[0.5px] border-[rgba(255,255,255,0.1)] hover:bg-[rgba(44,44,46,0.9)]"

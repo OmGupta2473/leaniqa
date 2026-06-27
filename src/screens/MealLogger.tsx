@@ -465,7 +465,8 @@ export function MealLoggerScreen() {
       </div>
 
       <div
-        className="flex flex-col gap-[12px] mb-[20px] flex-1 overflow-y-auto pr-[4px] hide-scrollbar"
+        className="flex flex-col gap-[12px] mb-[16px] overflow-y-auto pr-[4px] hide-scrollbar"
+        style={{ flex: '1 1 0', minHeight: '80px', maxHeight: 'calc(100dvh - 420px)' }}
         ref={chatRef}
       >
         {chat.map((msg, i) => (
