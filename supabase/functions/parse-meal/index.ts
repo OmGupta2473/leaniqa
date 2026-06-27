@@ -1,3 +1,29 @@
+/*
+ LOCAL DEV SETUP — read this if AI is not working:
+ 
+ 1. Create file: supabase/functions/.env
+    Contents:
+      GEMINI_API_KEY=AIza...your_actual_key_here...
+ 
+ 2. Start Supabase locally (if not already running):
+      supabase start
+ 
+ 3. Serve functions with the env file:
+      supabase functions serve --env-file supabase/functions/.env
+    (keep this running in a separate terminal)
+ 
+ 4. Your Vite dev server runs separately:
+      npm run dev
+ 
+ 5. To check if the key is loaded: open Supabase local logs at
+    http://localhost:54323 and look for has_gemini_key: true
+    in the parse-meal function logs after sending a meal.
+ 
+ PRODUCTION SETUP:
+   supabase secrets set GEMINI_API_KEY=AIza... --project-ref YOUR_REF
+   supabase functions deploy parse-meal --project-ref YOUR_REF
+   supabase functions deploy generate-weekly-report --project-ref YOUR_REF
+*/
 // SETUP: Before deploying, run:
 //   supabase secrets set GEMINI_API_KEY=your_key --project-ref YOUR_REF
 //   supabase functions deploy parse-meal --project-ref YOUR_REF
@@ -75,6 +101,15 @@ serve(async (req) => {
       throw new Error("Unauthorized");
     }
     userId = user.id;
+
+    console.log(JSON.stringify({
+      level: "debug",
+      request_id: requestId,
+      has_gemini_key: !!apiKey,
+      gemini_key_prefix: apiKey ? apiKey.substring(0, 8) + '...' : 'MISSING',
+      user_id: userId.substring(0, 8),
+      text_length: text?.length ?? 0,
+    }));
 
     // Rate Limiting
     const endpoint = "parse-meal";
