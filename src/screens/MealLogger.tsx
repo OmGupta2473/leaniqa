@@ -197,24 +197,7 @@ export function MealLoggerScreen() {
           });
 
           if (error) {
-            const status = (error as any)?.context?.status ?? 0;
-            const msg = error.message ?? '';
-            if (status === 401 || status === 403 || msg.includes('Unauthorized')) {
-              // Force token refresh and retry once
-              if (attempt < MAX_RETRIES) {
-                await supabase.auth.refreshSession();
-                continue;
-              }
-              throw new Error('Authentication failed — please log out and back in');
-            }
-            if (status === 429) throw new Error('Daily limit reached');
-            if (status >= 500 || msg.includes('Network') || msg.includes('fetch')) {
-              if (attempt < MAX_RETRIES) {
-                await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
-                continue;
-              }
-            }
-            throw new Error('Meal parsing unavailable');
+            throw error;
           }
 
           if (!data || typeof data.calories !== 'number') {
@@ -234,6 +217,24 @@ export function MealLoggerScreen() {
           return data;
 
         } catch (err: any) {
+          const status = err?.context?.status ?? err?.status ?? 0;
+          const msg = err?.message ?? '';
+          
+          if (attempt < MAX_RETRIES) {
+            if (status === 401 || status === 403 || msg.includes('Unauthorized') || msg.includes('Auth')) {
+              await supabase.auth.refreshSession();
+              continue;
+            }
+            if (status >= 500 || msg.includes('Network') || msg.includes('fetch') || msg.includes('Failed to fetch') || msg.includes('timeout')) {
+              await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+              continue;
+            }
+            // If it's a 429 limit, we shouldn't retry
+            if (status === 429 || msg.includes('limit')) {
+              attempt = MAX_RETRIES; // Skip straight to fallback
+            }
+          }
+          
           if (attempt === MAX_RETRIES) {
             // STEP 3: Final fallback — use cache at any confidence or deterministic estimate
             const lowConfCache = lookupCachedMeal(text);
@@ -251,7 +252,7 @@ export function MealLoggerScreen() {
               tip: `Offline estimate: ${text}`,
               meal_slot: selectedMealSlot || undefined,
             });
-            return { ...fallback, foods_detected: [text], coaching_tip: 'Using offline estimate — AI unavailable', _errorMessage: err.message };
+            return { ...fallback, foods_detected: [text], coaching_tip: 'Using offline estimate — AI unavailable', _errorMessage: err.message || 'Meal parsing unavailable' };
           }
         }
       }

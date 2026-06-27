@@ -1,3 +1,7 @@
+// SETUP: Before deploying, run:
+//   supabase secrets set GEMINI_API_KEY=your_key --project-ref YOUR_REF
+//   supabase functions deploy generate-weekly-report --project-ref YOUR_REF
+// For local dev: add GEMINI_API_KEY=your_key to supabase/functions/.env
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { GoogleGenAI, Type } from "npm:@google/genai"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
@@ -9,7 +13,7 @@ const corsHeaders = {
 
 const apiKey = Deno.env.get("GEMINI_API_KEY");
 if (!apiKey) {
-  console.warn("GEMINI_API_KEY is not set in environment variables");
+  console.error("CRITICAL: GEMINI_API_KEY is not set. Check supabase/functions/.env for local dev, or Supabase Dashboard > Edge Functions > Secrets for production.");
 }
 const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
@@ -83,7 +87,10 @@ serve(async (req) => {
     await supabase.from('api_usage').insert({ user_id: user.id, endpoint })
 
     if (!ai) {
-      throw new Error('GEMINI_API_KEY is not set')
+      return new Response(JSON.stringify({ error: "GEMINI_API_KEY is not set" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const contents = `Analyze this week's data and provide a concise weekly report.
