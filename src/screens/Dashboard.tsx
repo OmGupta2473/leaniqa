@@ -321,10 +321,10 @@ export function DashboardScreen() {
         </div>
 
         {/* 2-column grid */}
-        <div className="grid grid-cols-2 gap-[12px] mb-[12px]">
+        <div className="grid grid-cols-2 gap-[10px] mb-[12px] w-full overflow-hidden">
           {/* Calories */}
           <div 
-            className="progress-section-tappable text-center flex flex-col justify-center relative !mb-0 !p-[16px] !pt-[28px]" 
+            className="progress-section-tappable text-center flex flex-col justify-center relative !mb-0 !p-[14px] !pt-[26px] min-h-[120px] max-w-full overflow-hidden" 
             onClick={() => setScreen('calorieDetail')}
           >
             <div className="absolute top-[8px] right-[8px] text-[10px] font-medium text-[#D4FF00]/70 flex items-center gap-[2px]">
@@ -375,7 +375,7 @@ export function DashboardScreen() {
 
           {/* Protein */}
           <div 
-            className="progress-section-tappable text-center flex flex-col justify-center relative !mb-0 !p-[16px] !pt-[28px]" 
+            className="progress-section-tappable text-center flex flex-col justify-center relative !mb-0 !p-[14px] !pt-[26px] min-h-[120px] max-w-full overflow-hidden" 
             onClick={() => setScreen('proteinDetail')}
           >
             <div className="absolute top-[8px] right-[8px] text-[10px] font-medium text-[#D4FF00]/70 flex items-center gap-[2px]">
