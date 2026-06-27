@@ -17,6 +17,7 @@ import { profileService } from "../services/profileService";
 import { complianceService } from "../services/complianceService";
 import { supabase } from "../lib/supabase";
 import { motion, AnimatePresence } from "motion/react";
+import { lookupCachedMeal } from '../data';
 
 const getDeterministicFallback = (text: string) => {
   const normalizedText = text.toLowerCase();
@@ -148,100 +149,78 @@ export function MealLoggerScreen() {
 
   const addMealMutation = useMutation({
     mutationFn: async (text: string) => {
-      let retries = 3;
-      while (retries > 0) {
+      // STEP 1: Try cache lookup first for well-known meals
+      const cachedResult = lookupCachedMeal(text);
+      if (cachedResult && cachedResult.confidence >= 90) {
+        await mealService.addMeal({
+          meal_text: text,
+          calories: cachedResult.scaledCalories,
+          protein: cachedResult.scaledProtein,
+          fat: cachedResult.scaledFat,
+          carbs: cachedResult.scaledCarbs,
+          meal_time: new Date().toISOString(),
+          tip: `Cache hit: ${text}`,
+          meal_slot: selectedMealSlot || undefined,
+        });
+        return {
+          ...cachedResult,
+          calories: cachedResult.scaledCalories,
+          protein: cachedResult.scaledProtein,
+          fat: cachedResult.scaledFat,
+          carbs: cachedResult.scaledCarbs,
+          foods_detected: [text],
+          coaching_tip: `Logged from nutritional database. Confidence: ${cachedResult.confidence}%`,
+          _fromCache: true,
+        };
+      }
+
+      // STEP 2: Try Supabase edge function with fresh session token
+      const MAX_RETRIES = 2;
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
         try {
-          const {
-            data: { session },
-          } = await supabase.auth.getSession();
-          if (!session) {
-            throw new Error("Authentication failed");
+          // Always get a fresh session on each attempt
+          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+          if (sessionError || !session?.access_token) {
+            throw new Error('Session expired — please log in again');
           }
 
-          const { data, error } = await supabase.functions.invoke(
-            "parse-meal",
-            {
-              body: {
-                text,
-                remainingCalories,
-                remainingProtein,
-                mealType: selectedMealSlot,
-              },
-              headers: {
-                Authorization: `Bearer ${session.access_token}`,
-              },
+          const { data, error } = await supabase.functions.invoke('parse-meal', {
+            body: {
+              text,
+              remainingCalories,
+              remainingProtein,
+              mealType: selectedMealSlot,
             },
-          );
-
-          let errorMessage = null;
-          let shouldRetry = true;
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+          });
 
           if (error) {
-            console.error("Function invoke error:", error);
-            const msg = error.message || "";
-            const status = error.status || (error as any).context?.status;
-
-            if (
-              status === 401 ||
-              msg.includes("401") ||
-              msg.includes("Unauthorized")
-            ) {
-              errorMessage = "Authentication failed";
-              shouldRetry = false;
-            } else if (
-              status === 403 ||
-              msg.includes("403") ||
-              msg.includes("Forbidden")
-            ) {
-              errorMessage = "Authentication failed";
-              shouldRetry = false;
-            } else if (
-              status === 429 ||
-              msg.includes("429") ||
-              msg.includes("limit")
-            ) {
-              errorMessage = "Daily limit reached";
-              shouldRetry = false;
-            } else if (
-              status >= 500 ||
-              msg.includes("500") ||
-              msg.includes("Internal")
-            )
-              errorMessage = "Server unavailable";
-            else if (msg.includes("timeout") || msg.includes("Timeout"))
-              errorMessage = "Server unavailable";
-            else if (msg.includes("JSON"))
-              errorMessage = "Meal parsing unavailable";
-            else if (msg.includes("fetch") || msg.includes("Network"))
-              errorMessage = "Network offline";
-            else errorMessage = "Meal parsing unavailable";
-          }
-
-          if (error || !data || typeof data.calories !== "number") {
-            if (!shouldRetry || retries === 1) {
-              if (!errorMessage) {
-                errorMessage = "Meal parsing unavailable";
+            const status = (error as any)?.context?.status ?? 0;
+            const msg = error.message ?? '';
+            if (status === 401 || status === 403 || msg.includes('Unauthorized')) {
+              // Force token refresh and retry once
+              if (attempt < MAX_RETRIES) {
+                await supabase.auth.refreshSession();
+                continue;
               }
-              const fallbackData = getDeterministicFallback(text);
-              const tip = `${errorMessage} Using offline estimate.`;
-
-              await mealService.addMeal({
-                meal_text: text,
-                calories: fallbackData.calories,
-                protein: fallbackData.protein,
-                fat: fallbackData.fat,
-                carbs: fallbackData.carbs,
-                meal_time: new Date().toISOString(),
-                tip: fallbackData.foods_detected?.join(", ") || text,
-                meal_slot: selectedMealSlot || undefined,
-              });
-
-              return { ...fallbackData, _errorMessage: tip };
+              throw new Error('Authentication failed — please log out and back in');
             }
-            throw new Error(errorMessage || "API Error");
+            if (status === 429) throw new Error('Daily limit reached');
+            if (status >= 500 || msg.includes('Network') || msg.includes('fetch')) {
+              if (attempt < MAX_RETRIES) {
+                await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+                continue;
+              }
+            }
+            throw new Error('Meal parsing unavailable');
           }
 
-          // Success Case
+          if (!data || typeof data.calories !== 'number') {
+            throw new Error('Invalid response from AI');
+          }
+
           await mealService.addMeal({
             meal_text: text,
             calories: data.calories,
@@ -249,42 +228,31 @@ export function MealLoggerScreen() {
             fat: data.fat,
             carbs: data.carbs,
             meal_time: new Date().toISOString(),
-            tip: data.foods_detected?.join(", ") || text,
+            tip: data.foods_detected?.join(', ') || text,
             meal_slot: selectedMealSlot || undefined,
           });
           return data;
+
         } catch (err: any) {
-          retries--;
-          if (retries === 0) {
-            console.error("All retries failed:", err);
-            const msg = err.message || "";
-            let errorMessage = "";
-
-            if (msg.includes("timeout") || msg.includes("Timeout"))
-              errorMessage = "Server unavailable";
-            else if (msg.includes("JSON"))
-              errorMessage = "Meal parsing unavailable";
-            else if (msg.includes("fetch") || msg.includes("Network"))
-              errorMessage = "Network offline";
-            else errorMessage = "Server unavailable";
-
-            const fallbackData = getDeterministicFallback(text);
-            const tip = `${errorMessage} Using offline estimate.`;
+          if (attempt === MAX_RETRIES) {
+            // STEP 3: Final fallback — use cache at any confidence or deterministic estimate
+            const lowConfCache = lookupCachedMeal(text);
+            const fallback = lowConfCache
+              ? { calories: lowConfCache.scaledCalories, protein: lowConfCache.scaledProtein, fat: lowConfCache.scaledFat, carbs: lowConfCache.scaledCarbs, confidence: lowConfCache.confidence }
+              : getDeterministicFallback(text);
 
             await mealService.addMeal({
               meal_text: text,
-              calories: fallbackData.calories,
-              protein: fallbackData.protein,
-              fat: fallbackData.fat,
-              carbs: fallbackData.carbs,
+              calories: fallback.calories,
+              protein: fallback.protein,
+              fat: fallback.fat,
+              carbs: fallback.carbs,
               meal_time: new Date().toISOString(),
-              tip: fallbackData.foods_detected?.join(", ") || text,
+              tip: `Offline estimate: ${text}`,
               meal_slot: selectedMealSlot || undefined,
             });
-
-            return { ...fallbackData, _errorMessage: tip };
+            return { ...fallback, foods_detected: [text], coaching_tip: 'Using offline estimate — AI unavailable', _errorMessage: err.message };
           }
-          await new Promise((r) => setTimeout(r, 1000));
         }
       }
     },

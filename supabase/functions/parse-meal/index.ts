@@ -115,9 +115,20 @@ serve(async (req) => {
         attempts++;
         const aiStart = Date.now();
         
+        const contents = `You are a precise nutrition expert for Indian and international foods. Analyze this meal: "${text}". Meal type: ${mealType || 'unspecified'}. The user has ${remainingCalories ?? 'unknown'} kcal remaining today and needs ${remainingProtein ?? 'unknown'}g more protein.
+
+Instructions:
+1. Identify each food item and its quantity from the text
+2. Calculate accurate macros based on standard serving sizes and quantities mentioned
+3. For Indian foods, use standard homemade portions (roti = 40g, rice plate = 300g cooked, dal bowl = 200g, sabzi = 150g)
+4. Confidence: 95-100 for named items with quantities, 80-94 for named items without quantities, 60-79 for ambiguous descriptions
+5. Coaching tip: be specific, mention the user's remaining macros, suggest one concrete next action
+
+Respond with valid JSON only.`;
+
         const response = await ai.models.generateContent({
           model: "gemini-2.5-flash",
-          contents: `Analyze this meal description: "${text}". Meal type: ${mealType}. Remaining calories for today: ${remainingCalories}. Remaining protein: ${remainingProtein}g. Provide a reasonable estimate for macros. Use Indian food context where applicable. Provide your confidence level (0-100) and an array of detected food items. Based on the remaining macros, provide ONE short specific coaching tip for their next snack or meal.`,
+          contents,
           config: {
             responseMimeType: "application/json",
             responseSchema: {
