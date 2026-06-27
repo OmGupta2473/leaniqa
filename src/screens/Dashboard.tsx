@@ -43,7 +43,7 @@ function AnimatedNumber({
 }
 
 export function DashboardScreen() {
-  const { setScreen, onboardingData, goalSetCompleted } = useAppStore();
+  const { setScreen, onboardingData, goalSetCompleted, calorieStreak, proteinStreak } = useAppStore();
   const queryClient = useQueryClient();
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -221,6 +221,32 @@ export function DashboardScreen() {
           </motion.div>
           <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599] mt-[8px]">
             Score
+          </div>
+        </div>
+      </div>
+
+      {/* Streak chips */}
+      <div className="streak-row mb-[16px]">
+        <div className={`streak-chip ${calorieStreak >= 7 ? 'hot' : ''}`}>
+          <span style={{ fontSize: '18px' }}>🔥</span>
+          <div>
+            <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: calorieStreak > 0 ? '#D4FF00' : 'rgba(235,235,245,0.4)', lineHeight: 1 }}>
+              {calorieStreak > 0 ? calorieStreak : '—'}
+            </div>
+            <div style={{ fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.5)', textTransform: 'uppercase', fontWeight: 600 }}>
+              cal streak
+            </div>
+          </div>
+        </div>
+        <div className={`streak-chip ${proteinStreak >= 7 ? 'hot-protein' : ''}`}>
+          <span style={{ fontSize: '18px' }}>💪</span>
+          <div>
+            <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: proteinStreak > 0 ? '#FF4D1C' : 'rgba(235,235,245,0.4)', lineHeight: 1 }}>
+              {proteinStreak > 0 ? proteinStreak : '—'}
+            </div>
+            <div style={{ fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.5)', textTransform: 'uppercase', fontWeight: 600 }}>
+              protein streak
+            </div>
           </div>
         </div>
       </div>

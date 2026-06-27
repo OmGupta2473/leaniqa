@@ -88,6 +88,13 @@ export default function App() {
     }
   }, [dailyMetrics, syncFromMetrics]);
 
+  // Re-sync metrics whenever the user navigates to the dashboard
+  useEffect(() => {
+    if (currentScreen === 'dash' && dailyMetrics) {
+      syncFromMetrics(dailyMetrics);
+    }
+  }, [currentScreen, dailyMetrics, syncFromMetrics]);
+
   const todayStr = getLocalDateString();
   const hasNewAwards = earnedAwards.some(a => a.earned && a.earnedDate === todayStr);
 

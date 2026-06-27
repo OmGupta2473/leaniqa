@@ -238,33 +238,67 @@ function getLocalDateDaysAgo(daysAgo: number): string {
 }
 
 function calculateCalorieStreak(dailyLogs: DailyLog[]): number {
-  const todayStr = getLocalDateDaysAgo(0);
-  const logsToConsider = dailyLogs.filter(l => l.date !== todayStr);
-  const sorted = [...logsToConsider].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  if (dailyLogs.length === 0) return 0;
+  
+  const sorted = [...dailyLogs]
+    .filter(l => l.caloriesConsumed > 0) // only days where user actually logged
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  
+  if (sorted.length === 0) return 0;
   
   let streak = 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
   for (let i = 0; i < sorted.length; i++) {
-    const expectedDate = getLocalDateDaysAgo(i + 1);
-    if (sorted[i].date !== expectedDate) break;
+    const logDate = new Date(sorted[i].date);
+    logDate.setHours(0, 0, 0, 0);
+    
+    const expectedDate = new Date(today);
+    expectedDate.setDate(today.getDate() - i);
+    expectedDate.setHours(0, 0, 0, 0);
+    
+    const diffMs = Math.abs(logDate.getTime() - expectedDate.getTime());
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    
+    // Allow up to 0.5 day tolerance for timezone edge cases
+    if (diffDays > 0.5) break;
     
     if (sorted[i].calorieUnderTarget) {
       streak++;
     } else {
-      break;
+      break; // streak broken
     }
   }
+  
   return streak;
 }
 
 function calculateProteinStreak(dailyLogs: DailyLog[]): number {
-  const todayStr = getLocalDateDaysAgo(0);
-  const logsToConsider = dailyLogs.filter(l => l.date !== todayStr);
-  const sorted = [...logsToConsider].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  if (dailyLogs.length === 0) return 0;
+  
+  const sorted = [...dailyLogs]
+    .filter(l => l.proteinConsumed > 0)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  
+  if (sorted.length === 0) return 0;
   
   let streak = 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
   for (let i = 0; i < sorted.length; i++) {
-    const expectedDate = getLocalDateDaysAgo(i + 1);
-    if (sorted[i].date !== expectedDate) break;
+    const logDate = new Date(sorted[i].date);
+    logDate.setHours(0, 0, 0, 0);
+    
+    const expectedDate = new Date(today);
+    expectedDate.setDate(today.getDate() - i);
+    expectedDate.setHours(0, 0, 0, 0);
+    
+    const diffMs = Math.abs(logDate.getTime() - expectedDate.getTime());
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    
+    if (diffDays > 0.5) break;
     
     if (sorted[i].proteinHitTarget) {
       streak++;
@@ -272,6 +306,7 @@ function calculateProteinStreak(dailyLogs: DailyLog[]): number {
       break;
     }
   }
+  
   return streak;
 }
 
@@ -447,17 +482,20 @@ export const useAppStore = create<AppState>()(
         },
 
         syncFromMetrics: (metrics) => {
-          const logs: DailyLog[] = metrics.map(m => ({
-            date: m.date,
-            caloriesConsumed: m.actual_calories,
-            proteinConsumed: m.actual_protein,
-            calorieTarget: m.target_calories,
-            proteinTarget: m.target_protein,
-            calorieUnderTarget: m.actual_calories > 0 && m.actual_calories <= m.target_calories,
-            proteinHitTarget: m.actual_protein >= m.target_protein
-          }));
+          if (!metrics || metrics.length === 0) return;
           
-          // Still save to localStorage just in case of offline, but the source of truth becomes DB
+          const logs: DailyLog[] = metrics
+            .filter(m => m.actual_calories > 0 || m.actual_protein > 0) // only logged days
+            .map(m => ({
+              date: m.date,
+              caloriesConsumed: m.actual_calories,
+              proteinConsumed: m.actual_protein,
+              calorieTarget: m.target_calories,
+              proteinTarget: m.target_protein,
+              calorieUnderTarget: m.actual_calories > 0 && m.actual_calories <= m.target_calories,
+              proteinHitTarget: m.actual_protein > 0 && m.actual_protein >= m.target_protein
+            }));
+          
           saveDailyLogs(logs);
           const calStreak = calculateCalorieStreak(logs);
           const proStreak = calculateProteinStreak(logs);
@@ -480,9 +518,7 @@ export const useAppStore = create<AppState>()(
             return award;
           });
           
-          if (datesUpdated) {
-            saveEarnedDates(currentEarnedDates);
-          }
+          if (datesUpdated) saveEarnedDates(currentEarnedDates);
           
           set({
             dailyLogs: logs,
