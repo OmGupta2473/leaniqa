@@ -17,38 +17,33 @@ export function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [isOtpSent, setIsOtpSent] = useState(false);
-  const [otp, setOtp] = useState('');
 
   const handleEmailLogin = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMessage('');
     
-    if (isOtpSent) {
-      const { error } = await supabase.auth.verifyOtp({
-        email,
-        token: otp,
-        type: 'email',
-      });
-      if (error) {
-        if (error.message.includes('fetch') || error.message.includes('Network')) setMessage("Network offline");
-        else setMessage("Authentication failed");
+    const { error } = await supabase.auth.signInWithOtp({ 
+      email,
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: window.location.origin,
+      }
+    });
+    
+    if (error) {
+      if (error.message.includes('fetch') || error.message.includes('Network')) {
+        setMessage('No internet connection. Please check your network and try again.');
+      } else if (error.message.includes('rate limit') || error.message.includes('429')) {
+        setMessage('Too many requests. Please wait a minute before trying again.');
+      } else {
+        setMessage('Could not send the login link. Please try again.');
       }
     } else {
-      const { error } = await supabase.auth.signInWithOtp({ 
-        email,
-        options: {
-          shouldCreateUser: true,
-        }
-      });
-      if (error) {
-        if (error.message.includes('fetch') || error.message.includes('Network')) setMessage("Network offline");
-        else setMessage("Authentication failed");
-      } else {
-        setMessage('Check your email for the login code, or enter it below!');
-        setIsOtpSent(true);
-      }
+      setIsOtpSent(true);
+      setMessage('');
     }
+    
     setLoading(false);
   };
 
@@ -115,39 +110,55 @@ export function AuthScreen() {
           </div>
 
           <form onSubmit={handleEmailLogin} className="space-y-3">
-            <input
-              type="email"
-              placeholder="Email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={isOtpSent || loading}
-              className="w-full px-3 py-2.5 border-[0.5px] border-border-secondary bg-background-secondary text-text-primary rounded-md focus:outline-none focus:border-purple text-[14px]"
-              required
-            />
-            {isOtpSent && (
-              <input
-                type="text"
-                placeholder="6-digit code"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                disabled={loading}
-                className="w-full px-3 py-2.5 border-[0.5px] border-border-secondary bg-background-secondary text-text-primary rounded-md focus:outline-none focus:border-purple text-[14px]"
-                required
-              />
+            {!isOtpSent ? (
+              <>
+                <input
+                  type="email"
+                  placeholder="Your email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={loading}
+                  className="w-full px-3 py-2.5 border-[0.5px] border-border-secondary bg-background-secondary text-text-primary rounded-md focus:outline-none focus:border-purple text-[14px]"
+                  required
+                />
+                <button 
+                  type="submit" 
+                  disabled={loading || !email}
+                  className="w-full flex items-center justify-center gap-2 p-3 bg-purple text-background-primary rounded-md text-[14px] font-bold uppercase tracking-widest hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  {loading ? 'Sending...' : 'Send login link'}
+                </button>
+              </>
+            ) : (
+              <div className="bg-background-secondary border border-border-secondary rounded-xl p-5 text-center space-y-3">
+                <div className="w-12 h-12 rounded-full bg-purple/10 flex items-center justify-center mx-auto">
+                  <Mail className="w-6 h-6 text-purple" />
+                </div>
+                <h3 className="text-[15px] font-semibold text-text-primary">Check your inbox</h3>
+                <p className="text-[13px] text-text-secondary leading-relaxed">
+                  We sent a login link to <span className="text-text-primary font-medium">{email}</span>. 
+                  Open your email app and tap the link to sign in — no password needed.
+                </p>
+                <div className="bg-purple/5 border border-purple/20 rounded-lg p-3">
+                  <p className="text-[12px] text-purple font-medium">
+                    📧 Open Gmail, Outlook, or your mail app → tap the link from Physique AI
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setIsOtpSent(false); setMessage(''); }}
+                  className="text-[13px] text-text-secondary underline hover:text-text-primary transition-colors"
+                >
+                  Use a different email
+                </button>
+              </div>
             )}
-            <button 
-              type="submit" 
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 p-3 bg-purple text-background-primary rounded-md text-[14px] font-bold uppercase tracking-widest hover:opacity-90 transition-opacity disabled:opacity-50"
-            >
-              {loading ? 'Please wait...' : (isOtpSent ? 'Verify Code' : 'Send OTP')}
-            </button>
           </form>
 
           {message && (
-            <p className="text-center text-[12px] text-text-secondary pt-2">
+            <div className={`text-center text-[12px] pt-2 ${message.includes('could not') || message.includes('No internet') || message.includes('Too many') ? 'text-coral' : 'text-text-secondary'}`}>
               {message}
-            </p>
+            </div>
           )}
         </div>
       </div>
