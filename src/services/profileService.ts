@@ -59,16 +59,42 @@ export const profileService = {
 
   async upsertGoal(goalData: Partial<DbGoal>): Promise<DbGoal | null> {
     const userId = await authService.getUserId();
-    const payload = {
+    
+    // First check if a goal already exists for this user
+    const { data: existing } = await supabase
+      .from('goals')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    const payload: any = {
       ...goalData,
       user_id: userId,
+      updated_at: new Date().toISOString(),
     };
 
-    const { data, error } = await supabase
-      .from('goals')
-      .upsert(payload, { onConflict: 'user_id' })
-      .select()
-      .single();
+    let data, error;
+
+    if (existing?.id) {
+      // Update existing row by id — avoids ON CONFLICT entirely
+      const result = await supabase
+        .from('goals')
+        .update(payload)
+        .eq('id', existing.id)
+        .select()
+        .single();
+      data = result.data;
+      error = result.error;
+    } else {
+      // Insert new row
+      const result = await supabase
+        .from('goals')
+        .insert({ ...payload })
+        .select()
+        .single();
+      data = result.data;
+      error = result.error;
+    }
       
     if (error) {
       console.error('Error upserting goal:', error);
