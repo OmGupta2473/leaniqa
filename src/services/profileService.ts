@@ -23,17 +23,42 @@ export const profileService = {
     const { data: { session } } = await supabase.auth.getSession();
     const realEmail = session?.user?.email || '';
 
-    const payload = {
+    // First check if a profile already exists for this user
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', userId)
+      .maybeSingle();
+
+    const payload: any = {
       ...profileData,
       id: userId,
-      email: realEmail
+      email: realEmail,
+      updated_at: new Date().toISOString()
     };
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .upsert(payload)
-      .select()
-      .single();
+    let data, error;
+
+    if (existing?.id) {
+      // Update existing row
+      const result = await supabase
+        .from('profiles')
+        .update(payload)
+        .eq('id', existing.id)
+        .select()
+        .single();
+      data = result.data;
+      error = result.error;
+    } else {
+      // Insert new row
+      const result = await supabase
+        .from('profiles')
+        .insert({ ...payload, created_at: new Date().toISOString() })
+        .select()
+        .single();
+      data = result.data;
+      error = result.error;
+    }
       
     if (error) {
       console.error('Error upserting profile:', error);
