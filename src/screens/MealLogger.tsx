@@ -85,6 +85,7 @@ export function MealLoggerScreen() {
   const [expandedSlots, setExpandedSlots] = useState<Record<string, boolean>>(
     {},
   );
+  const [aiStatus, setAiStatus] = useState<'unknown' | 'online' | 'offline'>('unknown');
 
   useEffect(() => {
     clearOldChats();
@@ -93,6 +94,21 @@ export function MealLoggerScreen() {
     else if (hour < 18) setSelectedMealSlot("lunch");
     else setSelectedMealSlot("dinner");
   }, [clearOldChats]);
+
+  useEffect(() => {
+    const checkAI = async () => {
+      try {
+        const testUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-meal`;
+        const c = new AbortController();
+        setTimeout(() => c.abort(), 2000);
+        const r = await fetch(testUrl, { method: 'OPTIONS', signal: c.signal });
+        setAiStatus(r.status < 500 ? 'online' : 'offline');
+      } catch {
+        setAiStatus('offline');
+      }
+    };
+    checkAI();
+  }, []);
 
   const queryClient = useQueryClient();
   const { data: profile } = useQuery({
@@ -176,6 +192,39 @@ export function MealLoggerScreen() {
 
       // ── STEP 2: AI edge function with proper retry ───────────────
       let lastError: Error | null = null;
+
+      // Quick connectivity check — if Supabase functions are not reachable, skip AI entirely
+      let functionsReachable = true;
+      try {
+        const testUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-meal`;
+        const pingController = new AbortController();
+        const pingTimeout = setTimeout(() => pingController.abort(), 3000);
+        const pingResp = await fetch(testUrl, { 
+          method: 'OPTIONS', 
+          signal: pingController.signal,
+          headers: { 'Content-Type': 'application/json' }
+        });
+        clearTimeout(pingTimeout);
+        functionsReachable = pingResp.status !== 0;
+      } catch {
+        functionsReachable = false;
+      }
+
+      if (!functionsReachable) {
+        // Edge functions server not running — go straight to cache/fallback
+        const lowConfCache = lookupCachedMeal(text);
+        const fallback = lowConfCache
+          ? { calories: lowConfCache.scaledCalories, protein: lowConfCache.scaledProtein, fat: lowConfCache.scaledFat, carbs: lowConfCache.scaledCarbs, confidence: lowConfCache.confidence }
+          : getDeterministicFallback(text);
+        await mealService.addMeal({
+          meal_text: text, calories: fallback.calories, protein: fallback.protein,
+          fat: fallback.fat, carbs: fallback.carbs, meal_time: new Date().toISOString(),
+          tip: `Estimated: ${text}`, meal_slot: selectedMealSlot || undefined,
+        });
+        return { ...fallback, foods_detected: [text], 
+          coaching_tip: lowConfCache ? `From database. Run: supabase functions serve --env-file supabase/functions/.env` : `Rough estimate.`,
+          _errorMessage: 'AI service not running locally' };
+      }
 
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
@@ -318,12 +367,15 @@ export function MealLoggerScreen() {
         : text;
 
       let responseText = '';
-      if (data?._fromCache) {
-        responseText = `Logged from database: ${foodsDetected}`;
-      } else if (data?._errorMessage) {
-        responseText = `⚠️ ${data._errorMessage}. Rough estimate used for: ${foodsDetected}`;
+      if (data?._errorMessage) {
+        const isLocalIssue = data._errorMessage.includes('not running') || data._errorMessage.includes('temporarily');
+        responseText = isLocalIssue 
+          ? `📊 Estimated: ${foodsDetected}` 
+          : `⚠️ ${data._errorMessage}. Estimated: ${foodsDetected}`;
+      } else if (data?._fromCache) {
+        responseText = `✓ Logged: ${foodsDetected}`;
       } else {
-        responseText = `Logged: ${foodsDetected}`;
+        responseText = `✓ Logged: ${foodsDetected}`;
       }
 
       const confidence = data?.confidence ?? 0;
@@ -515,6 +567,41 @@ export function MealLoggerScreen() {
           {renderMealBox("dinner", <Moon size={14} />, "Dinner", "6 pm–10 pm")}
         </div>
       </div>
+
+      {aiStatus === 'offline' && (
+        <div style={{
+          background: 'rgba(255,77,28,0.1)',
+          border: '0.5px solid rgba(255,77,28,0.3)',
+          borderRadius: '10px',
+          padding: '8px 12px',
+          fontSize: 'var(--font-xs)',
+          color: 'rgba(255,77,28,0.9)',
+          marginBottom: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+        }}>
+          <span>⚡</span>
+          <span>AI offline — using database estimates. Run <code style={{background:'rgba(255,255,255,0.1)',padding:'1px 4px',borderRadius:'4px'}}>supabase functions serve --env-file supabase/functions/.env</code></span>
+        </div>
+      )}
+      {aiStatus === 'online' && (
+        <div style={{
+          background: 'rgba(212,255,0,0.08)',
+          border: '0.5px solid rgba(212,255,0,0.3)',
+          borderRadius: '10px',
+          padding: '6px 12px',
+          fontSize: 'var(--font-xs)',
+          color: 'rgba(212,255,0,0.8)',
+          marginBottom: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+        }}>
+          <span style={{width:'6px',height:'6px',borderRadius:'50%',background:'#D4FF00',display:'inline-block'}}></span>
+          Gemini AI active — describe your meal naturally
+        </div>
+      )}
 
       <div
         className="flex flex-col gap-[12px] mb-[16px] overflow-y-auto pr-[4px] hide-scrollbar"
