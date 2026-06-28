@@ -96,7 +96,7 @@ export function ProgressScreen() {
             value={weight} 
             onChange={(e) => setWeight(e.target.value)} 
             placeholder={`Weight e.g. ${currentWeight}kg`} 
-            className="flex-1 px-3 py-2 border-[0.5px] border-border-secondary bg-background-primary text-text-primary focus:outline-none focus:border-purple text-[13px]"
+            className="input-field"
             disabled={addWeightMutation.isPending}
           />
           <button onClick={handleLog} disabled={addWeightMutation.isPending} className="px-4 py-2 border-none bg-purple text-background-primary font-bold uppercase tracking-widest text-[12px] cursor-pointer disabled:opacity-50">
@@ -119,7 +119,7 @@ export function ProgressScreen() {
                 value={waist} 
                 onChange={(e) => setWaist(e.target.value)} 
                 placeholder={`Waist (cm) e.g. ${profile?.waist || 85}`} 
-                className="px-3 py-2 border-[0.5px] border-border-secondary bg-background-primary text-text-primary focus:outline-none focus:border-purple text-[13px] disabled:opacity-50"
+                className="input-field disabled:opacity-50"
                 disabled={addWeightMutation.isPending}
               />
               <input 
@@ -127,7 +127,7 @@ export function ProgressScreen() {
                 value={neck} 
                 onChange={(e) => setNeck(e.target.value)} 
                 placeholder={`Neck (cm) e.g. ${profile?.neck || 38}`} 
-                className="px-3 py-2 border-[0.5px] border-border-secondary bg-background-primary text-text-primary focus:outline-none focus:border-purple text-[13px] disabled:opacity-50"
+                className="input-field disabled:opacity-50"
                 disabled={addWeightMutation.isPending}
               />
               {profile?.gender === 'Female' && (
@@ -136,7 +136,7 @@ export function ProgressScreen() {
                   value={hip} 
                   onChange={(e) => setHip(e.target.value)} 
                   placeholder={`Hip (cm) e.g. ${profile?.hip || 95}`} 
-                  className="col-span-2 px-3 py-2 border-[0.5px] border-border-secondary bg-background-primary text-text-primary focus:outline-none focus:border-purple text-[13px] disabled:opacity-50"
+                  className="col-span-2 input-field disabled:opacity-50"
                   disabled={addWeightMutation.isPending}
                 />
               )}

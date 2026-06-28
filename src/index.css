@@ -971,3 +971,36 @@ button.bf-card .text-\[22px\] {
   animation-fill-mode: both;
   animation-name: profileSlideIn;
 }
+
+/* Remove number input spinners globally */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.input-field {
+  background: rgba(255, 255, 255, 0.07);
+  border: 0.5px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 12px 16px;
+  color: white;
+  font-size: 15px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.input-field:focus {
+  border-color: rgba(212, 255, 0, 0.5);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.input-field::placeholder {
+  color: rgba(235, 235, 245, 0.35);
+}
