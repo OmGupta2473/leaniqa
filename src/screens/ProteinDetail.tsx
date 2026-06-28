@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { profileService } from "../services/profileService";
 import { mealService } from "../services/mealService";
@@ -15,6 +15,13 @@ function getLocalDateString() {
 export function ProteinDetailScreen() {
   const { setScreen, dailyLogs, proteinStreak, earnedAwards, onboardingData } =
     useAppStore();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    const containers = document.querySelectorAll('.overflow-y-auto');
+    containers.forEach(el => { (el as HTMLElement).scrollTop = 0; });
+  }, []);
+
   const { data: profile } = useQuery({
     queryKey: ["profile"],
     queryFn: () => profileService.getProfile(),
