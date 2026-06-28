@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAppStore } from "../store";
 
 export function renderBadge(
@@ -110,6 +110,12 @@ export function renderBadge(
 export function AwardsScreen() {
   const { setScreen, calorieStreak, proteinStreak, earnedAwards } =
     useAppStore();
+
+  useEffect(() => {
+    const el = document.querySelector('.screen-container');
+    if (el) el.scrollTop = 0;
+  }, []);
+
   const [selectedAward, setSelectedAward] = useState<any | null>(null);
 
   const calAwards = earnedAwards.filter((a) => a.category === "calories");

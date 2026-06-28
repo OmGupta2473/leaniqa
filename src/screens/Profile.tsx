@@ -1,7 +1,13 @@
+import { useEffect } from "react";
 import { useAppStore } from "../store";
 
 export function ProfileScreen() {
   const { setScreen, onboardingData } = useAppStore();
+
+  useEffect(() => {
+    const el = document.querySelector('.profile-screen');
+    if (el) el.scrollTop = 0;
+  }, []);
 
   // Extract from state
   const name = onboardingData?.name ?? "";

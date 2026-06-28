@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { Sidebar } from './components/Sidebar';
 import { useAppStore } from './store';
@@ -46,6 +46,14 @@ export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [loadingSession, setLoadingSession] = useState(true);
   const { isOnline } = useNetworkStatus();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Reset scroll position to top whenever screen changes
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+  }, [currentScreen]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -163,7 +171,10 @@ export default function App() {
             </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto overflow-x-hidden p-5 scroll-smooth relative">
+          <div 
+            ref={scrollContainerRef}
+            className="flex-1 overflow-y-auto overflow-x-hidden p-5 scroll-smooth relative"
+          >
             <ErrorBoundary>
               {currentScreen === 'onboard' && <OnboardingScreen />}
               {currentScreen === 'goal' && <GoalSetterScreen />}

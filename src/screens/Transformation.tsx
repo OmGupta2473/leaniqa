@@ -6,6 +6,11 @@ import { profileService } from "../services/profileService";
 export function TransformationScreen() {
   const { setScreen, onboardingData } = useAppStore();
 
+  useEffect(() => {
+    const el = document.querySelector('.transformation-screen');
+    if (el) el.scrollTop = 0;
+  }, []);
+
   const { data: profile } = useQuery({
     queryKey: ["profile"],
     queryFn: () => profileService.getProfile(),
