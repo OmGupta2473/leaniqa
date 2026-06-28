@@ -1,14 +1,7 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useAppStore } from "../store";
 import {
-  Send,
-  Loader2,
-  Dumbbell,
-  ChevronDown,
-  ChevronRight,
-  Sun,
-  Sunrise,
-  Moon,
+  Send, Loader2, Dumbbell, Sun, Sunrise, Moon, Plus, X,
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -21,16 +14,9 @@ import { lookupCachedMeal } from '../data';
 
 const getDeterministicFallback = (text: string) => {
   const normalizedText = text.toLowerCase();
-  let calories = 300,
-    protein = 10,
-    fat = 10,
-    carbs = 40;
+  let calories = 300, protein = 10, fat = 10, carbs = 40;
   let detected = [text];
-
-  const foodDb: Record<
-    string,
-    { calories: number; protein: number; fat: number; carbs: number }
-  > = {
+  const foodDb: Record<string, { calories: number; protein: number; fat: number; carbs: number }> = {
     chicken: { calories: 250, protein: 30, fat: 10, carbs: 0 },
     dal: { calories: 200, protein: 12, fat: 4, carbs: 30 },
     chawal: { calories: 240, protein: 4, fat: 0, carbs: 53 },
@@ -44,48 +30,66 @@ const getDeterministicFallback = (text: string) => {
     chai: { calories: 100, protein: 2, fat: 3, carbs: 15 },
     biscuit: { calories: 150, protein: 2, fat: 5, carbs: 20 },
   };
-
   let foundMatch = false;
   for (const [key, macros] of Object.entries(foodDb)) {
     if (normalizedText.includes(key)) {
-      if (!foundMatch) {
-        calories = 0;
-        protein = 0;
-        fat = 0;
-        carbs = 0;
-        detected = [];
-        foundMatch = true;
-      }
-      calories += macros.calories;
-      protein += macros.protein;
-      fat += macros.fat;
-      carbs += macros.carbs;
+      if (!foundMatch) { calories = 0; protein = 0; fat = 0; carbs = 0; detected = []; foundMatch = true; }
+      calories += macros.calories; protein += macros.protein; fat += macros.fat; carbs += macros.carbs;
       detected.push(key);
     }
   }
-
-  return {
-    calories,
-    protein,
-    fat,
-    carbs,
-    confidence: foundMatch ? 80 : 30,
-    foods_detected: detected,
-    coaching_tip: "Stay consistent with your portions to hit your goals.",
-  };
+  return { calories, protein, fat, carbs, confidence: foundMatch ? 80 : 30, foods_detected: detected, coaching_tip: "Stay consistent with your portions to hit your goals." };
 };
 
+// ── SLOT ROW — used in the persistent summary ─────────────────────────────
+function MealSlotRow({ slot, icon, label, timeRange, meals }: { slot: string; icon: React.ReactNode; label: string; timeRange: string; meals: any[] }) {
+  const kcal = meals.reduce((s, m) => s + m.calories, 0);
+  const pro = meals.reduce((s, m) => s + m.protein, 0);
+  return (
+    <div className="glass-card p-[14px_16px] mb-[8px]">
+      <div className="flex items-center justify-between mb-[10px]">
+        <div className="flex items-center gap-[10px]">
+          <div className="w-[28px] h-[28px] rounded-full bg-[rgba(212,255,0,0.12)] flex items-center justify-center text-[#D4FF00]">
+            {icon}
+          </div>
+          <div>
+            <div className="text-[13px] font-semibold text-white">{label}</div>
+            <div className="text-[11px] text-[rgba(235,235,245,0.45)]">{timeRange}</div>
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="text-[14px] font-bold text-white">{kcal} <span className="text-[10px] font-normal text-[rgba(235,235,245,0.45)]">kcal</span></div>
+          <div className="text-[11px] text-[rgba(55,138,221,0.9)] font-semibold">{pro}g protein</div>
+        </div>
+      </div>
+      {meals.length > 0 && (
+        <div className="space-y-[6px] pt-[8px] border-t border-[rgba(255,255,255,0.06)]">
+          {meals.map((m, i) => (
+            <div key={i} className="flex items-center justify-between">
+              <div className="text-[12px] text-[rgba(235,235,245,0.7)] capitalize truncate max-w-[60%]">{m.meal_text}</div>
+              <div className="flex gap-[6px]">
+                <span className="text-[10px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-[6px] py-[2px] rounded-full font-semibold">{m.calories} kcal</span>
+                <span className="text-[10px] bg-[rgba(55,138,221,0.12)] text-[#378ADD] px-[6px] py-[2px] rounded-full font-semibold">{m.protein}g</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {meals.length === 0 && (
+        <div className="text-[11px] text-[rgba(235,235,245,0.3)] italic pt-[4px]">Nothing logged yet</div>
+      )}
+    </div>
+  );
+}
+
+// ── MAIN SCREEN ────────────────────────────────────────────────────────────
 export function MealLoggerScreen() {
   const { chatHistory, addChatMessage, clearOldChats } = useAppStore();
+  const [modalOpen, setModalOpen] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [selectedMealSlot, setSelectedMealSlot] = useState<
-    "breakfast" | "lunch" | "dinner" | null
-  >(null);
-  const [expandedSlots, setExpandedSlots] = useState<Record<string, boolean>>(
-    {},
-  );
   const [aiStatus, setAiStatus] = useState<'unknown' | 'online' | 'offline'>('unknown');
+  const [selectedMealSlot, setSelectedMealSlot] = useState<"breakfast" | "lunch" | "dinner" | null>(null);
 
   useEffect(() => {
     clearOldChats();
@@ -103,619 +107,326 @@ export function MealLoggerScreen() {
         setTimeout(() => c.abort(), 2000);
         const r = await fetch(testUrl, { method: 'OPTIONS', signal: c.signal });
         setAiStatus(r.status < 500 ? 'online' : 'offline');
-      } catch {
-        setAiStatus('offline');
-      }
+      } catch { setAiStatus('offline'); }
     };
     checkAI();
   }, []);
 
   const queryClient = useQueryClient();
-  const { data: profile } = useQuery({
-    queryKey: ["profile"],
-    queryFn: () => profileService.getProfile(),
-  });
-  const { data: goal } = useQuery({
-    queryKey: ["goal"],
-    queryFn: () => profileService.getGoal(),
-  });
-  const { data: meals = [] } = useQuery({
-    queryKey: ["meals", "today"],
-    queryFn: () => mealService.getTodaysMeals(),
-  });
+  const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => profileService.getProfile() });
+  const { data: goal } = useQuery({ queryKey: ["goal"], queryFn: () => profileService.getGoal() });
+  const { data: meals = [] } = useQuery({ queryKey: ["meals", "today"], queryFn: () => mealService.getTodaysMeals() });
 
-  const toggleSlot = (slot: string) => {
-    setExpandedSlots((prev) => (prev[slot] ? {} : { [slot]: true }));
-  };
-
-  const todaysMeals = meals;
-
-  const eatenKcal = todaysMeals.reduce((acc, m) => acc + m.calories, 0);
-  const eatenProtein = todaysMeals.reduce((acc, m) => acc + m.protein, 0);
-  const eatenFat = todaysMeals.reduce((acc, m) => acc + m.fat, 0);
-  const eatenCarbs = todaysMeals.reduce((acc, m) => acc + m.carbs, 0);
-
-  const breakfastMeals = todaysMeals.filter((m) => m.meal_slot === "breakfast");
-  const lunchMeals = todaysMeals.filter((m) => m.meal_slot === "lunch");
-  const dinnerMeals = todaysMeals.filter((m) => m.meal_slot === "dinner");
+  const eatenKcal = meals.reduce((acc, m) => acc + m.calories, 0);
+  const eatenProtein = meals.reduce((acc, m) => acc + m.protein, 0);
+  const eatenFat = meals.reduce((acc, m) => acc + m.fat, 0);
+  const eatenCarbs = meals.reduce((acc, m) => acc + m.carbs, 0);
+  const breakfastMeals = meals.filter(m => m.meal_slot === "breakfast");
+  const lunchMeals = meals.filter(m => m.meal_slot === "lunch");
+  const dinnerMeals = meals.filter(m => m.meal_slot === "dinner");
 
   const maintKcal = profile?.maintenance_kcal || 2200;
   const dailyTargetKcal = maintKcal - (goal?.deficit_kcal ?? 400);
   const proteinTarget = profile?.protein_target || 150;
-
   const remainingCalories = dailyTargetKcal - eatenKcal;
   const remainingProtein = proteinTarget - eatenProtein;
+  const caloriePercent = Math.min(100, (eatenKcal / dailyTargetKcal) * 100);
+  const proteinPercent = Math.min(100, (eatenProtein / proteinTarget) * 100);
 
-  const chat =
-    chatHistory.length > 0
-      ? chatHistory
-      : [
-          {
-            role: "ai" as const,
-            text: "Log a meal below — I'll calculate the macros and give coaching advice.",
-          },
-        ];
   const chatRef = useRef<HTMLDivElement>(null);
+  const chat = chatHistory.length > 0 ? chatHistory : [{ role: "ai" as const, text: "What did you eat? I'll calculate the macros and give you coaching advice." }];
 
   useEffect(() => {
-    if (chatRef.current) {
+    if (chatRef.current && modalOpen) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
-  }, [chat, meals]);
+  }, [chat, modalOpen]);
 
   const addMealMutation = useMutation({
     mutationFn: async (text: string) => {
-      // ── STEP 1: Smart cache lookup ───────────────────────────────
+      // STEP 1: Cache lookup
       const cachedResult = lookupCachedMeal(text);
       if (cachedResult && cachedResult.confidence >= 90) {
-        await mealService.addMeal({
-          meal_text: text,
-          calories: cachedResult.scaledCalories,
-          protein: cachedResult.scaledProtein,
-          fat: cachedResult.scaledFat,
-          carbs: cachedResult.scaledCarbs,
-          meal_time: new Date().toISOString(),
-          tip: text,
-          meal_slot: selectedMealSlot || undefined,
-        });
-        return {
-          calories: cachedResult.scaledCalories,
-          protein: cachedResult.scaledProtein,
-          fat: cachedResult.scaledFat,
-          carbs: cachedResult.scaledCarbs,
-          confidence: cachedResult.confidence,
-          foods_detected: [text],
-          coaching_tip: `Logged from nutritional database. ${Math.round(cachedResult.scaledCalories)} kcal · ${cachedResult.scaledProtein}g protein`,
-          _fromCache: true,
-        };
+        await mealService.addMeal({ meal_text: text, calories: cachedResult.scaledCalories, protein: cachedResult.scaledProtein, fat: cachedResult.scaledFat, carbs: cachedResult.scaledCarbs, meal_time: new Date().toISOString(), tip: text, meal_slot: selectedMealSlot || undefined });
+        return { calories: cachedResult.scaledCalories, protein: cachedResult.scaledProtein, fat: cachedResult.scaledFat, carbs: cachedResult.scaledCarbs, confidence: cachedResult.confidence, foods_detected: [text], coaching_tip: `Logged from nutritional database. ${Math.round(cachedResult.scaledCalories)} kcal · ${cachedResult.scaledProtein}g protein`, _fromCache: true };
       }
-
-      // ── STEP 2: AI edge function with proper retry ───────────────
+      // STEP 2: AI with retry
       let lastError: Error | null = null;
-
-      // Quick connectivity check — if Supabase functions are not reachable, skip AI entirely
-      let functionsReachable = true;
-      try {
-        const testUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-meal`;
-        const pingController = new AbortController();
-        const pingTimeout = setTimeout(() => pingController.abort(), 3000);
-        const pingResp = await fetch(testUrl, { 
-          method: 'OPTIONS', 
-          signal: pingController.signal,
-          headers: { 'Content-Type': 'application/json' }
-        });
-        clearTimeout(pingTimeout);
-        functionsReachable = pingResp.status !== 0;
-      } catch {
-        functionsReachable = false;
-      }
-
-      if (!functionsReachable) {
-        // Edge functions server not running — go straight to cache/fallback
-        const lowConfCache = lookupCachedMeal(text);
-        const fallback = lowConfCache
-          ? { calories: lowConfCache.scaledCalories, protein: lowConfCache.scaledProtein, fat: lowConfCache.scaledFat, carbs: lowConfCache.scaledCarbs, confidence: lowConfCache.confidence }
-          : getDeterministicFallback(text);
-        await mealService.addMeal({
-          meal_text: text, calories: fallback.calories, protein: fallback.protein,
-          fat: fallback.fat, carbs: fallback.carbs, meal_time: new Date().toISOString(),
-          tip: `Estimated: ${text}`, meal_slot: selectedMealSlot || undefined,
-        });
-        return { ...fallback, foods_detected: [text], 
-          coaching_tip: lowConfCache ? `From database. Run: supabase functions serve --env-file supabase/functions/.env` : `Rough estimate.`,
-          _errorMessage: 'AI service not running locally' };
-      }
-
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
           const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-          
           if (sessionError || !session?.access_token) {
-            if (attempt === 0) {
-              // Try to refresh on first failure
-              const { error: refreshError } = await supabase.auth.refreshSession();
-              if (refreshError) throw new Error('Session expired — please log out and back in');
-              // Get session again after refresh
-              const { data: { session: newSession } } = await supabase.auth.getSession();
-              if (!newSession?.access_token) throw new Error('Session expired — please log out and back in');
-              // Use newSession for this attempt — fall through to invoke
-            } else {
-              throw new Error('Session expired — please log out and back in');
-            }
+            if (attempt === 0) { await supabase.auth.refreshSession(); } else { throw new Error('Session expired'); }
           }
-
-          // Re-get session after potential refresh
           const { data: { session: freshSession } } = await supabase.auth.getSession();
           if (!freshSession?.access_token) throw new Error('No valid session');
-
-          const { data, error } = await supabase.functions.invoke('parse-meal', {
-            body: { text, remainingCalories, remainingProtein, mealType: selectedMealSlot },
-            headers: { Authorization: `Bearer ${freshSession.access_token}` },
-          });
-
+          const { data, error } = await supabase.functions.invoke('parse-meal', { body: { text, remainingCalories, remainingProtein, mealType: selectedMealSlot }, headers: { Authorization: `Bearer ${freshSession.access_token}` } });
           if (error) {
             const status = (error as any)?.context?.status ?? 0;
             const msg = String(error.message ?? '');
-            
-            console.error(`[parse-meal] attempt ${attempt + 1} error: status=${status} msg=${msg}`);
-            
-            if (status === 401 || status === 403 || msg.includes('Unauthorized')) {
-              // Auth issue — only retry once after refresh
-              if (attempt < 2) {
-                await supabase.auth.refreshSession();
-                lastError = new Error('Auth — retrying');
-                continue;
-              }
-              throw new Error('Authentication failed — please log out and back in');
-            }
-            if (status === 429) throw new Error('Daily AI limit reached — upgrade to Pro');
-            if (status >= 500 || msg.includes('Network') || msg.includes('fetch') || msg.includes('Failed to fetch')) {
-              lastError = new Error('Server unavailable — retrying');
-              if (attempt < 2) {
-                await new Promise(r => setTimeout(r, 1200 * (attempt + 1)));
-                continue;
-              }
-              throw new Error('AI server unavailable after 3 attempts');
-            }
-            throw new Error(msg || 'AI parsing failed');
+            console.error(`[parse-meal] attempt ${attempt + 1}: status=${status} msg=${msg}`);
+            if (status === 401 || status === 403) { if (attempt < 2) { await supabase.auth.refreshSession(); lastError = new Error('Auth — retrying'); continue; } throw new Error('Auth failed'); }
+            if (status === 429) throw new Error('Daily AI limit reached');
+            if (status >= 500 || msg.includes('fetch') || msg.includes('Network')) { lastError = new Error('Server unavailable'); if (attempt < 2) { await new Promise(r => setTimeout(r, 1200 * (attempt + 1))); continue; } throw new Error('AI unavailable'); }
+            throw new Error(msg || 'AI failed');
           }
-
-          if (!data || typeof data.calories !== 'number') {
-            console.error('[parse-meal] invalid response:', data);
-            lastError = new Error('Invalid AI response');
-            if (attempt < 2) continue;
-            throw new Error('AI returned invalid data');
-          }
-
-          // ── SUCCESS ──────────────────────────────────────────────
-          await mealService.addMeal({
-            meal_text: text,
-            calories: Math.round(data.calories),
-            protein: Math.round(data.protein),
-            fat: Math.round(data.fat),
-            carbs: Math.round(data.carbs),
-            meal_time: new Date().toISOString(),
-            tip: data.foods_detected?.join(', ') || text,
-            meal_slot: selectedMealSlot || undefined,
-          });
+          if (!data || typeof data.calories !== 'number') { lastError = new Error('Invalid response'); if (attempt < 2) continue; throw new Error('Invalid AI data'); }
+          await mealService.addMeal({ meal_text: text, calories: Math.round(data.calories), protein: Math.round(data.protein), fat: Math.round(data.fat), carbs: Math.round(data.carbs), meal_time: new Date().toISOString(), tip: data.foods_detected?.join(', ') || text, meal_slot: selectedMealSlot || undefined });
           return data;
-
         } catch (err: any) {
-          console.error(`[parse-meal] attempt ${attempt + 1} caught:`, err.message);
+          console.error(`[parse-meal] attempt ${attempt + 1} error:`, err.message);
           lastError = err;
-          // Only continue loop for retryable errors (already handled above with continue)
-          // Non-retryable errors throw immediately — they reach here after being re-thrown
-          // so break the loop
-          if (attempt < 2 && (
-            err.message.includes('retrying') ||
-            err.message.includes('unavailable') ||
-            err.message.includes('Auth —')
-          )) {
-            continue;
-          }
-          break; // Non-retryable — go to fallback
+          if (attempt < 2 && (err.message.includes('retrying') || err.message.includes('unavailable') || err.message.includes('Auth —'))) continue;
+          break;
         }
       }
-
-      // ── STEP 3: Intelligent fallback ────────────────────────────
+      // STEP 3: Fallback
       const lowConfCache = lookupCachedMeal(text);
-      const fallback = lowConfCache
-        ? {
-            calories: lowConfCache.scaledCalories,
-            protein: lowConfCache.scaledProtein,
-            fat: lowConfCache.scaledFat,
-            carbs: lowConfCache.scaledCarbs,
-            confidence: lowConfCache.confidence,
-          }
-        : getDeterministicFallback(text);
-
-      const errorContext = lastError?.message?.includes('limit')
-        ? 'Daily AI limit reached'
-        : lastError?.message?.includes('log out')
-        ? 'Please log out and back in'
-        : 'AI temporarily unavailable';
-
-      await mealService.addMeal({
-        meal_text: text,
-        calories: fallback.calories,
-        protein: fallback.protein,
-        fat: fallback.fat,
-        carbs: fallback.carbs,
-        meal_time: new Date().toISOString(),
-        tip: `Estimated: ${text}`,
-        meal_slot: selectedMealSlot || undefined,
-      });
-
-      return {
-        ...fallback,
-        foods_detected: [text],
-        coaching_tip: lowConfCache
-          ? `Estimated from database. ${errorContext} — AI will retry next time.`
-          : `Rough estimate used. ${errorContext}.`,
-        _errorMessage: errorContext,
-      };
+      const fallback = lowConfCache ? { calories: lowConfCache.scaledCalories, protein: lowConfCache.scaledProtein, fat: lowConfCache.scaledFat, carbs: lowConfCache.scaledCarbs, confidence: lowConfCache.confidence } : getDeterministicFallback(text);
+      await mealService.addMeal({ meal_text: text, calories: fallback.calories, protein: fallback.protein, fat: fallback.fat, carbs: fallback.carbs, meal_time: new Date().toISOString(), tip: `Estimated: ${text}`, meal_slot: selectedMealSlot || undefined });
+      const errorCtx = lastError?.message?.includes('limit') ? 'Daily AI limit reached' : 'AI temporarily unavailable';
+      return { ...fallback, foods_detected: [text], coaching_tip: lowConfCache ? `Estimated from database. ${errorCtx}.` : `Rough estimate. ${errorCtx}.`, _errorMessage: errorCtx };
     },
     onSuccess: (data, text) => {
-      queryClient.invalidateQueries({ queryKey: ['meals', 'today'] });
-      complianceService.updateTodayScore().then(() => {
-        queryClient.invalidateQueries({ queryKey: ['complianceScore'] });
-        queryClient.invalidateQueries({ queryKey: ['dailyMetrics'] });
-      }).catch(console.error);
-
-      const foodsDetected = Array.isArray(data?.foods_detected) && data.foods_detected.length > 0
-        ? data.foods_detected.join(', ')
-        : text;
-
-      let responseText = '';
-      if (data?._errorMessage) {
-        const isLocalIssue = data._errorMessage.includes('not running') || data._errorMessage.includes('temporarily');
-        responseText = isLocalIssue 
-          ? `📊 Estimated: ${foodsDetected}` 
-          : `⚠️ ${data._errorMessage}. Estimated: ${foodsDetected}`;
-      } else if (data?._fromCache) {
-        responseText = `✓ Logged: ${foodsDetected}`;
-      } else {
-        responseText = `✓ Logged: ${foodsDetected}`;
-      }
-
+      queryClient.invalidateQueries({ queryKey: ["meals", "today"] });
+      complianceService.updateTodayScore().then(() => { queryClient.invalidateQueries({ queryKey: ["complianceScore"] }); queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] }); }).catch(console.error);
+      const foodsDetected = Array.isArray(data?.foods_detected) && data.foods_detected.length > 0 ? data.foods_detected.join(', ') : text;
+      const responseText = data?._fromCache ? `✓ Logged: ${foodsDetected}` : data?._errorMessage ? `📊 Estimated: ${foodsDetected}` : `✓ Logged: ${foodsDetected}`;
       const confidence = data?.confidence ?? 0;
-      const confidenceTag = confidence >= 90 ? '' : confidence >= 70 ? ` · ${confidence}% confidence` : ` · Low confidence estimate`;
-
-      addChatMessage({
-        role: 'ai',
-        text: responseText + confidenceTag,
-        data,
-      });
+      const confidenceTag = confidence >= 90 ? '' : ` · ${confidence}% confidence`;
+      addChatMessage({ role: 'ai', text: responseText + confidenceTag, data });
       setLoading(false);
     },
-    onError: () => {
-      addChatMessage({
-        role: "ai",
-        text: "Sorry, I had trouble connecting to the nutrition database after multiple attempts.",
-      });
-      setLoading(false);
-    },
+    onError: () => { addChatMessage({ role: "ai", text: "Couldn't log that meal. Please try again." }); setLoading(false); },
   });
 
-  const handleSend = (textOverride?: string) => {
-    const text = textOverride || input.trim();
+  const handleSend = useCallback(() => {
+    const text = input.trim();
     if (!text || loading || !selectedMealSlot) return;
-
     setInput("");
     addChatMessage({ role: "user", text });
     setLoading(true);
-
     addMealMutation.mutate(text);
-  };
+  }, [input, loading, selectedMealSlot, addChatMessage, addMealMutation]);
 
-  const renderMealBox = (
-    slot: "breakfast" | "lunch" | "dinner",
-    icon: React.ReactNode,
-    title: string,
-    timeRange: string,
-  ) => {
-    const slotMeals =
-      slot === "breakfast"
-        ? breakfastMeals
-        : slot === "lunch"
-          ? lunchMeals
-          : dinnerMeals;
-    const slotKcal = slotMeals.reduce((sum, m) => sum + m.calories, 0);
-    const slotProtein = slotMeals.reduce((sum, m) => sum + m.protein, 0);
-    const isExpanded = expandedSlots[slot];
+  return (
+    <div className="screen-container screen-enter">
+      {/* ── PAGE HEADER ── */}
+      <div className="mb-[20px]">
+        <h2 className="text-[22px] font-bold text-white tracking-[-0.3px]">Today's Meals</h2>
+        <div className="text-[13px] text-[rgba(235,235,245,0.5)] mt-[2px]">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</div>
+      </div>
 
-    return (
-      <div className="glass-card mb-[8px] sm:mb-0 overflow-hidden flex-1 flex flex-col">
-        <div
-          className="p-[10px_12px] sm:p-[8px_16px] flex justify-between items-center cursor-pointer hover:bg-[rgba(255,255,255,0.02)] transition-colors relative"
-          onClick={() => toggleSlot(slot)}
-        >
-          <div className="flex items-center gap-[10px]">
-            <div
-              className={cn(
-                "w-[28px] h-[28px] rounded-[100px] flex items-center justify-center transition-colors",
-                selectedMealSlot === slot
-                  ? "bg-[#D4FF00] text-[#0A0A0A]"
-                  : "bg-[rgba(255,255,255,0.1)] text-white",
-              )}
-            >
-              {icon}
-            </div>
-            <div className="flex items-center gap-[6px]">
-              <div className="text-[13px] font-semibold text-white leading-tight tracking-[-0.1px]">
-                {title}
-              </div>
-              <div className="text-[11px] text-[#EBEBF599] hidden sm:block">
-                · {timeRange}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-[12px] pr-[24px]">
-            <div className="text-right flex items-center gap-[8px]">
-              <div className="text-[13px] font-bold text-white tracking-[-0.2px] leading-none">
-                {slotKcal}{" "}
-                <span className="text-[10px] font-normal text-[#EBEBF599]">
-                  kcal
-                </span>
-              </div>
-              <div className="text-[11px] text-[#EBEBF5CC] bg-[rgba(255,255,255,0.05)] px-[6px] py-[2px] rounded-md">
-                {slotProtein}g pro
-              </div>
-            </div>
-            <div className="absolute right-[8px]">
-              {isExpanded ? (
-                <ChevronDown size={16} className="text-[#EBEBF599]" />
-              ) : (
-                <ChevronRight size={16} className="text-[#EBEBF599]" />
-              )}
-            </div>
+      {/* ── CALORIE RING SUMMARY ── */}
+      <div className="glass-card p-[16px_20px] mb-[16px]">
+        <div className="flex justify-between items-center mb-[12px]">
+          <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[rgba(235,235,245,0.5)]">Today's Progress</div>
+          <div className="text-[12px] font-semibold" style={{ color: eatenKcal > dailyTargetKcal ? '#FF4D1C' : '#D4FF00' }}>
+            {eatenKcal > dailyTargetKcal ? `${eatenKcal - dailyTargetKcal} over` : `${dailyTargetKcal - eatenKcal} left`}
           </div>
         </div>
+        {/* Calorie bar */}
+        <div className="mb-[10px]">
+          <div className="flex justify-between mb-[4px]">
+            <span className="text-[11px] text-[rgba(235,235,245,0.5)]">Calories</span>
+            <span className="text-[11px] font-semibold text-white">{eatenKcal} / {dailyTargetKcal} kcal</span>
+          </div>
+          <div className="h-[6px] bg-[rgba(255,255,255,0.08)] rounded-full overflow-hidden">
+            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${caloriePercent}%`, background: eatenKcal > dailyTargetKcal ? '#FF4D1C' : '#D4FF00' }}></div>
+          </div>
+        </div>
+        {/* Protein bar */}
+        <div>
+          <div className="flex justify-between mb-[4px]">
+            <span className="text-[11px] text-[rgba(235,235,245,0.5)]">Protein</span>
+            <span className="text-[11px] font-semibold text-white">{eatenProtein}g / {proteinTarget}g</span>
+          </div>
+          <div className="h-[6px] bg-[rgba(255,255,255,0.08)] rounded-full overflow-hidden">
+            <div className="h-full rounded-full bg-[#378ADD] transition-all duration-700" style={{ width: `${proteinPercent}%` }}></div>
+          </div>
+        </div>
+        {/* Macros row */}
+        <div className="grid grid-cols-4 gap-[8px] mt-[14px] pt-[12px] border-t border-[rgba(255,255,255,0.06)]">
+          {[{ label: 'Kcal', val: eatenKcal, color: '#FF4D1C' }, { label: 'Protein', val: `${eatenProtein}g`, color: '#378ADD' }, { label: 'Fat', val: `${eatenFat}g`, color: 'white' }, { label: 'Carbs', val: `${eatenCarbs}g`, color: 'white' }].map(item => (
+            <div key={item.label} className="text-center">
+              <div className="text-[14px] font-bold" style={{ color: item.color }}>{item.val}</div>
+              <div className="text-[10px] text-[rgba(235,235,245,0.4)] mt-[1px]">{item.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
 
-        <AnimatePresence initial={false}>
-          {isExpanded && (
+      {/* ── MEAL SLOT ROWS ── */}
+      <div className="mb-[80px]">
+        <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[rgba(235,235,245,0.5)] mb-[10px]">Meal Log</div>
+        <MealSlotRow slot="breakfast" icon={<Sunrise size={14} />} label="Breakfast" timeRange="6 am – 12 pm" meals={breakfastMeals} />
+        <MealSlotRow slot="lunch" icon={<Sun size={14} />} label="Lunch" timeRange="12 pm – 6 pm" meals={lunchMeals} />
+        <MealSlotRow slot="dinner" icon={<Moon size={14} />} label="Dinner" timeRange="6 pm – 10 pm" meals={dinnerMeals} />
+      </div>
+
+      {/* ── FLOATING ADD BUTTON ── */}
+      <button
+        onClick={() => setModalOpen(true)}
+        style={{
+          position: 'fixed',
+          bottom: 'calc(env(safe-area-inset-bottom) + 24px)',
+          right: '24px',
+          width: '56px',
+          height: '56px',
+          borderRadius: '50%',
+          background: '#D4FF00',
+          border: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          boxShadow: '0 4px 24px rgba(212,255,0,0.4)',
+          zIndex: 50,
+          transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+        }}
+        onMouseDown={e => (e.currentTarget.style.transform = 'scale(0.93)')}
+        onMouseUp={e => (e.currentTarget.style.transform = 'scale(1)')}
+        aria-label="Log a meal"
+      >
+        <Plus size={24} color="#0A0A0A" strokeWidth={2.5} />
+      </button>
+
+      {/* ── LOG MEAL MODAL ── */}
+      <AnimatePresence>
+        {modalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 60, display: 'flex', alignItems: 'flex-end' }}
+            onClick={() => setModalOpen(false)}
+          >
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: [0.25, 1, 0.5, 1] }} // iOS like easing
-              className="overflow-hidden bg-[rgba(20,20,20,0.5)] border-t border-[rgba(255,255,255,0.06)]"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+              onClick={e => e.stopPropagation()}
+              style={{
+                width: '100%',
+                maxWidth: '480px',
+                margin: '0 auto',
+                background: 'rgba(28,28,30,0.98)',
+                backdropFilter: 'blur(30px)',
+                borderRadius: '20px 20px 0 0',
+                borderTop: '0.5px solid rgba(255,255,255,0.1)',
+                paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)',
+                maxHeight: '85dvh',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
             >
-              <div className="p-[12px] sm:p-[8px]">
-                {slotMeals.length === 0 ? (
-                  <div className="text-[12px] text-[#EBEBF599] text-center py-[8px] italic">
-                    Nothing logged yet
+              {/* Modal header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px 12px', borderBottom: '0.5px solid rgba(255,255,255,0.08)' }}>
+                <div>
+                  <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: 'white' }}>Log a Meal</div>
+                  <div style={{ fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.45)', marginTop: '2px' }}>Describe what you ate naturally</div>
+                </div>
+                <button onClick={() => setModalOpen(false)} style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Meal slot selector */}
+              <div style={{ display: 'flex', gap: '8px', padding: '12px 20px 0' }}>
+                {([['breakfast', Sunrise, 'Breakfast'], ['lunch', Sun, 'Lunch'], ['dinner', Moon, 'Dinner']] as const).map(([slot, Icon, label]) => (
+                  <button
+                    key={slot}
+                    onClick={() => setSelectedMealSlot(slot as any)}
+                    style={{
+                      flex: 1,
+                      padding: '8px 4px',
+                      borderRadius: '10px',
+                      border: `1px solid ${selectedMealSlot === slot ? '#D4FF00' : 'rgba(255,255,255,0.1)'}`,
+                      background: selectedMealSlot === slot ? 'rgba(212,255,0,0.1)' : 'rgba(255,255,255,0.04)',
+                      color: selectedMealSlot === slot ? '#D4FF00' : 'rgba(235,235,245,0.6)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '4px',
+                      fontSize: 'var(--font-xs)',
+                      fontWeight: 600,
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <Icon size={13} /> {label}
+                  </button>
+                ))}
+              </div>
+
+              {/* AI status indicator */}
+              <div style={{ padding: '8px 20px 0' }}>
+                {aiStatus === 'offline' && (
+                  <div style={{ background: 'rgba(255,77,28,0.08)', border: '0.5px solid rgba(255,77,28,0.2)', borderRadius: '8px', padding: '6px 10px', fontSize: 'var(--font-xs)', color: 'rgba(255,77,28,0.8)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>⚡</span> Using database estimates · AI offline
                   </div>
-                ) : (
-                  <div className="space-y-[8px]">
-                    {slotMeals.map((m, i) => (
-                      <div
-                        key={i}
-                        className="flex justify-between items-center bg-[rgba(255,255,255,0.03)] p-[8px_10px] rounded-lg"
-                      >
-                        <div className="text-[13px] font-medium text-white capitalize truncate max-w-[50%] w-full">
-                          {m.meal_text}
-                        </div>
-                        <div className="flex gap-[6px]">
-                          <span className="text-[10px] bg-[rgba(255,77,28,0.15)] text-[#FF4D1C] px-[6px] py-[2px] rounded-[100px] font-semibold tracking-[0.02em] leading-none">
-                            {m.calories} kcal
-                          </span>
-                          <span className="text-[10px] bg-[rgba(55,138,221,0.15)] text-[#378ADD] px-[6px] py-[2px] rounded-[100px] font-semibold tracking-[0.02em] leading-none">
-                            {m.protein}g
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                )}
+                {aiStatus === 'online' && (
+                  <div style={{ background: 'rgba(212,255,0,0.06)', border: '0.5px solid rgba(212,255,0,0.2)', borderRadius: '8px', padding: '6px 10px', fontSize: 'var(--font-xs)', color: 'rgba(212,255,0,0.8)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#D4FF00', display: 'inline-block' }}></span> Gemini AI active
                   </div>
                 )}
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    );
-  };
 
-  return (
-    <div className="screen-container screen-enter flex flex-col h-full !pb-4">
-      <div className="mb-[12px] sm:mb-[16px]">
-        <div className="flex justify-center gap-[6px] mb-[8px] sm:mb-[12px]">
-          <button
-            onClick={() => setSelectedMealSlot("breakfast")}
-            className={cn(
-              "flex-1 py-[6px] px-[8px] rounded-[100px] transition-all text-[11px] sm:text-[12px] font-semibold flex items-center justify-center gap-[4px] border",
-              selectedMealSlot === "breakfast"
-                ? "bg-[rgba(212,255,0,0.1)] text-[#D4FF00] border-[#D4FF00] shadow-[0_0_10px_rgba(212,255,0,0.1)]"
-                : "bg-[rgba(255,255,255,0.05)] text-[#EBEBF5CC] border-transparent hover:bg-[rgba(255,255,255,0.08)]",
-            )}
-          >
-            <Sunrise size={14} /> Breakfast
-          </button>
-          <button
-            onClick={() => setSelectedMealSlot("lunch")}
-            className={cn(
-              "flex-1 py-[6px] px-[8px] rounded-[100px] transition-all text-[11px] sm:text-[12px] font-semibold flex items-center justify-center gap-[4px] border",
-              selectedMealSlot === "lunch"
-                ? "bg-[rgba(212,255,0,0.1)] text-[#D4FF00] border-[#D4FF00] shadow-[0_0_10px_rgba(212,255,0,0.1)]"
-                : "bg-[rgba(255,255,255,0.05)] text-[#EBEBF5CC] border-transparent hover:bg-[rgba(255,255,255,0.08)]",
-            )}
-          >
-            <Sun size={14} /> Lunch
-          </button>
-          <button
-            onClick={() => setSelectedMealSlot("dinner")}
-            className={cn(
-              "flex-1 py-[6px] px-[8px] rounded-[100px] transition-all text-[11px] sm:text-[12px] font-semibold flex items-center justify-center gap-[4px] border",
-              selectedMealSlot === "dinner"
-                ? "bg-[rgba(212,255,0,0.1)] text-[#D4FF00] border-[#D4FF00] shadow-[0_0_10px_rgba(212,255,0,0.1)]"
-                : "bg-[rgba(255,255,255,0.05)] text-[#EBEBF5CC] border-transparent hover:bg-[rgba(255,255,255,0.08)]",
-            )}
-          >
-            <Moon size={14} /> Dinner
-          </button>
-        </div>
-
-        <div className="flex flex-col gap-[8px] mb-[12px] sm:mb-[16px]">
-          {renderMealBox(
-            "breakfast",
-            <Sunrise size={14} />,
-            "Breakfast",
-            "6 am–12 pm",
-          )}
-          {renderMealBox("lunch", <Sun size={14} />, "Lunch", "12 pm–6 pm")}
-          {renderMealBox("dinner", <Moon size={14} />, "Dinner", "6 pm–10 pm")}
-        </div>
-      </div>
-
-      {aiStatus === 'offline' && (
-        <div style={{
-          background: 'rgba(255,77,28,0.1)',
-          border: '0.5px solid rgba(255,77,28,0.3)',
-          borderRadius: '10px',
-          padding: '8px 12px',
-          fontSize: 'var(--font-xs)',
-          color: 'rgba(255,77,28,0.9)',
-          marginBottom: '8px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-        }}>
-          <span>⚡</span>
-          <span>AI offline — using database estimates. Run <code style={{background:'rgba(255,255,255,0.1)',padding:'1px 4px',borderRadius:'4px'}}>supabase functions serve --env-file supabase/functions/.env</code></span>
-        </div>
-      )}
-      {aiStatus === 'online' && (
-        <div style={{
-          background: 'rgba(212,255,0,0.08)',
-          border: '0.5px solid rgba(212,255,0,0.3)',
-          borderRadius: '10px',
-          padding: '6px 12px',
-          fontSize: 'var(--font-xs)',
-          color: 'rgba(212,255,0,0.8)',
-          marginBottom: '8px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-        }}>
-          <span style={{width:'6px',height:'6px',borderRadius:'50%',background:'#D4FF00',display:'inline-block'}}></span>
-          Gemini AI active — describe your meal naturally
-        </div>
-      )}
-
-      <div
-        className="flex flex-col gap-[12px] mb-[16px] overflow-y-auto pr-[4px] hide-scrollbar"
-        style={{ flex: '1 1 0', minHeight: '80px', maxHeight: 'calc(100dvh - 420px)' }}
-        ref={chatRef}
-      >
-        {chat.map((msg, i) => (
-          <div
-            key={i}
-            className={cn(
-              "p-[12px_16px] text-[15px] leading-relaxed max-w-[85%] font-normal tracking-[-0.1px]",
-              msg.role === "user"
-                ? "bg-[#D4FF00] text-[#0A0A0A] rounded-[16px] rounded-br-[4px] self-end shadow-sm"
-                : "glass-card text-white rounded-[16px] rounded-bl-[4px] self-start",
-            )}
-          >
-            <div>{msg.text}</div>
-            {msg.data && (
-              <div className="flex gap-[8px] flex-wrap mt-[12px]">
-                <span className="text-[11px] px-[8px] py-[2px] rounded-[100px] font-semibold uppercase tracking-[0.04em] bg-[rgba(255,77,28,0.15)] text-[#FF4D1C]">
-                  ~{msg.data.calories} kcal
-                </span>
-                <span className="text-[11px] px-[8px] py-[2px] rounded-[100px] font-semibold uppercase tracking-[0.04em] bg-[rgba(55,138,221,0.15)] text-[#378ADD]">
-                  {msg.data.protein}g pro
-                </span>
-                <span className="text-[11px] px-[8px] py-[2px] rounded-[100px] font-semibold uppercase tracking-[0.04em] bg-[rgba(255,255,255,0.1)] text-[#EBEBF5CC]">
-                  {msg.data.fat}g fat
-                </span>
-                <span className="text-[11px] px-[8px] py-[2px] rounded-[100px] font-semibold uppercase tracking-[0.04em] bg-[rgba(255,255,255,0.1)] text-[#EBEBF5CC]">
-                  {msg.data.carbs}g carb
-                </span>
+              {/* Chat messages */}
+              <div ref={chatRef} style={{ flex: 1, overflowY: 'auto', padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '120px' }}>
+                {chat.map((msg, i) => (
+                  <div key={i} className={cn("max-w-[88%] p-[10px_14px] text-[14px] leading-relaxed", msg.role === "user" ? "bg-[#D4FF00] text-[#0A0A0A] rounded-[14px] rounded-br-[4px] self-end" : "glass-card text-white rounded-[14px] rounded-bl-[4px] self-start")}>
+                    <div>{msg.text}</div>
+                    {msg.data && (
+                      <div className="flex gap-[6px] flex-wrap mt-[8px]">
+                        <span className="text-[10px] px-[7px] py-[2px] rounded-full font-semibold bg-[rgba(255,77,28,0.15)] text-[#FF4D1C]">~{msg.data.calories} kcal</span>
+                        <span className="text-[10px] px-[7px] py-[2px] rounded-full font-semibold bg-[rgba(55,138,221,0.15)] text-[#378ADD]">{msg.data.protein}g pro</span>
+                        <span className="text-[10px] px-[7px] py-[2px] rounded-full font-semibold bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.7)]">{msg.data.fat}g fat</span>
+                        <span className="text-[10px] px-[7px] py-[2px] rounded-full font-semibold bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.7)]">{msg.data.carbs}g carb</span>
+                      </div>
+                    )}
+                    {msg.data?.coaching_tip && (
+                      <div className="mt-[10px] pt-[8px] border-t border-[rgba(255,255,255,0.06)] flex gap-[6px]">
+                        <Dumbbell size={13} className="text-[#D4FF00] mt-[2px] shrink-0" />
+                        <div className="text-[12px] text-[rgba(235,235,245,0.65)] italic">{msg.data.coaching_tip}</div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {loading && (
+                  <div className="glass-card text-white rounded-[14px] rounded-bl-[4px] self-start p-[10px_14px] max-w-[88%] flex items-center gap-[6px] text-[13px]">
+                    <Loader2 size={14} className="animate-spin text-[#D4FF00]" /> Analyzing meal...
+                  </div>
+                )}
               </div>
-            )}
-            {msg.data?.coaching_tip && (
-              <div className="mt-[16px] pt-[12px] border-t border-[rgba(255,255,255,0.06)] flex gap-[8px]">
-                <Dumbbell
-                  size={16}
-                  className="text-[#D4FF00] mt-[2px] shrink-0"
+
+              {/* Input row */}
+              <div style={{ display: 'flex', gap: '10px', padding: '12px 20px 0', alignItems: 'center' }}>
+                <input
+                  style={{ flex: 1, background: 'rgba(255,255,255,0.07)', border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: '100px', padding: '12px 16px', color: 'white', fontSize: '15px', outline: 'none' }}
+                  type="text"
+                  placeholder={selectedMealSlot ? "e.g. 2 boiled eggs and chai" : "Select breakfast / lunch / dinner"}
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSend()}
+                  disabled={loading || !selectedMealSlot}
+                  autoFocus
                 />
-                <div className="text-[13px] text-[#EBEBF5CC] italic pl-[8px] border-l-[1.5px] border-[#D4FF00]/40 leading-[1.4]">
-                  {msg.data.coaching_tip}
-                </div>
+                <button
+                  onClick={handleSend}
+                  disabled={loading || !selectedMealSlot || !input.trim()}
+                  style={{ width: '44px', height: '44px', borderRadius: '50%', background: loading || !selectedMealSlot || !input.trim() ? 'rgba(212,255,0,0.3)' : '#D4FF00', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'background 0.15s' }}
+                >
+                  <Send size={18} color="#0A0A0A" />
+                </button>
               </div>
-            )}
-            {msg.data?.tip && !msg.data?.coaching_tip && (
-              <div className="mt-[12px] pt-[8px] border-t border-[rgba(255,255,255,0.06)] text-[12px] text-[#EBEBF599] italic">
-                Detected: {msg.data.tip}
-              </div>
-            )}
-          </div>
-        ))}
-        {loading && (
-          <div className="glass-card text-white rounded-[16px] rounded-bl-[4px] self-start p-[12px_16px] text-[15px] font-normal tracking-[-0.1px] max-w-[85%] flex items-center gap-[8px]">
-            <Loader2 size={16} className="animate-spin text-[#D4FF00]" />{" "}
-            Parsing meal...
-          </div>
+            </motion.div>
+          </motion.div>
         )}
-      </div>
-
-      <div className="flex gap-[12px] items-center mb-[20px] shrink-0">
-        <input
-          className="input-field flex-1 !p-[14px_16px] !rounded-[100px]"
-          type="text"
-          placeholder={
-            selectedMealSlot
-              ? "What did you eat? Type naturally..."
-              : "Select a meal slot above first"
-          }
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          disabled={loading || !selectedMealSlot}
-        />
-        <button
-          onClick={() => handleSend()}
-          disabled={loading || !selectedMealSlot}
-          aria-label="Log meal"
-          className="w-[48px] h-[48px] rounded-[100px] border-none bg-[#D4FF00] text-[#0A0A0A] flex items-center justify-center cursor-pointer disabled:opacity-50 transition-transform active:scale-[0.96]"
-        >
-          <Send size={20} className="ml-[2px]" />
-        </button>
-      </div>
-
-      <div className="glass-card p-[16px] shrink-0">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599] mb-[12px]">
-          Today so far
-        </div>
-        <div className="grid grid-cols-4 gap-[8px]">
-          <div className="text-center">
-            <div className="text-[17px] font-bold text-[#FF4D1C] tracking-[-0.2px]">
-              {eatenKcal.toLocaleString()}
-            </div>
-            <div className="text-[11px] text-[#EBEBF599] mt-[2px]">kcal</div>
-          </div>
-          <div className="text-center">
-            <div className="text-[17px] font-bold text-[#378ADD] tracking-[-0.2px]">
-              {eatenProtein}g
-            </div>
-            <div className="text-[11px] text-[#EBEBF599] mt-[2px]">pro</div>
-          </div>
-          <div className="text-center">
-            <div className="text-[17px] font-bold text-white tracking-[-0.2px]">
-              {eatenFat}g
-            </div>
-            <div className="text-[11px] text-[#EBEBF599] mt-[2px]">fat</div>
-          </div>
-          <div className="text-center">
-            <div className="text-[17px] font-bold text-white tracking-[-0.2px]">
-              {eatenCarbs}g
-            </div>
-            <div className="text-[11px] text-[#EBEBF599] mt-[2px]">carbs</div>
-          </div>
-        </div>
-      </div>
+      </AnimatePresence>
     </div>
   );
 }
