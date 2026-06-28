@@ -100,6 +100,10 @@ export function OnboardingScreen() {
       });
       setOnboardingCompleted(true);
       setScreen('goal');
+    },
+    onError: (error: any) => {
+      console.error("Save mutation failed:", error);
+      alert("Failed to save profile: " + (error.message || "Unknown error"));
     }
   });
 
