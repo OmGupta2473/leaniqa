@@ -37,6 +37,7 @@ export function OnboardingScreen() {
   const { setScreen, setOnboardingData, onboardingCompleted, setOnboardingCompleted, onboardingData, clearStore } = useAppStore();
   const queryClient = useQueryClient();
 
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
   const [height, setHeight] = useState('');
@@ -330,18 +331,64 @@ export function OnboardingScreen() {
         </div>
 
         <button 
-          onClick={() => {
-            if (window.confirm("Are you sure? Once reset, your current profile data cannot be recovered.")) {
-              setOnboardingCompleted(false);
-              setOnboardingData(undefined);
-              clearStore();
-              window.location.reload();
-            }
-          }}
+          onClick={() => setResetConfirmOpen(true)}
           className="w-full py-[14px] bg-[rgba(255,255,255,0.1)] text-white font-semibold text-[15px] rounded-[100px] border-[0.5px] border-[rgba(255,255,255,0.2)] transition-transform active:scale-[0.96]"
         >
           Reset profile
         </button>
+        
+        <button 
+          onClick={() => setScreen('goal')}
+          style={{
+            width: '100%', padding: '14px', borderRadius: '100px',
+            background: 'rgba(212,255,0,0.1)', border: '0.5px solid rgba(212,255,0,0.3)',
+            color: '#D4FF00', fontWeight: 600, fontSize: 'var(--font-md)',
+            cursor: 'pointer', marginTop: '12px'
+          }}
+        >
+          View body goal →
+        </button>
+        
+        {resetConfirmOpen && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+            <div style={{ background: '#1C1C1E', borderRadius: '24px', padding: '28px 24px', width: '100%', maxWidth: '360px', textAlign: 'center', border: '0.5px solid rgba(255,255,255,0.1)', boxShadow: '0 24px 48px rgba(0,0,0,0.4)' }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
+              <div style={{ fontSize: '20px', fontWeight: 700, color: 'white', marginBottom: '12px', letterSpacing: '-0.4px' }}>
+                Reset your profile?
+              </div>
+              <div style={{ fontSize: '15px', color: 'rgba(235,235,245,0.6)', lineHeight: 1.5, marginBottom: '32px' }}>
+                This permanently erases your body stats and macro targets. Your body goal and meal history remain. This cannot be undone.
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <button 
+                  onClick={() => setResetConfirmOpen(false)}
+                  style={{
+                    width: '100%', padding: '14px', borderRadius: '100px',
+                    background: 'rgba(255,255,255,0.1)', border: '0.5px solid rgba(255,255,255,0.2)',
+                    color: 'white', fontWeight: 600, fontSize: 'var(--font-md)', cursor: 'pointer'
+                  }}
+                >
+                  Keep my profile
+                </button>
+                <button 
+                  onClick={() => {
+                    setOnboardingCompleted(false);
+                    setOnboardingData(undefined);
+                    clearStore();
+                    window.location.reload();
+                  }}
+                  style={{
+                    width: '100%', padding: '14px', borderRadius: '100px',
+                    background: '#FF3B30', border: 'none',
+                    color: 'white', fontWeight: 700, fontSize: 'var(--font-md)', cursor: 'pointer'
+                  }}
+                >
+                  Yes, reset everything
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
