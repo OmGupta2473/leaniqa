@@ -530,7 +530,7 @@ export const useAppStore = create<AppState>()(
       };
     },
     {
-      name: 'physique-nav',
+      name: 'leaniqa-nav',
       partialize: (state) => ({ 
         currentScreen: state.currentScreen, 
         onboardingData: state.onboardingData, 

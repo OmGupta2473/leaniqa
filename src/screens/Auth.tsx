@@ -1,6 +1,6 @@
 // OAUTH SETUP REQUIRED:
 // 1. Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client ID
-// 2. Authorized JavaScript origins: http://localhost:3000 (dev) + https://yourdomain.com (prod)
+// 2. Authorized JavaScript origins: http://localhost:3000 (dev) + https://leaniqa.com (prod)
 // 3. Authorized redirect URIs: https://YOUR_PROJECT.supabase.co/auth/v1/callback
 //    (Get exact URL from: Supabase Dashboard → Authentication → Providers → Google → Callback URL)
 // 4. Supabase Dashboard → Authentication → URL Configuration:
@@ -73,8 +73,8 @@ export function AuthScreen() {
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-purple/10 mb-2">
             <Dumbbell className="w-6 h-6 text-purple" />
           </div>
-          <h1 className="text-[24px] font-bold text-text-primary tracking-tight">Physique AI</h1>
-          <p className="text-[14px] text-text-secondary">Sign in to your account</p>
+          <h1 className="text-[24px] font-bold text-text-primary tracking-tight">LeanIQa</h1>
+          <p className="text-[14px] text-text-secondary">Your AI body coach</p>
         </div>
 
         <div className="space-y-4">
@@ -141,7 +141,7 @@ export function AuthScreen() {
                 </p>
                 <div className="bg-purple/5 border border-purple/20 rounded-lg p-3">
                   <p className="text-[12px] text-purple font-medium">
-                    📧 Open Gmail, Outlook, or your mail app → tap the link from Physique AI
+                    📧 Open Gmail, Outlook, or your mail app → tap the link from LeanIQa
                   </p>
                 </div>
                 <button

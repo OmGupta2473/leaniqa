@@ -57,12 +57,12 @@ export const reportService = {
       .from('weekly_reports')
       .upsert(payload)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) {
+    if (error && error.code !== 'PGRST116') {
       console.error('Error saving weekly report:', error);
       return null;
     }
-    return data;
+    return data || payload;
   }
 };

@@ -33,8 +33,7 @@ export const profileService = {
     const payload: any = {
       ...profileData,
       id: userId,
-      email: realEmail,
-      updated_at: new Date().toISOString()
+      email: realEmail
     };
 
     let data, error;
@@ -46,7 +45,7 @@ export const profileService = {
         .update(payload)
         .eq('id', existing.id)
         .select()
-        .single();
+        .maybeSingle();
       data = result.data;
       error = result.error;
     } else {
@@ -55,16 +54,16 @@ export const profileService = {
         .from('profiles')
         .insert({ ...payload, created_at: new Date().toISOString() })
         .select()
-        .single();
+        .maybeSingle();
       data = result.data;
       error = result.error;
     }
       
-    if (error) {
+    if (error && error.code !== 'PGRST116') {
       console.error('Error upserting profile:', error);
       throw error;
     }
-    return data;
+    return data || payload;
   },
 
   async getGoal(): Promise<DbGoal | null> {
@@ -94,8 +93,7 @@ export const profileService = {
 
     const payload: any = {
       ...goalData,
-      user_id: userId,
-      updated_at: new Date().toISOString(),
+      user_id: userId
     };
 
     let data, error;
@@ -107,7 +105,7 @@ export const profileService = {
         .update(payload)
         .eq('id', existing.id)
         .select()
-        .single();
+        .maybeSingle();
       data = result.data;
       error = result.error;
     } else {
@@ -116,16 +114,16 @@ export const profileService = {
         .from('goals')
         .insert({ ...payload })
         .select()
-        .single();
+        .maybeSingle();
       data = result.data;
       error = result.error;
     }
       
-    if (error) {
+    if (error && error.code !== 'PGRST116') {
       console.error('Error upserting goal:', error);
       throw error;
     }
-    return data;
+    return data || payload;
   },
 
   async deleteGoal(): Promise<void> {

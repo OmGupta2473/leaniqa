@@ -175,7 +175,7 @@ export function DashboardScreen() {
     <div className="screen-container screen-enter">
       {!bannerDismissed && (
         <div className="bg-[rgba(212,255,0,0.1)] border-[0.5px] border-[#D4FF00]/30 text-[#D4FF00] p-[12px_16px] text-[13px] font-medium mb-[20px] rounded-xl flex justify-between items-center">
-          <span>Founding Member Beta - Premium unlocked.</span>
+          <span>LeanIQa Beta — Premium unlocked.</span>
           <button
             onClick={() => setBannerDismissed(true)}
             className="text-[#D4FF00] hover:opacity-70 transition-opacity"
@@ -188,7 +188,7 @@ export function DashboardScreen() {
       {!goalSetCompleted && (
         <div className="glass-card text-white p-[16px_20px] text-center mb-[20px] flex flex-col items-center gap-[12px]">
           <div className="text-[15px] font-medium text-[#EBEBF5CC]">
-            Set your physique goal to unlock all features
+            Set your body goal to unlock all features
           </div>
           <button
             onClick={() => setScreen("goal")}

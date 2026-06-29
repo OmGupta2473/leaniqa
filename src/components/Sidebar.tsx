@@ -38,7 +38,7 @@ export function Sidebar() {
       aria-label="App navigation"
     >
       <div className="w-10 h-10 mb-4 flex items-center justify-center font-bold italic text-purple text-xl">
-        P
+        L
       </div>
       {navItems.map((item) => (
         <button

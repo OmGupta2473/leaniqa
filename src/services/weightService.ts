@@ -48,12 +48,14 @@ export const weightService = {
       .from('weight_logs')
       .insert(payload)
       .select()
-      .single();
+      .maybeSingle();
       
-    if (error) {
+    if (error && error.code !== 'PGRST116') {
       console.error('Error adding weight log:', error);
       throw error;
     }
+
+    const returnedData = data || payload;
 
     // Update profile weight and goal body fat if calculated
     if (profile) {
@@ -63,6 +65,6 @@ export const weightService = {
       }
     }
     
-    return data;
+    return returnedData;
   }
 };

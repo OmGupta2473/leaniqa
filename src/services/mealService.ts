@@ -62,13 +62,13 @@ export const mealService = {
       .from('meal_logs')
       .insert(payload)
       .select()
-      .single();
+      .maybeSingle();
       
-    if (error) {
+    if (error && error.code !== 'PGRST116') {
       console.error('Error adding meal:', error);
       throw error;
     }
-    return data;
+    return data || payload;
   },
   
   async getMealsByDate(dateStr: string): Promise<DbMealLog[]> {

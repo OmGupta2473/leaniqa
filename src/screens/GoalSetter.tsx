@@ -247,7 +247,7 @@ export function GoalSetterScreen() {
     <div className="screen-container screen-enter">
       <div className="py-[28px] mb-[12px]">
         <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599] mb-[8px]">Step 2 of 2</div>
-        <h2 className="text-[34px] font-bold text-white tracking-[-0.5px] leading-tight mb-[8px]">Physique Goals</h2>
+        <h2 className="text-[34px] font-bold text-white tracking-[-0.5px] leading-tight mb-[8px]">Body Goals</h2>
         <p className="text-[15px] font-normal text-[#EBEBF5CC] tracking-[-0.1px]">Set your target body fat and choose a timeline.</p>
       </div>
 

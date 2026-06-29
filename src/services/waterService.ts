@@ -43,9 +43,9 @@ export const waterService = {
       .from('water_logs')
       .insert(payload)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) {
+    if (error && error.code !== 'PGRST116') {
       console.error('Error adding water:', error);
       return null;
     }
@@ -53,6 +53,6 @@ export const waterService = {
     const newTotalLiters = (previousTotalMl + amountMl) / 1000;
     await complianceService.updateTodayScore();
     
-    return data;
+    return data || payload;
   }
 };
