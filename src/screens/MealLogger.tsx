@@ -282,31 +282,29 @@ export function MealLoggerScreen() {
       </div>
 
       {/* ── FLOATING ADD BUTTON ── */}
-      <button
-        onClick={() => setModalOpen(true)}
-        style={{
-          position: 'fixed',
-          bottom: 'calc(env(safe-area-inset-bottom) + 24px)',
-          right: '24px',
-          width: '56px',
-          height: '56px',
-          borderRadius: '50%',
-          background: '#D4FF00',
-          border: 'none',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          boxShadow: '0 4px 24px rgba(212,255,0,0.4)',
-          zIndex: 50,
-          transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-        }}
-        onMouseDown={e => (e.currentTarget.style.transform = 'scale(0.93)')}
-        onMouseUp={e => (e.currentTarget.style.transform = 'scale(1)')}
-        aria-label="Log a meal"
-      >
-        <Plus size={24} color="#0A0A0A" strokeWidth={2.5} />
-      </button>
+      <div className="fab-container">
+        <button
+          onClick={() => setModalOpen(true)}
+          style={{
+            width: '56px',
+            height: '56px',
+            borderRadius: '50%',
+            background: '#D4FF00',
+            border: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 4px 24px rgba(212,255,0,0.4)',
+            transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+          }}
+          onMouseDown={e => (e.currentTarget.style.transform = 'scale(0.93)')}
+          onMouseUp={e => (e.currentTarget.style.transform = 'scale(1)')}
+          aria-label="Log a meal"
+        >
+          <Plus size={24} color="#0A0A0A" strokeWidth={2.5} />
+        </button>
+      </div>
 
       {/* ── LOG MEAL MODAL ── */}
       <AnimatePresence>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { Sidebar } from './components/Sidebar';
+import { BottomNav } from './components/BottomNav';
 import { useAppStore } from './store';
 import { OnboardingScreen } from './screens/Onboarding';
 import { GoalSetterScreen } from './screens/GoalSetter';
@@ -140,58 +141,57 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
-      {!isOnline && (
-        <div className="w-full max-w-md bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs py-2 px-4 rounded-t-xl flex items-center justify-center gap-2 mb-[-8px] pb-4 z-0">
-          <WifiOff size={14} />
-          You're offline — data may not update
-        </div>
-      )}
-      <div className="flex h-[640px] w-full max-w-md border-[0.5px] border-border-tertiary rounded-xl overflow-hidden bg-background-primary shadow-2xl z-10 relative">
-        <Sidebar />
-        
-        <div className="flex-1 flex flex-col overflow-hidden relative bg-background-primary">
-          <div className="px-5 py-4 border-b-[0.5px] border-border-tertiary flex items-center justify-between shrink-0 bg-background-primary z-10">
-            <div className="text-[15px] font-medium text-text-primary">{title}</div>
-            <div className="flex items-center gap-3">
-              <div 
-                className="awards-nav-btn"
-                onClick={() => setScreen('awards')}
-                title="Awards Hall"
-              >
-                <i className="ti ti-trophy text-[18px] text-[#D4FF00]"></i>
-                {hasNewAwards && <div className="notif-dot"></div>}
+    <div className="app-shell">
+      <Sidebar className="app-sidebar" />
+      <div className="app-main">
+        <div className="px-5 py-4 border-b-[0.5px] border-border-tertiary flex items-center justify-between shrink-0 bg-background-primary z-10">
+          <div className="text-[15px] font-medium text-text-primary flex items-center gap-2">
+            {title}
+            {!isOnline && (
+              <div className="bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-[10px] py-[2px] px-2 rounded-full flex items-center gap-1">
+                <WifiOff size={10} /> Offline
               </div>
-              <div 
-                className="w-8 h-8 rounded-full bg-purple-bg flex items-center justify-center text-[12px] font-medium text-purple cursor-pointer"
-                onClick={() => setScreen('profile')}
-              >
-                {profile?.name ? profile.name.substring(0, 2).toUpperCase() : 'ME'}
-              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <div 
+              className="awards-nav-btn"
+              onClick={() => setScreen('awards')}
+              title="Awards Hall"
+            >
+              <i className="ti ti-trophy text-[18px] text-[#D4FF00]"></i>
+              {hasNewAwards && <div className="notif-dot"></div>}
+            </div>
+            <div 
+              className="w-8 h-8 rounded-full bg-purple-bg flex items-center justify-center text-[12px] font-medium text-purple cursor-pointer"
+              onClick={() => setScreen('profile')}
+            >
+              {profile?.name ? profile.name.substring(0, 2).toUpperCase() : 'ME'}
             </div>
           </div>
-          
-          <div 
-            ref={scrollContainerRef}
-            className="flex-1 overflow-y-auto overflow-x-hidden p-5 scroll-smooth relative"
-          >
-            <ErrorBoundary>
-              {currentScreen === 'onboard' && <OnboardingScreen />}
-              {currentScreen === 'goal' && <GoalSetterScreen />}
-              {currentScreen === 'dash' && <DashboardScreen />}
-              {currentScreen === 'meal' && <MealLoggerScreen />}
-              {currentScreen === 'progress' && <ProgressScreen />}
-              {currentScreen === 'week' && <WeeklyReportScreen />}
-              {currentScreen === 'pricing' && <PricingScreen />}
-              {currentScreen === 'profile' && <ProfileScreen />}
-              {currentScreen === 'transformation' && <TransformationScreen />}
-              {currentScreen === 'calorieDetail' && <CalorieDetailScreen />}
-              {currentScreen === 'proteinDetail' && <ProteinDetailScreen />}
-              {currentScreen === 'awards' && <AwardsScreen />}
-            </ErrorBoundary>
-          </div>
+        </div>
+        
+        <div 
+          ref={scrollContainerRef}
+          className="flex-1 overflow-y-auto overflow-x-hidden p-5 scroll-smooth relative"
+        >
+          <ErrorBoundary>
+            {currentScreen === 'onboard' && <OnboardingScreen />}
+            {currentScreen === 'goal' && <GoalSetterScreen />}
+            {currentScreen === 'dash' && <DashboardScreen />}
+            {currentScreen === 'meal' && <MealLoggerScreen />}
+            {currentScreen === 'progress' && <ProgressScreen />}
+            {currentScreen === 'week' && <WeeklyReportScreen />}
+            {currentScreen === 'pricing' && <PricingScreen />}
+            {currentScreen === 'profile' && <ProfileScreen />}
+            {currentScreen === 'transformation' && <TransformationScreen />}
+            {currentScreen === 'calorieDetail' && <CalorieDetailScreen />}
+            {currentScreen === 'proteinDetail' && <ProteinDetailScreen />}
+            {currentScreen === 'awards' && <AwardsScreen />}
+          </ErrorBoundary>
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 }

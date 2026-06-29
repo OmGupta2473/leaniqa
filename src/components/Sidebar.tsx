@@ -13,7 +13,7 @@ import {
 import { supabase } from "../lib/supabase";
 import { useQueryClient } from "@tanstack/react-query";
 
-export function Sidebar() {
+export function Sidebar({ className }: { className?: string }) {
   const { currentScreen, setScreen, clearStore } = useAppStore();
   const queryClient = useQueryClient();
 
@@ -33,7 +33,7 @@ export function Sidebar() {
 
   return (
     <nav
-      className="w-16 bg-background-secondary border-r-[0.5px] border-border-tertiary flex flex-col items-center py-3 gap-1 shrink-0"
+      className={cn("w-16 bg-background-secondary border-r-[0.5px] border-border-tertiary flex flex-col items-center py-3 gap-1 shrink-0", className)}
       role="navigation"
       aria-label="App navigation"
     >

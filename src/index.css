@@ -32,33 +32,104 @@ body {
   -webkit-text-size-adjust: 100%;
 }
 
-/* Responsive App Layout Overrides */
-#root > div.p-4 {
-  padding: 0 !important;
-  min-height: 100dvh !important;
+/* ── MOBILE FIRST ── */
+#root {
+  width: 100%;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
 }
 
-#root .h-\[640px\] {
-  height: 100dvh !important;
-  max-width: 480px !important;
-  width: 100% !important;
-  border-radius: 0 !important;
-  border: none !important;
+/* The main app shell */
+.app-shell {
+  display: flex;
+  width: 100%;
+  height: 100dvh;
+  background: #1C1C1E;
+  overflow: hidden;
+}
+
+/* Sidebar: hidden on mobile, visible on tablet+ */
+.app-sidebar {
+  display: none; /* mobile: hidden */
+  flex-shrink: 0;
+}
+
+/* Bottom nav: visible only on mobile */
+.bottom-nav {
+  display: flex; /* mobile: visible */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(56px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: rgba(28, 28, 30, 0.96);
+  backdrop-filter: blur(20px);
+  border-top: 0.5px solid rgba(255,255,255,0.1);
+  z-index: 40;
+  align-items: center;
+  justify-content: space-around;
+}
+
+/* Main content area */
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: calc(56px + env(safe-area-inset-bottom)); /* space for bottom nav */
+}
+
+/* Tablet+ */
+@media (min-width: 480px) {
+  #root {
+    align-items: center;
+    justify-content: center;
+    background: #141416;
+    padding: 16px;
+  }
+  .app-shell {
+    width: 100%;
+    max-width: 480px;
+    height: 90dvh;
+    max-height: 880px;
+    border-radius: 20px;
+    border: 0.5px solid rgba(255,255,255,0.1);
+    box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+    overflow: hidden;
+  }
+  .app-sidebar {
+    display: flex; /* show sidebar */
+  }
+  .bottom-nav {
+    display: none; /* hide bottom nav */
+  }
+  .app-main {
+    padding-bottom: 0; /* no space needed for bottom nav */
+  }
+}
+
+/* Desktop */
+@media (min-width: 768px) {
+  #root {
+    padding: 24px;
+  }
+}
+
+/* The floating action button in MealLogger must stay within the container */
+.fab-container {
+  position: absolute; /* relative to app-main, not viewport */
+  bottom: calc(env(safe-area-inset-bottom) + 24px);
+  right: 20px;
+  z-index: 50;
 }
 
 @media (min-width: 480px) {
-  #root .h-\[640px\] {
-    border-radius: 16px !important;
-    border: 0.5px solid rgba(255,255,255,0.1) !important;
-    height: 90dvh !important;
-    max-height: 860px !important;
-  }
-  #root > div.p-4 {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    min-height: 100dvh !important;
-    padding: 24px !important;
+  .fab-container {
+    bottom: 20px;
+    right: 20px;
+    position: absolute; /* stays within the card */
   }
 }
 
