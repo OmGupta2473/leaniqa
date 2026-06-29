@@ -122,9 +122,6 @@ export function ProfileScreen() {
         <div className="profile-header">
           <i className="ti ti-arrow-left" style={{ fontSize: '22px', color: '#FFFFFF', cursor: 'pointer' }} onClick={() => setScreen('dash')}></i>
           <div style={{ fontSize: 'var(--font-2xl)', fontWeight: 700, color: '#FFFFFF', letterSpacing: '-0.3px' }}>Profile</div>
-          <button onClick={openEdit} style={{ background: 'rgba(212,255,0,0.1)', border: '0.5px solid rgba(212,255,0,0.3)', borderRadius: '8px', padding: '6px 12px', color: '#D4FF00', fontSize: 'var(--font-xs)', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <i className="ti ti-pencil" style={{ fontSize: '12px' }}></i> Edit
-          </button>
         </div>
 
         {/* Avatar */}
@@ -137,6 +134,23 @@ export function ProfileScreen() {
             <div className="identity-pill">{displayVal(activityLevel_)}</div>
           </div>
           <div style={{ borderBottom: '0.5px solid rgba(255,255,255,0.08)', paddingBottom: '20px', marginBottom: '4px' }}></div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '0 4px', marginBottom: '16px' }}>
+          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, color: 'white' }}>
+            1
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '17px', fontWeight: 600, color: 'white', letterSpacing: '-0.2px' }}>
+              Personal Info
+            </div>
+            <div style={{ fontSize: '13px', color: 'rgba(235,235,245,0.6)' }}>
+              Step 1 of 2 · Body stats & activity level
+            </div>
+          </div>
+          <button onClick={openEdit} style={{ background: 'rgba(212,255,0,0.1)', border: '0.5px solid rgba(212,255,0,0.3)', borderRadius: '8px', padding: '6px 12px', color: '#D4FF00', fontSize: 'var(--font-xs)', fontWeight: 600, cursor: 'pointer' }}>
+            ✎ Edit
+          </button>
         </div>
 
         {/* Body stats */}
@@ -166,6 +180,37 @@ export function ProfileScreen() {
               <div className="np-value" style={row.valColor ? { color: row.valColor } : {}}>{row.val}</div>
             </div>
           ))}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '0 4px', marginTop: '32px', marginBottom: '16px' }}>
+          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, color: 'white' }}>
+            2
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '17px', fontWeight: 600, color: 'white', letterSpacing: '-0.2px' }}>
+              Body Goal
+            </div>
+            <div style={{ fontSize: '13px', color: 'rgba(235,235,245,0.6)' }}>
+              Step 2 of 2 · Target physique & strategy
+            </div>
+          </div>
+          <button 
+            onClick={() => {
+              setScreen('goal');
+            }}
+            style={{
+              background: 'rgba(55,138,221,0.12)',
+              border: '0.5px solid rgba(55,138,221,0.3)',
+              borderRadius: '8px',
+              padding: '6px 12px',
+              color: '#378ADD',
+              fontSize: 'var(--font-xs)',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >
+            Update →
+          </button>
         </div>
 
         {/* Transformation goal */}

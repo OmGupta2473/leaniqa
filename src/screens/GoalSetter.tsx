@@ -30,6 +30,7 @@ export function GoalSetterScreen() {
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
   
+  const [resetGoalConfirm, setResetGoalConfirm] = useState(false);
   const [currentBfMid, setCurrentBfMid] = useState<number | null>(null);
   const [targetBfMid, setTargetBfMid] = useState<number | null>(null);
 
@@ -223,22 +224,61 @@ export function GoalSetterScreen() {
         </div>
 
         <button 
-          onClick={async () => {
-            if (window.confirm("Are you sure? Once reset, your goal history cannot be recovered.")) {
-              try {
-                await profileService.deleteGoal();
-                setGoalSetCompleted(false);
-                setScreen('goal');
-                queryClient.setQueryData(['goal'], null);
-              } catch (err) {
-                alert("Failed to reset goal.");
-              }
-            }
-          }}
+          onClick={() => setResetGoalConfirm(true)}
           className="w-full py-[14px] bg-[rgba(255,255,255,0.1)] text-white font-semibold text-[15px] rounded-[100px] border-[0.5px] border-[rgba(255,255,255,0.2)] transition-transform active:scale-[0.96]"
         >
           Reset goal
         </button>
+        
+        {resetGoalConfirm && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+            <div style={{ background: '#1C1C1E', borderRadius: '24px', padding: '28px 24px', width: '100%', maxWidth: '360px', textAlign: 'center', border: '0.5px solid rgba(255,255,255,0.1)', boxShadow: '0 24px 48px rgba(0,0,0,0.4)' }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
+              <div style={{ fontSize: '20px', fontWeight: 700, color: 'white', marginBottom: '12px', letterSpacing: '-0.4px' }}>
+                Reset body goal?
+              </div>
+              <div style={{ fontSize: '15px', color: 'rgba(235,235,245,0.6)', lineHeight: 1.5, marginBottom: '32px' }}>
+                This will permanently erase your target body fat, strategy, and timeline. Your meal history and body stats will remain. This cannot be undone.
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <button 
+                  onClick={() => setResetGoalConfirm(false)}
+                  style={{
+                    width: '100%', padding: '14px',
+                    borderRadius: '100px',
+                    background: 'rgba(255,255,255,0.1)',
+                    border: '0.5px solid rgba(255,255,255,0.2)',
+                    color: 'white', fontWeight: 600,
+                    fontSize: 'var(--font-md)', cursor: 'pointer'
+                  }}
+                >
+                  Keep my goal
+                </button>
+                <button 
+                  onClick={async () => {
+                    try {
+                      await profileService.deleteGoal();
+                      setGoalSetCompleted(false);
+                      setResetGoalConfirm(false);
+                      queryClient.setQueryData(['goal'], null);
+                      setScreen('goal');
+                    } catch { alert('Failed to reset goal. Try again.'); }
+                  }}
+                  style={{
+                    width: '100%', padding: '14px',
+                    borderRadius: '100px',
+                    background: '#FF3B30',
+                    border: 'none',
+                    color: 'white', fontWeight: 700,
+                    fontSize: 'var(--font-md)', cursor: 'pointer'
+                  }}
+                >
+                  Yes, reset goal
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
