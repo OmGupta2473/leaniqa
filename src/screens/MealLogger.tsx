@@ -101,13 +101,9 @@ export function MealLoggerScreen() {
 
   useEffect(() => {
     const checkAI = async () => {
-      try {
-        const testUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-meal`;
-        const c = new AbortController();
-        setTimeout(() => c.abort(), 2000);
-        const r = await fetch(testUrl, { method: 'OPTIONS', signal: c.signal });
-        setAiStatus(r.status < 500 ? 'online' : 'offline');
-      } catch { setAiStatus('offline'); }
+      const hasUrl = !!import.meta.env.VITE_SUPABASE_URL;
+      const online = navigator.onLine;
+      setAiStatus(hasUrl && online ? 'online' : 'offline');
     };
     checkAI();
   }, []);
@@ -144,56 +140,77 @@ export function MealLoggerScreen() {
 
   const addMealMutation = useMutation({
     mutationFn: async (text: string) => {
-      // STEP 1: Cache lookup
-      const cachedResult = lookupCachedMeal(text);
-      if (cachedResult && cachedResult.confidence >= 90) {
-        await mealService.addMeal({ meal_text: text, calories: cachedResult.scaledCalories, protein: cachedResult.scaledProtein, fat: cachedResult.scaledFat, carbs: cachedResult.scaledCarbs, meal_time: new Date().toISOString(), tip: text, meal_slot: selectedMealSlot || undefined });
-        return { calories: cachedResult.scaledCalories, protein: cachedResult.scaledProtein, fat: cachedResult.scaledFat, carbs: cachedResult.scaledCarbs, confidence: cachedResult.confidence, foods_detected: [text], coaching_tip: `Logged from nutritional database. ${Math.round(cachedResult.scaledCalories)} kcal · ${cachedResult.scaledProtein}g protein`, _fromCache: true };
-      }
-      // STEP 2: AI with retry
-      let lastError: Error | null = null;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-          if (sessionError || !session?.access_token) {
-            if (attempt === 0) { await supabase.auth.refreshSession(); } else { throw new Error('Session expired'); }
-          }
-          const { data: { session: freshSession } } = await supabase.auth.getSession();
-          if (!freshSession?.access_token) throw new Error('No valid session');
-          const { data, error } = await supabase.functions.invoke('parse-meal', { body: { text, remainingCalories, remainingProtein, mealType: selectedMealSlot }, headers: { Authorization: `Bearer ${freshSession.access_token}` } });
-          if (error) {
-            const status = (error as any)?.context?.status ?? 0;
-            const msg = String(error.message ?? '');
-            console.error(`[parse-meal] attempt ${attempt + 1}: status=${status} msg=${msg}`);
-            if (status === 401 || status === 403) { if (attempt < 2) { await supabase.auth.refreshSession(); lastError = new Error('Auth — retrying'); continue; } throw new Error('Auth failed'); }
-            if (status === 429) throw new Error('Daily AI limit reached');
-            if (status >= 500 || msg.includes('fetch') || msg.includes('Network')) { lastError = new Error('Server unavailable'); if (attempt < 2) { await new Promise(r => setTimeout(r, 1200 * (attempt + 1))); continue; } throw new Error('AI unavailable'); }
-            throw new Error(msg || 'AI failed');
-          }
-          if (!data || typeof data.calories !== 'number') { lastError = new Error('Invalid response'); if (attempt < 2) continue; throw new Error('Invalid AI data'); }
-          await mealService.addMeal({ meal_text: text, calories: Math.round(data.calories), protein: Math.round(data.protein), fat: Math.round(data.fat), carbs: Math.round(data.carbs), meal_time: new Date().toISOString(), tip: data.foods_detected?.join(', ') || text, meal_slot: selectedMealSlot || undefined });
-          return data;
-        } catch (err: any) {
-          console.error(`[parse-meal] attempt ${attempt + 1} error:`, err.message);
-          lastError = err;
-          if (attempt < 2 && (err.message.includes('retrying') || err.message.includes('unavailable') || err.message.includes('Auth —'))) continue;
-          break;
+      try {
+        // STEP 1: Cache lookup
+        const cachedResult = lookupCachedMeal(text);
+        if (cachedResult && cachedResult.confidence >= 90) {
+          await mealService.addMeal({ meal_text: text, calories: cachedResult.scaledCalories, protein: cachedResult.scaledProtein, fat: cachedResult.scaledFat, carbs: cachedResult.scaledCarbs, meal_time: new Date().toISOString(), tip: text, meal_slot: selectedMealSlot || undefined });
+          return { calories: cachedResult.scaledCalories, protein: cachedResult.scaledProtein, fat: cachedResult.scaledFat, carbs: cachedResult.scaledCarbs, confidence: cachedResult.confidence, foods_detected: [text], coaching_tip: `Logged from nutritional database. ${Math.round(cachedResult.scaledCalories)} kcal · ${cachedResult.scaledProtein}g protein`, _fromCache: true };
         }
+        // STEP 2: AI with retry
+        let lastError: Error | null = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError || !session?.access_token) {
+              if (attempt === 0) { await supabase.auth.refreshSession(); } else { throw new Error('Session expired'); }
+            }
+            const { data: { session: freshSession } } = await supabase.auth.getSession();
+            if (!freshSession?.access_token) throw new Error('No valid session');
+            const { data, error } = await supabase.functions.invoke('parse-meal', { body: { text, remainingCalories, remainingProtein, mealType: selectedMealSlot }, headers: { Authorization: `Bearer ${freshSession.access_token}` } });
+            if (error) {
+              const status = (error as any)?.context?.status ?? 0;
+              const msg = String(error.message ?? '');
+              console.error(`[parse-meal] attempt ${attempt + 1}: status=${status} msg=${msg}`);
+              if (status === 401 || status === 403) { if (attempt < 2) { await supabase.auth.refreshSession(); lastError = new Error('Auth — retrying'); continue; } throw new Error('Auth failed'); }
+              if (status === 429) throw new Error('Daily AI limit reached');
+              if (status >= 500 || msg.includes('fetch') || msg.includes('Network')) { lastError = new Error('Server unavailable'); if (attempt < 2) { await new Promise(r => setTimeout(r, 1200 * (attempt + 1))); continue; } throw new Error('AI unavailable'); }
+              throw new Error(msg || 'AI failed');
+            }
+            if (!data || typeof data.calories !== 'number') { lastError = new Error('Invalid response'); if (attempt < 2) continue; throw new Error('Invalid AI data'); }
+            await mealService.addMeal({ meal_text: text, calories: Math.round(data.calories), protein: Math.round(data.protein), fat: Math.round(data.fat), carbs: Math.round(data.carbs), meal_time: new Date().toISOString(), tip: data.foods_detected?.join(', ') || text, meal_slot: selectedMealSlot || undefined });
+            return data;
+          } catch (err: any) {
+            console.error(`[parse-meal] attempt ${attempt + 1} error:`, err.message);
+            lastError = err;
+            if (attempt < 2 && (err.message.includes('retrying') || err.message.includes('unavailable') || err.message.includes('Auth —'))) continue;
+            break;
+          }
+        }
+        // STEP 3: Fallback
+        const lowConfCache = lookupCachedMeal(text);
+        const fallback = lowConfCache ? { calories: lowConfCache.scaledCalories, protein: lowConfCache.scaledProtein, fat: lowConfCache.scaledFat, carbs: lowConfCache.scaledCarbs, confidence: lowConfCache.confidence } : getDeterministicFallback(text);
+        await mealService.addMeal({ meal_text: text, calories: fallback.calories, protein: fallback.protein, fat: fallback.fat, carbs: fallback.carbs, meal_time: new Date().toISOString(), tip: `Estimated: ${text}`, meal_slot: selectedMealSlot || undefined });
+        const errorCtx = lastError?.message?.includes('limit') ? 'Daily AI limit reached' : 'AI temporarily unavailable';
+        return { ...fallback, foods_detected: [text], coaching_tip: lowConfCache ? `Estimated from database. ${errorCtx}.` : `Rough estimate. ${errorCtx}.`, _errorMessage: errorCtx };
+      } catch (finalError) {
+        // ABSOLUTE LAST RESORT — never fails
+        const estimate = getDeterministicFallback(text);
+        return {
+          ...estimate,
+          foods_detected: [text],
+          coaching_tip: "Estimate only — AI and connection unavailable.",
+          _localOnly: true,
+          _errorMessage: "Offline mode"
+        };
       }
-      // STEP 3: Fallback
-      const lowConfCache = lookupCachedMeal(text);
-      const fallback = lowConfCache ? { calories: lowConfCache.scaledCalories, protein: lowConfCache.scaledProtein, fat: lowConfCache.scaledFat, carbs: lowConfCache.scaledCarbs, confidence: lowConfCache.confidence } : getDeterministicFallback(text);
-      await mealService.addMeal({ meal_text: text, calories: fallback.calories, protein: fallback.protein, fat: fallback.fat, carbs: fallback.carbs, meal_time: new Date().toISOString(), tip: `Estimated: ${text}`, meal_slot: selectedMealSlot || undefined });
-      const errorCtx = lastError?.message?.includes('limit') ? 'Daily AI limit reached' : 'AI temporarily unavailable';
-      return { ...fallback, foods_detected: [text], coaching_tip: lowConfCache ? `Estimated from database. ${errorCtx}.` : `Rough estimate. ${errorCtx}.`, _errorMessage: errorCtx };
     },
     onSuccess: (data, text) => {
       queryClient.invalidateQueries({ queryKey: ["meals", "today"] });
       complianceService.updateTodayScore().then(() => { queryClient.invalidateQueries({ queryKey: ["complianceScore"] }); queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] }); }).catch(console.error);
       const foodsDetected = Array.isArray(data?.foods_detected) && data.foods_detected.length > 0 ? data.foods_detected.join(', ') : text;
-      const responseText = data?._fromCache ? `✓ Logged: ${foodsDetected}` : data?._errorMessage ? `📊 Estimated: ${foodsDetected}` : `✓ Logged: ${foodsDetected}`;
+      
+      let responseText = `✓ Logged: ${foodsDetected}`;
+      if (data?._localOnly) {
+        responseText = `Saved locally — will sync when connection is restored.`;
+      } else if (data?._fromCache) {
+        responseText = `✓ Logged: ${foodsDetected}`;
+      } else if (data?._errorMessage) {
+        responseText = `📊 Estimated: ${foodsDetected}`;
+      }
+      
       const confidence = data?.confidence ?? 0;
-      const confidenceTag = confidence >= 90 ? '' : ` · ${confidence}% confidence`;
+      const confidenceTag = (confidence >= 90 || data?._localOnly) ? '' : ` · ${confidence}% confidence`;
       addChatMessage({ role: 'ai', text: responseText + confidenceTag, data });
       setLoading(false);
     },
@@ -324,23 +341,23 @@ export function MealLoggerScreen() {
             >
               {/* Modal header */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px 12px', borderBottom: '0.5px solid rgba(255,255,255,0.08)' }}>
-                <div>
-                  <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: 'white' }}>Log a Meal</div>
-                  <div style={{ fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.45)', marginTop: '2px' }}>Describe what you ate naturally</div>
+                <div style={{ minWidth: 0, paddingRight: '12px' }}>
+                  <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Log a meal</div>
+                  <div style={{ fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.45)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Type naturally, I handle the rest</div>
                 </div>
-                <button onClick={() => setModalOpen(false)} style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
+                <button onClick={() => setModalOpen(false)} style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0 }}>
                   <X size={16} />
                 </button>
               </div>
 
               {/* Meal slot selector */}
-              <div style={{ display: 'flex', gap: '8px', padding: '12px 20px 0' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', padding: '12px 20px 0' }}>
                 {([['breakfast', Sunrise, 'Breakfast'], ['lunch', Sun, 'Lunch'], ['dinner', Moon, 'Dinner']] as const).map(([slot, Icon, label]) => (
                   <button
                     key={slot}
                     onClick={() => setSelectedMealSlot(slot as any)}
                     style={{
-                      flex: 1,
+                      minWidth: 0,
                       padding: '8px 4px',
                       borderRadius: '10px',
                       border: `1px solid ${selectedMealSlot === slot ? '#D4FF00' : 'rgba(255,255,255,0.1)'}`,
