@@ -274,7 +274,7 @@ export function MealLoggerScreen() {
       </div>
 
       {/* ── MEAL SLOT ROWS ── */}
-      <div className="mb-[80px]">
+      <div>
         <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[rgba(235,235,245,0.5)] mb-[10px]">Meal Log</div>
         <MealSlotRow slot="breakfast" icon={<Sunrise size={14} />} label="Breakfast" timeRange="6 am – 12 pm" meals={breakfastMeals} />
         <MealSlotRow slot="lunch" icon={<Sun size={14} />} label="Lunch" timeRange="12 pm – 6 pm" meals={lunchMeals} />
@@ -282,7 +282,22 @@ export function MealLoggerScreen() {
       </div>
 
       {/* ── FLOATING ADD BUTTON ── */}
-      <div className="fab-container">
+      {/* FAB spacer — ensures content doesn't hide behind FAB */}
+      <div style={{ height: '80px', flexShrink: 0 }} />
+      
+      {/* FAB container — sticky at bottom of scroll area */}
+      <div style={{
+        position: 'sticky',
+        bottom: '16px',
+        left: 0,
+        right: 0,
+        display: 'flex',
+        justifyContent: 'flex-end',
+        paddingRight: '16px',
+        pointerEvents: 'none', // lets clicks pass through to content below
+        zIndex: 50,
+        marginTop: '-64px' // overlaps the spacer
+      }}>
         <button
           onClick={() => setModalOpen(true)}
           style={{
@@ -295,11 +310,15 @@ export function MealLoggerScreen() {
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            boxShadow: '0 4px 24px rgba(212,255,0,0.4)',
+            boxShadow: '0 4px 24px rgba(212,255,0,0.35), 0 2px 8px rgba(0,0,0,0.4)',
+            pointerEvents: 'all', // button itself receives clicks
             transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+            flexShrink: 0,
           }}
-          onMouseDown={e => (e.currentTarget.style.transform = 'scale(0.93)')}
-          onMouseUp={e => (e.currentTarget.style.transform = 'scale(1)')}
+          onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.92)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(212,255,0,0.25)'; }}
+          onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 24px rgba(212,255,0,0.35), 0 2px 8px rgba(0,0,0,0.4)'; }}
+          onTouchStart={e => { e.currentTarget.style.transform = 'scale(0.92)'; }}
+          onTouchEnd={e => { e.currentTarget.style.transform = 'scale(1)'; }}
           aria-label="Log a meal"
         >
           <Plus size={24} color="#0A0A0A" strokeWidth={2.5} />
@@ -327,12 +346,13 @@ export function MealLoggerScreen() {
                 width: '100%',
                 maxWidth: '480px',
                 margin: '0 auto',
-                background: 'rgba(28,28,30,0.98)',
-                backdropFilter: 'blur(30px)',
+                background: 'rgba(22,22,24,0.99)',
+                backdropFilter: 'blur(40px)',
+                WebkitBackdropFilter: 'blur(40px)',
                 borderRadius: '20px 20px 0 0',
-                borderTop: '0.5px solid rgba(255,255,255,0.1)',
+                borderTop: '0.5px solid rgba(255,255,255,0.12)',
                 paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)',
-                maxHeight: '85dvh',
+                maxHeight: '88dvh',
                 display: 'flex',
                 flexDirection: 'column',
               }}
