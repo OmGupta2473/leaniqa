@@ -130,22 +130,23 @@ export function WeeklyReportScreen() {
   const canGenerate = daysWithData >= 3;
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <div className="screen-container screen-enter">
       <div className="flex items-center justify-between mb-3.5">
         <div>
-          <div className="text-[11px] font-medium uppercase tracking-wider text-text-tertiary mb-0.5">Weekly Report</div>
-          <div className="text-[14px] font-medium text-text-primary">Last 7 Days</div>
+          <div className="text-[11px] font-medium uppercase tracking-wider mb-0.5" style={{ color: 'rgba(235,235,245,0.45)' }}>Weekly Report</div>
+          <div className="text-[14px] font-medium" style={{ color: 'white' }}>Last 7 Days</div>
         </div>
         <div className="flex flex-col items-end gap-1">
           {parsedReport ? (
-            <div className="bg-purple/10 border-[0.5px] border-purple/20 text-purple rounded-full px-2.5 py-1 text-[12px] font-medium flex items-center gap-1">
+            <div className="rounded-full px-2.5 py-1 text-[12px] font-medium flex items-center gap-1" style={{ background: 'rgba(212,255,0,0.1)', border: '0.5px solid rgba(212,255,0,0.25)', color: '#D4FF00' }}>
               <Sparkles size={12} /> Generated
             </div>
           ) : canGenerate ? (
             <button 
               onClick={() => generateReportMutation.mutate()}
               disabled={generateReportMutation.isPending}
-              className="bg-purple text-background-primary rounded-md px-3 py-1.5 text-[12px] font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-1"
+              className="rounded-md px-3 py-1.5 text-[12px] hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-1"
+              style={{ background: '#D4FF00', color: '#0A0A0A', fontWeight: 600, border: 'none', cursor: 'pointer' }}
             >
               {generateReportMutation.isPending ? 'Analyzing...' : (
                 <>
@@ -165,56 +166,56 @@ export function WeeklyReportScreen() {
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-3.5">
-        <div className="bg-background-secondary rounded-md p-2.5 text-center border border-border-tertiary">
-          <div className="text-[18px] font-medium text-teal">{weightChange}kg</div>
+        <div className="glass-card" style={{ padding: '10px', textAlign: 'center' }}>
+          <div className="text-[18px] font-medium" style={{ color: '#D4FF00' }}>{weightChange}kg</div>
           <div className="text-[10px] text-text-secondary mt-0.5">WEIGHT CHANGE</div>
         </div>
-        <div className="bg-background-secondary rounded-md p-2.5 text-center border border-border-tertiary">
-          <div className="text-[18px] font-medium text-blue">{avgProtPct}%</div>
+        <div className="glass-card" style={{ padding: '10px', textAlign: 'center' }}>
+          <div className="text-[18px] font-medium" style={{ color: '#378ADD' }}>{avgProtPct}%</div>
           <div className="text-[10px] text-text-secondary mt-0.5">PROT. COMPLIANCE</div>
         </div>
-        <div className="bg-background-secondary rounded-md p-2.5 text-center border border-border-tertiary">
-          <div className="text-[18px] font-medium text-amber">{avgScore}</div>
+        <div className="glass-card" style={{ padding: '10px', textAlign: 'center' }}>
+          <div className="text-[18px] font-medium" style={{ color: '#fbbf24' }}>{avgScore}</div>
           <div className="text-[10px] text-text-secondary mt-0.5">AVG SCORE</div>
         </div>
       </div>
 
-      <div className="text-[11px] font-medium uppercase tracking-wider text-text-tertiary mb-2">Daily Compliance</div>
+      <div className="text-[11px] font-medium uppercase tracking-wider mb-2" style={{ color: 'rgba(235,235,245,0.45)' }}>Daily Compliance</div>
       <div className="mb-3.5">
         {dayStats.map(d => (
           <div key={d.date} className="flex items-center gap-2 mb-1.5">
             <div className="text-[11px] text-text-secondary w-7 shrink-0">{d.day}</div>
-            <div className="flex-1 h-2.5 bg-background-secondary rounded-full overflow-hidden border-[0.5px] border-border-tertiary">
-              <div className="h-2.5 rounded-full transition-all duration-300 bg-purple" style={{ width: `${d.score}%` }}></div>
+            <div className="flex-1 h-2.5 overflow-hidden border-[0.5px] border-border-tertiary" style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '100px' }}>
+              <div className="h-2.5 rounded-full transition-all duration-300" style={{ width: `${d.score}%`, background: '#D4FF00' }}></div>
             </div>
             <div className="text-[11px] font-medium w-7 text-right text-text-primary">{d.score}</div>
           </div>
         ))}
       </div>
 
-      <div className="text-[11px] font-medium uppercase tracking-wider text-text-tertiary mb-2">AI Insights</div>
+      <div className="text-[11px] font-medium uppercase tracking-wider mb-2" style={{ color: 'rgba(235,235,245,0.45)' }}>AI Insights</div>
       <div className="flex flex-col gap-2">
         {parsedReport ? (
           <>
-            <div className="p-2.5 px-3 border border-border-tertiary rounded-md border-l-[3px] border-l-teal bg-background-secondary">
-              <div className="text-[12px] font-medium text-text-primary mb-1 flex items-center gap-1"><TrendingUp size={13} className="text-teal" /> Best Habit</div>
+            <div style={{ padding: '12px 14px', borderRadius: '12px', background: 'rgba(44,44,46,0.7)', border: '0.5px solid rgba(255,255,255,0.08)', borderLeft: '3px solid #D4FF00' }}>
+              <div className="text-[12px] font-medium text-text-primary mb-1 flex items-center gap-1"><TrendingUp size={13} style={{ color: '#D4FF00' }} /> Best Habit</div>
               <div className="text-[12px] text-text-secondary">{parsedReport.bestHabit}</div>
             </div>
-            <div className="p-2.5 px-3 border border-border-tertiary rounded-md border-l-[3px] border-l-coral bg-background-secondary">
-              <div className="text-[12px] font-medium text-text-primary mb-1 flex items-center gap-1"><AlertTriangle size={13} className="text-coral" /> Room for Improvement</div>
+            <div style={{ padding: '12px 14px', borderRadius: '12px', background: 'rgba(44,44,46,0.7)', border: '0.5px solid rgba(255,255,255,0.08)', borderLeft: '3px solid #FF4D1C' }}>
+              <div className="text-[12px] font-medium text-text-primary mb-1 flex items-center gap-1"><AlertTriangle size={13} style={{ color: '#FF4D1C' }} /> Room for Improvement</div>
               <div className="text-[12px] text-text-secondary">{parsedReport.worstHabit}</div>
             </div>
-            <div className="p-2.5 px-3 border border-border-tertiary rounded-md border-l-[3px] border-l-amber bg-background-secondary">
-              <div className="text-[12px] font-medium text-text-primary mb-1 flex items-center gap-1"><Sparkles size={13} className="text-amber" /> Progress Summary</div>
+            <div style={{ padding: '12px 14px', borderRadius: '12px', background: 'rgba(44,44,46,0.7)', border: '0.5px solid rgba(255,255,255,0.08)', borderLeft: '3px solid #fbbf24' }}>
+              <div className="text-[12px] font-medium text-text-primary mb-1 flex items-center gap-1"><Sparkles size={13} style={{ color: '#fbbf24' }} /> Progress Summary</div>
               <div className="text-[12px] text-text-secondary">{parsedReport.progressSummary}</div>
             </div>
-            <div className="p-2.5 px-3 border border-border-tertiary rounded-md border-l-[3px] border-l-blue bg-background-secondary">
-              <div className="text-[12px] font-medium text-text-primary mb-1 flex items-center gap-1"><Calendar size={13} className="text-blue" /> Next Week's Action</div>
+            <div style={{ padding: '12px 14px', borderRadius: '12px', background: 'rgba(44,44,46,0.7)', border: '0.5px solid rgba(255,255,255,0.08)', borderLeft: '3px solid #378ADD' }}>
+              <div className="text-[12px] font-medium text-text-primary mb-1 flex items-center gap-1"><Calendar size={13} style={{ color: '#378ADD' }} /> Next Week's Action</div>
               <div className="text-[12px] text-text-secondary">{parsedReport.nextWeekPlan}</div>
             </div>
           </>
         ) : (
-          <div className="text-[12px] text-text-secondary italic text-center p-4 border border-border-tertiary rounded-md bg-background-secondary">
+          <div className="text-[12px] text-text-secondary italic text-center p-4" style={{ background: 'rgba(44,44,46,0.7)', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: '12px' }}>
             {canGenerate ? "Click Generate Report to get your AI insights for the week." : "Auto-generates every Sunday · Generate anytime with 3+ days"}
           </div>
         )}

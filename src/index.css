@@ -151,28 +151,47 @@ body {
 }
 
 @theme {
-  --font-sans:
-    "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", system-ui,
-    sans-serif;
-
-  --color-primary: #d4ff00;
-  --color-secondary: #ff4d1c;
-  --color-blue: #378add;
-
-  --color-background-primary: #1c1c1e;
-  --color-background-secondary: #2c2c2e;
-  --color-background-hover: #3a3a3c;
-
-  --color-border-primary: #38383a;
-  --color-border-secondary: rgba(255, 255, 255, 0.12);
-  --color-border-tertiary: rgba(255, 255, 255, 0.06);
-
-  --color-text-primary: #ffffff;
-  --color-text-secondary: rgba(235, 235, 245, 0.8); /* #EBEBF5CC */
-  --color-text-tertiary: rgba(235, 235, 245, 0.6); /* #EBEBF599 */
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", system-ui, sans-serif;
+  --color-primary: #D4FF00;
+  --color-secondary: #FF4D1C;
+  --color-blue: #378ADD;
+  --color-background-primary: #1C1C1E;
+  --color-background-secondary: #2C2C2E;
+  --color-background-hover: #3A3A3C;
+  --color-border-primary: #38383A;
+  --color-border-secondary: rgba(255,255,255,0.12);
+  --color-border-tertiary: rgba(255,255,255,0.06);
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: rgba(235,235,245,0.8);
+  --color-text-tertiary: rgba(235,235,245,0.45);
 }
 
 @layer base {
+  :root {
+    --purple: #D4FF00;
+    --teal: #D4FF00;
+    --blue: #378ADD;
+    --green: #D4FF00;
+    --amber: #fbbf24;
+    --coral: #FF4D1C;
+    --pink: #D4FF00;
+    --purple-bg: rgba(212,255,0,0.1);
+    --teal-bg: rgba(212,255,0,0.08);
+    --blue-bg: rgba(55,138,221,0.1);
+    --green-bg: rgba(212,255,0,0.1);
+    --amber-bg: rgba(251,191,36,0.12);
+    --coral-bg: rgba(255,77,28,0.1);
+    --pink-bg: rgba(212,255,0,0.08);
+    --color-border-primary: rgba(255,255,255,0.15);
+    --color-border-secondary: rgba(255,255,255,0.1);
+    --color-border-tertiary: rgba(255,255,255,0.06);
+    --color-background-primary: #1C1C1E;
+    --color-background-secondary: #2C2C2E;
+    --color-text-primary: #FFFFFF;
+    --color-text-secondary: rgba(235,235,245,0.8);
+    --color-text-tertiary: rgba(235,235,245,0.45);
+  }
+  
   body {
     font-family: var(--font-sans);
     background-color: var(--color-background-primary);
@@ -1075,3 +1094,39 @@ input[type='number'] {
 .input-field::placeholder {
   color: rgba(235, 235, 245, 0.35);
 }
+
+/* ── LeanIQa utility aliases — maps old Tailwind names to new design tokens ── */
+.text-purple { color: #D4FF00 !important; }
+.text-teal { color: #D4FF00 !important; }
+.text-coral { color: #FF4D1C !important; }
+.text-amber { color: #fbbf24 !important; }
+.text-blue { color: #378ADD !important; }
+.text-green { color: #D4FF00 !important; }
+.text-pink { color: #D4FF00 !important; }
+.text-text-primary { color: #FFFFFF !important; }
+.text-text-secondary { color: rgba(235,235,245,0.8) !important; }
+.text-text-tertiary { color: rgba(235,235,245,0.45) !important; }
+
+.bg-purple { background-color: #D4FF00 !important; }
+.bg-teal { background-color: #D4FF00 !important; }
+.bg-coral { background-color: #FF4D1C !important; }
+.bg-background-primary { background-color: #1C1C1E !important; }
+.bg-background-secondary { background-color: rgba(44,44,46,0.7) !important; }
+.bg-purple-bg { background-color: rgba(212,255,0,0.1) !important; }
+.bg-teal-bg { background-color: rgba(212,255,0,0.08) !important; }
+.bg-blue-bg { background-color: rgba(55,138,221,0.1) !important; }
+.bg-amber-bg { background-color: rgba(251,191,36,0.12) !important; }
+.bg-coral-bg { background-color: rgba(255,77,28,0.1) !important; }
+.bg-green-bg { background-color: rgba(212,255,0,0.1) !important; }
+.bg-pink-bg { background-color: rgba(212,255,0,0.08) !important; }
+
+.border-purple { border-color: #D4FF00 !important; }
+.border-teal { border-color: #D4FF00 !important; }
+.border-coral { border-color: #FF4D1C !important; }
+.border-blue { border-color: #378ADD !important; }
+.border-amber { border-color: #fbbf24 !important; }
+.border-border-primary { border-color: rgba(255,255,255,0.15) !important; }
+.border-border-secondary { border-color: rgba(255,255,255,0.1) !important; }
+.border-border-tertiary { border-color: rgba(255,255,255,0.06) !important; }
+
+.shadow-purple\/20 { box-shadow: 0 8px 24px rgba(212,255,0,0.2) !important; }

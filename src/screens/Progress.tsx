@@ -83,7 +83,7 @@ export function ProgressScreen() {
   });
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <div className="screen-container screen-enter">
       <div className="mb-4">
         <h2 className="text-[18px] font-medium text-text-primary mb-1">Morning Weight</h2>
         <p className="text-[12px] text-text-secondary">Log your weight daily to track your physique timeline.</p>
@@ -99,7 +99,12 @@ export function ProgressScreen() {
             className="input-field"
             disabled={addWeightMutation.isPending}
           />
-          <button onClick={handleLog} disabled={addWeightMutation.isPending} className="px-4 py-2 border-none bg-purple text-background-primary font-bold uppercase tracking-widest text-[12px] cursor-pointer disabled:opacity-50">
+          <button 
+            onClick={handleLog} 
+            disabled={addWeightMutation.isPending} 
+            className="disabled:opacity-50 tracking-widest text-[12px] uppercase"
+            style={{ background: '#D4FF00', color: '#0A0A0A', fontWeight: 700, border: 'none', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer' }}
+          >
             {addWeightMutation.isPending ? '...' : 'Log'}
           </button>
         </div>
@@ -145,26 +150,26 @@ export function ProgressScreen() {
         </div>
       </div>
 
-      <div className="bg-background-secondary p-4 border border-border-tertiary mb-4">
-        <div className="text-[11px] font-medium uppercase tracking-widest text-text-secondary mb-3">Weight Trend</div>
+      <div className="glass-card" style={{ padding: '16px', marginBottom: '16px' }}>
+        <div className="text-[11px] font-medium uppercase tracking-widest mb-3" style={{ color: 'rgba(235,235,245,0.5)' }}>Weight Trend</div>
         {weightLogs.length > 0 ? (
           <div className="h-[200px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--color-purple)" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="var(--color-purple)" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#D4FF00" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#D4FF00" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border-tertiary)" />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'var(--color-text-secondary)' }} axisLine={false} tickLine={false} />
-                <YAxis domain={['dataMin - 2', 'dataMax + 2']} tick={{ fontSize: 10, fill: 'var(--color-text-secondary)' }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'rgba(235,235,245,0.5)' }} axisLine={false} tickLine={false} />
+                <YAxis domain={['dataMin - 2', 'dataMax + 2']} tick={{ fontSize: 10, fill: 'rgba(235,235,245,0.5)' }} axisLine={false} tickLine={false} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: 'var(--color-background-primary)', border: '1px solid var(--color-border-tertiary)' }}
-                  itemStyle={{ color: 'var(--color-text-primary)' }}
+                  contentStyle={{ backgroundColor: '#1C1C1E', border: '1px solid rgba(255,255,255,0.1)' }}
+                  itemStyle={{ color: 'white' }}
                 />
-                <Area type="monotone" dataKey="weight" stroke="var(--color-purple)" strokeWidth={2} fillOpacity={1} fill="url(#colorWeight)" />
+                <Area type="monotone" dataKey="weight" stroke="#D4FF00" strokeWidth={2} fillOpacity={1} fill="url(#colorWeight)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -175,12 +180,12 @@ export function ProgressScreen() {
         )}
       </div>
 
-      <div className="bg-background-secondary p-4 border border-border-tertiary">
-        <div className="text-[11px] font-medium uppercase tracking-widest text-text-secondary mb-3">Physique Transformation Roadmap</div>
+      <div className="glass-card" style={{ padding: '16px' }}>
+        <div className="text-[11px] font-medium uppercase tracking-widest mb-3" style={{ color: 'rgba(235,235,245,0.5)' }}>Physique Transformation Roadmap</div>
         
         <div className="relative pl-6 space-y-6 py-2">
           {/* Vertical timeline line */}
-          <div className="absolute top-0 bottom-0 left-2.5 w-[2px] bg-border-secondary"></div>
+          <div className="absolute top-0 bottom-0 left-2.5 w-[2px]" style={{ background: 'rgba(255,255,255,0.12)' }}></div>
           
           {projections.map((p, index) => {
             const isCompleted = p.status === 'completed';
@@ -189,11 +194,21 @@ export function ProgressScreen() {
             return (
               <div key={p.bfTarget} className="relative">
                 {/* Timeline Dot */}
-                <div className={`absolute -left-6 top-1 w-3 h-3 rounded-full border-2 bg-background-primary z-10 ${isCompleted ? 'border-text-secondary bg-text-secondary' : isCurrent ? 'border-purple shadow-[0_0_8px_rgba(167,139,250,0.6)]' : 'border-border-secondary'}`}></div>
+                <div 
+                  className={`absolute -left-6 top-1 w-3 h-3 rounded-full border-2 z-10`} 
+                  style={{ 
+                    background: isCompleted ? 'rgba(235,235,245,0.8)' : '#1C1C1E',
+                    borderColor: isCompleted ? 'rgba(235,235,245,0.8)' : isCurrent ? '#D4FF00' : 'rgba(255,255,255,0.12)',
+                    boxShadow: isCurrent ? '0 0 10px rgba(212,255,0,0.5)' : 'none'
+                  }}
+                ></div>
                 
                 <div className="flex justify-between items-start">
                   <div>
-                    <div className={`text-[15px] font-medium ${isCompleted ? 'text-text-tertiary line-through' : isCurrent ? 'text-purple' : 'text-text-primary'}`}>
+                    <div 
+                      className={`text-[15px] font-medium ${isCompleted ? 'text-text-tertiary line-through' : 'text-text-primary'}`}
+                      style={isCurrent ? { color: '#D4FF00' } : {}}
+                    >
                       {p.bfTarget}% Body Fat {p.bfTarget === targetBf ? '(Goal)' : ''}
                     </div>
                     {!isCompleted && (
@@ -202,7 +217,10 @@ export function ProgressScreen() {
                       </div>
                     )}
                   </div>
-                  <div className={`text-[12px] font-mono px-2 py-1 rounded-md ${isCompleted ? 'bg-border-tertiary text-text-secondary' : 'bg-purple/10 text-purple'}`}>
+                  <div 
+                    className={`text-[12px] font-mono px-2 py-1 rounded-md ${isCompleted ? 'bg-border-tertiary text-text-secondary' : ''}`}
+                    style={!isCompleted ? { background: 'rgba(212,255,0,0.1)', color: '#D4FF00' } : {}}
+                  >
                     {isCompleted ? 'Completed' : `ETA: ${p.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })}`}
                   </div>
                 </div>
@@ -210,7 +228,7 @@ export function ProgressScreen() {
             );
           })}
           {projections.length === 0 && (
-            <div className="text-[12px] text-text-secondary">Provide valid goal info to see projections.</div>
+            <div className="text-[12px]" style={{ color: 'rgba(235,235,245,0.5)' }}>Provide valid goal info to see projections.</div>
           )}
         </div>
       </div>
