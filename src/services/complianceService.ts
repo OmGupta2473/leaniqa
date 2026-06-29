@@ -68,14 +68,14 @@ export const complianceService = {
         .from('daily_metrics')
         .upsert(payload, { onConflict: 'user_id,date' })
         .select()
-        .single();
+        .maybeSingle();
         
-      if (error) {
+      if (error && error.code !== 'PGRST116') {
         console.error('Error updating daily metric:', error);
         return null;
       }
       
-      return data;
+      return data || payload;
     } catch (e) {
       console.error('Compliance service error:', e);
       return null;

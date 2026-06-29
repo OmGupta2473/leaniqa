@@ -351,7 +351,7 @@ export function OnboardingScreen() {
       <div className="py-[28px] mb-[12px]">
         <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599] mb-[8px]">Step 1 of 2</div>
         <h2 className="text-[34px] font-bold text-white tracking-[-0.5px] leading-tight mb-[8px]">Personal Information</h2>
-        <p className="text-[15px] font-normal text-[#EBEBF5CC] tracking-[-0.1px]">We use US Navy standards for precision targeting.</p>
+        <p className="text-[15px] font-normal text-[#EBEBF5CC] tracking-[-0.1px]">We use the US Navy method for precision body fat targeting.</p>
       </div>
 
       {Object.keys(errors).length > 0 && (
