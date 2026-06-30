@@ -22,7 +22,7 @@ export function Sidebar({ className }: { className?: string }) {
     { id: "dash", icon: LayoutDashboard, label: "Dashboard" },
     { id: "meal", icon: MessageSquare, label: "Meals", dot: true },
     { id: "progress", icon: TrendingUp, label: "Progress" },
-    { id: "week", icon: FileBarChart, label: "Reports" },
+    { id: "week", icon: FileBarChart, label: "Activity" },
   ];
 
   const handleLogout = async () => {

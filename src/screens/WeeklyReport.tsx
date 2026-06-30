@@ -1,222 +1,281 @@
-import { useState, useEffect } from 'react';
-import { Calendar, TrendingUp, AlertTriangle, Sparkles, Lock } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { profileService } from '../services/profileService';
 import { mealService } from '../services/mealService';
-import { weightService } from '../services/weightService';
 import { reportService } from '../services/reportService';
 import { complianceService } from '../services/complianceService';
-import { subscriptionService } from '../services/subscriptionService';
-import { supabase } from '../lib/supabase';
 import { useAppStore } from '../store';
+import { ProgressRing } from '../components/ProgressRing';
+import { MicroRing } from '../components/MicroRing';
+import { HourlyBarChart } from '../components/HourlyBarChart';
+import { ChevronLeft, ChevronRight, Flame, Trophy } from 'lucide-react';
+import { DailyActivityData, ActivityView } from '../types/activity';
 
-function getLocalDateString(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+function getLocalDateString(d: Date) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
+const NEON_PINK = '#FF2D55';
+const ELECTRIC_LIME = '#D4FF00';
+const ELECTRIC_BLUE = '#378ADD';
+
 export function WeeklyReportScreen() {
-  const { setScreen } = useAppStore();
-  const queryClient = useQueryClient();
+  const { calorieStreak, proteinStreak, earnedAwards } = useAppStore();
+  const [view, setView] = useState<ActivityView>('dashboard');
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
+
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
-  const { data: meals = [] } = useQuery({ queryKey: ['meals', 'week'], queryFn: () => mealService.getMealsForWeeklyReport() });
-  const { data: weightLogs = [] } = useQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
+  const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
+  const { data: meals = [] } = useQuery({ queryKey: ['meals', 'month'], queryFn: () => mealService.getMeals({ days: 35, limit: 2000 }) });
   const { data: dailyMetrics = [] } = useQuery({ queryKey: ['dailyMetrics'], queryFn: () => reportService.getDailyMetrics() });
-  const { data: scores } = useQuery({ queryKey: ['scores'], queryFn: () => complianceService.getScores() });
-  const { data: weeklyReports = [] } = useQuery({ queryKey: ['weeklyReports'], queryFn: () => reportService.getWeeklyReports() });
 
-  const proteinTarget = profile?.protein_target || 150;
+  const calorieGoal = profile?.maintenance_kcal && goal?.deficit_kcal !== undefined ? profile.maintenance_kcal - goal.deficit_kcal : 2000;
+  const proteinGoal = profile?.protein_target || 150;
 
-  // Real analytics logic for past 7 days from DB
   const today = new Date();
-  
-  // Calculate week start (Sunday)
-  const weekStart = new Date(today);
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-  const weekStartStr = getLocalDateString(weekStart);
+  const todayStr = getLocalDateString(today);
 
-  const past7Days = Array.from({length: 7}, (_, i) => {
-    const d = new Date(today);
-    d.setDate(d.getDate() - (6 - i));
-    return getLocalDateString(d);
-  });
-
-  const dayStats = past7Days.map(dateStr => {
-    const dayMeals = meals.filter(m => m.meal_time.startsWith(dateStr));
-    const prot = dayMeals.reduce((acc, m) => acc + m.protein, 0);
-    const weightLog = weightLogs.find(w => w.date.startsWith(dateStr));
-    
-    // Find metric in DB
-    const metric = dailyMetrics.find(m => m.date === dateStr);
-    const score = metric ? metric.score : 0;
-
+  // Build today's full DailyActivityData including hourly breakdown
+  const todayActivity: DailyActivityData = useMemo(() => {
+    const todaysMeals = meals.filter(m => m.meal_time.startsWith(todayStr));
+    const hourlyCalories = Array(24).fill(0);
+    todaysMeals.forEach(m => {
+      const hour = new Date(m.meal_time).getHours();
+      hourlyCalories[hour] += m.calories;
+    });
+    const metric = dailyMetrics.find(d => d.date === todayStr);
     return {
-      date: dateStr,
-      day: new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short' }),
-      prot,
-      score,
-      weight: weightLog?.weight
+      date: todayStr,
+      caloriesConsumed: todaysMeals.reduce((a, m) => a + m.calories, 0),
+      calorieTarget: calorieGoal,
+      proteinConsumed: todaysMeals.reduce((a, m) => a + m.protein, 0),
+      proteinTarget: proteinGoal,
+      fatConsumed: todaysMeals.reduce((a, m) => a + m.fat, 0),
+      fatTarget: profile?.maintenance_kcal ? Math.round((calorieGoal * 0.27) / 9) : 60,
+      carbsConsumed: todaysMeals.reduce((a, m) => a + m.carbs, 0),
+      carbsTarget: profile?.maintenance_kcal ? Math.round((calorieGoal * 0.45) / 4) : 220,
+      complianceScore: metric?.score ?? 0,
+      hourlyCalories,
     };
-  });
+  }, [meals, dailyMetrics, todayStr, calorieGoal, proteinGoal, profile]);
 
-  const avgScore = scores?.weeklyAverage || 0;
-  const avgProtPct = Math.round(dayStats.filter(d => d.prot > 0).reduce((acc, d) => acc + (d.prot / proteinTarget * 100), 0) / (dayStats.filter(d => d.prot > 0).length || 1));
-  
-  const startWeight = dayStats.find(d => d.weight)?.weight || profile?.weight || 80;
-  const endWeight = dayStats.slice().reverse().find(d => d.weight)?.weight || startWeight;
-  const weightChange = (endWeight - startWeight).toFixed(1);
+  // Build last 7 days of DailyActivityData for the strip
+  const last7Days: DailyActivityData[] = useMemo(() => {
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(d.getDate() - (6 - i));
+      const dateStr = getLocalDateString(d);
+      const dayMeals = meals.filter(m => m.meal_time.startsWith(dateStr));
+      const metric = dailyMetrics.find(m => m.date === dateStr);
+      return {
+        date: dateStr,
+        caloriesConsumed: dayMeals.reduce((a, m) => a + m.calories, 0),
+        calorieTarget: metric?.target_calories ?? calorieGoal,
+        proteinConsumed: dayMeals.reduce((a, m) => a + m.protein, 0),
+        proteinTarget: metric?.target_protein ?? proteinGoal,
+        fatConsumed: dayMeals.reduce((a, m) => a + m.fat, 0),
+        fatTarget: 60,
+        carbsConsumed: dayMeals.reduce((a, m) => a + m.carbs, 0),
+        carbsTarget: 220,
+        complianceScore: metric?.score ?? 0,
+      };
+    });
+  }, [meals, dailyMetrics, calorieGoal, proteinGoal]);
 
-  // Check if report exists for this week
-  const currentReport = weeklyReports.find(r => r.week_start === weekStartStr);
-  const parsedReport = currentReport ? JSON.parse(currentReport.report) : null;
-
-  const [isPro, setIsPro] = useState(false);
-  
-  useEffect(() => {
-    subscriptionService.getSubscriptionStatus().then(status => setIsPro(status.isPremium));
-  }, []);
-
-  const generateReportMutation = useMutation({
-    mutationFn: async () => {
-      // Pro check via service
-      const status = await subscriptionService.getSubscriptionStatus();
-      if (!status.isPremium) {
-        throw new Error('PRO_REQUIRED');
-      }
-      
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error("Authentication failed");
-      }
-      
-      const { data, error } = await supabase.functions.invoke('generate-weekly-report', {
-        body: {
-          metrics: dayStats,
-          weights: weightLogs.filter(w => new Date(w.date) >= new Date(past7Days[0])),
-          meals: meals.filter(m => new Date(m.meal_time) >= new Date(past7Days[0]))
-        },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
+  // Build full month grid for calendar view
+  const calendarDays = useMemo(() => {
+    const year = calendarMonth.getFullYear();
+    const month = calendarMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const startOffset = firstDay.getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const cells: (DailyActivityData | null)[] = [];
+    for (let i = 0; i < startOffset; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateObj = new Date(year, month, d);
+      const dateStr = getLocalDateString(dateObj);
+      const dayMeals = meals.filter(m => m.meal_time.startsWith(dateStr));
+      const metric = dailyMetrics.find(m => m.date === dateStr);
+      cells.push({
+        date: dateStr,
+        caloriesConsumed: dayMeals.reduce((a, m) => a + m.calories, 0),
+        calorieTarget: metric?.target_calories ?? calorieGoal,
+        proteinConsumed: dayMeals.reduce((a, m) => a + m.protein, 0),
+        proteinTarget: metric?.target_protein ?? proteinGoal,
+        fatConsumed: 0,
+        fatTarget: 60,
+        carbsConsumed: 0,
+        carbsTarget: 220,
+        complianceScore: metric?.score ?? 0,
       });
-      if (error) {
-        const msg = error.message || '';
-        const status = error.status || (error as any).context?.status;
-        if (status === 401 || msg.includes('401') || msg.includes('Unauthorized')) { throw new Error("Authentication failed"); }
-        else if (status === 403 || msg.includes('403') || msg.includes('Forbidden')) { throw new Error("Authentication failed"); }
-        else if (status === 429 || msg.includes('429') || msg.includes('limit')) { throw new Error("Daily limit reached"); }
-        else if (status >= 500 || msg.includes('500') || msg.includes('Internal')) throw new Error("Server unavailable");
-        else if (msg.includes('timeout') || msg.includes('Timeout')) throw new Error("Server unavailable");
-        else if (msg.includes('fetch') || msg.includes('Network')) throw new Error("Network offline");
-        else throw new Error("Server unavailable");
-      }
-      await reportService.saveWeeklyReport(weekStartStr, data);
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['weeklyReports'] });
-    },
-    onError: (err: any) => {
-      if (err.message === 'PRO_REQUIRED') {
-        setScreen('pricing');
-      }
     }
-  });
+    return cells;
+  }, [calendarMonth, meals, dailyMetrics, calorieGoal, proteinGoal]);
 
-  // Note: In production, Sunday automatic generation would be handled by a Supabase cron job
-  const daysWithData = dayStats.filter(d => d.prot > 0 || d.score > 0).length;
-  const canGenerate = daysWithData >= 3;
+  const recentBadges = earnedAwards.filter(a => a.earned).slice(-6);
 
   return (
-    <div className="screen-container screen-enter">
-      <div className="flex items-center justify-between mb-3.5">
-        <div>
-          <div className="text-[11px] font-medium uppercase tracking-wider mb-0.5" style={{ color: 'rgba(235,235,245,0.45)' }}>Weekly Report</div>
-          <div className="text-[14px] font-medium" style={{ color: 'white' }}>Last 7 Days</div>
-        </div>
-        <div className="flex flex-col items-end gap-1">
-          {parsedReport ? (
-            <div className="rounded-full px-2.5 py-1 text-[12px] font-medium flex items-center gap-1" style={{ background: 'rgba(212,255,0,0.1)', border: '0.5px solid rgba(212,255,0,0.25)', color: '#D4FF00' }}>
-              <Sparkles size={12} /> Generated
-            </div>
-          ) : canGenerate ? (
-            <button 
-              onClick={() => generateReportMutation.mutate()}
-              disabled={generateReportMutation.isPending}
-              className="rounded-md px-3 py-1.5 text-[12px] hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-1"
-              style={{ background: '#D4FF00', color: '#0A0A0A', fontWeight: 600, border: 'none', cursor: 'pointer' }}
-            >
-              {generateReportMutation.isPending ? 'Analyzing...' : (
-                <>
-                  {!isPro && <Lock size={12} />} Generate Report
-                </>
-              )}
-            </button>
-          ) : (
-             <div className="text-[10px] text-text-secondary bg-background-secondary border border-border-tertiary px-2 py-1.5 rounded-md flex items-center gap-1.5 max-w-[200px] text-right">
-               Log meals for 3 days to unlock your first AI report. You have {daysWithData}/3 days logged.
-             </div>
-          )}
-          {generateReportMutation.isError && generateReportMutation.error?.message !== 'PRO_REQUIRED' && (
-            <div className="text-[10px] text-coral">{generateReportMutation.error.message}</div>
-          )}
-        </div>
-      </div>
+    <div style={{ minHeight: '100dvh', background: '#000000', color: 'white' }} className="screen-enter">
+      <div style={{ maxWidth: '480px', margin: '0 auto', padding: '20px 16px calc(env(safe-area-inset-bottom) + 40px)' }}>
 
-      <div className="grid grid-cols-3 gap-2 mb-3.5">
-        <div className="glass-card" style={{ padding: '10px', textAlign: 'center' }}>
-          <div className="text-[18px] font-medium" style={{ color: '#D4FF00' }}>{weightChange}kg</div>
-          <div className="text-[10px] text-text-secondary mt-0.5">WEIGHT CHANGE</div>
-        </div>
-        <div className="glass-card" style={{ padding: '10px', textAlign: 'center' }}>
-          <div className="text-[18px] font-medium" style={{ color: '#378ADD' }}>{avgProtPct}%</div>
-          <div className="text-[10px] text-text-secondary mt-0.5">PROT. COMPLIANCE</div>
-        </div>
-        <div className="glass-card" style={{ padding: '10px', textAlign: 'center' }}>
-          <div className="text-[18px] font-medium" style={{ color: '#fbbf24' }}>{avgScore}</div>
-          <div className="text-[10px] text-text-secondary mt-0.5">AVG SCORE</div>
-        </div>
-      </div>
-
-      <div className="text-[11px] font-medium uppercase tracking-wider mb-2" style={{ color: 'rgba(235,235,245,0.45)' }}>Daily Compliance</div>
-      <div className="mb-3.5">
-        {dayStats.map(d => (
-          <div key={d.date} className="flex items-center gap-2 mb-1.5">
-            <div className="text-[11px] text-text-secondary w-7 shrink-0">{d.day}</div>
-            <div className="flex-1 h-2.5 overflow-hidden border-[0.5px] border-border-tertiary" style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '100px' }}>
-              <div className="h-2.5 rounded-full transition-all duration-300" style={{ width: `${d.score}%`, background: '#D4FF00' }}></div>
+        {/* Header with view switcher */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <div>
+            <div style={{ fontSize: 'var(--font-xs)', fontWeight: 600, color: 'rgba(235,235,245,0.5)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Activity</div>
+            <div style={{ fontSize: 'var(--font-2xl)', fontWeight: 800, letterSpacing: '-0.4px' }}>
+              {view === 'dashboard' ? 'Today' : view === 'detail' ? 'Last 7 Days' : calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
             </div>
-            <div className="text-[11px] font-medium w-7 text-right text-text-primary">{d.score}</div>
           </div>
-        ))}
-      </div>
+          <div style={{ display: 'flex', gap: '6px', background: '#1C1C1E', borderRadius: '10px', padding: '3px' }}>
+            {(['dashboard', 'detail', 'calendar'] as ActivityView[]).map(v => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                style={{
+                  padding: '6px 10px',
+                  borderRadius: '7px',
+                  border: 'none',
+                  background: view === v ? NEON_PINK : 'transparent',
+                  color: view === v ? 'white' : 'rgba(235,235,245,0.5)',
+                  fontSize: 'var(--font-xs)',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  textTransform: 'capitalize',
+                }}
+              >
+                {v === 'dashboard' ? 'Day' : v === 'detail' ? 'Week' : 'Month'}
+              </button>
+            ))}
+          </div>
+        </div>
 
-      <div className="text-[11px] font-medium uppercase tracking-wider mb-2" style={{ color: 'rgba(235,235,245,0.45)' }}>AI Insights</div>
-      <div className="flex flex-col gap-2">
-        {parsedReport ? (
+        {/* ── DASHBOARD VIEW ── */}
+        {view === 'dashboard' && (
           <>
-            <div style={{ padding: '12px 14px', borderRadius: '12px', background: 'rgba(44,44,46,0.7)', border: '0.5px solid rgba(255,255,255,0.08)', borderLeft: '3px solid #D4FF00' }}>
-              <div className="text-[12px] font-medium text-text-primary mb-1 flex items-center gap-1"><TrendingUp size={13} style={{ color: '#D4FF00' }} /> Best Habit</div>
-              <div className="text-[12px] text-text-secondary">{parsedReport.bestHabit}</div>
+            {/* Ring summary card */}
+            <div style={{ background: '#1C1C1E', borderRadius: '20px', padding: '24px', marginBottom: '14px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ position: 'relative', width: 200, height: 200, marginBottom: '8px' }}>
+                <ProgressRing current={todayActivity.caloriesConsumed} goal={todayActivity.calorieTarget} size={200} strokeWidth={16} color={NEON_PINK}>
+                  <div style={{ fontSize: '32px', fontWeight: 800 }}>{todayActivity.caloriesConsumed}</div>
+                  <div style={{ fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.5)' }}>/ {todayActivity.calorieTarget} kcal</div>
+                </ProgressRing>
+              </div>
+              <div style={{ display: 'flex', gap: '20px', marginTop: '12px' }}>
+                {[
+                  { label: 'Protein', current: todayActivity.proteinConsumed, goal: todayActivity.proteinTarget, color: ELECTRIC_LIME, unit: 'g' },
+                  { label: 'Fat', current: todayActivity.fatConsumed, goal: todayActivity.fatTarget, color: ELECTRIC_BLUE, unit: 'g' },
+                  { label: 'Carbs', current: todayActivity.carbsConsumed, goal: todayActivity.carbsTarget, color: '#FFD60A', unit: 'g' },
+                ].map(m => (
+                  <ProgressRing key={m.label} current={m.current} goal={m.goal} size={64} strokeWidth={7} color={m.color}>
+                    <div style={{ fontSize: '13px', fontWeight: 700 }}>{m.current}</div>
+                  </ProgressRing>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: '20px', marginTop: '8px' }}>
+                {['Protein', 'Fat', 'Carbs'].map(l => (
+                  <div key={l} style={{ width: 64, textAlign: 'center', fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.5)' }}>{l}</div>
+                ))}
+              </div>
             </div>
-            <div style={{ padding: '12px 14px', borderRadius: '12px', background: 'rgba(44,44,46,0.7)', border: '0.5px solid rgba(255,255,255,0.08)', borderLeft: '3px solid #FF4D1C' }}>
-              <div className="text-[12px] font-medium text-text-primary mb-1 flex items-center gap-1"><AlertTriangle size={13} style={{ color: '#FF4D1C' }} /> Room for Improvement</div>
-              <div className="text-[12px] text-text-secondary">{parsedReport.worstHabit}</div>
+
+            {/* Hourly bar chart card */}
+            <div style={{ background: '#1C1C1E', borderRadius: '20px', padding: '18px', marginBottom: '14px' }}>
+              <div style={{ fontSize: 'var(--font-xs)', fontWeight: 600, color: 'rgba(235,235,245,0.5)', textTransform: 'uppercase', marginBottom: '12px' }}>Hourly Intake</div>
+              <HourlyBarChart hourlyValues={todayActivity.hourlyCalories || Array(24).fill(0)} color={NEON_PINK} height={70} />
             </div>
-            <div style={{ padding: '12px 14px', borderRadius: '12px', background: 'rgba(44,44,46,0.7)', border: '0.5px solid rgba(255,255,255,0.08)', borderLeft: '3px solid #fbbf24' }}>
-              <div className="text-[12px] font-medium text-text-primary mb-1 flex items-center gap-1"><Sparkles size={13} style={{ color: '#fbbf24' }} /> Progress Summary</div>
-              <div className="text-[12px] text-text-secondary">{parsedReport.progressSummary}</div>
+
+            {/* Trends card */}
+            <div style={{ background: '#1C1C1E', borderRadius: '20px', padding: '18px', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <Flame size={16} color={ELECTRIC_LIME} />
+                <div style={{ fontSize: 'var(--font-sm)', fontWeight: 700 }}>Trends</div>
+              </div>
+              <div style={{ fontSize: 'var(--font-sm)', color: 'rgba(235,235,245,0.7)', lineHeight: 1.5 }}>
+                {calorieStreak > 0 ? `You're on a ${calorieStreak}-day calorie streak. ` : 'Log today to start a new streak. '}
+                {proteinStreak > 0 ? `Protein target hit ${proteinStreak} days in a row.` : ''}
+              </div>
             </div>
-            <div style={{ padding: '12px 14px', borderRadius: '12px', background: 'rgba(44,44,46,0.7)', border: '0.5px solid rgba(255,255,255,0.08)', borderLeft: '3px solid #378ADD' }}>
-              <div className="text-[12px] font-medium text-text-primary mb-1 flex items-center gap-1"><Calendar size={13} style={{ color: '#378ADD' }} /> Next Week's Action</div>
-              <div className="text-[12px] text-text-secondary">{parsedReport.nextWeekPlan}</div>
+
+            {/* Awards row */}
+            <div style={{ background: '#1C1C1E', borderRadius: '20px', padding: '18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <Trophy size={16} color={NEON_PINK} />
+                <div style={{ fontSize: 'var(--font-sm)', fontWeight: 700 }}>Recent Awards</div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px' }}>
+                {recentBadges.length === 0 ? (
+                  <div style={{ gridColumn: 'span 6', fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.4)', textAlign: 'center', padding: '12px 0' }}>No awards yet — keep your streak going</div>
+                ) : recentBadges.map(a => (
+                  <div key={a.id} style={{ aspectRatio: '1', borderRadius: '10px', border: `1.5px solid ${a.primaryColor}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', background: `${a.primaryColor}1A` }}>
+                    {a.symbol}
+                  </div>
+                ))}
+              </div>
             </div>
           </>
-        ) : (
-          <div className="text-[12px] text-text-secondary italic text-center p-4" style={{ background: 'rgba(44,44,46,0.7)', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: '12px' }}>
-            {canGenerate ? "Click Generate Report to get your AI insights for the week." : "Auto-generates every Sunday · Generate anytime with 3+ days"}
+        )}
+
+        {/* ── DETAIL VIEW (7-day strip) ── */}
+        {view === 'detail' && (
+          <>
+            <div style={{ background: '#1C1C1E', borderRadius: '20px', padding: '18px', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                {last7Days.map(day => (
+                  <div key={day.date} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                    <MicroRing current={day.caloriesConsumed} goal={day.calorieTarget} size={36} strokeWidth={4} color={NEON_PINK} />
+                    <div style={{ fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.5)' }}>
+                      {new Date(day.date).toLocaleDateString('en-US', { weekday: 'narrow' })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {last7Days.map(day => (
+              <div key={day.date} style={{ background: '#1C1C1E', borderRadius: '16px', padding: '14px 16px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <MicroRing current={day.caloriesConsumed} goal={day.calorieTarget} size={44} strokeWidth={5} color={NEON_PINK} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 'var(--font-sm)', fontWeight: 600 }}>{new Date(day.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</div>
+                  <div style={{ fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.5)' }}>{day.caloriesConsumed} kcal · {day.proteinConsumed}g protein</div>
+                </div>
+                <div style={{ fontSize: 'var(--font-sm)', fontWeight: 700, color: day.complianceScore >= 70 ? ELECTRIC_LIME : 'rgba(235,235,245,0.5)' }}>{day.complianceScore}</div>
+              </div>
+            ))}
+          </>
+        )}
+
+        {/* ── CALENDAR VIEW ── */}
+        {view === 'calendar' && (
+          <div style={{ background: '#1C1C1E', borderRadius: '20px', padding: '18px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <button onClick={() => setCalendarMonth(m => new Date(m.getFullYear(), m.getMonth() - 1, 1))} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
+                <ChevronLeft size={20} />
+              </button>
+              <div style={{ fontSize: 'var(--font-sm)', fontWeight: 700 }}>{calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</div>
+              <button onClick={() => setCalendarMonth(m => new Date(m.getFullYear(), m.getMonth() + 1, 1))} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
+                <ChevronRight size={20} />
+              </button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', marginBottom: '8px' }}>
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                <div key={i} style={{ textAlign: 'center', fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.4)' }}>{d}</div>
+              ))}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
+              {calendarDays.map((day, i) => (
+                <div key={i} style={{ aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {day ? (
+                    <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <MicroRing current={day.caloriesConsumed} goal={day.calorieTarget} size={32} strokeWidth={3} color={day.date === todayStr ? ELECTRIC_LIME : NEON_PINK} />
+                      <div style={{ position: 'absolute', fontSize: '9px', color: 'rgba(255,255,255,0.6)' }}>{new Date(day.date).getDate()}</div>
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

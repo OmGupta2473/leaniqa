@@ -30,7 +30,7 @@ const TITLES: Record<string, string> = {
   dash: 'Dashboard',
   meal: 'Nutrition Log',
   progress: 'Timeline Projection',
-  week: 'Weekly Reports',
+  week: 'Activity',
   pricing: 'Plans & pricing'
 };
 
