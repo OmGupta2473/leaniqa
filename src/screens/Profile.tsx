@@ -1,70 +1,15 @@
-import { useState } from "react";
 import { useAppStore } from "../store";
 import { profileService } from "../services/profileService";
-import { complianceService } from "../services/complianceService";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { cn } from "../lib/utils";
-import { AlertTriangle, X, CheckCircle2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 export function ProfileScreen() {
-  const { setScreen, onboardingData, setOnboardingData } = useAppStore();
-  const queryClient = useQueryClient();
-  const [editOpen, setEditOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [confirmed, setConfirmed] = useState(false);
+  const { setScreen, onboardingData, setEditProfileMode } = useAppStore();
 
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
 
-  // Edit form state
-  const [name, setName] = useState('');
-  const [age, setAge] = useState('');
-  const [weight, setWeight] = useState('');
-  const [height, setHeight] = useState('');
-  const [gender, setGender] = useState<'Male' | 'Female' | ''>('');
-  const [activity, setActivity] = useState('');
-
   const openEdit = () => {
-    // Pre-fill from current profile
-    setName(profile?.name || onboardingData?.name || '');
-    setAge(String(profile?.age || onboardingData?.age || ''));
-    setWeight(String(profile?.weight || onboardingData?.weightKg || ''));
-    setHeight(String(profile?.height || onboardingData?.heightCm || ''));
-    setGender((profile?.gender || onboardingData?.gender || '') as 'Male' | 'Female' | '');
-    setActivity(profile?.activity_level || onboardingData?.activityLevel || '');
-    setConfirmed(false);
-    setEditOpen(true);
-  };
-
-  const handleSave = async () => {
-    if (!confirmed) { setConfirmed(true); return; }
-    setSaving(true);
-    try {
-      const w = parseFloat(weight) || 80;
-      const h = parseFloat(height) || 175;
-      const a = parseFloat(age) || 30;
-
-      // Recalculate TDEE (Mifflin-St Jeor)
-      const maintBase = (w * 10) + (h * 6.25) - (a * 5) + (gender === 'Male' ? 5 : -161);
-      const multipliers: Record<string, number> = { 'Sedentary': 1.2, 'Lightly Active': 1.375, 'Moderately Active': 1.55, 'Very Active': 1.725, 'Athlete': 1.9 };
-      const tdee = Math.round((maintBase * (multipliers[activity] || 1.375)) / 10) * 10;
-
-      // Protein target
-      const proteinFactors: Record<string, number> = { 'Sedentary': 1.6, 'Lightly Active': 1.8, 'Moderately Active': 2.0, 'Very Active': 2.2, 'Athlete': 2.4 };
-      const proteinMid = Math.round(w * (proteinFactors[activity] || 1.8));
-
-      await profileService.upsertProfile({ name, age: a, weight: w, height: h, gender: gender || 'Male', activity_level: activity as any, maintenance_kcal: tdee, protein_target: proteinMid });
-      await complianceService.updateTodayScore();
-
-      // Update local store
-      setOnboardingData({ ...onboardingData, name, age: a, weightKg: w, heightCm: h, gender, activityLevel: activity, tdee, proteinMid });
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-      queryClient.invalidateQueries({ queryKey: ['complianceScore'] });
-
-      setEditOpen(false);
-    } catch (err) {
-      console.error('Profile save error:', err);
-    }
-    setSaving(false);
+    setEditProfileMode(true);
+    setScreen('onboard');
   };
 
   // All the existing display values
@@ -234,85 +179,6 @@ export function ProfileScreen() {
 
         <div className="profile-bottom-spacer"></div>
       </div>
-
-      {/* ── EDIT MODAL ── */}
-      {editOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 100, display: 'flex', alignItems: 'flex-end' }} onClick={() => setEditOpen(false)}>
-          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '480px', margin: '0 auto', background: 'rgba(28,28,30,0.98)', backdropFilter: 'blur(30px)', borderRadius: '20px 20px 0 0', borderTop: '0.5px solid rgba(255,255,255,0.1)', padding: '20px', paddingBottom: 'calc(env(safe-area-inset-bottom) + 20px)', maxHeight: '90dvh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: 'white' }}>Edit Profile</div>
-              <button onClick={() => setEditOpen(false)} style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}><X size={16} /></button>
-            </div>
-
-            {/* Warning banner */}
-            <div style={{ background: 'rgba(255,196,0,0.1)', border: '0.5px solid rgba(255,196,0,0.3)', borderRadius: '12px', padding: '12px 14px', marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-              <AlertTriangle size={16} style={{ color: '#FFC400', flexShrink: 0, marginTop: '1px' }} />
-              <div style={{ fontSize: 'var(--font-xs)', color: 'rgba(255,196,0,0.9)', lineHeight: 1.5 }}>
-                Updating your measurements will recalculate your daily calorie and protein targets. Your physique goal (body fat % and strategy) will remain unchanged — only your maintenance targets will update.
-              </div>
-            </div>
-
-            {/* Gender */}
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ fontSize: 'var(--font-sm)', color: 'rgba(235,235,245,0.7)', marginBottom: '8px', fontWeight: 500 }}>Gender</div>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                {['Male', 'Female'].map(g => (
-                  <button key={g} onClick={() => setGender(g as any)} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: `1px solid ${gender === g ? 'rgba(212,255,0,0.5)' : 'rgba(255,255,255,0.12)'}`, background: gender === g ? 'rgba(212,255,0,0.1)' : 'rgba(255,255,255,0.05)', color: 'white', cursor: 'pointer', fontWeight: gender === g ? 600 : 400 }}>{g}</button>
-                ))}
-              </div>
-            </div>
-
-            {/* Name */}
-            <div style={{ marginBottom: '14px' }}>
-              <div style={{ fontSize: 'var(--font-sm)', color: 'rgba(235,235,245,0.7)', marginBottom: '6px', fontWeight: 500 }}>Name</div>
-              <input style={inputStyle(name)} value={name} onChange={e => setName(e.target.value)} placeholder="First name" />
-            </div>
-
-            {/* Age */}
-            <div style={{ marginBottom: '14px' }}>
-              <div style={{ fontSize: 'var(--font-sm)', color: 'rgba(235,235,245,0.7)', marginBottom: '6px', fontWeight: 500 }}>Age</div>
-              <input style={inputStyle(age)} type="number" value={age} onChange={e => setAge(e.target.value)} placeholder="e.g. 28" />
-            </div>
-
-            {/* Weight */}
-            <div style={{ marginBottom: '14px' }}>
-              <div style={{ fontSize: 'var(--font-sm)', color: 'rgba(235,235,245,0.7)', marginBottom: '6px', fontWeight: 500 }}>Weight (kg)</div>
-              <input style={inputStyle(weight)} type="number" value={weight} onChange={e => setWeight(e.target.value)} placeholder="e.g. 78" />
-            </div>
-
-            {/* Height */}
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ fontSize: 'var(--font-sm)', color: 'rgba(235,235,245,0.7)', marginBottom: '6px', fontWeight: 500 }}>Height (cm)</div>
-              <input style={inputStyle(height)} type="number" value={height} onChange={e => setHeight(e.target.value)} placeholder="e.g. 175" />
-            </div>
-
-            {/* Activity */}
-            <div style={{ marginBottom: '20px' }}>
-              <div style={{ fontSize: 'var(--font-sm)', color: 'rgba(235,235,245,0.7)', marginBottom: '8px', fontWeight: 500 }}>Activity Level</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {activities.map(a => (
-                  <button key={a} onClick={() => setActivity(a)} style={{ padding: '12px 14px', borderRadius: '12px', border: `1px solid ${activity === a ? 'rgba(212,255,0,0.5)' : 'rgba(255,255,255,0.1)'}`, background: activity === a ? 'rgba(212,255,0,0.1)' : 'rgba(255,255,255,0.04)', color: 'white', cursor: 'pointer', textAlign: 'left', fontWeight: activity === a ? 600 : 400 }}>{a}</button>
-                ))}
-              </div>
-            </div>
-
-            {/* Confirm + save */}
-            {confirmed && (
-              <div style={{ background: 'rgba(212,255,0,0.08)', border: '0.5px solid rgba(212,255,0,0.3)', borderRadius: '12px', padding: '12px 14px', marginBottom: '14px', fontSize: 'var(--font-xs)', color: 'rgba(212,255,0,0.9)', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <CheckCircle2 size={14} /> Tap "Save changes" again to confirm. Your macro targets will be recalculated.
-              </div>
-            )}
-
-            <button
-              onClick={handleSave}
-              disabled={saving || !name || !age || !weight || !height || !gender || !activity}
-              style={{ width: '100%', padding: '14px', borderRadius: '100px', background: confirmed ? '#D4FF00' : 'rgba(212,255,0,0.15)', border: `1px solid ${confirmed ? 'transparent' : 'rgba(212,255,0,0.3)'}`, color: confirmed ? '#0A0A0A' : '#D4FF00', fontWeight: 700, fontSize: '16px', cursor: 'pointer', opacity: saving ? 0.6 : 1, transition: 'all 0.2s' }}
-            >
-              {saving ? 'Saving...' : confirmed ? 'Save changes' : 'Review & save'}
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
