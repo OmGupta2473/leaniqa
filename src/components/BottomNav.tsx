@@ -15,7 +15,7 @@ export function BottomNav() {
     { id: "dash", icon: LayoutDashboard, label: "Dashboard" },
     { id: "meal", icon: MessageSquare, label: "Log Meal", primary: true },
     { id: "progress", icon: TrendingUp, label: "Progress" },
-    { id: "week", icon: FileBarChart, label: "Reports" },
+    { id: "week", icon: FileBarChart, label: "Activity" },
   ];
 
   return (
