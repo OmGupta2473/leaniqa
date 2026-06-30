@@ -43,7 +43,7 @@ function getLocalDateString() {
 }
 
 export default function App() {
-  const { currentScreen, setScreen, onboardingCompleted, setOnboardingCompleted, goalSetCompleted, setGoalSetCompleted } = useAppStore();
+  const { currentScreen, setScreen, onboardingCompleted, setOnboardingCompleted, goalSetCompleted, setGoalSetCompleted, editProfileMode } = useAppStore();
   const [session, setSession] = useState<Session | null>(null);
   const [loadingSession, setLoadingSession] = useState(true);
   const { isOnline } = useNetworkStatus();
@@ -124,11 +124,11 @@ export default function App() {
         setScreen('onboard');
       } else if (profile && !goal && currentScreen !== 'goal') {
         setScreen('goal');
-      } else if (profile && goal && (currentScreen === 'auth' || (currentScreen === 'onboard' && onboardingCompleted))) {
+      } else if (profile && goal && (currentScreen === 'auth' || (currentScreen === 'onboard' && onboardingCompleted && !editProfileMode))) {
         setScreen('dash');
       }
     }
-  }, [session, loadingSession, currentScreen, profile, loadingProfile, goal, loadingGoal, setScreen, onboardingCompleted, setOnboardingCompleted, goalSetCompleted, setGoalSetCompleted]);
+  }, [session, loadingSession, currentScreen, profile, loadingProfile, goal, loadingGoal, setScreen, onboardingCompleted, setOnboardingCompleted, goalSetCompleted, setGoalSetCompleted, editProfileMode]);
 
   const title = TITLES[currentScreen] || 'LeanIQa';
 

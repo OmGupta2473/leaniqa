@@ -34,7 +34,7 @@ function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: n
 }
 
 export function OnboardingScreen() {
-  const { setScreen, setOnboardingData, onboardingCompleted, setOnboardingCompleted, onboardingData, clearStore } = useAppStore();
+  const { setScreen, setOnboardingData, onboardingCompleted, setOnboardingCompleted, onboardingData, clearStore, editProfileMode, setEditProfileMode } = useAppStore();
   const queryClient = useQueryClient();
 
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
@@ -56,6 +56,19 @@ export function OnboardingScreen() {
   
   // Results
   const [results, setResults] = useState<any>(null);
+
+  useEffect(() => {
+    if (!editProfileMode) return;
+    if (onboardingData?.name) setName(onboardingData.name);
+    if (onboardingData?.age) setAge(String(onboardingData.age));
+    if (onboardingData?.weightKg) setWeight(String(onboardingData.weightKg));
+    if (onboardingData?.heightCm) {
+      setHeight(String(onboardingData.heightCm));
+      setHeightUnit('cm');
+    }
+    if (onboardingData?.gender) setGender(onboardingData.gender as 'Male' | 'Female');
+    if (onboardingData?.activityLevel) setActivity(onboardingData.activityLevel as any);
+  }, [editProfileMode, onboardingData]);
 
   useEffect(() => {
     if (Object.keys(errors).length === 0) return;
@@ -90,17 +103,42 @@ export function OnboardingScreen() {
       complianceService.updateTodayScore().then(() => {
         queryClient.invalidateQueries({ queryKey: ['complianceScore'] });
       }).catch(console.error);
+
+      // Build the COMPLETE onboardingData with ALL calculated fields
       setOnboardingData({
-        ...results,
+        ...onboardingData,
+        // Basic info
+        name: name.trim() || 'User',
         weightKg: parseFloat(weight) || 80,
         heightCm: getComputedHeight(),
         age: parseFloat(age) || 30,
         gender,
         activityLevel: activity,
-        name: name.trim() || 'User'
+        // Full macro breakdown (ALL fields — this is what was missing)
+        tdee: results?.tdee,
+        proteinMin: results?.proteinMin,
+        proteinMax: results?.proteinMax,
+        proteinMid: results?.proteinMid,
+        fatMin: results?.fatMin,
+        fatMax: results?.fatMax,
+        fatMid: results?.fatMid,
+        carbMin: results?.carbMin,
+        carbMax: results?.carbMax,
+        carbMid: results?.carbMid,
+        fiberMin: results?.fiberMin,
+        fiberMax: results?.fiberMax,
+        waterLitres: results?.waterLitres,
       });
-      setOnboardingCompleted(true);
-      setScreen('goal');
+
+      if (editProfileMode) {
+        // Returning from profile edit — go back to profile screen
+        setEditProfileMode(false);
+        setScreen('profile');
+      } else {
+        // Normal onboarding flow — go to goal setter
+        setOnboardingCompleted(true);
+        setScreen('goal');
+      }
     },
     onError: (error: any) => {
       console.error("Save mutation failed:", error);
@@ -287,7 +325,9 @@ export function OnboardingScreen() {
     hasError && "border-[rgba(255,59,48,0.6)] bg-[rgba(255,59,48,0.05)] focus:border-[rgba(255,59,48,0.6)] focus:shadow-[0_0_0_3px_rgba(255,59,48,0.12)]"
   );
 
-  if (onboardingCompleted) {
+  const isEditMode = editProfileMode;
+
+  if (onboardingCompleted && !isEditMode) {
     return (
       <div className="screen-container animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="text-center py-6">
@@ -396,9 +436,9 @@ export function OnboardingScreen() {
   return (
     <div className="screen-container screen-enter">
       <div className="py-[28px] mb-[12px]">
-        <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599] mb-[8px]">Step 1 of 2</div>
-        <h2 className="text-[34px] font-bold text-white tracking-[-0.5px] leading-tight mb-[8px]">Personal Information</h2>
-        <p className="text-[15px] font-normal text-[#EBEBF5CC] tracking-[-0.1px]">We use the US Navy method for precision body fat targeting.</p>
+        <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599] mb-[8px]">{isEditMode ? 'Editing Personal Info' : 'Step 1 of 2'}</div>
+        <h2 className="text-[34px] font-bold text-white tracking-[-0.5px] leading-tight mb-[8px]">{isEditMode ? 'Update your stats' : 'Personal Information'}</h2>
+        <p className="text-[15px] font-normal text-[#EBEBF5CC] tracking-[-0.1px]">{isEditMode ? 'Change any field below and recalculate.' : 'We use the US Navy method for precision body fat targeting.'}</p>
       </div>
 
       {Object.keys(errors).length > 0 && (
@@ -559,7 +599,7 @@ export function OnboardingScreen() {
           disabled={saveMutation.isPending} 
           className="w-full bg-[#D4FF00] text-[#0A0A0A] font-bold text-[17px] rounded-[100px] p-[16px_32px] border-none tracking-[-0.2px] transition-all hover:scale-[1.02] hover:opacity-[0.95] active:scale-[0.97] disabled:opacity-50"
         >
-          Calculate targets
+          {isEditMode ? 'Recalculate targets' : 'Calculate targets'}
         </button>
       )}
       
@@ -639,9 +679,18 @@ export function OnboardingScreen() {
             disabled={saveMutation.isPending} 
             className="w-full bg-[#D4FF00] text-[#0A0A0A] font-bold text-[17px] rounded-[100px] p-[16px_32px] border-none tracking-[-0.2px] transition-all hover:scale-[1.02] hover:opacity-[0.95] active:scale-[0.97] disabled:opacity-50 flex items-center justify-center gap-[8px] group"
           >
-            {saveMutation.isPending ? 'Saving...' : 'Set my physique goal'}
-            <ArrowRight size={20} className="transition-transform duration-200 group-hover:translate-x-[3px]" />
+            {saveMutation.isPending ? 'Saving...' : (isEditMode ? 'Save changes' : 'Set my physique goal')}
+            {!isEditMode && <ArrowRight size={20} className="transition-transform duration-200 group-hover:translate-x-[3px]" />}
           </button>
+          
+          {isEditMode && (
+            <button
+              onClick={() => { setEditProfileMode(false); setScreen('profile'); }}
+              style={{ width:'100%', background:'none', border:'none', color:'rgba(235,235,245,0.45)', fontSize:'var(--font-sm)', cursor:'pointer', marginTop:'10px', padding:'8px' }}
+            >
+              Cancel — go back
+            </button>
+          )}
         </div>
       )}
     </div>

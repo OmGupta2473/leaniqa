@@ -364,6 +364,8 @@ interface AppState {
   setOnboardingCompleted: (completed: boolean) => void;
   goalSetCompleted: boolean;
   setGoalSetCompleted: (completed: boolean) => void;
+  editProfileMode: boolean;
+  setEditProfileMode: (v: boolean) => void;
   chatHistory: ChatMessage[];
   addChatMessage: (msg: Omit<ChatMessage, 'weekKey'>) => void;
   clearOldChats: () => void;
@@ -404,12 +406,14 @@ export const useAppStore = create<AppState>()(
       return {
         currentScreen: 'onboard',
         setScreen: (screen) => set({ currentScreen: screen }),
-        clearStore: () => set({ currentScreen: 'onboard', onboardingData: undefined, onboardingCompleted: false, goalSetCompleted: false, chatHistory: [], dailyLogs: [], calorieStreak: 0, proteinStreak: 0, earnedAwards: computeEarnedAwards([]) }),
+        clearStore: () => set({ currentScreen: 'onboard', onboardingData: undefined, onboardingCompleted: false, goalSetCompleted: false, editProfileMode: false, chatHistory: [], dailyLogs: [], calorieStreak: 0, proteinStreak: 0, earnedAwards: computeEarnedAwards([]) }),
         setOnboardingData: (data) => set({ onboardingData: data }),
         onboardingCompleted: false,
         setOnboardingCompleted: (completed) => set({ onboardingCompleted: completed }),
         goalSetCompleted: false,
         setGoalSetCompleted: (completed) => set({ goalSetCompleted: completed }),
+        editProfileMode: false,
+        setEditProfileMode: (v) => set({ editProfileMode: v }),
         chatHistory: [],
         addChatMessage: (msg) => {
           const weekKey = getWeekKey();
