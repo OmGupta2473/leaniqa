@@ -2,7 +2,7 @@ import React, { useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { profileService } from "../services/profileService";
 import { mealService } from "../services/mealService";
-import { useAppStore } from "../store";
+import { useAppStore, toUtcDayNumber } from "../store";
 
 function getLocalDateString() {
   const d = new Date();
@@ -41,29 +41,20 @@ export function ProteinDetailScreen() {
   const isTargetHit = proteinConsumed >= proteinTarget;
 
   const allTimeBestProStreak = useMemo(() => {
-    const logsToConsider = dailyLogs.filter(l => l.date !== todayStr);
-    const sorted = [...logsToConsider].sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-    );
-    let best = 0,
-      current = 0;
-    for (let i = 0; i < sorted.length; i++) {
-      if (sorted[i].proteinHitTarget) {
-        if (i === 0) {
-          current = 1;
-          continue;
-        }
-        const prev = new Date(sorted[i - 1].date);
-        const curr = new Date(sorted[i].date);
-        const diff = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
-        current = diff === 1 ? current + 1 : 1;
+    const sorted = [...dailyLogs].sort((a, b) => toUtcDayNumber(a.date) - toUtcDayNumber(b.date));
+    let best = 0, current = 0, prevDayNum: number | null = null;
+    for (const log of sorted) {
+      const dayNum = toUtcDayNumber(log.date);
+      if (log.proteinHitTarget && log.proteinConsumed > 0) {
+        current = (prevDayNum !== null && dayNum === prevDayNum + 1) ? current + 1 : 1;
+        best = Math.max(best, current);
       } else {
         current = 0;
       }
-      best = Math.max(best, current);
+      prevDayNum = dayNum;
     }
-    return Math.max(best, current);
-  }, [dailyLogs, todayStr]);
+    return best;
+  }, [dailyLogs]);
 
   // Inject live data for today's chart entry
   const chartLogs = useMemo(() => {

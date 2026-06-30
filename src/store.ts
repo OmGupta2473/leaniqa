@@ -237,121 +237,105 @@ function getLocalDateDaysAgo(daysAgo: number): string {
   return `${year}-${month}-${day}`;
 }
 
+// Converts a YYYY-MM-DD string to a UTC day-number (days since epoch), immune to DST and local timezone drift
+export function toUtcDayNumber(dateStr: string): number {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return Math.floor(Date.UTC(y, m - 1, d) / 86400000);
+}
+
 function calculateCalorieStreak(dailyLogs: DailyLog[]): number {
   if (dailyLogs.length === 0) return 0;
-  
+
   const sorted = [...dailyLogs]
-    .filter(l => l.caloriesConsumed > 0) // only days where user actually logged
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  
+    .filter(l => l.caloriesConsumed > 0)
+    .sort((a, b) => toUtcDayNumber(b.date) - toUtcDayNumber(a.date));
+
   if (sorted.length === 0) return 0;
-  
+
+  const todayDayNum = toUtcDayNumber(getLocalDateDaysAgo(0));
   let streak = 0;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
+
   for (let i = 0; i < sorted.length; i++) {
-    const logDate = new Date(sorted[i].date);
-    logDate.setHours(0, 0, 0, 0);
-    
-    const expectedDate = new Date(today);
-    expectedDate.setDate(today.getDate() - i);
-    expectedDate.setHours(0, 0, 0, 0);
-    
-    const diffMs = Math.abs(logDate.getTime() - expectedDate.getTime());
-    const diffDays = diffMs / (1000 * 60 * 60 * 24);
-    
-    // Allow up to 0.5 day tolerance for timezone edge cases
-    if (diffDays > 0.5) break;
-    
+    const logDayNum = toUtcDayNumber(sorted[i].date);
+    const expectedDayNum = todayDayNum - i;
+
+    // Exact day-number match required — no tolerance needed since both sides are
+    // integer day-numbers, immune to DST and timezone offset entirely.
+    if (logDayNum !== expectedDayNum) break;
+
     if (sorted[i].calorieUnderTarget) {
       streak++;
     } else {
-      break; // streak broken
+      break;
     }
   }
-  
+
   return streak;
 }
 
 function calculateProteinStreak(dailyLogs: DailyLog[]): number {
   if (dailyLogs.length === 0) return 0;
-  
+
   const sorted = [...dailyLogs]
     .filter(l => l.proteinConsumed > 0)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  
+    .sort((a, b) => toUtcDayNumber(b.date) - toUtcDayNumber(a.date));
+
   if (sorted.length === 0) return 0;
-  
+
+  const todayDayNum = toUtcDayNumber(getLocalDateDaysAgo(0));
   let streak = 0;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
+
   for (let i = 0; i < sorted.length; i++) {
-    const logDate = new Date(sorted[i].date);
-    logDate.setHours(0, 0, 0, 0);
-    
-    const expectedDate = new Date(today);
-    expectedDate.setDate(today.getDate() - i);
-    expectedDate.setHours(0, 0, 0, 0);
-    
-    const diffMs = Math.abs(logDate.getTime() - expectedDate.getTime());
-    const diffDays = diffMs / (1000 * 60 * 60 * 24);
-    
-    if (diffDays > 0.5) break;
-    
+    const logDayNum = toUtcDayNumber(sorted[i].date);
+    const expectedDayNum = todayDayNum - i;
+
+    if (logDayNum !== expectedDayNum) break;
+
     if (sorted[i].proteinHitTarget) {
       streak++;
     } else {
       break;
     }
   }
-  
+
   return streak;
 }
 
+function allTimeBestStreak(logs: DailyLog[], hitPredicate: (l: DailyLog) => boolean): number {
+  const sorted = [...logs].sort((a, b) => toUtcDayNumber(a.date) - toUtcDayNumber(b.date));
+  let best = 0;
+  let current = 0;
+  let prevDayNum: number | null = null;
+
+  for (const log of sorted) {
+    const dayNum = toUtcDayNumber(log.date);
+    if (hitPredicate(log)) {
+      if (prevDayNum !== null && dayNum === prevDayNum + 1) {
+        current++;
+      } else {
+        current = 1;
+      }
+      best = Math.max(best, current);
+    } else {
+      current = 0;
+    }
+    prevDayNum = dayNum;
+  }
+
+  return best;
+}
+
+// INVARIANT: computeEarnedAwards must use the exact same day-contiguity algorithm
+// (toUtcDayNumber-based) and the exact same "today inclusive" rule as
+// calculateCalorieStreak/calculateProteinStreak. If these ever diverge again,
+// the Dashboard streak chip and the Awards Hall unlock state will disagree —
+// this was a real shipped bug once. Do not reintroduce a `logsToConsider` filter
+// that excludes today's date from award-eligibility calculations.
 function computeEarnedAwards(dailyLogs: DailyLog[]): Award[] {
-  const todayStr = getLocalDateDaysAgo(0);
-  const logsToConsider = dailyLogs.filter(l => l.date !== todayStr);
-
-  function allTimeBestCalStreak(logs: DailyLog[]) {
-    const sorted = [...logs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    let best = 0, current = 0;
-    for (let i = 0; i < sorted.length; i++) {
-      if (sorted[i].calorieUnderTarget) {
-        if (i === 0) { current = 1; continue; }
-        const prev = new Date(sorted[i-1].date);
-        const curr = new Date(sorted[i].date);
-        const diff = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
-        current = diff === 1 ? current + 1 : 1;
-      } else {
-        current = 0;
-      }
-      best = Math.max(best, current);
-    }
-    return Math.max(best, current);
-  }
-
-  function allTimeBestProStreak(logs: DailyLog[]) {
-    const sorted = [...logs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    let best = 0, current = 0;
-    for (let i = 0; i < sorted.length; i++) {
-      if (sorted[i].proteinHitTarget) {
-        if (i === 0) { current = 1; continue; }
-        const prev = new Date(sorted[i-1].date);
-        const curr = new Date(sorted[i].date);
-        const diff = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
-        current = diff === 1 ? current + 1 : 1;
-      } else {
-        current = 0;
-      }
-      best = Math.max(best, current);
-    }
-    return Math.max(best, current);
-  }
-
-  const bestCal = allTimeBestCalStreak(logsToConsider);
-  const bestPro = allTimeBestProStreak(logsToConsider);
+  // IMPORTANT: today is now INCLUDED, matching calculateCalorieStreak/calculateProteinStreak exactly.
+  // This guarantees the Dashboard streak chip and the Awards Hall unlock state can never disagree.
+  const bestCal = allTimeBestStreak(dailyLogs, l => l.calorieUnderTarget && l.caloriesConsumed > 0);
+  const bestPro = allTimeBestStreak(dailyLogs, l => l.proteinHitTarget && l.proteinConsumed > 0);
 
   return AWARDS_CATALOG.map(award => ({
     ...award,
