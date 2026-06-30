@@ -197,8 +197,9 @@ export function MealLoggerScreen() {
     },
     onSuccess: (data, text) => {
       queryClient.invalidateQueries({ queryKey: ["meals", "today"] });
+      queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] });
       complianceService.updateTodayScore().then(() => { queryClient.invalidateQueries({ queryKey: ["complianceScore"] }); queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] }); }).catch(console.error);
-      const foodsDetected = Array.isArray(data?.foods_detected) && data.foods_detected.length > 0 ? data.foods_detected.join(', ') : text;
+      const foodsDetected = Array.isArray(data?.foods_detected) && data?.foods_detected.length > 0 ? data.foods_detected.join(', ') : text;
       
       let responseText = `✓ Logged: ${foodsDetected}`;
       if (data?._localOnly) {
