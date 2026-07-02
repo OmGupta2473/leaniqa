@@ -1,10 +1,9 @@
-import { RouteObject, Outlet } from 'react-router-dom';
+import { RouteObject, Outlet, ScrollRestoration } from 'react-router-dom';
 import { ProtectedRoute } from './ProtectedRoute';
 import { GuestRoute } from './GuestRoute';
 import { RootRedirect } from './RootRedirect';
 import { AppLayout } from './layouts/AppLayout';
 import { AuthLayout } from './layouts/AuthLayout';
-
 import { DashboardScreen } from '../screens/Dashboard';
 import { MealLoggerScreen } from '../screens/MealLogger';
 import { ProgressScreen } from '../screens/Progress';
@@ -19,10 +18,15 @@ import { AuthScreen } from '../screens/Auth';
 import { OnboardingScreen } from '../screens/Onboarding';
 import { GoalSetterScreen } from '../screens/GoalSetter';
 import { LegacyApp } from '../LegacyApp';
+import { RouteErrorBoundary } from '../components/RouteErrorBoundary';
+import { NotFoundScreen } from '../screens/NotFound';
+import { ScrollHandler } from '../components/ScrollHandler';
 
 function RootLayout() {
   return (
     <>
+      <ScrollHandler />
+      <ScrollRestoration />
       <LegacyApp />
       <Outlet />
     </>
@@ -32,6 +36,7 @@ function RootLayout() {
 export const routes: RouteObject[] = [
   {
     element: <RootLayout />,
+    errorElement: <RouteErrorBoundary />,
     children: [
       {
         path: '/',
@@ -79,7 +84,7 @@ export const routes: RouteObject[] = [
       },
       {
         path: '*',
-        element: <RootRedirect />
+        element: <NotFoundScreen />
       }
     ]
   }
