@@ -12,13 +12,11 @@ import {
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLocation, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 
 export function Sidebar({ className }: { className?: string }) {
   const { clearStore } = useAppStore();
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
-  const location = useLocation();
 
   const navItems = [
     { id: "/goal", icon: Target, label: "Goal Setter" },
@@ -44,59 +42,63 @@ export function Sidebar({ className }: { className?: string }) {
       </div>
       <div className="flex flex-col gap-1 p-2 flex-1">
         {navItems.map((item) => (
-          <button
+          <NavLink
             key={item.id}
-            onClick={() => navigate(item.id)}
+            to={item.id}
             title={item.label}
             aria-label={item.label}
-            className={cn(
+            className={({ isActive }) => cn(
               "cursor-pointer transition-all relative",
-              location.pathname === item.id
+              isActive
                 ? "bg-background-primary text-purple border-[0.5px] border-border-tertiary shadow-sm"
-                : "text-text-secondary hover:bg-background-primary hover:text-text-primary",
+                : "text-text-secondary hover:bg-background-primary hover:text-text-primary"
             )}
+            style={{ textDecoration: 'none', display: 'flex' }}
           >
             <item.icon size={20} strokeWidth={2} className="shrink-0" />
             <span className="sidebar-label">{item.label}</span>
             {item.dot && (
               <span className="w-1.5 h-1.5 rounded-full bg-purple absolute right-2 top-2"></span>
             )}
-          </button>
+          </NavLink>
         ))}
         <div className="flex-1" />
-        <button
-          onClick={() => navigate("/profile")}
+        <NavLink
+          to="/profile"
           title="Profile"
           aria-label="Profile"
-          className={cn(
+          className={({ isActive }) => cn(
             "cursor-pointer transition-all relative",
-            location.pathname === "/profile"
+            isActive
               ? "bg-background-primary text-purple border-[0.5px] border-border-tertiary shadow-sm"
-              : "text-text-secondary hover:bg-background-primary hover:text-text-primary",
+              : "text-text-secondary hover:bg-background-primary hover:text-text-primary"
           )}
+          style={{ textDecoration: 'none', display: 'flex' }}
         >
           <User size={20} strokeWidth={2} className="shrink-0" />
           <span className="sidebar-label">Profile</span>
-        </button>
-        <button
-          onClick={() => navigate("/pricing")}
+        </NavLink>
+        <NavLink
+          to="/pricing"
           title="Plans"
           aria-label="Plans"
-          className={cn(
+          className={({ isActive }) => cn(
             "cursor-pointer transition-all relative",
-            location.pathname === "/pricing"
+            isActive
               ? "bg-background-primary text-purple border-[0.5px] border-border-tertiary shadow-sm"
-              : "text-text-secondary hover:bg-background-primary hover:text-text-primary",
+              : "text-text-secondary hover:bg-background-primary hover:text-text-primary"
           )}
+          style={{ textDecoration: 'none', display: 'flex' }}
         >
           <CreditCard size={20} strokeWidth={2} className="shrink-0" />
           <span className="sidebar-label">Plans</span>
-        </button>
+        </NavLink>
         <button
           onClick={handleLogout}
           title="Logout"
           aria-label="Logout"
           className="cursor-pointer text-text-secondary hover:bg-background-primary hover:text-coral transition-all mt-1"
+          style={{ display: 'flex' }}
         >
           <LogOut size={20} strokeWidth={2} className="shrink-0" />
           <span className="sidebar-label">Logout</span>
