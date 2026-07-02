@@ -1,59 +1,86 @@
-import { RouteObject } from 'react-router-dom';
+import { RouteObject, Outlet } from 'react-router-dom';
 import { ProtectedRoute } from './ProtectedRoute';
 import { GuestRoute } from './GuestRoute';
-import { PublicRoute } from './PublicRoute';
 import { RootRedirect } from './RootRedirect';
+import { AppLayout } from './layouts/AppLayout';
+import { AuthLayout } from './layouts/AuthLayout';
+
+import { DashboardScreen } from '../screens/Dashboard';
+import { MealLoggerScreen } from '../screens/MealLogger';
+import { ProgressScreen } from '../screens/Progress';
+import { WeeklyReportScreen } from '../screens/WeeklyReport';
+import { PricingScreen } from '../screens/Pricing';
+import { ProfileScreen } from '../screens/Profile';
+import { TransformationScreen } from '../screens/Transformation';
+import { CalorieDetailScreen } from '../screens/CalorieDetail';
+import { ProteinDetailScreen } from '../screens/ProteinDetail';
+import { AwardsScreen } from '../screens/Awards';
+import { AuthScreen } from '../screens/Auth';
+import { OnboardingScreen } from '../screens/Onboarding';
+import { GoalSetterScreen } from '../screens/GoalSetter';
 import { LegacyApp } from '../LegacyApp';
 
+function RootLayout() {
+  return (
+    <>
+      <LegacyApp />
+      <Outlet />
+    </>
+  );
+}
+
 export const routes: RouteObject[] = [
-  // Future React Router architecture (Phase 2+)
   {
-    path: '/app',
-    element: <ProtectedRoute />,
+    element: <RootLayout />,
     children: [
-      { path: 'dashboard', element: <div>Dashboard (Coming Soon)</div> },
-      { path: 'meal', element: <div>Meal Logger (Coming Soon)</div> },
-      { path: 'progress', element: <div>Progress (Coming Soon)</div> },
-      { path: 'week', element: <div>Weekly Report (Coming Soon)</div> },
-      { path: 'pricing', element: <div>Pricing (Coming Soon)</div> },
-      { path: 'profile', element: <div>Profile (Coming Soon)</div> },
-      { path: 'transformation', element: <div>Transformation (Coming Soon)</div> },
-      { path: 'calorie', element: <div>Calorie Detail (Coming Soon)</div> },
-      { path: 'protein', element: <div>Protein Detail (Coming Soon)</div> },
-      { path: 'awards', element: <div>Awards (Coming Soon)</div> },
+      {
+        path: '/',
+        element: <RootRedirect />
+      },
+      {
+        path: '/login',
+        element: <GuestRoute />,
+        children: [
+          { 
+            index: true, 
+            element: (
+              <AuthLayout>
+                <AuthScreen />
+              </AuthLayout>
+            ) 
+          }
+        ]
+      },
+      {
+        element: <ProtectedRoute />,
+        children: [
+          {
+            element: <AppLayout />,
+            children: [
+              { path: '/onboarding', element: <OnboardingScreen /> },
+              { path: '/goal', element: <GoalSetterScreen /> },
+              { path: '/dashboard', element: <DashboardScreen /> },
+              { path: '/meals', element: <MealLoggerScreen /> },
+              { path: '/progress', element: <ProgressScreen /> },
+              { path: '/activity', element: <WeeklyReportScreen /> },
+              { path: '/profile', element: <ProfileScreen /> },
+              { path: '/pricing', element: <PricingScreen /> },
+              { path: '/awards', element: <AwardsScreen /> },
+              { path: '/transformation', element: <TransformationScreen /> },
+              { path: '/calorie', element: <CalorieDetailScreen /> },
+              { path: '/protein', element: <ProteinDetailScreen /> }
+            ]
+          }
+        ]
+      },
+      {
+        path: '/redirect',
+        element: <RootRedirect />
+      },
+      {
+        path: '*',
+        element: <RootRedirect />
+      }
     ]
-  },
-  {
-    path: '/auth',
-    element: <GuestRoute />,
-    children: [
-      { path: 'login', element: <div>Auth (Coming Soon)</div> }
-    ]
-  },
-  {
-    path: '/setup',
-    element: <ProtectedRoute />,
-    children: [
-      { path: 'onboard', element: <div>Onboarding (Coming Soon)</div> },
-      { path: 'goal', element: <div>Goal Setter (Coming Soon)</div> }
-    ]
-  },
-  {
-    path: '/public',
-    element: <PublicRoute />,
-    children: [
-      { path: 'about', element: <div>About (Coming Soon)</div> }
-    ]
-  },
-  {
-    path: '/redirect',
-    element: <RootRedirect />
-  },
-  
-  // Phase 1: Keep existing navigation working by rendering LegacyApp at root
-  // All URLs not matched above will fallback to LegacyApp
-  {
-    path: '*',
-    element: <LegacyApp />
   }
 ];
