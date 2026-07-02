@@ -141,11 +141,19 @@ export function MealLoggerScreen() {
   const addMealMutation = useMutation({
     mutationFn: async (text: string) => {
       try {
-        // STEP 1: Cache lookup
-        const cachedResult = lookupCachedMeal(text);
-        if (cachedResult && cachedResult.confidence >= 90) {
-          await mealService.addMeal({ meal_text: text, calories: cachedResult.scaledCalories, protein: cachedResult.scaledProtein, fat: cachedResult.scaledFat, carbs: cachedResult.scaledCarbs, meal_time: new Date().toISOString(), tip: text, meal_slot: selectedMealSlot || undefined });
-          return { calories: cachedResult.scaledCalories, protein: cachedResult.scaledProtein, fat: cachedResult.scaledFat, carbs: cachedResult.scaledCarbs, confidence: cachedResult.confidence, foods_detected: [text], coaching_tip: `Logged from nutritional database. ${Math.round(cachedResult.scaledCalories)} kcal · ${cachedResult.scaledProtein}g protein`, _fromCache: true };
+        // ── Detect combined/compound meals ──────────────────────────────────────
+        // Words that indicate multiple foods in one description
+        const COMPOUND_CONNECTORS = /\b(with|and|aur|&|\+|along with|plus|,)\b/i;
+        const isCompoundMeal = COMPOUND_CONNECTORS.test(text) || 
+          (text.split(/,|\band\b|\bwith\b|\baur\b/i).filter(s => s.trim().length > 0).length > 1);
+
+        // ── STEP 1: Cache lookup — only for simple single-food entries ────────────
+        if (!isCompoundMeal) {
+          const cachedResult = lookupCachedMeal(text);
+          if (cachedResult && cachedResult.confidence >= 90) {
+            await mealService.addMeal({ meal_text: text, calories: cachedResult.scaledCalories, protein: cachedResult.scaledProtein, fat: cachedResult.scaledFat, carbs: cachedResult.scaledCarbs, meal_time: new Date().toISOString(), tip: text, meal_slot: selectedMealSlot || undefined });
+            return { calories: cachedResult.scaledCalories, protein: cachedResult.scaledProtein, fat: cachedResult.scaledFat, carbs: cachedResult.scaledCarbs, confidence: cachedResult.confidence, foods_detected: [text], coaching_tip: `Logged from nutritional database. ${Math.round(cachedResult.scaledCalories)} kcal · ${cachedResult.scaledProtein}g protein`, _fromCache: true };
+          }
         }
         // STEP 2: AI with retry
         let lastError: Error | null = null;
@@ -177,12 +185,64 @@ export function MealLoggerScreen() {
             break;
           }
         }
-        // STEP 3: Fallback
-        const lowConfCache = lookupCachedMeal(text);
-        const fallback = lowConfCache ? { calories: lowConfCache.scaledCalories, protein: lowConfCache.scaledProtein, fat: lowConfCache.scaledFat, carbs: lowConfCache.scaledCarbs, confidence: lowConfCache.confidence } : getDeterministicFallback(text);
-        await mealService.addMeal({ meal_text: text, calories: fallback.calories, protein: fallback.protein, fat: fallback.fat, carbs: fallback.carbs, meal_time: new Date().toISOString(), tip: `Estimated: ${text}`, meal_slot: selectedMealSlot || undefined });
-        const errorCtx = lastError?.message?.includes('limit') ? 'Daily AI limit reached' : 'AI temporarily unavailable';
-        return { ...fallback, foods_detected: [text], coaching_tip: lowConfCache ? `Estimated from database. ${errorCtx}.` : `Rough estimate. ${errorCtx}.`, _errorMessage: errorCtx };
+        // ── STEP 3: Guaranteed fallback — NEVER throws ──────────────────────────
+        try {
+          const lowConfCache = lookupCachedMeal(text);
+          const fallback = lowConfCache
+            ? {
+                calories: lowConfCache.scaledCalories,
+                protein: lowConfCache.scaledProtein,
+                fat: lowConfCache.scaledFat,
+                carbs: lowConfCache.scaledCarbs,
+                confidence: lowConfCache.confidence,
+              }
+            : getDeterministicFallback(text);
+        
+          const errorContext = lastError?.message?.includes('limit')
+            ? 'Daily AI limit reached'
+            : lastError?.message?.includes('log out') || lastError?.message?.includes('session')
+            ? 'Session issue — please log out and back in'
+            : 'AI temporarily unavailable';
+        
+          try {
+            await mealService.addMeal({
+              meal_text: text,
+              calories: fallback.calories,
+              protein: fallback.protein,
+              fat: fallback.fat,
+              carbs: fallback.carbs,
+              meal_time: new Date().toISOString(),
+              tip: `Estimated: ${text}`,
+              meal_slot: selectedMealSlot || undefined,
+            });
+          } catch (saveErr) {
+            // Even if saving fails, return the fallback data so onSuccess fires
+            // instead of onError — the user gets a meaningful response, not "Couldn't log"
+            console.error('[meal-fallback] save failed:', saveErr);
+          }
+        
+          return {
+            ...fallback,
+            foods_detected: [text],
+            coaching_tip: lowConfCache
+              ? `Estimated from database. ${errorContext}.`
+              : `Rough estimate. ${errorContext}.`,
+            _errorMessage: errorContext,
+          };
+        } catch (fallbackErr) {
+          // Absolute last resort: return something so onSuccess fires, never onError
+          console.error('[meal-fallback] critical failure:', fallbackErr);
+          return {
+            calories: 300,
+            protein: 10,
+            fat: 10,
+            carbs: 40,
+            confidence: 20,
+            foods_detected: [text],
+            coaching_tip: 'Could not estimate — please try again.',
+            _errorMessage: 'Estimation failed',
+          };
+        }
       } catch (finalError) {
         // ABSOLUTE LAST RESORT — never fails
         const estimate = getDeterministicFallback(text);
@@ -228,7 +288,7 @@ export function MealLoggerScreen() {
   }, [input, loading, selectedMealSlot, addChatMessage, addMealMutation]);
 
   return (
-    <div className="screen-container screen-enter">
+    <div className="screen-container screen-enter" style={{ display: 'flex', flexDirection: 'column' }}>
       {/* ── PAGE HEADER ── */}
       <div className="mb-[20px]">
         <h2 className="text-[22px] font-bold text-white tracking-[-0.3px]">Today's Meals</h2>
@@ -283,21 +343,16 @@ export function MealLoggerScreen() {
       </div>
 
       {/* ── FLOATING ADD BUTTON ── */}
-      {/* FAB spacer — ensures content doesn't hide behind FAB */}
-      <div style={{ height: '80px', flexShrink: 0 }} />
-      
-      {/* FAB container — sticky at bottom of scroll area */}
+      {/* Sticky add button — stays inside the app container, not the viewport */}
       <div style={{
         position: 'sticky',
-        bottom: '16px',
-        left: 0,
-        right: 0,
+        bottom: 'calc(env(safe-area-inset-bottom) + 16px)',
         display: 'flex',
         justifyContent: 'flex-end',
-        paddingRight: '16px',
-        pointerEvents: 'none', // lets clicks pass through to content below
-        zIndex: 50,
-        marginTop: '-64px' // overlaps the spacer
+        paddingRight: '4px',
+        pointerEvents: 'none',
+        // Margin-top auto pushes it to bottom of scrollable content
+        marginTop: 'auto',
       }}>
         <button
           onClick={() => setModalOpen(true)}
@@ -311,15 +366,14 @@ export function MealLoggerScreen() {
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            boxShadow: '0 4px 24px rgba(212,255,0,0.35), 0 2px 8px rgba(0,0,0,0.4)',
-            pointerEvents: 'all', // button itself receives clicks
+            boxShadow: '0 4px 20px rgba(212,255,0,0.35), 0 2px 8px rgba(0,0,0,0.4)',
+            pointerEvents: 'auto',
             transition: 'transform 0.15s ease, box-shadow 0.15s ease',
             flexShrink: 0,
           }}
-          onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.92)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(212,255,0,0.25)'; }}
-          onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 24px rgba(212,255,0,0.35), 0 2px 8px rgba(0,0,0,0.4)'; }}
-          onTouchStart={e => { e.currentTarget.style.transform = 'scale(0.92)'; }}
-          onTouchEnd={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+          onPointerDown={e => { e.currentTarget.style.transform = 'scale(0.92)'; }}
+          onPointerUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+          onPointerLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
           aria-label="Log a meal"
         >
           <Plus size={24} color="#0A0A0A" strokeWidth={2.5} />
