@@ -1,15 +1,63 @@
+import { useState } from "react";
 import { useAppStore } from "../store";
 import { profileService } from "../services/profileService";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function ProfileScreen() {
-  const { setScreen, onboardingData, setEditProfileMode } = useAppStore();
+  const { setScreen, onboardingData, setOnboardingData, setEditProfileMode } = useAppStore();
+  const queryClient = useQueryClient();
 
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
 
+  const [editOpen, setEditOpen] = useState(false);
+  const [editState, setEditState] = useState<'summary' | 'form' | 'reset'>('summary');
+  const [saving, setSaving] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+
+  // Edit form state
+  const [name, setName] = useState('');
+  const [age, setAge] = useState('');
+  const [weight, setWeight] = useState('');
+  const [height, setHeight] = useState('');
+  const [gender, setGender] = useState<'Male' | 'Female' | ''>('');
+  const [activity, setActivity] = useState('');
+
   const openEdit = () => {
+    setName(profile?.name || onboardingData?.name || '');
+    setAge(String(profile?.age || onboardingData?.age || ''));
+    setWeight(String(profile?.weight || onboardingData?.weightKg || ''));
+    setHeight(String(profile?.height || onboardingData?.heightCm || ''));
+    setGender((profile?.gender || onboardingData?.gender || '') as 'Male' | 'Female' | '');
+    setActivity(profile?.activity_level || onboardingData?.activityLevel || '');
+    setConfirmed(false);
+    setEditState('summary'); // Always start on summary
+    setEditOpen(true);
+  };
+
+  const handleSave = () => {
+    if (!confirmed) {
+      setConfirmed(true);
+      return;
+    }
+    // We update global state and navigate to onboarding step 1 to process the recalculations
     setEditProfileMode(true);
+    setEditOpen(false);
     setScreen('onboard');
+  };
+
+  const handleReset = async () => {
+    setSaving(true);
+    try {
+      await profileService.deleteProfile?.(); // if this method exists, else skip
+      setOnboardingData({});
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      setScreen('onboard'); // Go back to onboarding
+      setEditOpen(false);
+    } catch (err) {
+      console.error('Reset failed:', err);
+      setEditState('summary');
+    }
+    setSaving(false);
   };
 
   // All the existing display values
@@ -166,6 +214,356 @@ export function ProfileScreen() {
 
         <div className="profile-bottom-spacer"></div>
       </div>
+
+      {/* ── PROFILE EDIT MODAL ── */}
+      {editOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.82)',
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+          }}
+          onClick={() => { setEditOpen(false); setEditState('summary'); setConfirmed(false); }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '480px',
+              background: 'rgba(20,20,22,0.99)',
+              backdropFilter: 'blur(40px)',
+              WebkitBackdropFilter: 'blur(40px)',
+              borderRadius: '20px 20px 0 0',
+              borderTop: '0.5px solid rgba(255,255,255,0.12)',
+              maxHeight: '92dvh',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Modal drag handle */}
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px' }}>
+              <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(255,255,255,0.2)' }} />
+            </div>
+
+            {/* Scrollable content */}
+            <div style={{ overflowY: 'auto', flex: 1, padding: '0 20px calc(env(safe-area-inset-bottom) + 24px)' }}>
+
+              {/* ── STATE A: SUMMARY VIEW ── */}
+              {editState === 'summary' && (
+                <>
+                  {/* Step 1 icon header — matches GoalSetter visual language */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px', padding: '16px 0 0' }}>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '14px',
+                      background: 'linear-gradient(135deg, rgba(212,255,0,0.2) 0%, rgba(212,255,0,0.08) 100%)',
+                      border: '1.5px solid rgba(212,255,0,0.35)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <i className="ti ti-user-circle" style={{ fontSize: '22px', color: '#D4FF00' }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 'var(--font-xl)', fontWeight: 800, color: 'white', letterSpacing: '-0.3px' }}>
+                        Personal Details
+                      </div>
+                      <div style={{ fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.5)', marginTop: '2px' }}>
+                        Step 1 of your profile setup
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Summary card */}
+                  <div className="glass-card" style={{ padding: '16px', marginBottom: '16px' }}>
+                    {[
+                      { icon: 'ti-id-badge-2', label: 'Name', value: name || profile?.name || '—', color: '#D4FF00' },
+                      { icon: 'ti-calendar-stats', label: 'Age', value: age ? `${age} years` : profile?.age ? `${profile.age} years` : '—', color: '#378ADD' },
+                      { icon: 'ti-gender-bigender', label: 'Gender', value: gender || profile?.gender || '—', color: '#FF4D1C' },
+                      { icon: 'ti-weight', label: 'Weight', value: weight ? `${weight} kg` : profile?.weight ? `${profile.weight} kg` : '—', color: '#D4FF00' },
+                      { icon: 'ti-arrows-vertical', label: 'Height', value: height ? `${height} cm` : profile?.height ? `${profile.height} cm` : '—', color: '#378ADD' },
+                      { icon: 'ti-run', label: 'Activity', value: activity || profile?.activity_level || '—', color: '#FF4D1C' },
+                    ].map((item, i) => (
+                      <div key={i} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '10px 0',
+                        borderBottom: i < 5 ? '0.5px solid rgba(255,255,255,0.06)' : 'none',
+                      }}>
+                        <div style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '8px',
+                          background: `${item.color}18`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                        }}>
+                          <i className={`ti ${item.icon}`} style={{ fontSize: '16px', color: item.color }} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.45)', fontWeight: 500 }}>{item.label}</div>
+                          <div style={{ fontSize: 'var(--font-sm)', color: 'white', fontWeight: 600 }}>{item.value}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Action buttons */}
+                  <button
+                    onClick={() => setEditState('form')}
+                    style={{
+                      width: '100%',
+                      padding: '14px',
+                      borderRadius: '100px',
+                      background: '#D4FF00',
+                      border: 'none',
+                      color: '#0A0A0A',
+                      fontWeight: 700,
+                      fontSize: '16px',
+                      cursor: 'pointer',
+                      marginBottom: '10px',
+                    }}
+                  >
+                    Edit details
+                  </button>
+                  <button
+                    onClick={() => setEditState('reset')}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: '100px',
+                      background: 'rgba(255,77,28,0.1)',
+                      border: '0.5px solid rgba(255,77,28,0.3)',
+                      color: '#FF4D1C',
+                      fontWeight: 600,
+                      fontSize: '15px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Reset profile
+                  </button>
+                </>
+              )}
+
+              {/* ── STATE B: EDIT FORM VIEW ── */}
+              {editState === 'form' && (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '16px 0 20px' }}>
+                    <button
+                      onClick={() => setEditState('summary')}
+                      style={{ background: 'none', border: 'none', color: 'rgba(235,235,245,0.6)', cursor: 'pointer', padding: '4px' }}
+                    >
+                      <i className="ti ti-arrow-left" style={{ fontSize: '20px' }} />
+                    </button>
+                    <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: 'white' }}>Edit Details</div>
+                  </div>
+
+                  {/* Warning banner */}
+                  <div style={{
+                    background: 'rgba(255,196,0,0.08)',
+                    border: '0.5px solid rgba(255,196,0,0.25)',
+                    borderRadius: '12px',
+                    padding: '12px 14px',
+                    marginBottom: '20px',
+                    display: 'flex',
+                    gap: '10px',
+                    alignItems: 'flex-start',
+                  }}>
+                    <i className="ti ti-alert-triangle" style={{ fontSize: '16px', color: '#FFC400', flexShrink: 0, marginTop: '1px' }} />
+                    <div style={{ fontSize: 'var(--font-xs)', color: 'rgba(255,196,0,0.85)', lineHeight: 1.5 }}>
+                      Updating your measurements recalculates your daily calorie and protein targets. Your physique goal and deficit strategy are unchanged.
+                    </div>
+                  </div>
+
+                  {/* Gender picker */}
+                  <div style={{ marginBottom: '16px' }}>
+                    <div style={{ fontSize: 'var(--font-sm)', color: 'rgba(235,235,245,0.65)', marginBottom: '8px', fontWeight: 500 }}>Gender</div>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      {(['Male', 'Female'] as const).map(g => (
+                        <button
+                          key={g}
+                          onClick={() => setGender(g)}
+                          style={{
+                            flex: 1,
+                            padding: '12px',
+                            borderRadius: '12px',
+                            border: `1px solid ${gender === g ? 'rgba(212,255,0,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                            background: gender === g ? 'rgba(212,255,0,0.1)' : 'rgba(255,255,255,0.04)',
+                            color: gender === g ? '#D4FF00' : 'rgba(235,235,245,0.7)',
+                            cursor: 'pointer',
+                            fontWeight: gender === g ? 700 : 400,
+                            fontSize: '15px',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >{g}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Text/number fields */}
+                  {[
+                    { label: 'Full name', value: name, setter: setName, type: 'text', placeholder: 'Your name' },
+                    { label: 'Age', value: age, setter: setAge, type: 'number', placeholder: 'e.g. 28' },
+                    { label: 'Weight (kg)', value: weight, setter: setWeight, type: 'number', placeholder: 'e.g. 78' },
+                    { label: 'Height (cm)', value: height, setter: setHeight, type: 'number', placeholder: 'e.g. 175' },
+                  ].map(field => (
+                    <div key={field.label} style={{ marginBottom: '14px' }}>
+                      <div style={{ fontSize: 'var(--font-sm)', color: 'rgba(235,235,245,0.65)', marginBottom: '6px', fontWeight: 500 }}>{field.label}</div>
+                      <input
+                        type={field.type}
+                        value={field.value}
+                        onChange={e => field.setter(e.target.value)}
+                        placeholder={field.placeholder}
+                        style={{
+                          width: '100%',
+                          background: 'rgba(255,255,255,0.07)',
+                          border: `0.5px solid ${field.value ? 'rgba(212,255,0,0.3)' : 'rgba(255,255,255,0.12)'}`,
+                          borderRadius: '12px',
+                          padding: '12px 14px',
+                          color: 'white',
+                          fontSize: '15px',
+                          outline: 'none',
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                    </div>
+                  ))}
+
+                  {/* Activity level */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ fontSize: 'var(--font-sm)', color: 'rgba(235,235,245,0.65)', marginBottom: '8px', fontWeight: 500 }}>Activity Level</div>
+                    {(['Sedentary', 'Lightly Active', 'Moderately Active', 'Very Active', 'Athlete'] as const).map(a => (
+                      <button
+                        key={a}
+                        onClick={() => setActivity(a)}
+                        style={{
+                          display: 'block',
+                          width: '100%',
+                          padding: '12px 14px',
+                          borderRadius: '12px',
+                          border: `1px solid ${activity === a ? 'rgba(212,255,0,0.5)' : 'rgba(255,255,255,0.08)'}`,
+                          background: activity === a ? 'rgba(212,255,0,0.08)' : 'rgba(255,255,255,0.03)',
+                          color: activity === a ? '#D4FF00' : 'rgba(235,235,245,0.75)',
+                          cursor: 'pointer',
+                          textAlign: 'left' as const,
+                          fontWeight: activity === a ? 600 : 400,
+                          fontSize: '14px',
+                          marginBottom: '8px',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >{a}</button>
+                    ))}
+                  </div>
+
+                  {/* Two-step confirm button */}
+                  {confirmed && (
+                    <div style={{
+                      background: 'rgba(212,255,0,0.08)',
+                      border: '0.5px solid rgba(212,255,0,0.3)',
+                      borderRadius: '12px',
+                      padding: '10px 14px',
+                      marginBottom: '12px',
+                      display: 'flex',
+                      gap: '8px',
+                      alignItems: 'center',
+                      fontSize: 'var(--font-xs)',
+                      color: 'rgba(212,255,0,0.9)',
+                    }}>
+                      <i className="ti ti-circle-check" style={{ fontSize: '16px', color: '#D4FF00' }} />
+                      Tap "Confirm save" to apply changes and recalculate your targets.
+                    </div>
+                  )}
+                  <button
+                    onClick={handleSave}
+                    disabled={saving || !name || !age || !weight || !height || !gender || !activity}
+                    style={{
+                      width: '100%',
+                      padding: '14px',
+                      borderRadius: '100px',
+                      background: confirmed ? '#D4FF00' : 'rgba(212,255,0,0.12)',
+                      border: `1px solid ${confirmed ? 'transparent' : 'rgba(212,255,0,0.3)'}`,
+                      color: confirmed ? '#0A0A0A' : '#D4FF00',
+                      fontWeight: 700,
+                      fontSize: '16px',
+                      cursor: 'pointer',
+                      opacity: saving ? 0.6 : 1,
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {saving ? 'Saving…' : confirmed ? 'Confirm save' : 'Review & save'}
+                  </button>
+                </>
+              )}
+
+              {/* ── STATE C: RESET WARNING ── */}
+              {editState === 'reset' && (
+                <div style={{ padding: '24px 0', textAlign: 'center' }}>
+                  <div style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '18px',
+                    background: 'rgba(255,77,28,0.12)',
+                    border: '1.5px solid rgba(255,77,28,0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 16px',
+                  }}>
+                    <i className="ti ti-alert-triangle-filled" style={{ fontSize: '28px', color: '#FF4D1C' }} />
+                  </div>
+                  <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: 'white', marginBottom: '10px' }}>Reset Profile?</div>
+                  <div style={{ fontSize: 'var(--font-sm)', color: 'rgba(235,235,245,0.6)', lineHeight: 1.6, maxWidth: '300px', margin: '0 auto 24px' }}>
+                    This will clear all your personal measurements. Your macro targets, calorie goal, and protein target will all be recalculated from scratch after you re-enter your details.
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <button
+                      onClick={handleReset}
+                      style={{
+                        padding: '14px',
+                        borderRadius: '100px',
+                        background: '#FF4D1C',
+                        border: 'none',
+                        color: 'white',
+                        fontWeight: 700,
+                        fontSize: '16px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Yes, reset my profile
+                    </button>
+                    <button
+                      onClick={() => setEditState('summary')}
+                      style={{
+                        padding: '12px',
+                        borderRadius: '100px',
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '0.5px solid rgba(255,255,255,0.15)',
+                        color: 'rgba(235,235,245,0.8)',
+                        fontWeight: 600,
+                        fontSize: '15px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
