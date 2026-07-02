@@ -20,8 +20,6 @@ import { useQuery } from '@tanstack/react-query';
 import { profileService } from './services/profileService';
 import { supabase } from './lib/supabase';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { useNetworkStatus } from './lib/utils';
-import { WifiOff } from 'lucide-react';
 
 const TITLES: Record<string, string> = {
   auth: 'Sign In',
@@ -42,11 +40,13 @@ function getLocalDateString() {
   return `${year}-${month}-${day}`;
 }
 
+import { AuthLayout } from './router/layouts/AuthLayout';
+import { AppLayout } from './router/layouts/AppLayout';
+
 export function LegacyApp() {
   const { currentScreen, setScreen, onboardingCompleted, setOnboardingCompleted, goalSetCompleted, setGoalSetCompleted, editProfileMode } = useAppStore();
   const [session, setSession] = useState<Session | null>(null);
   const [loadingSession, setLoadingSession] = useState(true);
-  const { isOnline } = useNetworkStatus();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Reset scroll position to top whenever screen changes
@@ -137,70 +137,34 @@ export function LegacyApp() {
   }
 
   if (currentScreen === 'auth') {
-    return <AuthScreen />;
+    return (
+      <AuthLayout>
+        <AuthScreen />
+      </AuthLayout>
+    );
   }
 
   return (
-    <div className="app-shell">
-      {/* ── Desktop/tablet sidebar ── */}
-      <aside className="app-sidebar">
-        <Sidebar />
-      </aside>
-
-      {/* ── Main content ── */}
-      <main className="app-content">
-        <div className="px-5 py-4 border-b-[0.5px] border-border-tertiary flex items-center justify-between shrink-0 bg-background-primary z-10">
-          <div className="text-[15px] font-medium text-text-primary flex items-center gap-2">
-            {title}
-            {!isOnline && (
-              <div className="bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-[10px] py-[2px] px-2 rounded-full flex items-center gap-1">
-                <WifiOff size={10} /> Offline
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            <div 
-              className="awards-nav-btn"
-              onClick={() => setScreen('awards')}
-              title="Awards Hall"
-            >
-              <i className="ti ti-trophy text-[18px] text-[#D4FF00]"></i>
-              {hasNewAwards && <div className="notif-dot"></div>}
-            </div>
-            <div 
-              className="w-8 h-8 rounded-full bg-purple-bg flex items-center justify-center text-[12px] font-medium text-purple cursor-pointer"
-              onClick={() => setScreen('profile')}
-            >
-              {profile?.name ? profile.name.substring(0, 2).toUpperCase() : 'ME'}
-            </div>
-          </div>
-        </div>
-        
-        <div 
-          ref={scrollContainerRef}
-          className="app-scroll"
-        >
-          <ErrorBoundary>
-            {currentScreen === 'onboard' && <OnboardingScreen />}
-            {currentScreen === 'goal' && <GoalSetterScreen />}
-            {currentScreen === 'dash' && <DashboardScreen />}
-            {currentScreen === 'meal' && <MealLoggerScreen />}
-            {currentScreen === 'progress' && <ProgressScreen />}
-            {currentScreen === 'week' && <WeeklyReportScreen />}
-            {currentScreen === 'pricing' && <PricingScreen />}
-            {currentScreen === 'profile' && <ProfileScreen />}
-            {currentScreen === 'transformation' && <TransformationScreen />}
-            {currentScreen === 'calorieDetail' && <CalorieDetailScreen />}
-            {currentScreen === 'proteinDetail' && <ProteinDetailScreen />}
-            {currentScreen === 'awards' && <AwardsScreen />}
-          </ErrorBoundary>
-        </div>
-
-        {/* ── Mobile bottom nav ── */}
-        <nav className="app-bottom-nav">
-          <BottomNav />
-        </nav>
-      </main>
-    </div>
+    <AppLayout>
+      <div 
+        ref={scrollContainerRef}
+        className="app-scroll"
+      >
+        <ErrorBoundary>
+          {currentScreen === 'onboard' && <OnboardingScreen />}
+          {currentScreen === 'goal' && <GoalSetterScreen />}
+          {currentScreen === 'dash' && <DashboardScreen />}
+          {currentScreen === 'meal' && <MealLoggerScreen />}
+          {currentScreen === 'progress' && <ProgressScreen />}
+          {currentScreen === 'week' && <WeeklyReportScreen />}
+          {currentScreen === 'pricing' && <PricingScreen />}
+          {currentScreen === 'profile' && <ProfileScreen />}
+          {currentScreen === 'transformation' && <TransformationScreen />}
+          {currentScreen === 'calorieDetail' && <CalorieDetailScreen />}
+          {currentScreen === 'proteinDetail' && <ProteinDetailScreen />}
+          {currentScreen === 'awards' && <AwardsScreen />}
+        </ErrorBoundary>
+      </div>
+    </AppLayout>
   );
 }
