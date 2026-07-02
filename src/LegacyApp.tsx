@@ -38,7 +38,7 @@ export function LegacyApp() {
   });
 
   useEffect(() => {
-    if (dailyMetrics) {
+    if (dailyMetrics && location.pathname === '/dashboard') {
       syncFromMetrics(dailyMetrics);
     }
   }, [dailyMetrics, syncFromMetrics, location.pathname]);
