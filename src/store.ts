@@ -1,6 +1,17 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+const LEGACY_KEYS = ['physique-nav', 'physique_daily_logs', 'physique_earned_dates'];
+LEGACY_KEYS.forEach(key => {
+  // Only migrate if new key doesn't exist yet
+  const legacy = localStorage.getItem(key);
+  const newKey = key.replace('physique', 'leaniqa');
+  if (legacy && !localStorage.getItem(newKey)) {
+    localStorage.setItem(newKey, legacy);
+    localStorage.removeItem(key);
+  }
+});
+
 export interface DailyLog {
   date: string;
   caloriesConsumed: number;

@@ -16,7 +16,7 @@ export function PricingScreen() {
         <p className="text-[13px] text-text-secondary max-w-[320px] mx-auto">Get early access at a significant discount.</p>
         
         <div style={{ background: 'rgba(212,255,0,0.1)', border: '1px solid rgba(212,255,0,0.3)', color: '#D4FF00', padding: '12px', borderRadius: '12px', fontSize: '13px', fontWeight: 600, marginTop: '16px' }}>
-          LeanIQa Beta — Premium features unlocked.
+          LeanIQA Beta — Premium features unlocked.
         </div>
       </div>
 
