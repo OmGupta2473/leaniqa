@@ -27,7 +27,7 @@ export function RootRedirect() {
   }
 
   if (!session) {
-    return <Navigate to="/auth/login" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (loadingProfile || (profile && loadingGoal)) {
@@ -39,12 +39,12 @@ export function RootRedirect() {
   }
 
   if (!profile) {
-    return <Navigate to="/setup/onboard" replace />;
+    return <Navigate to="/onboarding" replace />;
   }
 
   if (!goal) {
-    return <Navigate to="/setup/goal" replace />;
+    return <Navigate to="/goal" replace />;
   }
 
-  return <Navigate to="/app/dashboard" replace />;
+  return <Navigate to="/dashboard" replace />;
 }
