@@ -47,19 +47,6 @@ export function ProfileScreen() {
   let dateStr = '—';
   if (estimatedCompletionDate_) { const d = new Date(estimatedCompletionDate_); if (!isNaN(d.getTime())) dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }); else dateStr = estimatedCompletionDate_; }
 
-  const inputStyle = (val: string) => ({
-    width: '100%',
-    background: 'rgba(255,255,255,0.07)',
-    border: `0.5px solid ${val ? 'rgba(212,255,0,0.3)' : 'rgba(255,255,255,0.12)'}`,
-    borderRadius: '12px',
-    padding: '12px 14px',
-    color: 'white',
-    fontSize: '15px',
-    outline: 'none',
-  });
-
-  const activities = ['Sedentary', 'Lightly Active', 'Moderately Active', 'Very Active', 'Athlete'];
-
   return (
     <div className="profile-screen">
       <div className="profile-scroll-area">
