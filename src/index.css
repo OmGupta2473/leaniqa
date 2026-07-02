@@ -1207,7 +1207,7 @@ input[type='number'] {
   color: rgba(235, 235, 245, 0.35);
 }
 
-/* ── LeanIQa utility aliases — maps old Tailwind names to new design tokens ── */
+/* ── LeanIQA utility aliases — maps old Tailwind names to new design tokens ── */
 .text-purple { color: #D4FF00 !important; }
 .text-teal { color: #D4FF00 !important; }
 .text-coral { color: #FF4D1C !important; }

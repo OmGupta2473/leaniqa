@@ -73,7 +73,7 @@ export function AuthScreen() {
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-purple/10 mb-2">
             <Dumbbell className="w-6 h-6 text-purple" />
           </div>
-          <h1 className="text-[24px] font-bold text-text-primary tracking-tight">LeanIQa</h1>
+          <h1 className="text-[24px] font-bold text-text-primary tracking-tight">LeanIQA</h1>
           <p className="text-[14px] text-text-secondary">Your AI body coach</p>
         </div>
 
@@ -141,7 +141,7 @@ export function AuthScreen() {
                 </p>
                 <div className="bg-purple/5 border border-purple/20 rounded-lg p-3">
                   <p className="text-[12px] text-purple font-medium">
-                    📧 Open Gmail, Outlook, or your mail app → tap the link from LeanIQa
+                    📧 Open Gmail, Outlook, or your mail app → tap the link from LeanIQA
                   </p>
                 </div>
                 <button

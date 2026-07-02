@@ -175,7 +175,7 @@ export function DashboardScreen() {
     <div className="screen-container screen-enter">
       {!bannerDismissed && (
         <div className="bg-[rgba(212,255,0,0.1)] border-[0.5px] border-[#D4FF00]/30 text-[#D4FF00] p-[12px_16px] text-[13px] font-medium mb-[20px] rounded-xl flex justify-between items-center">
-          <span>LeanIQa Beta — Premium unlocked.</span>
+          <span>LeanIQA Beta — Premium unlocked.</span>
           <button
             onClick={() => setBannerDismissed(true)}
             className="text-[#D4FF00] hover:opacity-70 transition-opacity"

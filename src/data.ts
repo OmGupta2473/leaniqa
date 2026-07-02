@@ -35,6 +35,10 @@ export interface CachedMealMacros {
 // Values are macros PER SERVING (typical serving) unless per100g is true
 // per100g items get multiplied by (quantity / 100) automatically
 export const MealMacroCache: Record<string, CachedMealMacros> = {
+  // Combined meals (highest priority)
+  'roti with soya sabji': { calories: 345, protein: 28, fat: 12, carbs: 40, confidence: 92 },
+  '2 roti with soya sabji': { calories: 425, protein: 31, fat: 15, carbs: 55, confidence: 92 },
+  
   // Eggs
   'egg': { calories: 70, protein: 6, fat: 5, carbs: 0.5, confidence: 97 },
   'boiled egg': { calories: 70, protein: 6, fat: 5, carbs: 0.5, confidence: 97 },
@@ -163,36 +167,50 @@ export function extractQuantityAndFood(text: string): { quantity: number; unit: 
 // Look up cached macros with quantity scaling
 export function lookupCachedMeal(text: string): (CachedMealMacros & { scaledCalories: number; scaledProtein: number; scaledFat: number; scaledCarbs: number }) | null {
   const normalized = text.toLowerCase().trim();
-  
   const extracted = extractQuantityAndFood(normalized);
-  
-  // Try direct lookup first
+  const searchKey = extracted?.foodKey || normalized;
+
+  // Helper to scale macros
+  const scaleMacros = (macros: CachedMealMacros, quantity: number, unit?: string) => {
+    const isGrams = unit === 'g';
+    let multiplier = 1;
+    if (macros.per100g && isGrams) {
+      multiplier = quantity / 100;
+    } else if (macros.per100g && !isGrams) {
+      multiplier = 1;
+    } else {
+      multiplier = quantity;
+    }
+    return {
+      ...macros,
+      scaledCalories: Math.round(macros.calories * multiplier),
+      scaledProtein: Math.round(macros.protein * multiplier * 10) / 10,
+      scaledFat: Math.round(macros.fat * multiplier * 10) / 10,
+      scaledCarbs: Math.round(macros.carbs * multiplier * 10) / 10,
+    };
+  };
+
+  const quantity = extracted?.quantity ?? 1;
+
+  // 1. Try EXACT match first (highest precision)
+  if (MealMacroCache[searchKey]) {
+    return scaleMacros(MealMacroCache[searchKey], quantity, extracted?.unit);
+  }
+
+  // 2. Try CONTAINS match (searchKey contains a known food key)
   for (const [key, macros] of Object.entries(MealMacroCache)) {
-    const textToCheck = extracted?.foodKey || normalized;
-    if (textToCheck.includes(key) || key.includes(textToCheck)) {
-      const quantity = extracted?.quantity ?? 1;
-      const isGrams = extracted?.unit === 'g';
-      
-      let multiplier = 1;
-      if (macros.per100g && isGrams) {
-        multiplier = quantity / 100;
-      } else if (macros.per100g && !isGrams) {
-        // No unit specified for per100g food — assume 100g serving
-        multiplier = 1;
-      } else {
-        // Count-based food
-        multiplier = quantity;
-      }
-      
-      return {
-        ...macros,
-        scaledCalories: Math.round(macros.calories * multiplier),
-        scaledProtein: Math.round(macros.protein * multiplier * 10) / 10,
-        scaledFat: Math.round(macros.fat * multiplier * 10) / 10,
-        scaledCarbs: Math.round(macros.carbs * multiplier * 10) / 10,
-      };
+    if (searchKey === key) continue;
+    if (searchKey.includes(key) && searchKey.length - key.length <= 6) {
+      return scaleMacros(macros, quantity, extracted?.unit);
     }
   }
-  
+
+  // 3. Try REVERSE CONTAINS (a known key contains the search text)
+  for (const [key, macros] of Object.entries(MealMacroCache)) {
+    if (key.includes(searchKey)) {
+      return scaleMacros(macros, quantity, extracted?.unit);
+    }
+  }
+
   return null;
 }

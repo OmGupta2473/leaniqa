@@ -25,7 +25,7 @@ import { WifiOff } from 'lucide-react';
 
 const TITLES: Record<string, string> = {
   auth: 'Sign In',
-  onboard: 'Welcome to LeanIQa',
+  onboard: 'Welcome to LeanIQA',
   goal: 'Set Your Body Goal',
   dash: 'Dashboard',
   meal: 'Nutrition Log',
@@ -130,7 +130,7 @@ export default function App() {
     }
   }, [session, loadingSession, currentScreen, profile, loadingProfile, goal, loadingGoal, setScreen, onboardingCompleted, setOnboardingCompleted, goalSetCompleted, setGoalSetCompleted, editProfileMode]);
 
-  const title = TITLES[currentScreen] || 'LeanIQa';
+  const title = TITLES[currentScreen] || 'LeanIQA';
 
   if (loadingSession) {
     return <div className="min-h-screen flex items-center justify-center bg-background-primary text-text-secondary text-[14px]">Loading...</div>;
