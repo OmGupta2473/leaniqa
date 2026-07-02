@@ -8,6 +8,7 @@ import { complianceService } from "../services/complianceService";
 import { useEffect, useState, useRef } from "react";
 import { QueryError } from "../components/QueryError";
 import { motion } from "motion/react";
+import { useNavigate } from "react-router-dom";
 
 function AnimatedNumber({
   value,
@@ -43,8 +44,9 @@ function AnimatedNumber({
 }
 
 export function DashboardScreen() {
-  const { setScreen, onboardingData, goalSetCompleted, calorieStreak, proteinStreak } = useAppStore();
+  const { onboardingData, goalSetCompleted, calorieStreak, proteinStreak } = useAppStore();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -191,7 +193,7 @@ export function DashboardScreen() {
             Set your body goal to unlock all features
           </div>
           <button
-            onClick={() => setScreen("goal")}
+            onClick={() => navigate("/goal")}
             className="bg-[#D4FF00] text-[#0A0A0A] font-bold text-[15px] rounded-[100px] p-[12px_24px] border-none tracking-[-0.2px] hover:scale-[1.02] active:scale-[0.97] transition-all"
           >
             Set goal →
@@ -256,7 +258,7 @@ export function DashboardScreen() {
       {/* SECTION 3 — Body fat hero card */}
       <div
         className="progress-section-tappable"
-        onClick={() => setScreen("transformation")}
+        onClick={() => navigate("/transformation")}
       >
         <div className="progress-view-hint">
           <i
@@ -325,7 +327,7 @@ export function DashboardScreen() {
           {/* Calories */}
           <div 
             className="progress-section-tappable text-center flex flex-col justify-center relative !mb-0 !p-[14px] !pt-[26px] min-h-[120px] max-w-full overflow-hidden" 
-            onClick={() => setScreen('calorieDetail')}
+            onClick={() => navigate('/calorie')}
           >
             <div className="absolute top-[8px] right-[8px] text-[10px] font-medium text-[#D4FF00]/70 flex items-center gap-[2px]">
               View history <i className="ti ti-arrow-right" style={{ fontSize: '10px' }} aria-hidden="true"></i>
@@ -376,7 +378,7 @@ export function DashboardScreen() {
           {/* Protein */}
           <div 
             className="progress-section-tappable text-center flex flex-col justify-center relative !mb-0 !p-[14px] !pt-[26px] min-h-[120px] max-w-full overflow-hidden" 
-            onClick={() => setScreen('proteinDetail')}
+            onClick={() => navigate('/protein')}
           >
             <div className="absolute top-[8px] right-[8px] text-[10px] font-medium text-[#D4FF00]/70 flex items-center gap-[2px]">
               View history <i className="ti ti-arrow-right" style={{ fontSize: '10px' }} aria-hidden="true"></i>
@@ -565,7 +567,7 @@ export function DashboardScreen() {
 
       <div className="flex gap-[12px]">
         <button
-          onClick={() => setScreen("meal")}
+          onClick={() => navigate("/meals")}
           className="flex-1 bg-[#D4FF00] text-[#0A0A0A] font-bold text-[15px] rounded-[100px] p-[16px_20px] border-none tracking-[-0.2px] hover:scale-[1.02] hover:opacity-[0.95] active:scale-[0.97] transition-all"
         >
           Log Meal

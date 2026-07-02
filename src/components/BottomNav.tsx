@@ -1,4 +1,3 @@
-import { useAppStore } from "../store";
 import {
   LayoutDashboard,
   MessageSquare,
@@ -6,27 +5,29 @@ import {
   FileBarChart,
   Target,
 } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export function BottomNav() {
-  const { currentScreen, setScreen } = useAppStore();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const navItems = [
-    { id: "goal", icon: Target, label: "Goal" },
-    { id: "dash", icon: LayoutDashboard, label: "Dashboard" },
-    { id: "meal", icon: MessageSquare, label: "Log Meal", primary: true },
-    { id: "progress", icon: TrendingUp, label: "Progress" },
-    { id: "week", icon: FileBarChart, label: "Activity" },
+    { id: "/goal", icon: Target, label: "Goal" },
+    { id: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { id: "/meals", icon: MessageSquare, label: "Log Meal", primary: true },
+    { id: "/progress", icon: TrendingUp, label: "Progress" },
+    { id: "/activity", icon: FileBarChart, label: "Activity" },
   ];
 
   return (
     <div className="flex justify-around items-center h-[60px] w-full">
       {navItems.map((item) => {
-        const active = currentScreen === item.id;
+        const active = location.pathname === item.id;
         const color = item.primary ? "#D4FF00" : active ? "#D4FF00" : "rgba(235,235,245,0.4)";
         return (
           <button
             key={item.id}
-            onClick={() => setScreen(item.id)}
+            onClick={() => navigate(item.id)}
             style={{
               width: "100%",
               flex: 1,

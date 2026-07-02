@@ -366,8 +366,6 @@ export interface ChatMessage {
 }
 
 interface AppState {
-  currentScreen: string;
-  setScreen: (screen: string) => void;
   clearStore: () => void;
   onboardingData?: any;
   setOnboardingData: (data: any) => void;
@@ -415,9 +413,7 @@ export const useAppStore = create<AppState>()(
       }));
 
       return {
-        currentScreen: 'onboard',
-        setScreen: (screen) => set({ currentScreen: screen }),
-        clearStore: () => set({ currentScreen: 'onboard', onboardingData: undefined, onboardingCompleted: false, goalSetCompleted: false, editProfileMode: false, chatHistory: [], dailyLogs: [], calorieStreak: 0, proteinStreak: 0, earnedAwards: computeEarnedAwards([]) }),
+        clearStore: () => set({ onboardingData: undefined, onboardingCompleted: false, goalSetCompleted: false, editProfileMode: false, chatHistory: [], dailyLogs: [], calorieStreak: 0, proteinStreak: 0, earnedAwards: computeEarnedAwards([]) }),
         setOnboardingData: (data) => set({ onboardingData: data }),
         onboardingCompleted: false,
         setOnboardingCompleted: (completed) => set({ onboardingCompleted: completed }),
@@ -531,7 +527,6 @@ export const useAppStore = create<AppState>()(
     {
       name: 'leaniqa-nav',
       partialize: (state) => ({ 
-        currentScreen: state.currentScreen, 
         onboardingData: state.onboardingData, 
         onboardingCompleted: state.onboardingCompleted,
         goalSetCompleted: state.goalSetCompleted,

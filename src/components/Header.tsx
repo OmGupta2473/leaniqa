@@ -5,16 +5,17 @@ import { supabase } from '../lib/supabase';
 import { useNetworkStatus } from '../lib/utils';
 import { WifiOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const TITLES: Record<string, string> = {
-  auth: 'Sign In',
-  onboard: 'Welcome to LeanIQA',
-  goal: 'Set Your Body Goal',
-  dash: 'Dashboard',
-  meal: 'Nutrition Log',
-  progress: 'Timeline Projection',
-  week: 'Activity',
-  pricing: 'Plans & pricing'
+  '/login': 'Sign In',
+  '/onboarding': 'Welcome to LeanIQA',
+  '/goal': 'Set Your Body Goal',
+  '/dashboard': 'Dashboard',
+  '/meals': 'Nutrition Log',
+  '/progress': 'Timeline Projection',
+  '/activity': 'Activity',
+  '/pricing': 'Plans & pricing'
 };
 
 function getLocalDateString() {
@@ -26,9 +27,11 @@ function getLocalDateString() {
 }
 
 export function Header() {
-  const { currentScreen, setScreen, earnedAwards } = useAppStore();
+  const { earnedAwards } = useAppStore();
   const { isOnline } = useNetworkStatus();
   const [session, setSession] = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -45,7 +48,7 @@ export function Header() {
   const todayStr = getLocalDateString();
   const hasNewAwards = earnedAwards.some(a => a.earned && a.earnedDate === todayStr);
 
-  const title = TITLES[currentScreen] || 'LeanIQA';
+  const title = TITLES[location.pathname] || 'LeanIQA';
 
   return (
     <div className="px-5 py-4 border-b-[0.5px] border-border-tertiary flex items-center justify-between shrink-0 bg-background-primary z-10">
@@ -60,7 +63,7 @@ export function Header() {
       <div className="flex items-center gap-3">
         <div 
           className="awards-nav-btn"
-          onClick={() => setScreen('awards')}
+          onClick={() => navigate('/awards')}
           title="Awards Hall"
         >
           <i className="ti ti-trophy text-[18px] text-[#D4FF00]"></i>
@@ -68,7 +71,7 @@ export function Header() {
         </div>
         <div 
           className="w-8 h-8 rounded-full bg-purple-bg flex items-center justify-center text-[12px] font-medium text-purple cursor-pointer"
-          onClick={() => setScreen('profile')}
+          onClick={() => navigate('/profile')}
         >
           {profile?.name ? profile.name.substring(0, 2).toUpperCase() : 'ME'}
         </div>

@@ -12,17 +12,20 @@ import {
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useQueryClient } from "@tanstack/react-query";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export function Sidebar({ className }: { className?: string }) {
-  const { currentScreen, setScreen, clearStore } = useAppStore();
+  const { clearStore } = useAppStore();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const navItems = [
-    { id: "goal", icon: Target, label: "Goal Setter" },
-    { id: "dash", icon: LayoutDashboard, label: "Dashboard" },
-    { id: "meal", icon: MessageSquare, label: "Meals", dot: true },
-    { id: "progress", icon: TrendingUp, label: "Progress" },
-    { id: "week", icon: FileBarChart, label: "Activity" },
+    { id: "/goal", icon: Target, label: "Goal Setter" },
+    { id: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { id: "/meals", icon: MessageSquare, label: "Meals", dot: true },
+    { id: "/progress", icon: TrendingUp, label: "Progress" },
+    { id: "/activity", icon: FileBarChart, label: "Activity" },
   ];
 
   const handleLogout = async () => {
@@ -43,12 +46,12 @@ export function Sidebar({ className }: { className?: string }) {
         {navItems.map((item) => (
           <button
             key={item.id}
-            onClick={() => setScreen(item.id)}
+            onClick={() => navigate(item.id)}
             title={item.label}
             aria-label={item.label}
             className={cn(
               "cursor-pointer transition-all relative",
-              currentScreen === item.id
+              location.pathname === item.id
                 ? "bg-background-primary text-purple border-[0.5px] border-border-tertiary shadow-sm"
                 : "text-text-secondary hover:bg-background-primary hover:text-text-primary",
             )}
@@ -62,12 +65,12 @@ export function Sidebar({ className }: { className?: string }) {
         ))}
         <div className="flex-1" />
         <button
-          onClick={() => setScreen("profile")}
+          onClick={() => navigate("/profile")}
           title="Profile"
           aria-label="Profile"
           className={cn(
             "cursor-pointer transition-all relative",
-            currentScreen === "profile"
+            location.pathname === "/profile"
               ? "bg-background-primary text-purple border-[0.5px] border-border-tertiary shadow-sm"
               : "text-text-secondary hover:bg-background-primary hover:text-text-primary",
           )}
@@ -76,12 +79,12 @@ export function Sidebar({ className }: { className?: string }) {
           <span className="sidebar-label">Profile</span>
         </button>
         <button
-          onClick={() => setScreen("pricing")}
+          onClick={() => navigate("/pricing")}
           title="Plans"
           aria-label="Plans"
           className={cn(
             "cursor-pointer transition-all relative",
-            currentScreen === "pricing"
+            location.pathname === "/pricing"
               ? "bg-background-primary text-purple border-[0.5px] border-border-tertiary shadow-sm"
               : "text-text-secondary hover:bg-background-primary hover:text-text-primary",
           )}
