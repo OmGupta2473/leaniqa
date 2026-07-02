@@ -97,6 +97,25 @@ export const MealMacroCache: Record<string, CachedMealMacros> = {
   'tuna': { calories: 132, protein: 28, fat: 1, carbs: 0, confidence: 97, per100g: true },
   'rohu': { calories: 97, protein: 17, fat: 2, carbs: 0, confidence: 94, per100g: true },
   
+  // Indian sabzi / vegetable curries (per serving ~150g bowl)
+  'soya sabji': { calories: 185, protein: 22, fat: 6, carbs: 10, confidence: 82 },
+  'sabji': { calories: 120, protein: 4, fat: 5, carbs: 15, confidence: 72 },
+  'sabzi': { calories: 120, protein: 4, fat: 5, carbs: 15, confidence: 72 },
+  'aloo sabji': { calories: 200, protein: 4, fat: 8, carbs: 28, confidence: 80 },
+  'bhindi': { calories: 90, protein: 3, fat: 4, carbs: 10, confidence: 84 },
+  'palak paneer': { calories: 320, protein: 14, fat: 22, carbs: 16, confidence: 85 },
+  'matar paneer': { calories: 310, protein: 13, fat: 20, carbs: 18, confidence: 83 },
+  'chana masala': { calories: 180, protein: 9, fat: 5, carbs: 26, confidence: 85 },
+  'mixed veg': { calories: 130, protein: 5, fat: 6, carbs: 16, confidence: 75 },
+  'aloo gobi': { calories: 160, protein: 4, fat: 7, carbs: 20, confidence: 80 },
+  
+  // Snacks
+  'biscuit': { calories: 50, protein: 1, fat: 2, carbs: 8, confidence: 82 },
+  'chai': { calories: 80, protein: 2, fat: 3, carbs: 12, confidence: 85 },
+  'bread': { calories: 80, protein: 3, fat: 1, carbs: 15, confidence: 88 },
+  'butter': { calories: 100, protein: 0, fat: 11, carbs: 0, confidence: 95 },
+  'peanut butter': { calories: 190, protein: 8, fat: 16, carbs: 6, confidence: 94 },
+  
   // Common Indian meals
   'dal chawal': { calories: 400, protein: 14, fat: 4, carbs: 78, confidence: 85 },
   'dal rice': { calories: 400, protein: 14, fat: 4, carbs: 78, confidence: 85 },
