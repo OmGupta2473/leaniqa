@@ -9,6 +9,8 @@ import { LegacyApp } from '../LegacyApp';
 import { RouteErrorBoundary } from '../components/RouteErrorBoundary';
 import { ScrollHandler } from '../components/ScrollHandler';
 import { ScreenSkeleton } from '../components/ScreenSkeleton';
+import { RouteMetadata } from '../components/RouteMetadata';
+import { AnalyticsObserver } from '../components/AnalyticsObserver';
 
 const DashboardScreen = lazy(() => import('../screens/Dashboard').then(module => ({ default: module.DashboardScreen })));
 const MealLoggerScreen = lazy(() => import('../screens/MealLogger').then(module => ({ default: module.MealLoggerScreen })));
@@ -28,6 +30,8 @@ const NotFoundScreen = lazy(() => import('../screens/NotFound').then(module => (
 function RootLayout() {
   return (
     <>
+      <AnalyticsObserver />
+      <RouteMetadata />
       <ScrollHandler />
       <ScrollRestoration />
       <LegacyApp />
@@ -57,7 +61,8 @@ export const routes: RouteObject[] = [
                   <AuthScreen />
                 </Suspense>
               </AuthLayout>
-            ) 
+            ),
+            handle: { title: 'Sign In', description: 'Log in to your LeanIQA account.' }
           }
         ]
       },
@@ -67,18 +72,18 @@ export const routes: RouteObject[] = [
           {
             element: <AppLayout />,
             children: [
-              { path: '/onboarding', element: <Suspense fallback={<ScreenSkeleton />}><OnboardingScreen /></Suspense> },
-              { path: '/goal', element: <Suspense fallback={<ScreenSkeleton />}><GoalSetterScreen /></Suspense> },
-              { path: '/dashboard', element: <Suspense fallback={<ScreenSkeleton />}><DashboardScreen /></Suspense> },
-              { path: '/meals', element: <Suspense fallback={<ScreenSkeleton />}><MealLoggerScreen /></Suspense> },
-              { path: '/progress', element: <Suspense fallback={<ScreenSkeleton />}><ProgressScreen /></Suspense> },
-              { path: '/activity', element: <Suspense fallback={<ScreenSkeleton />}><WeeklyReportScreen /></Suspense> },
-              { path: '/profile', element: <Suspense fallback={<ScreenSkeleton />}><ProfileScreen /></Suspense> },
-              { path: '/pricing', element: <Suspense fallback={<ScreenSkeleton />}><PricingScreen /></Suspense> },
-              { path: '/awards', element: <Suspense fallback={<ScreenSkeleton />}><AwardsScreen /></Suspense> },
-              { path: '/transformation', element: <Suspense fallback={<ScreenSkeleton />}><TransformationScreen /></Suspense> },
-              { path: '/calorie', element: <Suspense fallback={<ScreenSkeleton />}><CalorieDetailScreen /></Suspense> },
-              { path: '/protein', element: <Suspense fallback={<ScreenSkeleton />}><ProteinDetailScreen /></Suspense> }
+              { path: '/onboarding', element: <Suspense fallback={<ScreenSkeleton />}><OnboardingScreen /></Suspense>, handle: { title: 'Welcome', description: 'Get started with LeanIQA.' } },
+              { path: '/goal', element: <Suspense fallback={<ScreenSkeleton />}><GoalSetterScreen /></Suspense>, handle: { title: 'Set Goal', description: 'Set your nutrition and body goals.' } },
+              { path: '/dashboard', element: <Suspense fallback={<ScreenSkeleton />}><DashboardScreen /></Suspense>, handle: { title: 'Dashboard', description: 'Your daily nutrition and progress overview.' } },
+              { path: '/meals', element: <Suspense fallback={<ScreenSkeleton />}><MealLoggerScreen /></Suspense>, handle: { title: 'Log Meal', description: 'Log your meals and track your macros.' } },
+              { path: '/progress', element: <Suspense fallback={<ScreenSkeleton />}><ProgressScreen /></Suspense>, handle: { title: 'Progress', description: 'Track your long-term body transformation.' } },
+              { path: '/activity', element: <Suspense fallback={<ScreenSkeleton />}><WeeklyReportScreen /></Suspense>, handle: { title: 'Activity', description: 'Weekly compliance and activity report.' } },
+              { path: '/profile', element: <Suspense fallback={<ScreenSkeleton />}><ProfileScreen /></Suspense>, handle: { title: 'Profile', description: 'Manage your LeanIQA profile.' } },
+              { path: '/pricing', element: <Suspense fallback={<ScreenSkeleton />}><PricingScreen /></Suspense>, handle: { title: 'Pricing', description: 'Choose a subscription plan.' } },
+              { path: '/awards', element: <Suspense fallback={<ScreenSkeleton />}><AwardsScreen /></Suspense>, handle: { title: 'Awards', description: 'View your earned achievements.' } },
+              { path: '/transformation', element: <Suspense fallback={<ScreenSkeleton />}><TransformationScreen /></Suspense>, handle: { title: 'Transformation', description: 'Your body transformation journey.' } },
+              { path: '/calorie', element: <Suspense fallback={<ScreenSkeleton />}><CalorieDetailScreen /></Suspense>, handle: { title: 'Calorie Detail', description: 'Detailed breakdown of your calorie intake.' } },
+              { path: '/protein', element: <Suspense fallback={<ScreenSkeleton />}><ProteinDetailScreen /></Suspense>, handle: { title: 'Protein Detail', description: 'Detailed breakdown of your protein intake.' } }
             ]
           }
         ]
@@ -89,7 +94,8 @@ export const routes: RouteObject[] = [
       },
       {
         path: '*',
-        element: <Suspense fallback={<ScreenSkeleton />}><NotFoundScreen /></Suspense>
+        element: <Suspense fallback={<ScreenSkeleton />}><NotFoundScreen /></Suspense>,
+        handle: { title: 'Page Not Found', description: 'The page you are looking for does not exist.' }
       }
     ]
   }
