@@ -321,7 +321,7 @@ export function DashboardScreen() {
         </div>
 
         {/* 2-column grid */}
-        <div className="grid grid-cols-2 gap-[10px] mb-[12px] w-full overflow-hidden">
+        <div className="macro-grid-2col mb-[12px]">
           {/* Calories */}
           <div 
             className="progress-section-tappable text-center flex flex-col justify-center relative !mb-0 !p-[14px] !pt-[26px] min-h-[120px] max-w-full overflow-hidden" 

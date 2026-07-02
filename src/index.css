@@ -32,123 +32,235 @@ body {
   -webkit-text-size-adjust: 100%;
 }
 
-/* ── MOBILE FIRST ── */
+/* ═══════════════════════════════════════════════════
+   RESPONSIVE LAYOUT SYSTEM — Mobile-first
+   ═══════════════════════════════════════════════════ */
+
+/* Remove old phone-in-box constraint */
+#root .h-\[640px\] {
+  height: 100dvh !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  border-radius: 0 !important;
+  border: none !important;
+}
+
+/* Root fills the screen always */
 #root {
   width: 100%;
   height: 100dvh;
+  overflow: hidden;
   display: flex;
-  flex-direction: column;
 }
 
-/* The main app shell */
+/* ── App shell: the top-level flex container ── */
 .app-shell {
   display: flex;
   width: 100%;
   height: 100dvh;
-  background: #1C1C1E;
+  background: #0A0A0A;
   overflow: hidden;
+  position: relative;
 }
 
-/* Sidebar: hidden on mobile, visible on tablet+ */
+/* ── Sidebar: hidden on mobile, icon-only on tablet, expanded on desktop ── */
 .app-sidebar {
-  display: none; /* mobile: hidden */
+  display: none; /* hidden mobile */
   flex-shrink: 0;
+  height: 100dvh;
+  background: rgba(18,18,20,0.98);
+  border-right: 0.5px solid rgba(255,255,255,0.08);
+  overflow: hidden;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-direction: column;
+  z-index: 10;
 }
 
-/* Bottom nav: visible only on mobile */
-.bottom-nav {
-  display: flex; /* mobile: visible */
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: calc(56px + env(safe-area-inset-bottom));
-  padding-bottom: env(safe-area-inset-bottom);
-  background: rgba(28, 28, 30, 0.96);
-  backdrop-filter: blur(20px);
-  border-top: 0.5px solid rgba(255,255,255,0.1);
-  z-index: 40;
-  align-items: center;
-  justify-content: space-around;
+@media (min-width: 768px) {
+  .app-sidebar {
+    display: flex;
+    width: 64px; /* icon-only on tablet */
+  }
+  .sidebar-label {
+    display: none; /* hide text labels on tablet */
+  }
+  .sidebar-logo-text {
+    display: none;
+  }
 }
 
-/* Main content area */
-.app-main {
+@media (min-width: 1200px) {
+  .app-sidebar {
+    width: 240px; /* expanded on desktop */
+  }
+  .sidebar-label {
+    display: block; /* show text labels on desktop */
+  }
+  .sidebar-logo-text {
+    display: block;
+  }
+}
+
+/* ── Main content area ── */
+.app-content {
   flex: 1;
+  min-width: 0;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding-bottom: calc(56px + env(safe-area-inset-bottom)); /* space for bottom nav */
+  position: relative;
 }
 
-/* Tablet+ */
-@media (min-width: 480px) {
-  #root {
-    align-items: center;
-    justify-content: center;
-    background: #141416;
-    padding: 16px;
-  }
-  .app-shell {
-    width: 100%;
-    max-width: 480px;
-    height: 90dvh;
-    max-height: 880px;
-    border-radius: 20px;
-    border: 0.5px solid rgba(255,255,255,0.1);
-    box-shadow: 0 40px 80px rgba(0,0,0,0.6);
-    overflow: hidden;
-  }
-  .app-sidebar {
-    display: flex; /* show sidebar */
-  }
-  .bottom-nav {
-    display: none; /* hide bottom nav */
-  }
-  .app-main {
-    padding-bottom: 0; /* no space needed for bottom nav */
-  }
-}
-
-/* Desktop */
-@media (min-width: 768px) {
-  #root {
-    padding: 24px;
-  }
-}
-
-/* The floating action button in MealLogger must stay within the container */
-.fab-container {
-  position: absolute; /* relative to app-main, not viewport */
-  bottom: calc(env(safe-area-inset-bottom) + 24px);
-  right: 20px;
-  z-index: 50;
-}
-
-@media (min-width: 480px) {
-  .fab-container {
-    bottom: 20px;
-    right: 20px;
-    position: absolute; /* stays within the card */
-  }
-}
-
-/* The actual scrollable wrapper inside App.tsx */
-.overflow-y-auto.scroll-smooth {
-  width: 100%;
+/* ── Scrollable area inside content ── */
+.app-scroll {
+  flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  padding: 0 !important;
+  scroll-behavior: smooth;
 }
 
-/* The content area inside each screen */
+/* Content is centered and constrained on large screens */
+@media (min-width: 1200px) {
+  .app-scroll > * {
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+/* ── Bottom nav: visible only on mobile ── */
+.app-bottom-nav {
+  display: flex; /* visible on mobile */
+  flex-shrink: 0;
+  border-top: 0.5px solid rgba(255,255,255,0.08);
+  background: rgba(14,14,16,0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  z-index: 20;
+}
+
+@media (min-width: 768px) {
+  .app-bottom-nav {
+    display: none; /* hidden on tablet+ */
+  }
+}
+
+/* ── Screen container adapts to available space ── */
 .screen-container {
+  width: 100%;
+  padding: clamp(16px, 4vw, 28px) clamp(16px, 4vw, 28px) 
+           calc(clamp(24px, 6vw, 40px) + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 768px) {
+  .screen-container {
+    padding: 28px 28px 40px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .screen-container {
+    padding: 36px 32px 48px;
+  }
+}
+
+/* ── Glass card adapts to wider screens ── */
+@media (min-width: 1200px) {
+  .glass-card {
+    border-radius: 16px;
+  }
+}
+
+/* Modals and bottom sheets always max at 480px and centre within the content area */
+.bottom-sheet-inner {
   width: 100%;
   max-width: 480px;
   margin: 0 auto;
-  padding: clamp(16px, 4vw, 24px) clamp(16px, 5vw, 20px) calc(clamp(32px, 8vw, 48px) + env(safe-area-inset-bottom)) !important;
 }
+
+/* Overlay backdrops cover the entire viewport always */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+@media (min-width: 768px) {
+  .modal-overlay {
+    align-items: center;
+  }
+  .bottom-sheet-inner {
+    border-radius: 20px !important;
+    max-height: 90dvh;
+    margin: auto;
+  }
+}
+
+/* Sidebar nav item responsive */
+.app-sidebar button,
+.app-sidebar a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+@media (max-width: 1199px) {
+  .app-sidebar button,
+  .app-sidebar a {
+    justify-content: center;
+    padding: 10px 0;
+  }
+}
+
+.sidebar-logo-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 14px 16px;
+  border-bottom: 0.5px solid rgba(255,255,255,0.08);
+  overflow: hidden;
+}
+
+.sidebar-logo-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.sidebar-logo-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: -0.3px;
+}
+
+/* Dashboard macro grid responsive */
+.macro-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 1200px) {
+  .macro-grid-2col {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+}
+
 
 @theme {
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", system-ui, sans-serif;

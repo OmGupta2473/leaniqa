@@ -32,68 +32,73 @@ export function Sidebar({ className }: { className?: string }) {
   };
 
   return (
-    <nav
-      className={cn("w-16 bg-background-secondary border-r-[0.5px] border-border-tertiary flex flex-col items-center py-3 gap-1 shrink-0", className)}
-      role="navigation"
-      aria-label="App navigation"
-    >
-      <div className="w-10 h-10 mb-4 flex items-center justify-center font-bold italic text-purple text-xl">
-        L
+    <div className={cn("flex flex-col h-full w-full overflow-hidden", className)}>
+      <div className="sidebar-logo-area">
+        <div className="sidebar-logo-icon bg-purple-bg flex items-center justify-center font-bold italic text-purple text-lg">
+          L
+        </div>
+        <span className="sidebar-logo-text">LeanIQA</span>
       </div>
-      {navItems.map((item) => (
+      <div className="flex flex-col gap-1 p-2 flex-1">
+        {navItems.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => setScreen(item.id)}
+            title={item.label}
+            aria-label={item.label}
+            className={cn(
+              "cursor-pointer transition-all relative",
+              currentScreen === item.id
+                ? "bg-background-primary text-purple border-[0.5px] border-border-tertiary shadow-sm"
+                : "text-text-secondary hover:bg-background-primary hover:text-text-primary",
+            )}
+          >
+            <item.icon size={20} strokeWidth={2} className="shrink-0" />
+            <span className="sidebar-label">{item.label}</span>
+            {item.dot && (
+              <span className="w-1.5 h-1.5 rounded-full bg-purple absolute right-2 top-2"></span>
+            )}
+          </button>
+        ))}
+        <div className="flex-1" />
         <button
-          key={item.id}
-          onClick={() => setScreen(item.id)}
-          title={item.label}
-          aria-label={item.label}
+          onClick={() => setScreen("profile")}
+          title="Profile"
+          aria-label="Profile"
           className={cn(
-            "w-10 h-10 rounded-md border-none bg-transparent cursor-pointer flex items-center justify-center text-[18px] transition-all relative",
-            currentScreen === item.id
+            "cursor-pointer transition-all relative",
+            currentScreen === "profile"
               ? "bg-background-primary text-purple border-[0.5px] border-border-tertiary shadow-sm"
               : "text-text-secondary hover:bg-background-primary hover:text-text-primary",
           )}
         >
-          <item.icon size={20} strokeWidth={2} />
-          {item.dot && (
-            <span className="w-1.5 h-1.5 rounded-full bg-purple absolute right-1.5 top-1.5"></span>
-          )}
+          <User size={20} strokeWidth={2} className="shrink-0" />
+          <span className="sidebar-label">Profile</span>
         </button>
-      ))}
-      <div className="flex-1" />
-      <button
-        onClick={() => setScreen("profile")}
-        title="Profile"
-        aria-label="Profile"
-        className={cn(
-          "w-10 h-10 rounded-md border-none bg-transparent cursor-pointer flex items-center justify-center text-[18px] transition-all",
-          currentScreen === "profile"
-            ? "bg-background-primary text-purple border-[0.5px] border-border-tertiary shadow-sm"
-            : "text-text-secondary hover:bg-background-primary hover:text-text-primary",
-        )}
-      >
-        <User size={20} strokeWidth={2} />
-      </button>
-      <button
-        onClick={() => setScreen("pricing")}
-        title="Plans"
-        aria-label="Plans"
-        className={cn(
-          "w-10 h-10 rounded-md border-none bg-transparent cursor-pointer flex items-center justify-center text-[18px] transition-all",
-          currentScreen === "pricing"
-            ? "bg-background-primary text-purple border-[0.5px] border-border-tertiary shadow-sm"
-            : "text-text-secondary hover:bg-background-primary hover:text-text-primary",
-        )}
-      >
-        <CreditCard size={20} strokeWidth={2} />
-      </button>
-      <button
-        onClick={handleLogout}
-        title="Logout"
-        aria-label="Logout"
-        className="w-10 h-10 rounded-md border-none bg-transparent cursor-pointer flex items-center justify-center text-text-secondary hover:bg-background-primary hover:text-coral transition-all mt-1"
-      >
-        <LogOut size={20} strokeWidth={2} />
-      </button>
-    </nav>
+        <button
+          onClick={() => setScreen("pricing")}
+          title="Plans"
+          aria-label="Plans"
+          className={cn(
+            "cursor-pointer transition-all relative",
+            currentScreen === "pricing"
+              ? "bg-background-primary text-purple border-[0.5px] border-border-tertiary shadow-sm"
+              : "text-text-secondary hover:bg-background-primary hover:text-text-primary",
+          )}
+        >
+          <CreditCard size={20} strokeWidth={2} className="shrink-0" />
+          <span className="sidebar-label">Plans</span>
+        </button>
+        <button
+          onClick={handleLogout}
+          title="Logout"
+          aria-label="Logout"
+          className="cursor-pointer text-text-secondary hover:bg-background-primary hover:text-coral transition-all mt-1"
+        >
+          <LogOut size={20} strokeWidth={2} className="shrink-0" />
+          <span className="sidebar-label">Logout</span>
+        </button>
+      </div>
+    </div>
   );
 }
