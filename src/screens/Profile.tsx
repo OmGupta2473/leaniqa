@@ -2,10 +2,12 @@ import { useState } from "react";
 import { useAppStore } from "../store";
 import { profileService } from "../services/profileService";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 
 export function ProfileScreen() {
-  const { setScreen, onboardingData, setOnboardingData, setEditProfileMode } = useAppStore();
+  const { onboardingData, setOnboardingData, setEditProfileMode } = useAppStore();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
 
@@ -42,7 +44,7 @@ export function ProfileScreen() {
     // We update global state and navigate to onboarding step 1 to process the recalculations
     setEditProfileMode(true);
     setEditOpen(false);
-    setScreen('onboard');
+    navigate('/onboarding');
   };
 
   const handleReset = async () => {
@@ -51,7 +53,7 @@ export function ProfileScreen() {
       await profileService.deleteProfile?.(); // if this method exists, else skip
       setOnboardingData({});
       queryClient.invalidateQueries({ queryKey: ['profile'] });
-      setScreen('onboard'); // Go back to onboarding
+      navigate('/onboarding'); // Go back to onboarding
       setEditOpen(false);
     } catch (err) {
       console.error('Reset failed:', err);
@@ -100,7 +102,7 @@ export function ProfileScreen() {
       <div className="profile-scroll-area">
         {/* Header */}
         <div className="profile-header">
-          <i className="ti ti-arrow-left" style={{ fontSize: '22px', color: '#FFFFFF', cursor: 'pointer' }} onClick={() => setScreen('dash')}></i>
+          <i className="ti ti-arrow-left" style={{ fontSize: '22px', color: '#FFFFFF', cursor: 'pointer' }} onClick={() => navigate('/dashboard')}></i>
           <div style={{ fontSize: 'var(--font-2xl)', fontWeight: 700, color: '#FFFFFF', letterSpacing: '-0.3px' }}>Profile</div>
         </div>
 
@@ -176,7 +178,7 @@ export function ProfileScreen() {
           </div>
           <button 
             onClick={() => {
-              setScreen('goal');
+              navigate('/goal');
             }}
             style={{
               background: 'rgba(55,138,221,0.12)',

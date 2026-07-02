@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import React, { useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { profileService } from "../services/profileService";
@@ -13,7 +14,8 @@ function getLocalDateString() {
 }
 
 export function ProteinDetailScreen() {
-  const { setScreen, dailyLogs, proteinStreak, earnedAwards, onboardingData } =
+  const navigate = useNavigate();
+  const { dailyLogs, proteinStreak, earnedAwards, onboardingData } =
     useAppStore();
 
   useEffect(() => {
@@ -130,7 +132,7 @@ export function ProteinDetailScreen() {
       <div className="flex items-center justify-between p-[20px] pt-[calc(env(safe-area-inset-top)+20px)]">
         <i
           className="ti ti-arrow-left text-[22px] text-white cursor-pointer"
-          onClick={() => setScreen("dash")}
+          onClick={() => navigate("/dashboard")}
         ></i>
         <h1
           style={{

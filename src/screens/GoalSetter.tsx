@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from 'react';
 import { useAppStore } from '../store';
 import { cn } from '../lib/utils';
@@ -25,7 +26,8 @@ const Silhouette = ({ active }: { active: boolean }) => (
 );
 
 export function GoalSetterScreen() {
-  const { setScreen, onboardingData, setOnboardingData, goalSetCompleted, setGoalSetCompleted } = useAppStore();
+  const navigate = useNavigate();
+  const { onboardingData, setOnboardingData, goalSetCompleted, setGoalSetCompleted } = useAppStore();
   const queryClient = useQueryClient();
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
@@ -97,7 +99,7 @@ export function GoalSetterScreen() {
         estimatedCompletionDate: data.strategyData.estimatedCompletionDate
       });
       setGoalSetCompleted(true);
-      setScreen('dash');
+      navigate('/dashboard');
     },
     onError: (error) => {
       console.error("saveMutation error:", error);
@@ -261,7 +263,7 @@ export function GoalSetterScreen() {
                       setGoalSetCompleted(false);
                       setResetGoalConfirm(false);
                       queryClient.setQueryData(['goal'], null);
-                      setScreen('goal');
+                      navigate('/goal');
                     } catch { alert('Failed to reset goal. Try again.'); }
                   }}
                   style={{

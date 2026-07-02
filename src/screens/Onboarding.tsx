@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '../store';
 import { cn } from '../lib/utils';
@@ -34,7 +35,8 @@ function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: n
 }
 
 export function OnboardingScreen() {
-  const { setScreen, setOnboardingData, onboardingCompleted, setOnboardingCompleted, onboardingData, clearStore, editProfileMode, setEditProfileMode } = useAppStore();
+  const navigate = useNavigate();
+  const { setOnboardingData, onboardingCompleted, setOnboardingCompleted, onboardingData, clearStore, editProfileMode, setEditProfileMode } = useAppStore();
   const queryClient = useQueryClient();
 
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
@@ -133,11 +135,11 @@ export function OnboardingScreen() {
       if (editProfileMode) {
         // Returning from profile edit — go back to profile screen
         setEditProfileMode(false);
-        setScreen('profile');
+        navigate('/profile');
       } else {
         // Normal onboarding flow — go to goal setter
         setOnboardingCompleted(true);
-        setScreen('goal');
+        navigate('/goal');
       }
     },
     onError: (error: any) => {
@@ -378,7 +380,7 @@ export function OnboardingScreen() {
         </button>
         
         <button 
-          onClick={() => setScreen('goal')}
+          onClick={() => navigate('/goal')}
           style={{
             width: '100%', padding: '14px', borderRadius: '100px',
             background: 'rgba(212,255,0,0.1)', border: '0.5px solid rgba(212,255,0,0.3)',
@@ -685,7 +687,7 @@ export function OnboardingScreen() {
           
           {isEditMode && (
             <button
-              onClick={() => { setEditProfileMode(false); setScreen('profile'); }}
+              onClick={() => { setEditProfileMode(false); navigate('/profile'); }}
               style={{ width:'100%', background:'none', border:'none', color:'rgba(235,235,245,0.45)', fontSize:'var(--font-sm)', cursor:'pointer', marginTop:'10px', padding:'8px' }}
             >
               Cancel — go back

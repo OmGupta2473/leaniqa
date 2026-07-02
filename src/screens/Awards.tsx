@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import React, { useState, useEffect } from "react";
 import { useAppStore } from "../store";
 
@@ -108,7 +109,8 @@ export function renderBadge(
 }
 
 export function AwardsScreen() {
-  const { setScreen, calorieStreak, proteinStreak, earnedAwards } =
+  const navigate = useNavigate();
+  const { calorieStreak, proteinStreak, earnedAwards } =
     useAppStore();
 
   useEffect(() => {
@@ -133,7 +135,7 @@ export function AwardsScreen() {
       <div className="flex items-center justify-between p-[20px] pt-[calc(env(safe-area-inset-top)+20px)]">
         <i
           className="ti ti-arrow-left text-[22px] text-white cursor-pointer"
-          onClick={() => setScreen("dash")}
+          onClick={() => navigate("/dashboard")}
         ></i>
         <h1
           style={{

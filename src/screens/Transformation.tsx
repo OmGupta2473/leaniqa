@@ -2,9 +2,11 @@ import React, { useEffect } from "react";
 import { useAppStore } from "../store";
 import { useQuery } from "@tanstack/react-query";
 import { profileService } from "../services/profileService";
+import { useNavigate } from "react-router-dom";
 
 export function TransformationScreen() {
-  const { setScreen, onboardingData } = useAppStore();
+  const { onboardingData } = useAppStore();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const el = document.querySelector('.transformation-screen');
@@ -330,7 +332,7 @@ export function TransformationScreen() {
           className="ti ti-arrow-left"
           style={{ fontSize: "22px", color: "#FFFFFF", cursor: "pointer" }}
           aria-label="Go back"
-          onClick={() => setScreen("dash")}
+          onClick={() => navigate("/dashboard")}
         ></i>
         <h1
           style={{
