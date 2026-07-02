@@ -19,7 +19,7 @@ export function BottomNav() {
   ];
 
   return (
-    <div className="bottom-nav">
+    <div className="flex justify-around items-center h-[60px] w-full">
       {navItems.map((item) => {
         const active = currentScreen === item.id;
         const color = item.primary ? "#D4FF00" : active ? "#D4FF00" : "rgba(235,235,245,0.4)";

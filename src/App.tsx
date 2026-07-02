@@ -142,8 +142,13 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <Sidebar className="app-sidebar" />
-      <div className="app-main">
+      {/* ── Desktop/tablet sidebar ── */}
+      <aside className="app-sidebar">
+        <Sidebar />
+      </aside>
+
+      {/* ── Main content ── */}
+      <main className="app-content">
         <div className="px-5 py-4 border-b-[0.5px] border-border-tertiary flex items-center justify-between shrink-0 bg-background-primary z-10">
           <div className="text-[15px] font-medium text-text-primary flex items-center gap-2">
             {title}
@@ -173,7 +178,7 @@ export default function App() {
         
         <div 
           ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto overflow-x-hidden p-5 scroll-smooth relative"
+          className="app-scroll"
         >
           <ErrorBoundary>
             {currentScreen === 'onboard' && <OnboardingScreen />}
@@ -190,8 +195,12 @@ export default function App() {
             {currentScreen === 'awards' && <AwardsScreen />}
           </ErrorBoundary>
         </div>
-      </div>
-      <BottomNav />
+
+        {/* ── Mobile bottom nav ── */}
+        <nav className="app-bottom-nav">
+          <BottomNav />
+        </nav>
+      </main>
     </div>
   );
 }
