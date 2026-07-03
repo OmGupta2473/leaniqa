@@ -1,10 +1,10 @@
+import { useReportStore } from "../store/reports";
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { profileService } from '../services/profileService';
 import { mealService } from '../services/mealService';
 import { reportService } from '../services/reportService';
 import { complianceService } from '../services/complianceService';
-import { useAppStore } from '../store';
 import { useStreaks } from '../hooks/useStreaks';
 import { ProgressRing } from '../components/ProgressRing';
 import { MicroRing } from '../components/MicroRing';
@@ -25,8 +25,11 @@ const ELECTRIC_BLUE = '#378ADD';
 
 export function WeeklyReportScreen() {
   const { calorieStreak, proteinStreak, earnedAwards } = useStreaks();
-  const [view, setView] = useState<ActivityView>('dashboard');
-  const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const view = useReportStore(s => s.activityView) as ActivityView;
+  const setView = useReportStore(s => s.setActivityView);
+  const calendarMonthIso = useReportStore(s => s.activityCalendarMonth);
+  const calendarMonth = new Date(calendarMonthIso);
+  const setCalendarMonth = (d: Date | ((prev: Date) => Date)) => { const current = new Date(useReportStore.getState().activityCalendarMonth); const next = typeof d === "function" ? d(current) : d; useReportStore.getState().setActivityCalendarMonth(next.toISOString()); };
 
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });

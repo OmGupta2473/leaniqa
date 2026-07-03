@@ -1,7 +1,5 @@
 import { Check, X, ShieldCheck } from 'lucide-react';
-import { useAppStore } from '../store';
 import { useNavigate } from 'react-router-dom';
-// import { useAppStore } from '../store';
 
 export function PricingScreen() {
   const navigate = useNavigate();

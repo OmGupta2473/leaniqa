@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useAppStore } from "../store";
+import { useAppStore } from "../store/app";
+import { useChatStore } from "../store/chat";
+import { useNutritionStore } from "../store/nutrition";
 import {
   Send, Loader2, Dumbbell, Sun, Sunrise, Moon, Plus, X,
 } from "lucide-react";
@@ -84,12 +86,21 @@ function MealSlotRow({ slot, icon, label, timeRange, meals }: { slot: string; ic
 
 // ── MAIN SCREEN ────────────────────────────────────────────────────────────
 export function MealLoggerScreen() {
-  const { chatHistory, addChatMessage, clearOldChats } = useAppStore();
-  const [modalOpen, setModalOpen] = useState(false);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [aiStatus, setAiStatus] = useState<'unknown' | 'online' | 'offline'>('unknown');
-  const [selectedMealSlot, setSelectedMealSlot] = useState<"breakfast" | "lunch" | "dinner" | null>(null);
+  const chatHistory = useChatStore(s => s.chatHistory);
+  const addChatMessage = useChatStore(s => s.addChatMessage);
+  const clearOldChats = useChatStore(s => s.clearOldChats);
+  const activeModal = useAppStore(s => s.activeModal);
+  const setActiveModal = useAppStore(s => s.setActiveModal);
+  const modalOpen = activeModal === 'meal_logger';
+  const setModalOpen = (isOpen: boolean) => setActiveModal(isOpen ? 'meal_logger' : null);
+  const input = useNutritionStore(s => s.searchText);
+  const setInput = useNutritionStore(s => s.setSearchText);
+  const loading = useNutritionStore(s => s.aiParsingLoading);
+  const setLoading = useNutritionStore(s => s.setAiParsingLoading);
+  const aiStatus = useNutritionStore(s => s.aiStatus);
+  const setAiStatus = useNutritionStore(s => s.setAiStatus);
+  const selectedMealSlot = useNutritionStore(s => s.selectedMealSlot);
+  const setSelectedMealSlot = useNutritionStore(s => s.setSelectedMealSlot);
 
   useEffect(() => {
     clearOldChats();
