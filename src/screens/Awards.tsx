@@ -2,11 +2,11 @@ import { useNavigate } from "react-router-dom";
 import React, { useState, useEffect } from "react";
 import { useAppStore } from "../store";
 
-export function renderBadge(
+ function renderBadge(
   award: any,
   size: number,
-  earned: boolean,
-  animate: boolean,
+  earned?: boolean,
+  animate?: boolean,
 ) {
   const s = size;
   const cx = s / 2;
