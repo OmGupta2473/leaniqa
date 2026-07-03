@@ -1,6 +1,8 @@
+import { useChatStore } from "../store/chat";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from 'react';
-import { useAppStore } from '../store';
+import { useUserStore } from '../store/user';
+import { useAppStore } from '../store/app';
 import { cn } from '../lib/utils';
 import { CheckCircle2, ArrowRight } from 'lucide-react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
@@ -36,23 +38,42 @@ function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: n
 
 export function OnboardingScreen() {
   const navigate = useNavigate();
-  const { setOnboardingData, onboardingData, clearStore, editProfileMode, setEditProfileMode } = useAppStore();
+  const clearChatStore = useChatStore(s => s.clearChatStore);
+  const onboardingData = useUserStore(s => s.onboardingData);
+  const setOnboardingData = useUserStore(s => s.setOnboardingData);
+  const activeModal = useAppStore(s => s.activeModal);
+  const setActiveModal = useAppStore(s => s.setActiveModal);
+  const editProfileMode = useUserStore(s => s.editProfileMode);
+  const setEditProfileMode = useUserStore(s => s.setEditProfileMode);
   const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => profileService.getProfile() });
   const queryClient = useQueryClient();
 
-  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
-  const [name, setName] = useState('');
-  const [age, setAge] = useState('');
-  const [height, setHeight] = useState('');
-  const [heightUnit, setHeightUnit] = useState<'cm'|'ft'>('cm');
-  const [heightFt, setHeightFt] = useState('');
-  const [heightIn, setHeightIn] = useState('');
-  const [weight, setWeight] = useState('');
-  const [waist, setWaist] = useState('');
-  const [neck, setNeck] = useState('');
-  const [hip, setHip] = useState('');
-  const [gender, setGender] = useState<'Male'|'Female'|''>('');
-  const [activity, setActivity] = useState<'Sedentary'|'Lightly Active'|'Moderately Active'|'Very Active'|'Athlete'|''>('');
+  const resetConfirmOpen = activeModal === 'reset_confirm';
+  const setResetConfirmOpen = (isOpen: boolean) => setActiveModal(isOpen ? 'reset_confirm' : null);
+  const name = useUserStore(s => s.temporaryOnboardingValues.name || "");
+  const setName = (val: string) => useUserStore.getState().setTemporaryOnboardingValues({ name: val });
+  const age = useUserStore(s => s.temporaryOnboardingValues.age || "");
+  const setAge = (val: string) => useUserStore.getState().setTemporaryOnboardingValues({ age: val });
+  const height = useUserStore(s => s.temporaryOnboardingValues.height || "");
+  const setHeight = (val: string) => useUserStore.getState().setTemporaryOnboardingValues({ height: val });
+  const heightUnit = useUserStore(s => s.temporaryOnboardingValues.heightUnit || "cm");
+  const setHeightUnit = (val: "cm"|"ft") => useUserStore.getState().setTemporaryOnboardingValues({ heightUnit: val });
+  const heightFt = useUserStore(s => s.temporaryOnboardingValues.heightFt || "");
+  const setHeightFt = (val: string) => useUserStore.getState().setTemporaryOnboardingValues({ heightFt: val });
+  const heightIn = useUserStore(s => s.temporaryOnboardingValues.heightIn || "");
+  const setHeightIn = (val: string) => useUserStore.getState().setTemporaryOnboardingValues({ heightIn: val });
+  const weight = useUserStore(s => s.temporaryOnboardingValues.weight || "");
+  const setWeight = (val: string) => useUserStore.getState().setTemporaryOnboardingValues({ weight: val });
+  const waist = useUserStore(s => s.temporaryOnboardingValues.waist || "");
+  const setWaist = (val: string) => useUserStore.getState().setTemporaryOnboardingValues({ waist: val });
+  const neck = useUserStore(s => s.temporaryOnboardingValues.neck || "");
+  const setNeck = (val: string) => useUserStore.getState().setTemporaryOnboardingValues({ neck: val });
+  const hip = useUserStore(s => s.temporaryOnboardingValues.hip || "");
+  const setHip = (val: string) => useUserStore.getState().setTemporaryOnboardingValues({ hip: val });
+  const gender = useUserStore(s => s.temporaryOnboardingValues.gender || "");
+  const setGender = (val: "Male"|"Female"|"") => useUserStore.getState().setTemporaryOnboardingValues({ gender: val });
+  const activity = useUserStore(s => s.temporaryOnboardingValues.activity || "");
+  const setActivity = (val: "Sedentary"|"Lightly Active"|"Moderately Active"|"Very Active"|"Athlete"|"") => useUserStore.getState().setTemporaryOnboardingValues({ activity: val });
   
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showResults, setShowResults] = useState(false);
@@ -415,7 +436,7 @@ export function OnboardingScreen() {
                 <button 
                   onClick={() => {
                     setOnboardingData(undefined);
-                    clearStore();
+                    clearChatStore();
                     window.location.reload();
                   }}
                   style={{

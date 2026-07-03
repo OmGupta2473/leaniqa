@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useDashboardStore } from '../store/dashboard/dashboardStore';
 import { Target, Scale } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -12,7 +13,8 @@ export function ProgressScreen() {
   const [waist, setWaist] = useState('');
   const [neck, setNeck] = useState('');
   const [hip, setHip] = useState('');
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const showAdvanced = useDashboardStore(s => s.temporaryPreferences.showAdvanced || false);
+  const setShowAdvanced = (val: boolean) => useDashboardStore.getState().setTemporaryPreferences({ showAdvanced: val });
   
   const queryClient = useQueryClient();
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });

@@ -1,3 +1,4 @@
+import { useUserStore } from "../store/user";
 import { useAppStore } from "../store";
 import { cn } from "../lib/utils";
 import {
@@ -15,7 +16,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { NavLink } from "react-router-dom";
 
 export function Sidebar({ className }: { className?: string }) {
-  const { clearStore } = useAppStore();
+  const clearUserStore = useUserStore(s => s.clearUserStore);
+  
   const queryClient = useQueryClient();
 
   const navItems = [
@@ -27,7 +29,8 @@ export function Sidebar({ className }: { className?: string }) {
   ];
 
   const handleLogout = async () => {
-    clearStore();
+    
+    clearUserStore();
     queryClient.clear();
     await supabase.auth.signOut();
   };
