@@ -255,10 +255,30 @@ export function MealLoggerScreen() {
         };
       }
     },
+    onMutate: async (text: string) => {
+      await queryClient.cancelQueries({ queryKey: ["meals", "today"] });
+      const previousMeals = queryClient.getQueryData(["meals", "today"]);
+      
+      const estimate = getDeterministicFallback(text);
+      const optimisticMeal = {
+        id: 'opt-' + Date.now(),
+        meal_text: text,
+        calories: estimate.calories,
+        protein: estimate.protein,
+        fat: estimate.fat,
+        carbs: estimate.carbs,
+        meal_slot: selectedMealSlot || "lunch",
+        meal_time: new Date().toISOString()
+      };
+      
+      queryClient.setQueryData(["meals", "today"], (old: any) => {
+        if (!old) return [optimisticMeal];
+        return [...old, optimisticMeal];
+      });
+
+      return { previousMeals };
+    },
     onSuccess: (data, text) => {
-      queryClient.invalidateQueries({ queryKey: ["meals", "today"] });
-      queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] });
-      complianceService.updateTodayScore().then(() => { queryClient.invalidateQueries({ queryKey: ["complianceScore"] }); queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] }); }).catch(console.error);
       const foodsDetected = Array.isArray(data?.foods_detected) && data?.foods_detected.length > 0 ? data.foods_detected.join(', ') : text;
       
       let responseText = `✓ Logged: ${foodsDetected}`;
@@ -275,7 +295,25 @@ export function MealLoggerScreen() {
       addChatMessage({ role: 'ai', text: responseText + confidenceTag, data });
       setLoading(false);
     },
-    onError: () => { addChatMessage({ role: "ai", text: "Couldn't log that meal. Please try again." }); setLoading(false); },
+    onError: (err, text, context) => {
+      if (context?.previousMeals) {
+        queryClient.setQueryData(["meals", "today"], context.previousMeals);
+      }
+      addChatMessage({ role: "ai", text: "Couldn't log that meal. Please try again." });
+      setLoading(false);
+    },
+    onSettled: () => {
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["meals", "today"] }),
+        queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] }),
+        complianceService.updateTodayScore().then(() => 
+          Promise.all([
+            queryClient.invalidateQueries({ queryKey: ["complianceScore"] }),
+            queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] })
+          ])
+        ).catch(console.error)
+      ]);
+    },
   });
 
   const handleSend = useCallback(() => {

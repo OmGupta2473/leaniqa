@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '../store';
 import { cn } from '../lib/utils';
 import { CheckCircle2, ArrowRight } from 'lucide-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { profileService } from '../services/profileService';
 import { complianceService } from '../services/complianceService';
 
@@ -36,7 +36,8 @@ function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: n
 
 export function OnboardingScreen() {
   const navigate = useNavigate();
-  const { setOnboardingData, onboardingCompleted, setOnboardingCompleted, onboardingData, clearStore, editProfileMode, setEditProfileMode } = useAppStore();
+  const { setOnboardingData, onboardingData, clearStore, editProfileMode, setEditProfileMode } = useAppStore();
+  const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => profileService.getProfile() });
   const queryClient = useQueryClient();
 
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
@@ -138,7 +139,6 @@ export function OnboardingScreen() {
         navigate('/profile');
       } else {
         // Normal onboarding flow — go to goal setter
-        setOnboardingCompleted(true);
         navigate('/goal');
       }
     },
@@ -329,7 +329,7 @@ export function OnboardingScreen() {
 
   const isEditMode = editProfileMode;
 
-  if (onboardingCompleted && !isEditMode) {
+  if (profile && !isEditMode) {
     return (
       <div className="screen-container animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="text-center py-6">
@@ -414,7 +414,6 @@ export function OnboardingScreen() {
                 </button>
                 <button 
                   onClick={() => {
-                    setOnboardingCompleted(false);
                     setOnboardingData(undefined);
                     clearStore();
                     window.location.reload();

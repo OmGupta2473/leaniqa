@@ -1,4 +1,5 @@
 import { useAppStore } from '../store';
+import { useStreaks } from '../hooks/useStreaks';
 import { useQuery } from '@tanstack/react-query';
 import { profileService } from '../services/profileService';
 import { supabase } from '../lib/supabase';
@@ -27,7 +28,7 @@ function getLocalDateString() {
 }
 
 export function Header() {
-  const { earnedAwards } = useAppStore();
+  const { earnedAwards } = useStreaks();
   const { isOnline } = useNetworkStatus();
   const [session, setSession] = useState(null);
   const navigate = useNavigate();
