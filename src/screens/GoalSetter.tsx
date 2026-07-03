@@ -27,7 +27,7 @@ const Silhouette = ({ active }: { active: boolean }) => (
 
 export function GoalSetterScreen() {
   const navigate = useNavigate();
-  const { onboardingData, setOnboardingData, goalSetCompleted, setGoalSetCompleted } = useAppStore();
+  const { onboardingData, setOnboardingData } = useAppStore();
   const queryClient = useQueryClient();
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
@@ -75,17 +75,29 @@ export function GoalSetterScreen() {
       });
       return { strategyData, savedGoal };
     },
-    onSuccess: (data) => {
-      console.log('Navigating to Screen 3');
-      if (data.savedGoal) {
-        queryClient.setQueryData(['goal'], data.savedGoal);
-      } else {
-        queryClient.invalidateQueries({ queryKey: ['goal'] });
-      }
-      complianceService.updateTodayScore().then(() => {
-        queryClient.invalidateQueries({ queryKey: ['complianceScore'] });
-      }).catch(console.error);
+    onMutate: async (strategyData: any) => {
+      await queryClient.cancelQueries({ queryKey: ['goal'] });
+      const previousGoal = queryClient.getQueryData(['goal']);
       
+      const optimisticGoal = {
+        current_bf: strategyData.current_bf,
+        target_bf: strategyData.target_bf,
+        strategy: strategyData.strategy,
+        deficit_kcal: strategyData.deficit_kcal,
+        target_date: strategyData.targetDateIso
+      };
+
+      queryClient.setQueryData(['goal'], optimisticGoal);
+      return { previousGoal };
+    },
+    onError: (error, _, context) => {
+      if (context?.previousGoal) {
+        queryClient.setQueryData(['goal'], context.previousGoal);
+      }
+      console.error("saveMutation error:", error);
+      alert("Failed to save goal: " + error.message);
+    },
+    onSuccess: (data) => {
       setOnboardingData({
         ...onboardingData,
         currentBodyFatPct: data.strategyData.current_bf,
@@ -98,12 +110,15 @@ export function GoalSetterScreen() {
         estimatedWeeks: data.strategyData.estimatedWeeks,
         estimatedCompletionDate: data.strategyData.estimatedCompletionDate
       });
-      setGoalSetCompleted(true);
       navigate('/dashboard');
     },
-    onError: (error) => {
-      console.error("saveMutation error:", error);
-      alert("Failed to save goal: " + error.message);
+    onSettled: () => {
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['goal'] }),
+        complianceService.updateTodayScore().then(() => 
+          queryClient.invalidateQueries({ queryKey: ['complianceScore'] })
+        ).catch(console.error)
+      ]);
     }
   });
 
@@ -181,7 +196,7 @@ export function GoalSetterScreen() {
     };
   });
 
-  if (goalSetCompleted) {
+  if (goal) {
     const activeGoal = goal || onboardingData;
     const dailyKcal = profile?.maintenance_kcal && goal?.deficit_kcal !== undefined 
       ? profile.maintenance_kcal - goal.deficit_kcal 
@@ -260,7 +275,6 @@ export function GoalSetterScreen() {
                   onClick={async () => {
                     try {
                       await profileService.deleteGoal();
-                      setGoalSetCompleted(false);
                       setResetGoalConfirm(false);
                       queryClient.setQueryData(['goal'], null);
                       navigate('/goal');

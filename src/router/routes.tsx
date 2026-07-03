@@ -5,7 +5,6 @@ import { GuestRoute } from './GuestRoute';
 import { RootRedirect } from './RootRedirect';
 import { AppLayout } from './layouts/AppLayout';
 import { AuthLayout } from './layouts/AuthLayout';
-import { LegacyApp } from '../LegacyApp';
 import { RouteErrorBoundary } from '../components/RouteErrorBoundary';
 import { ScrollHandler } from '../components/ScrollHandler';
 import { ScreenSkeleton } from '../components/ScreenSkeleton';
@@ -34,7 +33,6 @@ function RootLayout() {
       <RouteMetadata />
       <ScrollHandler />
       <ScrollRestoration />
-      <LegacyApp />
       <Outlet />
     </>
   );

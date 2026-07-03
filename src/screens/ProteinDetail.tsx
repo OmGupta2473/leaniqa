@@ -3,7 +3,10 @@ import React, { useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { profileService } from "../services/profileService";
 import { mealService } from "../services/mealService";
-import { useAppStore, toUtcDayNumber } from "../store";
+import { useAppStore } from "../store";
+import { toUtcDayNumber } from "../lib/streaks";
+import { useStreaks } from "../hooks/useStreaks";
+import { reportService } from "../services/reportService";
 
 function getLocalDateString() {
   const d = new Date();
@@ -15,8 +18,9 @@ function getLocalDateString() {
 
 export function ProteinDetailScreen() {
   const navigate = useNavigate();
-  const { dailyLogs, proteinStreak, earnedAwards, onboardingData } =
-    useAppStore();
+  const { onboardingData } = useAppStore();
+  const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
+  const { proteinStreak, earnedAwards } = useStreaks();
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -33,21 +37,21 @@ export function ProteinDetailScreen() {
     queryFn: () => mealService.getTodaysMeals(),
   });
 
-  const proteinTarget =
+  const target_protein =
     profile?.protein_target ?? onboardingData?.proteinMid ?? 150;
 
   // find today's log, if it exists
   const todayStr = getLocalDateString();
   const proteinConsumed = meals ? meals.reduce((acc, m) => acc + m.protein, 0) : 0;
 
-  const isTargetHit = proteinConsumed >= proteinTarget;
+  const isTargetHit = proteinConsumed >= target_protein;
 
   const allTimeBestProStreak = useMemo(() => {
-    const sorted = [...dailyLogs].sort((a, b) => toUtcDayNumber(a.date) - toUtcDayNumber(b.date));
+    const sorted = [...metrics].sort((a, b) => toUtcDayNumber(a.date) - toUtcDayNumber(b.date));
     let best = 0, current = 0, prevDayNum: number | null = null;
     for (const log of sorted) {
       const dayNum = toUtcDayNumber(log.date);
-      if (log.proteinHitTarget && log.proteinConsumed > 0) {
+      if (log.actual_protein >= log.target_protein && log.actual_protein > 0) {
         current = (prevDayNum !== null && dayNum === prevDayNum + 1) ? current + 1 : 1;
         best = Math.max(best, current);
       } else {
@@ -56,30 +60,28 @@ export function ProteinDetailScreen() {
       prevDayNum = dayNum;
     }
     return best;
-  }, [dailyLogs]);
+  }, [metrics]);
 
   // Inject live data for today's chart entry
   const chartLogs = useMemo(() => {
-    const logs = [...dailyLogs];
+    const logs = [...metrics];
     const todayIdx = logs.findIndex(l => l.date === todayStr);
     if (todayIdx >= 0) {
-      logs[todayIdx] = { ...logs[todayIdx], proteinConsumed, proteinHitTarget: isTargetHit };
+      logs[todayIdx] = { ...logs[todayIdx], actual_protein: proteinConsumed, target_protein };
     } else {
       logs.push({
         date: todayStr,
-        caloriesConsumed: 0,
-        proteinConsumed,
-        calorieTarget: 0,
-        proteinTarget,
-        calorieUnderTarget: false,
-        proteinHitTarget: isTargetHit,
+        actual_calories: 0, user_id: "", water: 0, score: 0,
+        actual_protein: proteinConsumed,
+        target_calories: 0,
+        target_protein,
       });
     }
     return logs;
-  }, [dailyLogs, todayStr, proteinConsumed, proteinTarget, isTargetHit]);
+  }, [metrics, todayStr, proteinConsumed, target_protein, isTargetHit]);
 
   // Build chart
-  const buildProteinBarChart = (logs: typeof dailyLogs, target: number) => {
+  const buildProteinBarChart = (logs: typeof metrics, target: number) => {
     const sorted = [...logs]
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .slice(-30);
@@ -88,17 +90,17 @@ export function ProteinDetailScreen() {
     const chartHeight = 140;
     const barAreaHeight = 100;
     const maxVal = Math.max(
-      ...sorted.map((d) => d.proteinConsumed),
+      ...sorted.map((d) => d.actual_protein),
       target * 1.3,
     );
     const barWidth = Math.max(6, chartWidth / Math.max(sorted.length, 1) - 3);
 
     let bars = "";
     sorted.forEach((day, i) => {
-      const barH = (day.proteinConsumed / maxVal) * barAreaHeight;
+      const barH = (day.actual_protein / maxVal) * barAreaHeight;
       const x = i * (barWidth + 3);
       const y = barAreaHeight - barH;
-      const color = day.proteinHitTarget ? "#FF4D1C" : "rgba(255,255,255,0.15)";
+      const color = (day.actual_protein >= day.target_protein && day.actual_protein > 0) ? "#FF4D1C" : "rgba(255,255,255,0.15)";
       bars += `<rect x="${x}" y="${y}" width="${barWidth}" height="${barH}" rx="3" fill="${color}" opacity="0.85"/>`;
     });
 
@@ -120,7 +122,7 @@ export function ProteinDetailScreen() {
     </svg>`;
   };
 
-  const chartHtml = buildProteinBarChart(chartLogs, proteinTarget);
+  const chartHtml = buildProteinBarChart(chartLogs, target_protein);
   const proAwards = earnedAwards.filter((a) => a.category === "protein");
 
   return (
@@ -172,7 +174,7 @@ export function ProteinDetailScreen() {
                 fontWeight: 500,
               }}
             >
-              / {proteinTarget} g
+              / {target_protein} g
             </span>
           </div>
 

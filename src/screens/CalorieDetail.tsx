@@ -3,7 +3,10 @@ import React, { useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { profileService } from "../services/profileService";
 import { mealService } from "../services/mealService";
-import { useAppStore, toUtcDayNumber } from "../store";
+import { useAppStore } from "../store";
+import { toUtcDayNumber } from "../lib/streaks";
+import { useStreaks } from "../hooks/useStreaks";
+import { reportService } from "../services/reportService";
 
 function getLocalDateString() {
   const d = new Date();
@@ -15,8 +18,9 @@ function getLocalDateString() {
 
 export function CalorieDetailScreen() {
   const navigate = useNavigate();
-  const { dailyLogs, calorieStreak, earnedAwards, onboardingData } =
-    useAppStore();
+  const { onboardingData } = useAppStore();
+  const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
+  const { calorieStreak, earnedAwards } = useStreaks();
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -49,11 +53,11 @@ export function CalorieDetailScreen() {
   const isUnderTarget = caloriesConsumed <= dailyCalorieGoal;
 
   const allTimeBestCalStreak = useMemo(() => {
-    const sorted = [...dailyLogs].sort((a, b) => toUtcDayNumber(a.date) - toUtcDayNumber(b.date));
+    const sorted = [...metrics].sort((a, b) => toUtcDayNumber(a.date) - toUtcDayNumber(b.date));
     let best = 0, current = 0, prevDayNum: number | null = null;
     for (const log of sorted) {
       const dayNum = toUtcDayNumber(log.date);
-      if (log.calorieUnderTarget && log.caloriesConsumed > 0) {
+      if (log.actual_calories <= log.target_calories && log.actual_calories > 0) {
         current = (prevDayNum !== null && dayNum === prevDayNum + 1) ? current + 1 : 1;
         best = Math.max(best, current);
       } else {
@@ -62,30 +66,28 @@ export function CalorieDetailScreen() {
       prevDayNum = dayNum;
     }
     return best;
-  }, [dailyLogs]);
+  }, [metrics]);
 
   // Inject live data for today's chart entry
   const chartLogs = useMemo(() => {
-    const logs = [...dailyLogs];
+    const logs = [...metrics];
     const todayIdx = logs.findIndex(l => l.date === todayStr);
     if (todayIdx >= 0) {
-      logs[todayIdx] = { ...logs[todayIdx], caloriesConsumed, calorieUnderTarget: isUnderTarget };
+      logs[todayIdx] = { ...logs[todayIdx], actual_calories: caloriesConsumed, target_calories: dailyCalorieGoal };
     } else {
       logs.push({
         date: todayStr,
-        caloriesConsumed,
-        proteinConsumed: 0,
-        calorieTarget: dailyCalorieGoal,
-        proteinTarget: 0,
-        calorieUnderTarget: isUnderTarget,
-        proteinHitTarget: false,
+        actual_calories: caloriesConsumed,
+        actual_protein: 0, user_id: "", water: 0, score: 0,
+        target_calories: dailyCalorieGoal,
+        target_protein: 0,
       });
     }
     return logs;
-  }, [dailyLogs, todayStr, caloriesConsumed, dailyCalorieGoal, isUnderTarget]);
+  }, [metrics, todayStr, caloriesConsumed, dailyCalorieGoal, isUnderTarget]);
 
   // Build chart
-  const buildCalorieBarChart = (logs: typeof dailyLogs, target: number) => {
+  const buildCalorieBarChart = (logs: typeof metrics, target: number) => {
     const sorted = [...logs]
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .slice(-30);
@@ -94,7 +96,7 @@ export function CalorieDetailScreen() {
     const chartHeight = 140;
     const barAreaHeight = 100;
     const maxVal = Math.max(
-      ...sorted.map((d) => d.caloriesConsumed),
+      ...sorted.map((d) => d.actual_calories),
       target * 1.3,
       100,
     );
@@ -102,10 +104,10 @@ export function CalorieDetailScreen() {
 
     let bars = "";
     sorted.forEach((day, i) => {
-      const barH = (day.caloriesConsumed / maxVal) * barAreaHeight;
+      const barH = (day.actual_calories / maxVal) * barAreaHeight;
       const x = i * (barWidth + 3);
       const y = barAreaHeight - barH;
-      const color = day.calorieUnderTarget ? "#D4FF00" : "#FF4D1C";
+      const color = (day.actual_calories <= day.target_calories && day.actual_calories > 0) ? "#D4FF00" : "#FF4D1C";
       const opacity = i === sorted.length - 1 ? "1" : "0.7";
       bars += `<rect x="${x}" y="${y}" width="${barWidth}" height="${barH}" rx="3" fill="${color}" opacity="${opacity}"/>`;
     });

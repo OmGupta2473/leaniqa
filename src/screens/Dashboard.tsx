@@ -1,4 +1,5 @@
 import { useAppStore } from "../store";
+import { useStreaks } from "../hooks/useStreaks";
 import { Target, Footprints, Utensils, CheckCircle2, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { profileService } from "../services/profileService";
@@ -44,7 +45,8 @@ function AnimatedNumber({
 }
 
 export function DashboardScreen() {
-  const { onboardingData, goalSetCompleted, calorieStreak, proteinStreak } = useAppStore();
+  const { onboardingData } = useAppStore();
+  const { calorieStreak, proteinStreak } = useStreaks();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [bannerDismissed, setBannerDismissed] = useState(false);
@@ -187,7 +189,7 @@ export function DashboardScreen() {
         </div>
       )}
 
-      {!goalSetCompleted && (
+      {!goal && (
         <div className="glass-card text-white p-[16px_20px] text-center mb-[20px] flex flex-col items-center gap-[12px]">
           <div className="text-[15px] font-medium text-[#EBEBF5CC]">
             Set your body goal to unlock all features

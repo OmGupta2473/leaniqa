@@ -1,154 +1,204 @@
 import { supabase } from '../lib/supabase';
 import { DbProfile, DbGoal } from '../types/supabase';
 import { authService } from './authService';
+import { AppError, ErrorCodes } from '../lib/errors';
 
 export const profileService = {
   async getProfile(): Promise<DbProfile | null> {
-    const userId = await authService.getUserId();
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-      
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error fetching profile:', error);
-      return null;
+    try {
+      const userId = await authService.getUserId();
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+        
+      if (error && error.code !== 'PGRST116') {
+        throw new AppError({
+          code: ErrorCodes.INTERNAL_SERVER_ERROR,
+          message: 'Failed to fetch profile',
+          retryable: true,
+          status: 500,
+          details: error,
+        });
+      }
+      return data;
+    } catch (err) {
+      if (err instanceof AppError) throw err;
+      throw new AppError({
+        code: ErrorCodes.INTERNAL_SERVER_ERROR,
+        message: 'An unexpected error occurred while fetching profile',
+        retryable: false,
+        status: 500,
+        details: err,
+      });
     }
-    return data;
   },
 
   async upsertProfile(profileData: Partial<DbProfile>): Promise<DbProfile | null> {
-    const userId = await authService.getUserId();
-    const { data: { session } } = await supabase.auth.getSession();
-    const realEmail = session?.user?.email || '';
+    try {
+      const userId = await authService.getUserId();
+      const { data: { session } } = await supabase.auth.getSession();
+      const realEmail = session?.user?.email || '';
 
-    // First check if a profile already exists for this user
-    const { data: existing } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', userId)
-      .maybeSingle();
-
-    const payload: any = {
-      ...profileData,
-      id: userId,
-      email: realEmail
-    };
-
-    let data, error;
-
-    if (existing?.id) {
-      // Update existing row
-      const result = await supabase
-        .from('profiles')
-        .update(payload)
-        .eq('id', existing.id)
-        .select()
-        .maybeSingle();
-      data = result.data;
-      error = result.error;
-    } else {
-      // Insert new row
-      const result = await supabase
-        .from('profiles')
-        .insert({ ...payload, created_at: new Date().toISOString() })
-        .select()
-        .maybeSingle();
-      data = result.data;
-      error = result.error;
-    }
+      const payload = {
+        ...profileData,
+        id: userId,
+        email: realEmail,
+      };
       
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error upserting profile:', error);
-      throw error;
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .upsert(payload, { onConflict: 'id' })
+        .select()
+        .maybeSingle();
+        
+      if (error && error.code !== 'PGRST116') {
+        throw new AppError({
+          code: ErrorCodes.INTERNAL_SERVER_ERROR,
+          message: 'Failed to upsert profile',
+          retryable: true,
+          status: 500,
+          details: error,
+        });
+      }
+      return data || (payload as DbProfile);
+    } catch (err) {
+      if (err instanceof AppError) throw err;
+      throw new AppError({
+        code: ErrorCodes.INTERNAL_SERVER_ERROR,
+        message: 'An unexpected error occurred while upserting profile',
+        retryable: false,
+        status: 500,
+        details: err,
+      });
     }
-    return data || payload;
   },
 
   async getGoal(): Promise<DbGoal | null> {
-    const userId = await authService.getUserId();
-    const { data, error } = await supabase
-      .from('goals')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-      
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error fetching goal:', error);
-      return null;
+    try {
+      const userId = await authService.getUserId();
+      const { data, error } = await supabase
+        .from('goals')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+        
+      if (error && error.code !== 'PGRST116') {
+        throw new AppError({
+          code: ErrorCodes.INTERNAL_SERVER_ERROR,
+          message: 'Failed to fetch goal',
+          retryable: true,
+          status: 500,
+          details: error,
+        });
+      }
+      return data;
+    } catch (err) {
+      if (err instanceof AppError) throw err;
+      throw new AppError({
+        code: ErrorCodes.INTERNAL_SERVER_ERROR,
+        message: 'An unexpected error occurred while fetching goal',
+        retryable: false,
+        status: 500,
+        details: err,
+      });
     }
-    return data;
   },
 
   async upsertGoal(goalData: Partial<DbGoal>): Promise<DbGoal | null> {
-    const userId = await authService.getUserId();
-    
-    // First check if a goal already exists for this user
-    const { data: existing } = await supabase
-      .from('goals')
-      .select('id')
-      .eq('user_id', userId)
-      .maybeSingle();
+    try {
+      const userId = await authService.getUserId();
 
-    const payload: any = {
-      ...goalData,
-      user_id: userId
-    };
+      const payload = {
+        ...goalData,
+        user_id: userId,
+      };
 
-    let data, error;
-
-    if (existing?.id) {
-      // Update existing row by id — avoids ON CONFLICT entirely
-      const result = await supabase
+      const { data, error } = await supabase
         .from('goals')
-        .update(payload)
-        .eq('id', existing.id)
+        .upsert(payload, { onConflict: 'user_id' })
         .select()
         .maybeSingle();
-      data = result.data;
-      error = result.error;
-    } else {
-      // Insert new row
-      const result = await supabase
-        .from('goals')
-        .insert({ ...payload })
-        .select()
-        .maybeSingle();
-      data = result.data;
-      error = result.error;
+        
+      if (error && error.code !== 'PGRST116') {
+        throw new AppError({
+          code: ErrorCodes.INTERNAL_SERVER_ERROR,
+          message: 'Failed to upsert goal',
+          retryable: true,
+          status: 500,
+          details: error,
+        });
+      }
+      return data || (payload as DbGoal);
+    } catch (err) {
+      if (err instanceof AppError) throw err;
+      throw new AppError({
+        code: ErrorCodes.INTERNAL_SERVER_ERROR,
+        message: 'An unexpected error occurred while upserting goal',
+        retryable: false,
+        status: 500,
+        details: err,
+      });
     }
-      
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error upserting goal:', error);
-      throw error;
-    }
-    return data || payload;
   },
 
   async deleteGoal(): Promise<void> {
-    const userId = await authService.getUserId();
-    const { error } = await supabase
-      .from('goals')
-      .delete()
-      .eq('user_id', userId);
-    
-    if (error) {
-      console.error('Error deleting goal:', error);
-      throw error;
+    try {
+      const userId = await authService.getUserId();
+      const { error } = await supabase
+        .from('goals')
+        .delete()
+        .eq('user_id', userId);
+        
+      if (error) {
+        throw new AppError({
+          code: ErrorCodes.INTERNAL_SERVER_ERROR,
+          message: 'Failed to delete goal',
+          retryable: true,
+          status: 500,
+          details: error,
+        });
+      }
+    } catch (err) {
+      if (err instanceof AppError) throw err;
+      throw new AppError({
+        code: ErrorCodes.INTERNAL_SERVER_ERROR,
+        message: 'An unexpected error occurred while deleting goal',
+        retryable: false,
+        status: 500,
+        details: err,
+      });
     }
   },
 
   async deleteProfile(): Promise<void> {
-    const userId = await authService.getUserId();
-    const { error } = await supabase
-      .from('profiles')
-      .delete()
-      .eq('id', userId);
-    
-    if (error) {
-      console.error('Error deleting profile:', error);
-      throw error;
+    try {
+      const userId = await authService.getUserId();
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+        
+      if (error) {
+        throw new AppError({
+          code: ErrorCodes.INTERNAL_SERVER_ERROR,
+          message: 'Failed to delete profile',
+          retryable: true,
+          status: 500,
+          details: error,
+        });
+      }
+    } catch (err) {
+      if (err instanceof AppError) throw err;
+      throw new AppError({
+        code: ErrorCodes.INTERNAL_SERVER_ERROR,
+        message: 'An unexpected error occurred while deleting profile',
+        retryable: false,
+        status: 500,
+        details: err,
+      });
     }
   }
 };

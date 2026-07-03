@@ -39,18 +39,43 @@ export function ProgressScreen() {
         date: new Date().toISOString()
       }, showAdvanced);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['weightLogs'] });
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-      queryClient.invalidateQueries({ queryKey: ['goal'] });
-      complianceService.updateTodayScore().then(() => {
-        queryClient.invalidateQueries({ queryKey: ['complianceScore'] });
-      }).catch(console.error);
+    onMutate: async (val: number) => {
+      await queryClient.cancelQueries({ queryKey: ['weightLogs'] });
+      const previousWeightLogs = queryClient.getQueryData(['weightLogs']);
+      
+      const newLog = {
+        weight: val,
+        date: new Date().toISOString(),
+        id: 'opt-' + Date.now(),
+      };
+      
+      queryClient.setQueryData(['weightLogs'], (old: any) => {
+        if (!old) return [newLog];
+        return [...old, newLog];
+      });
+
       setWeight('');
       setWaist('');
       setNeck('');
       setHip('');
       setShowAdvanced(false);
+
+      return { previousWeightLogs };
+    },
+    onError: (err, val, context) => {
+      if (context?.previousWeightLogs) {
+        queryClient.setQueryData(['weightLogs'], context.previousWeightLogs);
+      }
+    },
+    onSettled: () => {
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['weightLogs'] }),
+        queryClient.invalidateQueries({ queryKey: ['profile'] }),
+        queryClient.invalidateQueries({ queryKey: ['goal'] }),
+        complianceService.updateTodayScore().then(() => 
+          queryClient.invalidateQueries({ queryKey: ['complianceScore'] })
+        ).catch(console.error)
+      ]);
     }
   });
 
