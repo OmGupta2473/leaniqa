@@ -1,3 +1,4 @@
+// @refresh reset
 import { lazy, Suspense } from 'react';
 import { RouteObject, Outlet, ScrollRestoration } from 'react-router-dom';
 import { ProtectedRoute } from './ProtectedRoute';
