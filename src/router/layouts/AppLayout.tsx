@@ -1,7 +1,7 @@
 import { Outlet } from 'react-router-dom';
-import { Sidebar } from '../../components/Sidebar';
-import { BottomNav } from '../../components/BottomNav';
-import { Header } from '../../components/Header';
+import { Sidebar } from '@/shared/components/Sidebar';
+import { BottomNav } from '@/shared/components/BottomNav';
+import { Header } from '@/shared/components/Header';
 import { ReactNode } from 'react';
 
 interface AppLayoutProps {
