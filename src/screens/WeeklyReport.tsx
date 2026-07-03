@@ -5,6 +5,7 @@ import { mealService } from '../services/mealService';
 import { reportService } from '../services/reportService';
 import { complianceService } from '../services/complianceService';
 import { useAppStore } from '../store';
+import { useStreaks } from '../hooks/useStreaks';
 import { ProgressRing } from '../components/ProgressRing';
 import { MicroRing } from '../components/MicroRing';
 import { HourlyBarChart } from '../components/HourlyBarChart';
@@ -23,7 +24,7 @@ const ELECTRIC_LIME = '#D4FF00';
 const ELECTRIC_BLUE = '#378ADD';
 
 export function WeeklyReportScreen() {
-  const { calorieStreak, proteinStreak, earnedAwards } = useAppStore();
+  const { calorieStreak, proteinStreak, earnedAwards } = useStreaks();
   const [view, setView] = useState<ActivityView>('dashboard');
   const [calendarMonth, setCalendarMonth] = useState(new Date());
 

@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import React, { useState, useEffect } from "react";
-import { useAppStore } from "../store";
+import { useStreaks } from "../hooks/useStreaks";
 
  function renderBadge(
   award: any,
@@ -110,8 +110,7 @@ import { useAppStore } from "../store";
 
 export function AwardsScreen() {
   const navigate = useNavigate();
-  const { calorieStreak, proteinStreak, earnedAwards } =
-    useAppStore();
+  const { calorieStreak, proteinStreak, earnedAwards } = useStreaks();
 
   useEffect(() => {
     const el = document.querySelector('.screen-container');
