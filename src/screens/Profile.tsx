@@ -1,28 +1,43 @@
 import { useState } from "react";
-import { useAppStore } from "../store";
+import { useUserStore } from "../store/user";
+import { useAppStore } from "../store/app";
 import { profileService } from "../services/profileService";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
 export function ProfileScreen() {
-  const { onboardingData, setOnboardingData, setEditProfileMode } = useAppStore();
+  const onboardingData = useUserStore(s => s.onboardingData);
+  const setOnboardingData = useUserStore(s => s.setOnboardingData);
+  const activeModal = useAppStore(s => s.activeModal);
+  const setActiveModal = useAppStore(s => s.setActiveModal);
+  const setEditProfileMode = useUserStore(s => s.setEditProfileMode);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
 
-  const [editOpen, setEditOpen] = useState(false);
-  const [editState, setEditState] = useState<'summary' | 'form' | 'reset'>('summary');
+  const editOpen = activeModal === 'profile_edit';
+  const setEditOpen = (isOpen: boolean) => setActiveModal(isOpen ? 'profile_edit' : null);
+  const editState = useUserStore(s => s.profileEditState);
+  const setEditState = useUserStore(s => s.setProfileEditState);
   const [saving, setSaving] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
 
   // Edit form state
-  const [name, setName] = useState('');
-  const [age, setAge] = useState('');
-  const [weight, setWeight] = useState('');
-  const [height, setHeight] = useState('');
-  const [gender, setGender] = useState<'Male' | 'Female' | ''>('');
-  const [activity, setActivity] = useState('');
+  const draftProfile = useUserStore(s => s.draftProfile) || { name: "", age: "", weight: "", height: "", gender: "", activity: "" };
+  const updateDraftProfile = useUserStore(s => s.updateDraftProfile);
+  const name = draftProfile.name;
+  const setName = (val: string) => updateDraftProfile({ name: val });
+  const age = draftProfile.age;
+  const setAge = (val: string) => updateDraftProfile({ age: val });
+  const weight = draftProfile.weight;
+  const setWeight = (val: string) => updateDraftProfile({ weight: val });
+  const height = draftProfile.height;
+  const setHeight = (val: string) => updateDraftProfile({ height: val });
+  const gender = draftProfile.gender;
+  const setGender = (val: "Male" | "Female" | "") => updateDraftProfile({ gender: val });
+  const activity = draftProfile.activity;
+  const setActivity = (val: string) => updateDraftProfile({ activity: val });
 
   const openEdit = () => {
     setName(profile?.name || onboardingData?.name || '');

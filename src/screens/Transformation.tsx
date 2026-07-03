@@ -1,11 +1,11 @@
 import React, { useEffect } from "react";
-import { useAppStore } from "../store";
+import { useUserStore } from "../store/user";
 import { useQuery } from "@tanstack/react-query";
 import { profileService } from "../services/profileService";
 import { useNavigate } from "react-router-dom";
 
 export function TransformationScreen() {
-  const { onboardingData } = useAppStore();
+  const onboardingData = useUserStore(s => s.onboardingData);
   const navigate = useNavigate();
 
   useEffect(() => {
