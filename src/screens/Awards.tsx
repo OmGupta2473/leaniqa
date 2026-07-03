@@ -1,12 +1,13 @@
 import { useNavigate } from "react-router-dom";
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
+import { useAwardStore } from "../store/awards";
 import { useStreaks } from "../hooks/useStreaks";
 
- function renderBadge(
+export function renderBadge(
   award: any,
   size: number,
-  earned?: boolean,
-  animate?: boolean,
+  earned: boolean,
+  animate: boolean,
 ) {
   const s = size;
   const cx = s / 2;
@@ -117,7 +118,8 @@ export function AwardsScreen() {
     if (el) el.scrollTop = 0;
   }, []);
 
-  const [selectedAward, setSelectedAward] = useState<any | null>(null);
+  const selectedAward = useAwardStore(s => s.selectedAward);
+  const setSelectedAward = useAwardStore(s => s.setSelectedAward);
 
   const calAwards = earnedAwards.filter((a) => a.category === "calories");
   const proAwards = earnedAwards.filter((a) => a.category === "protein");

@@ -1,16 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-
-const LEGACY_KEYS = ['physique-nav', 'physique_daily_logs', 'physique_earned_dates'];
-LEGACY_KEYS.forEach(key => {
-  // Only migrate if new key doesn't exist yet
-  const legacy = localStorage.getItem(key);
-  const newKey = key.replace('physique', 'leaniqa');
-  if (legacy && !localStorage.getItem(newKey)) {
-    localStorage.setItem(newKey, legacy);
-    localStorage.removeItem(key);
-  }
-});
+import { createPersistConfig } from '../utils';
 
 export interface ChatMessage {
   role: 'user' | 'ai';
@@ -20,15 +10,11 @@ export interface ChatMessage {
   timestamp?: number;
 }
 
-interface AppState {
-  clearStore: () => void;
-  onboardingData?: any;
-  setOnboardingData: (data: any) => void;
-  editProfileMode: boolean;
-  setEditProfileMode: (v: boolean) => void;
+interface ChatState {
   chatHistory: ChatMessage[];
   addChatMessage: (msg: Omit<ChatMessage, 'weekKey'>) => void;
   clearOldChats: () => void;
+  clearChatStore: () => void;
 }
 
 function getWeekKey(date: Date = new Date()): string {
@@ -40,13 +26,9 @@ function getWeekKey(date: Date = new Date()): string {
   return `${d.getUTCFullYear()}-W${weekNo}`;
 }
 
-export const useAppStore = create<AppState>()(
+export const useChatStore = create<ChatState>()(
   persist(
-    (set, get) => ({
-      clearStore: () => set({ onboardingData: undefined, editProfileMode: false, chatHistory: [] }),
-      setOnboardingData: (data) => set({ onboardingData: data }),
-      editProfileMode: false,
-      setEditProfileMode: (v) => set({ editProfileMode: v }),
+    (set) => ({
       chatHistory: [],
       addChatMessage: (msg) => {
         const weekKey = getWeekKey();
@@ -60,13 +42,10 @@ export const useAppStore = create<AppState>()(
           chatHistory: state.chatHistory.filter(m => (m.timestamp || 0) > sevenDaysAgo)
         }));
       },
+      clearChatStore: () => set({ chatHistory: [] }),
     }),
-    {
-      name: 'leaniqa-nav',
-      partialize: (state) => ({ 
-        onboardingData: state.onboardingData, 
-        chatHistory: state.chatHistory
-      }),
-    }
+    createPersistConfig('leaniqa-chat-store', (state) => ({
+      chatHistory: state.chatHistory
+    }))
   )
 );

@@ -1,4 +1,5 @@
-import { useAppStore } from "../store";
+import { useUserStore } from "../store/user";
+import { useAppStore } from "../store/app";
 import { useStreaks } from "../hooks/useStreaks";
 import { Target, Footprints, Utensils, CheckCircle2, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -45,11 +46,14 @@ function AnimatedNumber({
 }
 
 export function DashboardScreen() {
-  const { onboardingData } = useAppStore();
+  const onboardingData = useUserStore(s => s.onboardingData);
+  const dismissedBanners = useAppStore(s => s.dismissedBanners);
+  const dismissBanner = useAppStore(s => s.dismissBanner);
   const { calorieStreak, proteinStreak } = useStreaks();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const bannerDismissed = dismissedBanners.includes('premium_beta');
+  const setBannerDismissed = (dismissed: boolean) => dismissed && dismissBanner('premium_beta');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

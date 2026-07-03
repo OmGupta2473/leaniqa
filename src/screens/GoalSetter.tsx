@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from 'react';
-import { useAppStore } from '../store';
+import { useUserStore } from '../store/user';
+import { useAppStore } from '../store/app';
 import { cn } from '../lib/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileService } from '../services/profileService';
@@ -27,14 +28,21 @@ const Silhouette = ({ active }: { active: boolean }) => (
 
 export function GoalSetterScreen() {
   const navigate = useNavigate();
-  const { onboardingData, setOnboardingData } = useAppStore();
+  const onboardingData = useUserStore(s => s.onboardingData);
+  const setOnboardingData = useUserStore(s => s.setOnboardingData);
   const queryClient = useQueryClient();
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
   
-  const [resetGoalConfirm, setResetGoalConfirm] = useState(false);
-  const [currentBfMid, setCurrentBfMid] = useState<number | null>(null);
-  const [targetBfMid, setTargetBfMid] = useState<number | null>(null);
+  const activeModal = useAppStore(s => s.activeModal);
+  const setActiveModal = useAppStore(s => s.setActiveModal);
+  const resetGoalConfirm = activeModal === 'reset_goal_confirm';
+  const setResetGoalConfirm = (isOpen: boolean) => setActiveModal(isOpen ? 'reset_goal_confirm' : null);
+  
+  const currentBfMid = useUserStore(s => s.goalWizardCurrentBfMid);
+  const setCurrentBfMid = useUserStore(s => s.setGoalWizardCurrentBfMid);
+  const targetBfMid = useUserStore(s => s.goalWizardTargetBfMid);
+  const setTargetBfMid = useUserStore(s => s.setGoalWizardTargetBfMid);
 
   const tdee = onboardingData?.tdee || profile?.maintenance_kcal || 2500;
   const currentWeight = onboardingData?.weightKg || profile?.weight || 80;
