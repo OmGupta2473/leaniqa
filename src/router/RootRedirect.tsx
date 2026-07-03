@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthSession } from './useAuthSession';
-import { profileService } from '../services/profileService';
+import { profileService } from '@/features/profile';
 
 export function RootRedirect() {
   const { session, loading: loadingSession } = useAuthSession();
