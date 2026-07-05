@@ -3,28 +3,26 @@ import re
 with open('src/features/nutrition/pages/MealLoggerPage.tsx', 'r') as f:
     content = f.read()
 
-replacement = """      {/* ── SPACER TO PREVENT FAB OVERLAP ── */}
-      <div style={{ height: '80px', flexShrink: 0 }} aria-hidden="true" />
-
-      {/* ── FLOATING ADD BUTTON ── */}
-      <div className="meal-fab-positioner">
-        <div className="meal-fab-container">"""
-
+# Replace the opening <div className="screen-container screen-enter" ...>
 content = content.replace(
-"""      {/* ── SPACER TO PREVENT FAB OVERLAP ── */}
-      <div style={{ height: '80px', flexShrink: 0 }} aria-hidden="true" />
+    '<div className="screen-container screen-enter" style={{ display: \'flex\', flexDirection: \'column\' }}>',
+    '<>\\n      <div className="screen-container screen-enter" style={{ display: \'flex\', flexDirection: \'column\' }}>'
+)
 
+# Now, we need to close this div right before the FAB starts, and add screen-enter to the FAB to animate it too.
+fab_start = """      {/* ── FLOATING ADD BUTTON ── */}
+      <div className="meal-fab-positioner">"""
+
+new_fab_start = """      </div>
       {/* ── FLOATING ADD BUTTON ── */}
-      <div className="meal-fab-container">""", replacement)
+      <div className="meal-fab-positioner screen-enter">"""
 
-content = content.replace(
-"""          <Plus size={24} color="#0A0A0A" strokeWidth={2.5} />
-        </button>
-      </div>""",
-"""          <Plus size={24} color="#0A0A0A" strokeWidth={2.5} />
-        </button>
-        </div>
-      </div>""")
+content = content.replace(fab_start, new_fab_start)
+
+# Change the very last </div> to </Fragment>
+# Wait, we can just replace the last </div> with </>
+content = re.sub(r'    </div>\n  \);\n}\n?$', '    </>\n  );\n}\n', content)
+
 
 with open('src/features/nutrition/pages/MealLoggerPage.tsx', 'w') as f:
     f.write(content)

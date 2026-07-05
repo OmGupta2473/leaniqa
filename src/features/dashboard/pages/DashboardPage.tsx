@@ -8,12 +8,12 @@ import { profileService } from "@/features/profile";
 import { mealService } from "@/features/nutrition";
 import { weightService } from "@/features/progress";
 import { complianceService } from "@/features/reports/services/complianceService";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, memo } from "react";
 import { QueryError } from "@/shared/components/QueryError";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router-dom";
 
-function AnimatedNumber({
+const AnimatedNumber = memo(function AnimatedNumber({
   value,
   duration = 800,
 }: {
@@ -24,27 +24,57 @@ function AnimatedNumber({
   const elementRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    let start: number | null = null;
+    let observer: IntersectionObserver;
     let animationFrameId: number;
+    let start: number | null = null;
+    let lastUpdate = 0;
 
     const update = (time: number) => {
       if (!start) start = time;
       const elapsed = time - start;
-      const progress = Math.min(elapsed / duration, 1);
-      const ease = 1 - Math.pow(1 - progress, 4); // easeOutExpo
-      setDisplayValue(Math.round(ease * value));
+      
+      // Throttle frames to ~30fps to reduce React render overhead
+      if (time - lastUpdate > 32 || elapsed >= duration) {
+        lastUpdate = time;
+        const progress = Math.min(elapsed / duration, 1);
+        const ease = 1 - Math.pow(1 - progress, 4); // easeOutExpo
+        const nextValue = Math.round(ease * value);
+        
+        setDisplayValue(prev => (prev !== nextValue ? nextValue : prev));
+      }
 
-      if (progress < 1) {
+      if (elapsed < duration) {
         animationFrameId = requestAnimationFrame(update);
       }
     };
 
-    animationFrameId = requestAnimationFrame(update);
-    return () => cancelAnimationFrame(animationFrameId);
+    const startAnimation = () => {
+      start = null;
+      lastUpdate = 0;
+      animationFrameId = requestAnimationFrame(update);
+    };
+
+    if (elementRef.current) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting) {
+            startAnimation();
+            observer.disconnect(); // only animate once when it becomes visible
+          }
+        },
+        { threshold: 0.1 }
+      );
+      observer.observe(elementRef.current);
+    }
+
+    return () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      if (observer) observer.disconnect();
+    };
   }, [value, duration]);
 
   return <span ref={elementRef}>{displayValue}</span>;
-}
+});
 
 export function DashboardPage() {
   const onboardingData = useUserStore(s => s.onboardingData);
