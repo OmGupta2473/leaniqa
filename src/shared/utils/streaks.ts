@@ -15,6 +15,7 @@ export interface Award {
   symbolText: string;
   earned?: boolean;
   earnedDate?: string | null;
+  currentStreak?: number;
 }
 
 export const AWARDS_CATALOG: Award[] = [
@@ -34,88 +35,113 @@ export const AWARDS_CATALOG: Award[] = [
   { id: 'pro_god', category: 'protein', name: 'Protein God', description: 'Thirty days. Lean mass fully protected. Nothing will stop your transformation.', requirement: 'Hit protein target for 30 consecutive days', streakRequired: 30, tier: 'gold', shape: 'shield', primaryColor: '#FFD700', accentColor: '#FF4D1C', symbol: '🔱', symbolText: '30' }
 ];
 
-export function toUtcDayNumber(dateStr: string): number {
+export function toUtcDay(dateStr: string | Date): number {
   if (!dateStr) return 0;
-  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  let iso = typeof dateStr === 'string' ? dateStr : dateStr.toISOString();
+  const match = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!match) return 0;
   const d = new Date(Date.UTC(+match[1], +match[2] - 1, +match[3]));
   return Math.floor(d.getTime() / 86400000);
 }
 
-export function calculateCalorieStreak(metrics: DbDailyMetric[]): number {
+export function calculateCurrentStreak(metrics: DbDailyMetric[], predicate: (m: DbDailyMetric) => boolean): number {
   if (!metrics || metrics.length === 0) return 0;
-  const sorted = [...metrics].sort((a, b) => toUtcDayNumber(b.date) - toUtcDayNumber(a.date));
-  let streak = 0;
-  const todayIso = new Date().toISOString().substring(0, 10);
-  const todayDayNum = toUtcDayNumber(todayIso);
-  for (let i = 0; i < sorted.length; i++) {
-    const m = sorted[i];
-    const logDayNum = toUtcDayNumber(m.date);
-    const expectedDayNum = todayDayNum - i;
-    if (logDayNum !== expectedDayNum) break;
-    if (m.actual_calories > 0 && m.actual_calories <= m.target_calories) {
-      streak++;
-    } else {
-      break;
-    }
-  }
-  return streak;
-}
-
-export function calculateProteinStreak(metrics: DbDailyMetric[]): number {
-  if (!metrics || metrics.length === 0) return 0;
-  const sorted = [...metrics].sort((a, b) => toUtcDayNumber(b.date) - toUtcDayNumber(a.date));
-  let streak = 0;
-  const todayIso = new Date().toISOString().substring(0, 10);
-  const todayDayNum = toUtcDayNumber(todayIso);
-  for (let i = 0; i < sorted.length; i++) {
-    const m = sorted[i];
-    const logDayNum = toUtcDayNumber(m.date);
-    const expectedDayNum = todayDayNum - i;
-    if (logDayNum !== expectedDayNum) break;
-    if (m.actual_protein > 0 && m.actual_protein >= m.target_protein) {
-      streak++;
-    } else {
-      break;
-    }
-  }
-  return streak;
-}
-
-export function computeEarnedAwards(metrics: DbDailyMetric[]): Award[] {
-  if (!metrics || metrics.length === 0) {
-    return AWARDS_CATALOG.map(award => ({ ...award, earned: false, earnedDate: null }));
-  }
-
-  const sorted = [...metrics].sort((a, b) => toUtcDayNumber(a.date) - toUtcDayNumber(b.date));
   
-  const getBestStreak = (predicate: (m: DbDailyMetric) => boolean) => {
-    let best = 0;
-    let current = 0;
-    let prevDayNum: number | null = null;
-    for (const m of sorted) {
-      const dayNum = toUtcDayNumber(m.date);
-      if (predicate(m)) {
-        if (prevDayNum !== null && dayNum === prevDayNum + 1) {
-          current++;
+  const dayMap = new Map<number, DbDailyMetric>();
+  for (const m of metrics) {
+     dayMap.set(toUtcDay(m.date), m);
+  }
+  
+  const todayDayNum = toUtcDay(new Date());
+  
+  let streak = 0;
+  let currentDayNum = todayDayNum;
+  
+  if (dayMap.has(todayDayNum) && !predicate(dayMap.get(todayDayNum)!)) {
+      return 0;
+  }
+  
+  if (dayMap.has(todayDayNum) && predicate(dayMap.get(todayDayNum)!)) {
+      streak++;
+  }
+  
+  currentDayNum--;
+  
+  while (dayMap.has(currentDayNum)) {
+      if (predicate(dayMap.get(currentDayNum)!)) {
+          streak++;
+          currentDayNum--;
+      } else {
+          break;
+      }
+  }
+  
+  return streak;
+}
+
+export function calculateBestStreak(metrics: DbDailyMetric[], predicate: (m: DbDailyMetric) => boolean): number {
+  if (!metrics || metrics.length === 0) return 0;
+  
+  const sorted = [...metrics].sort((a, b) => toUtcDay(a.date) - toUtcDay(b.date));
+  
+  let best = 0;
+  let current = 0;
+  let prevDayNum: number | null = null;
+  
+  for (const m of sorted) {
+    const dayNum = toUtcDay(m.date);
+    if (predicate(m)) {
+        if (prevDayNum !== null && dayNum === prevDayNum) {
+            // duplicate day, ignore
+        } else if (prevDayNum !== null && dayNum === prevDayNum + 1) {
+            current++;
         } else {
-          current = 1;
+            current = 1;
         }
         best = Math.max(best, current);
-      } else {
+    } else {
         current = 0;
-      }
-      prevDayNum = dayNum;
     }
-    return best;
-  };
+    prevDayNum = dayNum;
+  }
+  
+  return best;
+}
 
-  const bestCal = getBestStreak(m => m.actual_calories > 0 && m.actual_calories <= m.target_calories);
-  const bestPro = getBestStreak(m => m.actual_protein > 0 && m.actual_protein >= m.target_protein);
+export const isCalorieGoalMet = (m: DbDailyMetric) => m.actual_calories > 0 && m.actual_calories <= m.target_calories;
+export const isProteinGoalMet = (m: DbDailyMetric) => m.actual_protein > 0 && m.actual_protein >= m.target_protein;
 
-  return AWARDS_CATALOG.map(award => ({
-    ...award,
-    earned: award.category === 'calories' ? bestCal >= award.streakRequired : bestPro >= award.streakRequired,
-    earnedDate: null // We could track dates differently, or let components lookup the exact date if needed
-  }));
+export function calculateCurrentCalorieStreak(metrics: DbDailyMetric[]): number {
+  return calculateCurrentStreak(metrics, isCalorieGoalMet);
+}
+
+export function calculateCurrentProteinStreak(metrics: DbDailyMetric[]): number {
+  return calculateCurrentStreak(metrics, isProteinGoalMet);
+}
+
+export function calculateBestCalorieStreak(metrics: DbDailyMetric[]): number {
+  return calculateBestStreak(metrics, isCalorieGoalMet);
+}
+
+export function calculateBestProteinStreak(metrics: DbDailyMetric[]): number {
+  return calculateBestStreak(metrics, isProteinGoalMet);
+}
+
+export function calculateEarnedAwards(metrics: DbDailyMetric[]): Award[] {
+  if (!metrics || metrics.length === 0) {
+    return AWARDS_CATALOG.map(award => ({ ...award, earned: false, earnedDate: null, currentStreak: 0 }));
+  }
+  
+  const currentCalorieStreak = calculateCurrentCalorieStreak(metrics);
+  const currentProteinStreak = calculateCurrentProteinStreak(metrics);
+
+  return AWARDS_CATALOG.map(award => {
+    const currentStreak = award.category === 'calories' ? currentCalorieStreak : currentProteinStreak;
+    return {
+      ...award,
+      earned: currentStreak >= award.streakRequired,
+      earnedDate: null,
+      currentStreak
+    };
+  });
 }

@@ -5,7 +5,7 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianG
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileService } from '@/features/profile';
 import { weightService } from '../services/weightService';
-import { complianceService } from '@/features/reports';
+import { complianceService } from '@/features/reports/services/complianceService';
 import { calculateProjections } from '@/shared/utils/projectionEngine';
 
 export function ProgressPage() {

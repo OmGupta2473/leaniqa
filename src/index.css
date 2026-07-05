@@ -1242,3 +1242,36 @@ input[type='number'] {
 .border-border-tertiary { border-color: rgba(255,255,255,0.06) !important; }
 
 .shadow-purple\/20 { box-shadow: 0 8px 24px rgba(212,255,0,0.2) !important; }
+
+/* ── Meal Logger FAB ── */
+.meal-fab-positioner {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom) + 16px);
+  left: 0;
+  width: 100vw;
+  z-index: 50;
+  pointer-events: none;
+}
+
+@media (min-width: 768px) {
+  .meal-fab-positioner {
+    left: 64px;
+    width: calc(100vw - 64px);
+  }
+}
+
+@media (min-width: 1200px) {
+  .meal-fab-positioner {
+    left: 240px;
+    width: calc(100vw - 240px);
+  }
+}
+
+.meal-fab-container {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: flex-end;
+  padding-right: 24px;
+}

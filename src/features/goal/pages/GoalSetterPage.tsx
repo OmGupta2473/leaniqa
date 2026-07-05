@@ -5,7 +5,7 @@ import { useAppStore } from '@/app/store';
 import { cn } from '@/shared/utils/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileService } from '@/features/profile';
-import { complianceService } from '@/features/reports';
+import { complianceService } from '@/features/reports/services/complianceService';
 import { CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
 
 const bodyFatOptions = [

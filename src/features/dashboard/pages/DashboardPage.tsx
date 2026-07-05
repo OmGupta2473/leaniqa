@@ -1,12 +1,13 @@
 import { useUserStore } from "@/features/profile";
 import { useAppStore } from "@/app/store";
-import { useStreaks } from "@/shared/hooks/useStreaks";
+import { reportService } from "@/features/reports";
+import { calculateCurrentCalorieStreak, calculateCurrentProteinStreak } from "@/shared/utils/streaks";
 import { Target, Footprints, Utensils, CheckCircle2, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { profileService } from "@/features/profile";
 import { mealService } from "@/features/nutrition";
 import { weightService } from "@/features/progress";
-import { complianceService } from "@/features/reports";
+import { complianceService } from "@/features/reports/services/complianceService";
 import { useEffect, useState, useRef } from "react";
 import { QueryError } from "@/shared/components/QueryError";
 import { motion } from "motion/react";
@@ -49,7 +50,9 @@ export function DashboardPage() {
   const onboardingData = useUserStore(s => s.onboardingData);
   const dismissedBanners = useAppStore(s => s.dismissedBanners);
   const dismissBanner = useAppStore(s => s.dismissBanner);
-  const { calorieStreak, proteinStreak } = useStreaks();
+    const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
+  const calorieStreak = calculateCurrentCalorieStreak(metrics);
+  const proteinStreak = calculateCurrentProteinStreak(metrics);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const bannerDismissed = dismissedBanners.includes('premium_beta');

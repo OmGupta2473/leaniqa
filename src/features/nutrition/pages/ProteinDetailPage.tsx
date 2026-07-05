@@ -4,8 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { profileService } from "@/features/profile";
 import { mealService } from "../services/mealService";
 import { useUserStore } from "@/features/profile";
-import { toUtcDayNumber } from "@/shared/utils/streaks";
-import { useStreaks } from "@/shared/hooks/useStreaks";
+
+import { calculateBestProteinStreak, calculateCurrentProteinStreak, calculateEarnedAwards } from "@/shared/utils/streaks";
 import { reportService } from "@/features/reports";
 
 function getLocalDateString() {
@@ -20,7 +20,8 @@ export function ProteinDetailPage() {
   const navigate = useNavigate();
   const onboardingData = useUserStore(s => s.onboardingData);
   const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
-  const { proteinStreak, earnedAwards } = useStreaks();
+  const proteinStreak = calculateCurrentProteinStreak(metrics);
+  const earnedAwards = calculateEarnedAwards(metrics);
 
   const { data: profile } = useQuery({
     queryKey: ["profile"],
@@ -40,21 +41,7 @@ export function ProteinDetailPage() {
 
   const isTargetHit = proteinConsumed >= target_protein;
 
-  const allTimeBestProStreak = useMemo(() => {
-    const sorted = [...metrics].sort((a, b) => toUtcDayNumber(a.date) - toUtcDayNumber(b.date));
-    let best = 0, current = 0, prevDayNum: number | null = null;
-    for (const log of sorted) {
-      const dayNum = toUtcDayNumber(log.date);
-      if (log.actual_protein >= log.target_protein && log.actual_protein > 0) {
-        current = (prevDayNum !== null && dayNum === prevDayNum + 1) ? current + 1 : 1;
-        best = Math.max(best, current);
-      } else {
-        current = 0;
-      }
-      prevDayNum = dayNum;
-    }
-    return best;
-  }, [metrics]);
+  const allTimeBestProStreak = calculateBestProteinStreak(metrics);
 
   // Inject live data for today's chart entry
   const chartLogs = useMemo(() => {

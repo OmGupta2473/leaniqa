@@ -4,8 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { profileService } from "@/features/profile";
 import { mealService } from "../services/mealService";
 import { useUserStore } from "@/features/profile";
-import { toUtcDayNumber } from "@/shared/utils/streaks";
-import { useStreaks } from "@/shared/hooks/useStreaks";
+
+import { calculateBestCalorieStreak, calculateEarnedAwards, calculateCurrentCalorieStreak } from "@/shared/utils/streaks";
 import { reportService } from "@/features/reports";
 
 function getLocalDateString() {
@@ -20,7 +20,8 @@ export function CalorieDetailPage() {
   const navigate = useNavigate();
   const onboardingData = useUserStore(s => s.onboardingData);
   const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
-  const { calorieStreak, earnedAwards } = useStreaks();
+  const calorieStreak = calculateCurrentCalorieStreak(metrics);
+  const earnedAwards = calculateEarnedAwards(metrics);
 
   const { data: profile } = useQuery({
     queryKey: ["profile"],
@@ -46,21 +47,7 @@ export function CalorieDetailPage() {
 
   const isUnderTarget = caloriesConsumed <= dailyCalorieGoal;
 
-  const allTimeBestCalStreak = useMemo(() => {
-    const sorted = [...metrics].sort((a, b) => toUtcDayNumber(a.date) - toUtcDayNumber(b.date));
-    let best = 0, current = 0, prevDayNum: number | null = null;
-    for (const log of sorted) {
-      const dayNum = toUtcDayNumber(log.date);
-      if (log.actual_calories <= log.target_calories && log.actual_calories > 0) {
-        current = (prevDayNum !== null && dayNum === prevDayNum + 1) ? current + 1 : 1;
-        best = Math.max(best, current);
-      } else {
-        current = 0;
-      }
-      prevDayNum = dayNum;
-    }
-    return best;
-  }, [metrics]);
+  const allTimeBestCalStreak = calculateBestCalorieStreak(metrics);
 
   // Inject live data for today's chart entry
   const chartLogs = useMemo(() => {
