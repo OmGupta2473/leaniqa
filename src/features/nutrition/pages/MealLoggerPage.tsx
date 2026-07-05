@@ -323,7 +323,7 @@ export function MealLoggerPage() {
   }, [input, loading, selectedMealSlot, addChatMessage, addMealMutation]);
 
   return (
-    <div className="screen-container screen-enter" style={{ display: 'flex', flexDirection: 'column' }}>
+    <>\n      <div className="screen-container screen-enter" style={{ display: 'flex', flexDirection: 'column' }}>
       {/* ── PAGE HEADER ── */}
       <div className="mb-[20px]">
         <h2 className="text-[22px] font-bold text-white tracking-[-0.3px]">Today's Meals</h2>
@@ -378,8 +378,9 @@ export function MealLoggerPage() {
       </div>      {/* ── SPACER TO PREVENT FAB OVERLAP ── */}
       <div style={{ height: '80px', flexShrink: 0 }} aria-hidden="true" />
 
+      </div>
       {/* ── FLOATING ADD BUTTON ── */}
-      <div className="meal-fab-positioner">
+      <div className="meal-fab-positioner screen-enter">
         <div className="meal-fab-container">
         <button
           onClick={() => setModalOpen(true)}
@@ -545,6 +546,6 @@ export function MealLoggerPage() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 }

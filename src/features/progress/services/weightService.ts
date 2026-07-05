@@ -1,3 +1,4 @@
+import { queryClient } from '@/app/query/queryClient';
 import { supabase } from '@/shared/utils/supabase';
 import { DbWeightLog } from '@/shared/types/supabase';
 import { authService } from '@/features/auth';
@@ -22,7 +23,8 @@ export const weightService = {
 
   async addWeightLog(logData: Omit<DbWeightLog, 'id' | 'user_id' | 'body_fat'>, measurementsUpdated: boolean = false): Promise<DbWeightLog | null> {
     const userId = await authService.getUserId();
-    const profile = await profileService.getProfile();
+    let profile = queryClient.getQueryData<any>(['profile']);
+    if (!profile) profile = await queryClient.fetchQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
     
     let bodyFatEstimate = undefined;
     

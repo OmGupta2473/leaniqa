@@ -1,3 +1,4 @@
+import { queryClient } from '@/app/query/queryClient';
 import { supabase } from '@/shared/utils/supabase';
 import { calculateDailyScore } from '@/shared/utils/complianceEngine';
 import { mealService } from '@/features/nutrition';
@@ -19,16 +20,24 @@ export const complianceService = {
   async updateTodayScore(): Promise<DbDailyMetric | null> {
     try {
       const userId = await authService.getUserId();
-      const profile = await profileService.getProfile();
-      const goal = await profileService.getGoal();
+      
+      let profile = queryClient.getQueryData<any>(['profile']);
+      if (!profile) profile = await queryClient.fetchQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
+      
+      let goal = queryClient.getQueryData<any>(['goal']);
+      if (!goal) goal = await queryClient.fetchQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
       
       if (!profile) return null;
       
       const today = getLocalDateString();
       
       // Fetch today's data
-      const meals = await mealService.getTodaysMeals();
-      const weightLogs = await weightService.getWeightLogs();
+      let meals = queryClient.getQueryData<any[]>(['meals', 'today']);
+      if (!meals) meals = await queryClient.fetchQuery({ queryKey: ['meals', 'today'], queryFn: () => mealService.getTodaysMeals() });
+      
+      let weightLogs = queryClient.getQueryData<any[]>(['weightLogs']);
+      if (!weightLogs) weightLogs = await queryClient.fetchQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
+      
       const waterServiceRef = (await import('@/shared/services/waterService')).waterService;
       const waterTotalMl = await waterServiceRef.getTodaysWaterTotal();
       const waterLiters = waterTotalMl / 1000;
@@ -83,7 +92,13 @@ export const complianceService = {
   },
   
   async getScores(): Promise<{ todayScore: number, weeklyAverage: number, monthlyAverage: number }> {
-    const metrics = await reportService.getDailyMetrics();
+    let metrics = queryClient.getQueryData<DbDailyMetric[]>(['dailyMetrics']);
+    if (!metrics) {
+      metrics = await queryClient.fetchQuery({
+        queryKey: ['dailyMetrics'],
+        queryFn: () => reportService.getDailyMetrics()
+      });
+    }
     
     if (!metrics || metrics.length === 0) {
       return { todayScore: 0, weeklyAverage: 0, monthlyAverage: 0 };
