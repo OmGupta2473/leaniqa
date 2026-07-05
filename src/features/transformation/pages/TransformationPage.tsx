@@ -8,11 +8,6 @@ export function TransformationPage() {
   const onboardingData = useUserStore(s => s.onboardingData);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const el = document.querySelector('.transformation-screen');
-    if (el) el.scrollTop = 0;
-  }, []);
-
   const { data: profile } = useQuery({
     queryKey: ["profile"],
     queryFn: () => profileService.getProfile(),

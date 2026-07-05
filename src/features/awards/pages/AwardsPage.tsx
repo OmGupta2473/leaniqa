@@ -113,11 +113,6 @@ export function AwardsPage() {
   const navigate = useNavigate();
   const { calorieStreak, proteinStreak, earnedAwards } = useStreaks();
 
-  useEffect(() => {
-    const el = document.querySelector('.screen-container');
-    if (el) el.scrollTop = 0;
-  }, []);
-
   const selectedAward = useAwardStore(s => s.selectedAward);
   const setSelectedAward = useAwardStore(s => s.setSelectedAward);
 
