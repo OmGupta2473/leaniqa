@@ -9,7 +9,7 @@ import { cn } from "@/shared/utils/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { mealService } from "../services/mealService";
 import { profileService } from "@/features/profile";
-import { complianceService } from "@/features/reports";
+import { complianceService } from "@/features/reports/services/complianceService";
 import { supabase } from "@/shared/utils/supabase";
 import { motion, AnimatePresence } from "motion/react";
 import { lookupCachedMeal } from '../constants/data';
@@ -375,20 +375,12 @@ export function MealLoggerPage() {
         <MealSlotRow slot="breakfast" icon={<Sunrise size={14} />} label="Breakfast" timeRange="6 am – 12 pm" meals={breakfastMeals} />
         <MealSlotRow slot="lunch" icon={<Sun size={14} />} label="Lunch" timeRange="12 pm – 6 pm" meals={lunchMeals} />
         <MealSlotRow slot="dinner" icon={<Moon size={14} />} label="Dinner" timeRange="6 pm – 10 pm" meals={dinnerMeals} />
-      </div>
+      </div>      {/* ── SPACER TO PREVENT FAB OVERLAP ── */}
+      <div style={{ height: '80px', flexShrink: 0 }} aria-hidden="true" />
 
       {/* ── FLOATING ADD BUTTON ── */}
-      {/* Sticky add button — stays inside the app container, not the viewport */}
-      <div style={{
-        position: 'sticky',
-        bottom: 'calc(env(safe-area-inset-bottom) + 16px)',
-        display: 'flex',
-        justifyContent: 'flex-end',
-        paddingRight: '4px',
-        pointerEvents: 'none',
-        // Margin-top auto pushes it to bottom of scrollable content
-        marginTop: 'auto',
-      }}>
+      <div className="meal-fab-positioner">
+        <div className="meal-fab-container">
         <button
           onClick={() => setModalOpen(true)}
           style={{
@@ -413,6 +405,7 @@ export function MealLoggerPage() {
         >
           <Plus size={24} color="#0A0A0A" strokeWidth={2.5} />
         </button>
+        </div>
       </div>
 
       {/* ── LOG MEAL MODAL ── */}

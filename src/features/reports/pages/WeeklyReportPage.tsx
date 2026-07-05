@@ -5,7 +5,7 @@ import { profileService } from '@/features/profile';
 import { mealService } from '@/features/nutrition';
 import { reportService } from '../services/reportService';
 import { complianceService } from '../services/complianceService';
-import { useStreaks } from '@/shared/hooks/useStreaks';
+import { calculateCurrentCalorieStreak, calculateCurrentProteinStreak, calculateEarnedAwards } from '@/shared/utils/streaks';
 import { ProgressRing } from '../components/ProgressRing';
 import { MicroRing } from '../components/MicroRing';
 import { HourlyBarChart } from '../components/HourlyBarChart';
@@ -24,7 +24,8 @@ const ELECTRIC_LIME = '#D4FF00';
 const ELECTRIC_BLUE = '#378ADD';
 
 export function WeeklyReportPage() {
-  const { calorieStreak, proteinStreak, earnedAwards } = useStreaks();
+  
+
   const view = useReportStore(s => s.activityView) as ActivityView;
   const setView = useReportStore(s => s.setActivityView);
   const calendarMonthIso = useReportStore(s => s.activityCalendarMonth);
@@ -35,6 +36,9 @@ export function WeeklyReportPage() {
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
   const { data: meals = [] } = useQuery({ queryKey: ['meals', 'month'], queryFn: () => mealService.getMeals({ days: 35, limit: 2000 }) });
   const { data: dailyMetrics = [] } = useQuery({ queryKey: ['dailyMetrics'], queryFn: () => reportService.getDailyMetrics() });
+  const calorieStreak = calculateCurrentCalorieStreak(dailyMetrics);
+  const proteinStreak = calculateCurrentProteinStreak(dailyMetrics);
+  const earnedAwards = calculateEarnedAwards(dailyMetrics);
 
   const calorieGoal = profile?.maintenance_kcal && goal?.deficit_kcal !== undefined ? profile.maintenance_kcal - goal.deficit_kcal : 2000;
   const proteinGoal = profile?.protein_target || 150;

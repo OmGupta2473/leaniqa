@@ -1,5 +1,6 @@
 import { useAppStore } from '@/app/store';
-import { useStreaks } from '@/shared/hooks/useStreaks';
+import { reportService } from '@/features/reports';
+import { calculateEarnedAwards } from '@/shared/utils/streaks';
 import { useQuery } from '@tanstack/react-query';
 import { profileService } from '@/features/profile';
 import { supabase } from '@/shared/utils/supabase';
@@ -28,7 +29,10 @@ function getLocalDateString() {
 }
 
 export function Header() {
-  const { earnedAwards } = useStreaks();
+  
+  const { data: metrics = [] } = useQuery({ queryKey: ['dailyMetrics'], queryFn: () => reportService.getDailyMetrics() });
+  const earnedAwards = calculateEarnedAwards(metrics);
+
   const { isOnline } = useNetworkStatus();
   const [session, setSession] = useState(null);
   const navigate = useNavigate();

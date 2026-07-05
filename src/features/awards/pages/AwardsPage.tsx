@@ -1,7 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import React, { useEffect } from "react";
 import { useAwardStore } from "../store/awardStore";
-import { useStreaks } from "@/shared/hooks/useStreaks";
+import { useQuery } from "@tanstack/react-query";
+import { reportService } from "@/features/reports";
+import { calculateEarnedAwards } from "@/shared/utils/streaks";
 
 export function renderBadge(
   award: any,
@@ -111,7 +113,12 @@ export function renderBadge(
 
 export function AwardsPage() {
   const navigate = useNavigate();
-  const { calorieStreak, proteinStreak, earnedAwards } = useStreaks();
+      const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
+  const earnedAwards = calculateEarnedAwards(metrics);
+  const calorieStreak = earnedAwards.find(a => a.category === 'calories')?.currentStreak || 0;
+  const proteinStreak = earnedAwards.find(a => a.category === 'protein')?.currentStreak || 0;
+
+
 
   const selectedAward = useAwardStore(s => s.selectedAward);
   const setSelectedAward = useAwardStore(s => s.setSelectedAward);

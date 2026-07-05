@@ -7,7 +7,7 @@ import { cn } from '@/shared/utils/utils';
 import { CheckCircle2, ArrowRight } from 'lucide-react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { profileService } from '@/features/profile';
-import { complianceService } from '@/features/reports';
+import { complianceService } from '@/features/reports/services/complianceService';
 
 function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: number }) {
   const [displayValue, setDisplayValue] = useState(0);
