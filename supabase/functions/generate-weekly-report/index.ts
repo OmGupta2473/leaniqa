@@ -73,18 +73,21 @@ serve(async (req) => {
 
     const endpoint = 'generate-weekly-report'
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-    const { count } = await supabase
+    const today = new Date().toISOString().split("T")[0];
+    const { data: usageData } = await supabase
       .from('api_usage')
-      .select('*', { count: 'exact', head: true })
+      .select('usage_count')
       .eq('user_id', user.id)
       .eq('endpoint', endpoint)
-      .gte('created_at', twentyFourHoursAgo)
+      .eq('date', today)
+      .maybeSingle();
 
-    if (count !== null && count >= 50) {
+    const count = usageData?.usage_count || 0;
+    if (count >= 50) {
       return new Response(JSON.stringify({ error: "Daily limit reached. Upgrade to Pro for unlimited logging." }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    await supabase.from('api_usage').insert({ user_id: user.id, endpoint })
+    await supabase.rpc('increment_api_usage', { p_user_id: user.id, p_endpoint: endpoint, p_date: today })
 
     if (!ai) {
       return new Response(JSON.stringify({ error: "GEMINI_API_KEY is not set" }), {
