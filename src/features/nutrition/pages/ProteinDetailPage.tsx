@@ -22,12 +22,6 @@ export function ProteinDetailPage() {
   const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
   const { proteinStreak, earnedAwards } = useStreaks();
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-    const containers = document.querySelectorAll('.overflow-y-auto');
-    containers.forEach(el => { (el as HTMLElement).scrollTop = 0; });
-  }, []);
-
   const { data: profile } = useQuery({
     queryKey: ["profile"],
     queryFn: () => profileService.getProfile(),
