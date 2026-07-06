@@ -1,12 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import React, { useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { profileService } from "@/features/profile";
+import { profileService } from "@/features/profile/services/profileService";
 import { mealService } from "../services/mealService";
-import { useUserStore } from "@/features/profile";
+import { useUserStore } from "@/features/profile/store/userStore";
 
 import { calculateBestProteinStreak, calculateCurrentProteinStreak, calculateEarnedAwards } from "@/shared/utils/streaks";
-import { reportService } from "@/features/reports";
+import { reportService } from "@/features/reports/services/reportService";
 
 function getLocalDateString() {
   const d = new Date();
@@ -361,8 +361,11 @@ export function ProteinDetailPage() {
                           style={{
                             height: "100%",
                             background: "rgba(255,255,255,0.3)",
-                            width: `${Math.min(100, (proteinStreak / award.streakRequired) * 100)}%`,
-                            transition: "width 0.3s",
+                            width: "100%",
+                            transformOrigin: "left",
+                            willChange: "transform",
+                            transform: `translateX(-${100 - Math.min(100, (proteinStreak / award.streakRequired) * 100)}%)`,
+                            transition: "transform 0.3s",
                           }}
                         ></div>
                       </div>

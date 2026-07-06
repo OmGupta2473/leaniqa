@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { computeRingGeometry } from '@/shared/utils/ringMath';
 
 interface ProgressRingProps {
@@ -11,7 +12,7 @@ interface ProgressRingProps {
   children?: React.ReactNode; // center content (number, icon, etc.)
 }
 
-export function ProgressRing({
+export const ProgressRing = memo(function ProgressRing({
   current,
   goal,
   size = 120,
@@ -82,4 +83,4 @@ export function ProgressRing({
       </div>
     </div>
   );
-}
+});

@@ -1,6 +1,7 @@
+import { memo } from 'react';
 import { computeRingGeometry } from '@/shared/utils/ringMath';
 
-export function MicroRing({ current, goal, size = 28, strokeWidth = 3, color }: { current: number; goal: number; size?: number; strokeWidth?: number; color: string }) {
+export const MicroRing = memo(function MicroRing({ current, goal, size = 28, strokeWidth = 3, color }: { current: number; goal: number; size?: number; strokeWidth?: number; color: string }) {
   const geo = computeRingGeometry(current, goal, size, strokeWidth);
   const center = size / 2;
   return (
@@ -19,4 +20,4 @@ export function MicroRing({ current, goal, size = 28, strokeWidth = 3, color }: 
       />
     </svg>
   );
-}
+});

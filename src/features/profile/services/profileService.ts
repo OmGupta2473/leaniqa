@@ -1,6 +1,6 @@
 import { supabase } from '@/shared/utils/supabase';
 import { DbProfile, DbGoal } from '@/shared/types/supabase';
-import { authService } from '@/features/auth';
+import { authService } from '@/features/auth/services/authService';
 import { AppError, ErrorCodes } from '@/shared/utils/errors';
 
 export const profileService = {
@@ -37,8 +37,10 @@ export const profileService = {
 
   async upsertProfile(profileData: Partial<DbProfile>): Promise<DbProfile | null> {
     try {
-      const userId = await authService.getUserId();
-      const { data: { session } } = await supabase.auth.getSession();
+      const [userId, { data: { session } }] = await Promise.all([
+        authService.getUserId(),
+        supabase.auth.getSession()
+      ]);
       const realEmail = session?.user?.email || '';
 
       const payload = {

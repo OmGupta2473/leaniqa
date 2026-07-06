@@ -1,12 +1,12 @@
 import { useAppStore } from '@/app/store';
-import { reportService } from '@/features/reports';
+import { reportService } from '@/features/reports/services/reportService';
 import { calculateEarnedAwards } from '@/shared/utils/streaks';
 import { useQuery } from '@tanstack/react-query';
-import { profileService } from '@/features/profile';
+import { profileService } from '@/features/profile/services/profileService';
 import { supabase } from '@/shared/utils/supabase';
 import { useNetworkStatus } from '@/shared/utils/utils';
 import { WifiOff } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const TITLES: Record<string, string> = {
@@ -55,6 +55,8 @@ export function Header() {
 
   const title = TITLES[location.pathname] || 'LeanIQA';
 
+  const hasCompletedOnboarding = profile?.onboarding_completed;
+
   return (
     <div className="px-5 py-4 border-b-[0.5px] border-border-tertiary flex items-center justify-between shrink-0 bg-background-primary z-10">
       <div className="text-[15px] font-medium text-text-primary flex items-center gap-2">
@@ -66,17 +68,31 @@ export function Header() {
         )}
       </div>
       <div className="flex items-center gap-3">
+        {hasCompletedOnboarding === false && (
+          <button
+            onClick={() => supabase.auth.signOut()}
+            className="text-[12px] text-text-secondary hover:text-coral transition-colors"
+          >
+            Logout
+          </button>
+        )}
         <div 
           className="awards-nav-btn"
-          onClick={() => navigate('/awards')}
+          onClick={() => {
+            if (hasCompletedOnboarding !== false) navigate('/awards');
+          }}
+          style={{ opacity: hasCompletedOnboarding === false ? 0.5 : 1, cursor: hasCompletedOnboarding === false ? 'not-allowed' : 'pointer' }}
           title="Awards Hall"
         >
           <i className="ti ti-trophy text-[18px] text-[#D4FF00]"></i>
           {hasNewAwards && <div className="notif-dot"></div>}
         </div>
         <div 
-          className="w-8 h-8 rounded-full bg-purple-bg flex items-center justify-center text-[12px] font-medium text-purple cursor-pointer"
-          onClick={() => navigate('/profile')}
+          className="w-8 h-8 rounded-full bg-purple-bg flex items-center justify-center text-[12px] font-medium text-purple"
+          onClick={() => {
+            if (hasCompletedOnboarding !== false) navigate('/profile');
+          }}
+          style={{ cursor: hasCompletedOnboarding === false ? 'not-allowed' : 'pointer' }}
         >
           {profile?.name ? profile.name.substring(0, 2).toUpperCase() : 'ME'}
         </div>

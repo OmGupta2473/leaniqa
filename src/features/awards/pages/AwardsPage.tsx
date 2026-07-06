@@ -1,8 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import React, { useEffect } from "react";
+import { useMemo } from 'react';
 import { useAwardStore } from "../store/awardStore";
 import { useQuery } from "@tanstack/react-query";
-import { reportService } from "@/features/reports";
+import { reportService } from "@/features/reports/services/reportService";
 import { calculateEarnedAwards } from "@/shared/utils/streaks";
 
 export function renderBadge(
@@ -69,7 +70,7 @@ export function renderBadge(
   const glowFilter = earned
     ? `
     <filter id="glow-${award.id}">
-      <feGaussianBlur stdDeviation="${s * 0.08}" result="blur"/>
+      <feGaussianBlur stdDeviation="${s * 0.04}" result="blur"/>
       <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>`
     : "";

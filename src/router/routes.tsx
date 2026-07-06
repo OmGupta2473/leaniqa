@@ -11,19 +11,19 @@ import { ScreenSkeleton } from '@/shared/components/ScreenSkeleton';
 import { RouteMetadata } from '@/shared/components/RouteMetadata';
 import { AnalyticsObserver } from '@/shared/components/AnalyticsObserver';
 
-const DashboardPage = lazy(() => import('@/features/dashboard').then(module => ({ default: module.DashboardPage })));
-const MealLoggerPage = lazy(() => import('@/features/nutrition').then(module => ({ default: module.MealLoggerPage })));
-const ProgressPage = lazy(() => import('@/features/progress').then(module => ({ default: module.ProgressPage })));
-const WeeklyReportPage = lazy(() => import('@/features/reports').then(module => ({ default: module.WeeklyReportPage })));
-const PricingPage = lazy(() => import('@/features/pricing').then(module => ({ default: module.PricingPage })));
-const ProfilePage = lazy(() => import('@/features/profile').then(module => ({ default: module.ProfilePage })));
-const TransformationPage = lazy(() => import('@/features/transformation').then(module => ({ default: module.TransformationPage })));
-const CalorieDetailPage = lazy(() => import('@/features/nutrition').then(module => ({ default: module.CalorieDetailPage })));
-const ProteinDetailPage = lazy(() => import('@/features/nutrition').then(module => ({ default: module.ProteinDetailPage })));
-const AwardsPage = lazy(() => import('@/features/awards').then(module => ({ default: module.AwardsPage })));
-const AuthPage = lazy(() => import('@/features/auth').then(module => ({ default: module.AuthPage })));
-const OnboardingPage = lazy(() => import('@/features/onboarding').then(module => ({ default: module.OnboardingPage })));
-const GoalSetterPage = lazy(() => import('@/features/goal').then(module => ({ default: module.GoalSetterPage })));
+const DashboardPage = lazy(() => import('@/features/dashboard/pages/DashboardPage').then(module => ({ default: module.DashboardPage })));
+const MealLoggerPage = lazy(() => import('@/features/nutrition/pages/MealLoggerPage').then(module => ({ default: module.MealLoggerPage })));
+const ProgressPage = lazy(() => import('@/features/progress/pages/ProgressPage').then(module => ({ default: module.ProgressPage })));
+const WeeklyReportPage = lazy(() => import('@/features/reports/pages/WeeklyReportPage').then(module => ({ default: module.WeeklyReportPage })));
+const PricingPage = lazy(() => import('@/features/pricing/pages/PricingPage').then(module => ({ default: module.PricingPage })));
+const ProfilePage = lazy(() => import('@/features/profile/pages/ProfilePage').then(module => ({ default: module.ProfilePage })));
+const TransformationPage = lazy(() => import('@/features/transformation/pages/TransformationPage').then(module => ({ default: module.TransformationPage })));
+const CalorieDetailPage = lazy(() => import('@/features/nutrition/pages/CalorieDetailPage').then(module => ({ default: module.CalorieDetailPage })));
+const ProteinDetailPage = lazy(() => import('@/features/nutrition/pages/ProteinDetailPage').then(module => ({ default: module.ProteinDetailPage })));
+const AwardsPage = lazy(() => import('@/features/awards/pages/AwardsPage').then(module => ({ default: module.AwardsPage })));
+const AuthPage = lazy(() => import('@/features/auth/pages/AuthPage').then(module => ({ default: module.AuthPage })));
+const OnboardingPage = lazy(() => import('@/features/onboarding/pages/OnboardingPage').then(module => ({ default: module.OnboardingPage })));
+const GoalSetterPage = lazy(() => import('@/features/goal/pages/GoalSetterPage').then(module => ({ default: module.GoalSetterPage })));
 const NotFoundPage = lazy(() => import('@/shared/components/NotFoundPage').then(module => ({ default: module.NotFoundPage })));
 
 function RootLayout() {

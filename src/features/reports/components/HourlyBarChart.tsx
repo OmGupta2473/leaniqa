@@ -1,10 +1,11 @@
+import { memo } from 'react';
 interface HourlyBarChartProps {
   hourlyValues: number[]; // length 24
   color: string;
   height?: number;
 }
 
-export function HourlyBarChart({ hourlyValues, color, height = 80 }: HourlyBarChartProps) {
+export const HourlyBarChart = memo(function HourlyBarChart({ hourlyValues, color, height = 80 }: HourlyBarChartProps) {
   const safeValues = hourlyValues.length === 24 ? hourlyValues : Array(24).fill(0);
   const maxVal = Math.max(...safeValues, 1); // auto-scaling ceiling based on day's max
   const barWidth = 100 / 24;
@@ -28,10 +29,13 @@ export function HourlyBarChart({ hourlyValues, color, height = 80 }: HourlyBarCh
             <div
               style={{
                 width: '100%',
-                height: `${Math.max(barHeightPct, val > 0 ? 4 : 0)}%`,
+                height: '100%',
                 background: isCurrentHour ? color : `${color}99`,
                 borderRadius: '2px 2px 0 0',
-                transition: 'height 0.4s ease',
+                transformOrigin: 'bottom',
+                willChange: 'transform',
+                transform: `scaleY(${Math.max(barHeightPct, val > 0 ? 4 : 0) / 100})`,
+                transition: 'transform 0.4s ease',
               }}
             />
           </div>
@@ -39,4 +43,4 @@ export function HourlyBarChart({ hourlyValues, color, height = 80 }: HourlyBarCh
       })}
     </div>
   );
-}
+});

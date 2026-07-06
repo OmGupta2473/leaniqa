@@ -1,5 +1,5 @@
 import { supabase } from '@/shared/utils/supabase';
-import { authService } from '@/features/auth';
+import { authService } from '@/features/auth/services/authService';
 import { DbWaterLog } from '@/shared/types/supabase';
 import { complianceService } from '@/features/reports/services/complianceService';
 
@@ -29,9 +29,10 @@ export const waterService = {
   },
 
   async addWater(amountMl: number): Promise<DbWaterLog | null> {
-    const userId = await authService.getUserId();
-    
-    const previousTotalMl = await this.getTodaysWaterTotal();
+    const [userId, previousTotalMl] = await Promise.all([
+      authService.getUserId(),
+      this.getTodaysWaterTotal()
+    ]);
 
     const payload = {
       user_id: userId,

@@ -252,8 +252,8 @@ export function ProfilePage() {
               width: '100%',
               maxWidth: '480px',
               background: 'rgba(20,20,22,0.99)',
-              backdropFilter: 'blur(40px)',
-              WebkitBackdropFilter: 'blur(40px)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
               borderRadius: '20px 20px 0 0',
               borderTop: '0.5px solid rgba(255,255,255,0.12)',
               maxHeight: '92dvh',
@@ -420,7 +420,7 @@ export function ProfilePage() {
                             cursor: 'pointer',
                             fontWeight: gender === g ? 700 : 400,
                             fontSize: '15px',
-                            transition: 'all 0.15s ease',
+                            transition: 'background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease',
                           }}
                         >{g}</button>
                       ))}
@@ -476,7 +476,7 @@ export function ProfilePage() {
                           fontWeight: activity === a ? 600 : 400,
                           fontSize: '14px',
                           marginBottom: '8px',
-                          transition: 'all 0.15s ease',
+                          transition: 'background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease',
                         }}
                       >{a}</button>
                     ))}
@@ -514,7 +514,7 @@ export function ProfilePage() {
                       fontSize: '16px',
                       cursor: 'pointer',
                       opacity: saving ? 0.6 : 1,
-                      transition: 'all 0.2s ease',
+                      transition: 'background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease',
                     }}
                   >
                     {saving ? 'Saving…' : confirmed ? 'Confirm save' : 'Review & save'}
