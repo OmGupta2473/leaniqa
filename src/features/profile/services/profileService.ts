@@ -12,15 +12,16 @@ export const profileService = {
         .select('*')
         .eq('id', userId)
         .maybeSingle();
-        
-      if (error && error.code !== 'PGRST116') {
-        throw new AppError({
-          code: ErrorCodes.INTERNAL_SERVER_ERROR,
-          message: 'Failed to fetch profile',
-          retryable: true,
-          status: 500,
-          details: error,
-        });
+      if (error) {
+        console.error("========== PROFILE UPSERT ERROR ==========");
+        console.error(error);
+        console.log("message:", error.message);
+        console.log("details:", error.details);
+        console.log("hint:", error.hint);
+        console.log("code:", error.code);
+        console.error("=========================================");
+
+        throw error;
       }
       return data;
     } catch (err) {
