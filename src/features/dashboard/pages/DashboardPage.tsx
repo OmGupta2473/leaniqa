@@ -1,12 +1,13 @@
-import { useUserStore } from "@/features/profile";
+import { useUserStore } from "@/features/profile/store/userStore";
 import { useAppStore } from "@/app/store";
-import { reportService } from "@/features/reports";
+import { reportService } from "@/features/reports/services/reportService";
 import { calculateCurrentCalorieStreak, calculateCurrentProteinStreak } from "@/shared/utils/streaks";
 import { Target, Footprints, Utensils, CheckCircle2, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { profileService } from "@/features/profile";
-import { mealService } from "@/features/nutrition";
-import { weightService } from "@/features/progress";
+import { useMemo } from "react";
+import { profileService } from "@/features/profile/services/profileService";
+import { mealService } from "@/features/nutrition/services/mealService";
+import { weightService } from "@/features/progress/services/weightService";
 import { complianceService } from "@/features/reports/services/complianceService";
 import { useEffect, useState, useRef, memo } from "react";
 import { QueryError } from "@/shared/components/QueryError";
@@ -307,7 +308,7 @@ export function DashboardPage() {
           ></i>{" "}
           View transformation
         </div>
-        <div className="absolute -right-6 -top-6 w-[100px] h-[100px] bg-[#D4FF00]/10 rounded-full blur-[40px] pointer-events-none"></div>
+        <div className="absolute -right-6 -top-6 w-[100px] h-[100px] bg-[#D4FF00]/10 rounded-full blur-[20px] pointer-events-none"></div>
 
         <div className="flex justify-between items-center mb-[16px] relative z-10">
           <span className="text-[13px] font-semibold uppercase tracking-[0.05em] text-[#EBEBF599] flex items-center gap-[6px]">
@@ -330,10 +331,11 @@ export function DashboardPage() {
         {/* Animated Progress Bar */}
         <div className="h-[4px] bg-[rgba(255,255,255,0.1)] rounded-[100px] overflow-hidden mt-[20px] relative z-10">
           <div
-            className="h-full rounded-[100px] bg-gradient-to-r from-[#D4FF00] to-[#A8CC00]"
+            className="h-full w-full rounded-[100px] bg-gradient-to-r from-[#D4FF00] to-[#A8CC00] origin-left"
             style={{
-              width: mounted ? `${progressPercent}%` : "0%",
-              transition: "width 0.8s cubic-bezier(0.34,1.56,0.64,1) 0.3s",
+              transform: mounted ? `translateX(-${100 - progressPercent}%)` : "translateX(-100%)",
+              transition: "transform 0.8s cubic-bezier(0.34,1.56,0.64,1) 0.3s",
+              willChange: "transform"
             }}
           ></div>
         </div>

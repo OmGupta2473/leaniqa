@@ -1,8 +1,8 @@
 import { queryClient } from '@/app/query/queryClient';
 import { supabase } from '@/shared/utils/supabase';
 import { DbWeightLog } from '@/shared/types/supabase';
-import { authService } from '@/features/auth';
-import { profileService } from '@/features/profile';
+import { authService } from '@/features/auth/services/authService';
+import { profileService } from '@/features/profile/services/profileService';
 import { calculateBodyFat } from '@/shared/utils/navyMethod';
 
 export const weightService = {
@@ -22,9 +22,10 @@ export const weightService = {
   },
 
   async addWeightLog(logData: Omit<DbWeightLog, 'id' | 'user_id' | 'body_fat'>, measurementsUpdated: boolean = false): Promise<DbWeightLog | null> {
-    const userId = await authService.getUserId();
-    let profile = queryClient.getQueryData<any>(['profile']);
-    if (!profile) profile = await queryClient.fetchQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
+    const [userId, profile] = await Promise.all([
+      authService.getUserId(),
+      queryClient.getQueryData<any>(['profile']) || queryClient.fetchQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() })
+    ]);
     
     let bodyFatEstimate = undefined;
     
@@ -61,10 +62,13 @@ export const weightService = {
 
     // Update profile weight and goal body fat if calculated
     if (profile) {
-      await profileService.upsertProfile({ weight: logData.weight });
+      const promises: Promise<any>[] = [
+        profileService.upsertProfile({ weight: logData.weight })
+      ];
       if (bodyFatEstimate) {
-        await supabase.from('goals').update({ current_bf: bodyFatEstimate }).eq('user_id', userId);
+        promises.push(supabase.from("goals").update({ current_bf: bodyFatEstimate }).eq("user_id", userId) as any);
       }
+      await Promise.all(promises);
     }
     
     return returnedData;

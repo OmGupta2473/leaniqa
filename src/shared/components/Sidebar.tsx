@@ -1,4 +1,5 @@
-import { useUserStore } from "@/features/profile";
+import { useCallback } from 'react';
+import { useUserStore } from "@/features/profile/store/userStore";
 import { useAppStore } from "@/app/store";
 import { cn } from "@/shared/utils/utils";
 import {
@@ -12,28 +13,36 @@ import {
   User,
 } from "lucide-react";
 import { supabase } from "@/shared/utils/supabase";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { profileService } from '@/features/profile/services/profileService';
 import { NavLink } from "react-router-dom";
+
+const navItems = [
+  { id: "/goal", icon: Target, label: "Goal Setter" },
+  { id: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { id: "/meals", icon: MessageSquare, label: "Meals", dot: true },
+  { id: "/progress", icon: TrendingUp, label: "Progress" },
+  { id: "/activity", icon: FileBarChart, label: "Activity" },
+];
 
 export function Sidebar({ className }: { className?: string }) {
   const clearUserStore = useUserStore(s => s.clearUserStore);
   
   const queryClient = useQueryClient();
-
-  const navItems = [
-    { id: "/goal", icon: Target, label: "Goal Setter" },
-    { id: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-    { id: "/meals", icon: MessageSquare, label: "Meals", dot: true },
-    { id: "/progress", icon: TrendingUp, label: "Progress" },
-    { id: "/activity", icon: FileBarChart, label: "Activity" },
-  ];
-
   const handleLogout = async () => {
     
     clearUserStore();
     queryClient.clear();
     await supabase.auth.signOut();
   };
+
+  const { data: profile } = useQuery({
+    queryKey: ['profile'],
+    queryFn: () => profileService.getProfile(),
+    staleTime: 5 * 60 * 1000,
+  });
+  
+  const hasCompletedOnboarding = profile?.onboarding_completed;
 
   return (
     <div className={cn("flex flex-col h-full w-full overflow-hidden", className)}>
@@ -43,16 +52,23 @@ export function Sidebar({ className }: { className?: string }) {
         </div>
         <span className="sidebar-logo-text">LeanIQA</span>
       </div>
+
       <div className="flex flex-col gap-1 p-2 flex-1">
         {navItems.map((item) => (
           <NavLink
             key={item.id}
             to={item.id}
+            onClick={(e) => {
+              if (!hasCompletedOnboarding) {
+                e.preventDefault();
+              }
+            }}
             title={item.label}
             aria-label={item.label}
             className={({ isActive }) => cn(
-              "cursor-pointer transition-all relative",
-              isActive
+              "transition-all relative",
+              !hasCompletedOnboarding ? "cursor-not-allowed opacity-50" : "cursor-pointer",
+              isActive && hasCompletedOnboarding
                 ? "bg-background-primary text-purple border-[0.5px] border-border-tertiary shadow-sm"
                 : "text-text-secondary hover:bg-background-primary hover:text-text-primary"
             )}
@@ -65,14 +81,22 @@ export function Sidebar({ className }: { className?: string }) {
             )}
           </NavLink>
         ))}
+
         <div className="flex-1" />
+
         <NavLink
           to="/profile"
+          onClick={(e) => {
+            if (!hasCompletedOnboarding) {
+              e.preventDefault();
+            }
+          }}
           title="Profile"
           aria-label="Profile"
           className={({ isActive }) => cn(
-            "cursor-pointer transition-all relative",
-            isActive
+            "transition-all relative",
+            !hasCompletedOnboarding ? "cursor-not-allowed opacity-50" : "cursor-pointer",
+            isActive && hasCompletedOnboarding
               ? "bg-background-primary text-purple border-[0.5px] border-border-tertiary shadow-sm"
               : "text-text-secondary hover:bg-background-primary hover:text-text-primary"
           )}
@@ -81,13 +105,20 @@ export function Sidebar({ className }: { className?: string }) {
           <User size={20} strokeWidth={2} className="shrink-0" />
           <span className="sidebar-label">Profile</span>
         </NavLink>
+
         <NavLink
           to="/pricing"
+          onClick={(e) => {
+            if (!hasCompletedOnboarding) {
+              e.preventDefault();
+            }
+          }}
           title="Plans"
           aria-label="Plans"
           className={({ isActive }) => cn(
-            "cursor-pointer transition-all relative",
-            isActive
+            "transition-all relative",
+            !hasCompletedOnboarding ? "cursor-not-allowed opacity-50" : "cursor-pointer",
+            isActive && hasCompletedOnboarding
               ? "bg-background-primary text-purple border-[0.5px] border-border-tertiary shadow-sm"
               : "text-text-secondary hover:bg-background-primary hover:text-text-primary"
           )}
@@ -96,6 +127,7 @@ export function Sidebar({ className }: { className?: string }) {
           <CreditCard size={20} strokeWidth={2} className="shrink-0" />
           <span className="sidebar-label">Plans</span>
         </NavLink>
+
         <button
           onClick={handleLogout}
           title="Logout"

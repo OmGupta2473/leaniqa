@@ -1,6 +1,6 @@
 import { supabase } from '@/shared/utils/supabase';
 import { DbWeeklyReport, DbDailyMetric } from '@/shared/types/supabase';
-import { authService } from '@/features/auth';
+import { authService } from '@/features/auth/services/authService';
 
 export const reportService = {
   async getWeeklyReports(): Promise<DbWeeklyReport[]> {

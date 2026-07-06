@@ -1,5 +1,5 @@
 import { supabase } from '@/shared/utils/supabase';
-import { authService } from '@/features/auth';
+import { authService } from '@/features/auth/services/authService';
 
 export const subscriptionService = {
   async getSubscriptionStatus() {

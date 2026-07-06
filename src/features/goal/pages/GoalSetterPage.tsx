@@ -1,10 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from 'react';
-import { useUserStore } from '@/features/profile';
+import { useUserStore } from '@/features/profile/store/userStore';
 import { useAppStore } from '@/app/store';
 import { cn } from '@/shared/utils/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { profileService } from '@/features/profile';
+import { profileService } from '@/features/profile/services/profileService';
 import { complianceService } from '@/features/reports/services/complianceService';
 import { CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
 
@@ -81,6 +81,8 @@ export function GoalSetterPage() {
         deficit_kcal: strategyData.deficit_kcal,
         target_date: strategyData.targetDateIso
       });
+      // Important: finalize onboarding status
+      await profileService.upsertProfile({ onboarding_completed: true });
       return { strategyData, savedGoal };
     },
     onMutate: async (strategyData: any) => {
@@ -118,11 +120,18 @@ export function GoalSetterPage() {
         estimatedWeeks: data.strategyData.estimatedWeeks,
         estimatedCompletionDate: data.strategyData.estimatedCompletionDate
       });
+      
+      const oldProfile = queryClient.getQueryData(['profile']) as any;
+      if (oldProfile) {
+        queryClient.setQueryData(['profile'], { ...oldProfile, onboarding_completed: true });
+      }
+      
       navigate('/dashboard');
     },
     onSettled: () => {
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ['goal'] }),
+        queryClient.invalidateQueries({ queryKey: ['profile'] }),
         complianceService.updateTodayScore().then(() => 
           queryClient.invalidateQueries({ queryKey: ['complianceScore'] })
         ).catch(console.error)
@@ -324,7 +333,7 @@ export function GoalSetterPage() {
         <h3 className="text-[22px] font-semibold text-white tracking-[-0.3px] mb-1">Select your current physique</h3>
         <p className="text-[15px] text-[#EBEBF5CC] mb-4 tracking-[-0.1px]">This helps us calculate how much fat you're actually carrying</p>
         
-        <div className="flex gap-[12px] overflow-x-auto pb-4 snap-x hide-scrollbar">
+        <div className="flex gap-[12px] overflow-x-auto pb-4 snap-x hide-scrollbar touch-pan-x">
           {bodyFatOptions.map((opt) => (
             <button
               key={opt.range}
@@ -360,7 +369,7 @@ export function GoalSetterPage() {
           </div>
         )}
 
-        <div className="flex gap-[12px] overflow-x-auto pb-4 snap-x hide-scrollbar">
+        <div className="flex gap-[12px] overflow-x-auto pb-4 snap-x hide-scrollbar touch-pan-x">
           {bodyFatOptions.filter(opt => !currentBfMid || opt.mid < currentBfMid).map((opt) => (
             <button
               key={opt.range}

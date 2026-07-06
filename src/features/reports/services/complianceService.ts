@@ -1,11 +1,11 @@
 import { queryClient } from '@/app/query/queryClient';
 import { supabase } from '@/shared/utils/supabase';
 import { calculateDailyScore } from '@/shared/utils/complianceEngine';
-import { mealService } from '@/features/nutrition';
-import { weightService } from '@/features/progress';
-import { profileService } from '@/features/profile';
+import { mealService } from '@/features/nutrition/services/mealService';
+import { weightService } from '@/features/progress/services/weightService';
+import { profileService } from '@/features/profile/services/profileService';
 import { reportService } from './reportService';
-import { authService } from '@/features/auth';
+import { authService } from '@/features/auth/services/authService';
 import { DbDailyMetric } from '@/shared/types/supabase';
 
 function getLocalDateString() {
@@ -19,32 +19,26 @@ function getLocalDateString() {
 export const complianceService = {
   async updateTodayScore(): Promise<DbDailyMetric | null> {
     try {
-      const userId = await authService.getUserId();
-      
-      let profile = queryClient.getQueryData<any>(['profile']);
-      if (!profile) profile = await queryClient.fetchQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
-      
-      let goal = queryClient.getQueryData<any>(['goal']);
-      if (!goal) goal = await queryClient.fetchQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
+      const [userId, profile, goal, meals, weightLogs, waterServiceRef] = await Promise.all([
+        authService.getUserId(),
+        queryClient.getQueryData<any>(['profile']) || queryClient.fetchQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() }),
+        queryClient.getQueryData<any>(['goal']) || queryClient.fetchQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() }),
+        queryClient.getQueryData<any[]>(['meals', 'today']) || queryClient.fetchQuery({ queryKey: ['meals', 'today'], queryFn: () => mealService.getTodaysMeals() }),
+        queryClient.getQueryData<any[]>(['weightLogs']) || queryClient.fetchQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() }),
+        import('@/shared/services/waterService').then(m => m.waterService)
+      ]);
       
       if (!profile) return null;
       
       const today = getLocalDateString();
-      
-      // Fetch today's data
-      let meals = queryClient.getQueryData<any[]>(['meals', 'today']);
-      if (!meals) meals = await queryClient.fetchQuery({ queryKey: ['meals', 'today'], queryFn: () => mealService.getTodaysMeals() });
-      
-      let weightLogs = queryClient.getQueryData<any[]>(['weightLogs']);
-      if (!weightLogs) weightLogs = await queryClient.fetchQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
-      
-      const waterServiceRef = (await import('@/shared/services/waterService')).waterService;
       const waterTotalMl = await waterServiceRef.getTodaysWaterTotal();
       const waterLiters = waterTotalMl / 1000;
       
       const hasWeightLogged = weightLogs.some(w => w.date.startsWith(today));
-      const actualCalories = meals.reduce((acc, m) => acc + m.calories, 0);
-      const actualProtein = meals.reduce((acc, m) => acc + m.protein, 0);
+      let actualCalories = 0;
+      meals.forEach((m: any) => actualCalories += m.calories);
+      let actualProtein = 0;
+      meals.forEach((m: any) => actualProtein += m.protein);
       
       const targetCalories = (profile.maintenance_kcal || 2200) - (goal?.deficit_kcal ?? 400);
       const targetProtein = profile.protein_target || 150;

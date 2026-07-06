@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
 import { useAppStore } from "@/app/store";
 import { useChatStore } from "@/app/store";
 import { useNutritionStore } from "../store/nutritionStore";
@@ -8,7 +8,7 @@ import {
 import { cn } from "@/shared/utils/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { mealService } from "../services/mealService";
-import { profileService } from "@/features/profile";
+import { profileService } from "@/features/profile/services/profileService";
 import { complianceService } from "@/features/reports/services/complianceService";
 import { supabase } from "@/shared/utils/supabase";
 import { motion, AnimatePresence } from "motion/react";
@@ -345,7 +345,7 @@ export function MealLoggerPage() {
             <span className="text-[11px] font-semibold text-white">{eatenKcal} / {dailyTargetKcal} kcal</span>
           </div>
           <div className="h-[6px] bg-[rgba(255,255,255,0.08)] rounded-full overflow-hidden">
-            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${caloriePercent}%`, background: eatenKcal > dailyTargetKcal ? '#FF4D1C' : '#D4FF00' }}></div>
+            <div className="h-full w-full rounded-full origin-left transition-transform duration-700 will-change-transform" style={{ transform: `translateX(-${100 - caloriePercent}%)`, background: eatenKcal > dailyTargetKcal ? '#FF4D1C' : '#D4FF00' }}></div>
           </div>
         </div>
         {/* Protein bar */}
@@ -355,7 +355,7 @@ export function MealLoggerPage() {
             <span className="text-[11px] font-semibold text-white">{eatenProtein}g / {proteinTarget}g</span>
           </div>
           <div className="h-[6px] bg-[rgba(255,255,255,0.08)] rounded-full overflow-hidden">
-            <div className="h-full rounded-full bg-[#378ADD] transition-all duration-700" style={{ width: `${proteinPercent}%` }}></div>
+            <div className="h-full w-full rounded-full bg-[#378ADD] origin-left transition-transform duration-700 will-change-transform" style={{ transform: `translateX(-${100 - proteinPercent}%)` }}></div>
           </div>
         </div>
         {/* Macros row */}
@@ -431,8 +431,8 @@ export function MealLoggerPage() {
                 maxWidth: '480px',
                 margin: '0 auto',
                 background: 'rgba(22,22,24,0.99)',
-                backdropFilter: 'blur(40px)',
-                WebkitBackdropFilter: 'blur(40px)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
                 borderRadius: '20px 20px 0 0',
                 borderTop: '0.5px solid rgba(255,255,255,0.12)',
                 paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)',
@@ -472,7 +472,7 @@ export function MealLoggerPage() {
                       gap: '4px',
                       fontSize: 'var(--font-xs)',
                       fontWeight: 600,
-                      transition: 'all 0.15s ease',
+                      transition: 'background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease',
                     }}
                   >
                     <Icon size={13} /> {label}

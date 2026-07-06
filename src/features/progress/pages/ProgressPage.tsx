@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useDashboardStore } from '@/features/dashboard';
+import { useDashboardStore } from '@/features/dashboard/store/dashboardStore';
 import { Target, Scale } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { profileService } from '@/features/profile';
+import { profileService } from '@/features/profile/services/profileService';
 import { weightService } from '../services/weightService';
 import { complianceService } from '@/features/reports/services/complianceService';
 import { calculateProjections } from '@/shared/utils/projectionEngine';

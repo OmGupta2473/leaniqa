@@ -1,12 +1,12 @@
 import { useChatStore } from "@/app/store";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from 'react';
-import { useUserStore } from '@/features/profile';
+import { useUserStore } from '@/features/profile/store/userStore';
 import { useAppStore } from '@/app/store';
 import { cn } from '@/shared/utils/utils';
 import { CheckCircle2, ArrowRight } from 'lucide-react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { profileService } from '@/features/profile';
+import { profileService } from '@/features/profile/services/profileService';
 import { complianceService } from '@/features/reports/services/complianceService';
 
 function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: number }) {

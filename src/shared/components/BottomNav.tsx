@@ -6,15 +6,25 @@ import {
   Target,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
+import { useQuery } from '@tanstack/react-query';
+import { profileService } from '@/features/profile/services/profileService';
+
+const navItems = [
+  { id: "/goal", icon: Target, label: "Goal" },
+  { id: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { id: "/meals", icon: MessageSquare, label: "Log Meal", primary: true },
+  { id: "/progress", icon: TrendingUp, label: "Progress" },
+  { id: "/activity", icon: FileBarChart, label: "Activity" },
+];
 
 export function BottomNav() {
-  const navItems = [
-    { id: "/goal", icon: Target, label: "Goal" },
-    { id: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-    { id: "/meals", icon: MessageSquare, label: "Log Meal", primary: true },
-    { id: "/progress", icon: TrendingUp, label: "Progress" },
-    { id: "/activity", icon: FileBarChart, label: "Activity" },
-  ];
+  const { data: profile } = useQuery({
+    queryKey: ['profile'],
+    queryFn: () => profileService.getProfile(),
+    staleTime: 5 * 60 * 1000,
+  });
+  
+  const hasCompletedOnboarding = profile?.onboarding_completed;
 
   return (
     <div className="flex justify-around items-center h-[60px] w-full">
@@ -22,8 +32,14 @@ export function BottomNav() {
         <NavLink
           key={item.id}
           to={item.id}
+          onClick={(e) => {
+            if (!hasCompletedOnboarding) {
+              e.preventDefault();
+            }
+          }}
           style={({ isActive }) => {
-            const color = item.primary ? "#D4FF00" : isActive ? "#D4FF00" : "rgba(235,235,245,0.4)";
+            const isItemDisabled = !hasCompletedOnboarding;
+            const color = isItemDisabled ? "rgba(235,235,245,0.2)" : (item.primary ? "#D4FF00" : isActive ? "#D4FF00" : "rgba(235,235,245,0.4)");
             return {
               width: "100%",
               flex: 1,
@@ -34,9 +50,10 @@ export function BottomNav() {
               padding: "8px 4px",
               background: "none",
               border: "none",
-              cursor: "pointer",
+              cursor: isItemDisabled ? "not-allowed" : "pointer",
               color,
-              textDecoration: "none"
+              textDecoration: "none",
+              opacity: isItemDisabled ? 0.5 : 1
             };
           }}
         >
@@ -48,7 +65,7 @@ export function BottomNav() {
                   fontSize: "9px",
                   textTransform: "uppercase",
                   letterSpacing: "0.1em",
-                  fontWeight: isActive ? 600 : 500,
+                  fontWeight: isActive && hasCompletedOnboarding ? 600 : 500,
                 }}
               >
                 {item.label}

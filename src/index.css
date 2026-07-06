@@ -136,8 +136,8 @@ body {
   flex-shrink: 0;
   border-top: 0.5px solid rgba(255,255,255,0.08);
   background: rgba(14,14,16,0.97);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   z-index: 20;
 }
@@ -315,8 +315,8 @@ body {
 @layer utilities {
   .glass-card {
     background: rgba(44, 44, 46, 0.7);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 0.5px solid rgba(255, 255, 255, 0.12);
     border-radius: 16px;
   }
@@ -534,8 +534,8 @@ button.bf-card .text-\[22px\] {
 
 .progress-section-tappable {
   background: rgba(44, 44, 46, 0.7);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 0.5px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   padding: clamp(16px, 4vw, 20px);
@@ -592,6 +592,7 @@ button.bf-card .text-\[22px\] {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   animation: transformSlideIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
 }
 
 @keyframes transformSlideIn {
@@ -684,7 +685,7 @@ button.bf-card .text-\[22px\] {
   z-index: 2;
   box-shadow:
     0 0 0 4px rgba(28, 28, 30, 0.9),
-    0 0 20px rgba(212, 255, 0, 0.3);
+    0 4px 12px rgba(212, 255, 0, 0.2);
 }
 
 .physique-bottom-strip {
@@ -711,10 +712,11 @@ button.bf-card .text-\[22px\] {
 
 .timeline-fill {
   height: 8px;
+  width: 100%;
   border-radius: 100px;
   background: linear-gradient(90deg, #d4ff00 0%, rgba(212, 255, 0, 0.7) 100%);
-  transition: width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s;
-  min-width: 3px;
+  transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s;
+  will-change: transform;
 }
 
 .milestone-row {
@@ -819,7 +821,7 @@ button.bf-card .text-\[22px\] {
 
 .chart-container {
   background: rgba(44, 44, 46, 0.7);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(12px);
   border: 0.5px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   padding: clamp(14px, 3.5vw, 18px);
@@ -891,17 +893,17 @@ button.bf-card .text-\[22px\] {
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .streak-chip.hot {
   border-color: rgba(212, 255, 0, 0.3);
-  box-shadow: 0 0 12px rgba(212, 255, 0, 0.12);
+  box-shadow: 0 2px 8px rgba(212, 255, 0, 0.1);
 }
 
 .streak-chip.hot-protein {
   border-color: rgba(255, 77, 28, 0.3);
-  box-shadow: 0 0 12px rgba(255, 77, 28, 0.12);
+  box-shadow: 0 2px 8px rgba(255, 77, 28, 0.1);
 }
 
 .awards-nav-btn {
@@ -935,7 +937,7 @@ button.bf-card .text-\[22px\] {
   left: 0;
   right: 0;
   background: rgba(28, 28, 30, 0.97);
-  backdrop-filter: blur(30px);
+  backdrop-filter: blur(12px);
   border-top: 0.5px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px 20px 0 0;
   padding: clamp(20px, 5vw, 28px) 20px calc(env(safe-area-inset-bottom) + 20px);
@@ -960,6 +962,7 @@ button.bf-card .text-\[22px\] {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   animation: profileSlideIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
 }
 
 .profile-scroll-area {
@@ -1017,8 +1020,8 @@ button.bf-card .text-\[22px\] {
 
 .profile-card {
   background: rgba(44, 44, 46, 0.7);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 0.5px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   padding: clamp(16px, 4vw, 20px);
@@ -1123,9 +1126,11 @@ button.bf-card .text-\[22px\] {
 
 .journey-fill {
   height: 6px;
+  width: 100%;
   border-radius: 100px;
   background: linear-gradient(90deg, #d4ff00 0%, rgba(212, 255, 0, 0.6) 100%);
-  transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s;
+  transition: transform 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s;
+  will-change: transform;
 }
 
 .profile-bottom-spacer {
@@ -1241,7 +1246,7 @@ input[type='number'] {
 .border-border-secondary { border-color: rgba(255,255,255,0.1) !important; }
 .border-border-tertiary { border-color: rgba(255,255,255,0.06) !important; }
 
-.shadow-purple\/20 { box-shadow: 0 8px 24px rgba(212,255,0,0.2) !important; }
+.shadow-purple\/20 { box-shadow: 0 4px 12px rgba(212,255,0,0.2) !important; }
 
 /* ── Meal Logger FAB ── */
 .meal-fab-positioner {
@@ -1274,4 +1279,13 @@ input[type='number'] {
   display: flex;
   justify-content: flex-end;
   padding-right: 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

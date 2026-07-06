@@ -1,8 +1,8 @@
 import { useReportStore } from "../store/reportStore";
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { profileService } from '@/features/profile';
-import { mealService } from '@/features/nutrition';
+import { profileService } from '@/features/profile/services/profileService';
+import { mealService } from '@/features/nutrition/services/mealService';
 import { reportService } from '../services/reportService';
 import { complianceService } from '../services/complianceService';
 import { calculateCurrentCalorieStreak, calculateCurrentProteinStreak, calculateEarnedAwards } from '@/shared/utils/streaks';
