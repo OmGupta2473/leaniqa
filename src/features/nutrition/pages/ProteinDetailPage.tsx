@@ -6,7 +6,7 @@ import { mealService } from "../services/mealService";
 import { useCalculatedProfile } from "@/shared/hooks/useCalculatedProfile";
 import { useUserStore } from "@/features/profile/store/userStore";
 
-import { calculateBestProteinStreak, calculateCurrentProteinStreak, calculateEarnedAwards } from "@/shared/utils/streaks";
+import { calculateBestDailyStreak, calculateCurrentDailyStreak, calculateEarnedAwards } from "@/shared/utils/streaks";
 import { reportService } from "@/features/reports/services/reportService";
 
 function getLocalDateString() {
@@ -21,7 +21,7 @@ export function ProteinDetailPage() {
   const navigate = useNavigate();
   const { profileData: onboardingData } = useCalculatedProfile();
   const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
-  const proteinStreak = calculateCurrentProteinStreak(metrics);
+  const currentStreak = calculateCurrentDailyStreak(metrics);
   const earnedAwards = calculateEarnedAwards(metrics);
 
   const { data: profile } = useQuery({
@@ -42,7 +42,7 @@ export function ProteinDetailPage() {
 
   const isTargetHit = proteinConsumed >= target_protein;
 
-  const allTimeBestProStreak = calculateBestProteinStreak(metrics);
+  const allTimeBestStreak = calculateBestDailyStreak(metrics);
 
   // Inject live data for today's chart entry
   const chartLogs = useMemo(() => {
@@ -186,7 +186,7 @@ export function ProteinDetailPage() {
                 gap: "4px",
               }}
             >
-              ⚡ {proteinStreak} day streak
+              ⚡ {currentStreak} day streak
             </div>
           </div>
         </div>
@@ -213,7 +213,7 @@ export function ProteinDetailPage() {
                 fontWeight: 700,
               }}
             >
-              {proteinStreak}
+              {currentStreak}
             </div>
           </div>
           <div className="glass-card p-[16px] text-center">
@@ -236,7 +236,7 @@ export function ProteinDetailPage() {
                 fontWeight: 700,
               }}
             >
-              {allTimeBestProStreak}
+              {allTimeBestStreak}
             </div>
           </div>
         </div>
@@ -365,7 +365,7 @@ export function ProteinDetailPage() {
                             width: "100%",
                             transformOrigin: "left",
                             willChange: "transform",
-                            transform: `translateX(-${100 - Math.min(100, (proteinStreak / award.streakRequired) * 100)}%)`,
+                            transform: `translateX(-${100 - Math.min(100, (currentStreak / award.streakRequired) * 100)}%)`,
                             transition: "transform 0.3s",
                           }}
                         ></div>
