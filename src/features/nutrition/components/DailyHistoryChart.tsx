@@ -113,9 +113,9 @@ export function DailyHistoryChart({ logs, todayStr, unit, type }: DailyHistoryCh
           
           let isSuccess = false;
           if (type === "calorie") {
-             isSuccess = day.actual <= day.target;
+             isSuccess = day.actual <= day.target && day.actual > 0;
           } else {
-             isSuccess = day.actual >= day.target;
+             isSuccess = day.actual >= day.target && day.actual > 0;
           }
 
           const barColor = isToday ? "#737373" : (isSuccess ? "#D4FF00" : "#FF4D1C");

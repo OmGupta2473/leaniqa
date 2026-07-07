@@ -195,9 +195,9 @@ serve(async (req) => {
         const contents = `You are a precise nutrition expert for Indian and international foods. Analyze this meal: "${text}". Meal type: ${mealType || 'unspecified'}. The user has ${remainingCalories ?? 'unknown'} kcal remaining today and needs ${remainingProtein ?? 'unknown'}g more protein.
 
 Instructions:
-1. Identify each food item and its quantity from the text
-2. Calculate accurate macros based on standard serving sizes and quantities mentioned
-3. For Indian foods, use standard homemade portions (roti = 40g, rice plate = 300g cooked, dal bowl = 200g, sabzi = 150g)
+1. Identify each food item and its exact quantity from the text. Never default to 100g unless explicitly specified in grams.
+2. Apply quantity scaling strictly. Final nutrition MUST be: Serving Nutrition * Quantity.
+3. Standard conversions: 1 egg = 50g, 1 almond = 1.2g, 1 medium banana, 1 bowl sprouts, 1 cup rice, 1 roti = 40g, dal bowl = 200g, sabzi = 150g.
 4. Confidence: 95-100 for named items with quantities, 80-94 for named items without quantities, 60-79 for ambiguous descriptions
 5. Coaching tip: be specific, mention the user's remaining macros, suggest one concrete next action
 
@@ -360,7 +360,7 @@ Respond with valid JSON only.`;
       fish: { calories: 200, protein: 25, fat: 10, carbs: 0 },
       idli: { calories: 150, protein: 4, fat: 0, carbs: 30 },
       roti: { calories: 120, protein: 4, fat: 1, carbs: 25 },
-      egg: { calories: 140, protein: 12, fat: 10, carbs: 1 },
+      egg: { calories: 72, protein: 6, fat: 5, carbs: 0.5 },
       salad: { calories: 50, protein: 2, fat: 0, carbs: 10 },
     };
 
