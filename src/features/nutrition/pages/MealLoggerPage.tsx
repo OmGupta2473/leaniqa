@@ -466,7 +466,7 @@ export function MealLoggerPage() {
         <MealSlotRow slot="lunch" icon={<Sun size={14} />} label="Lunch" timeRange="12 pm – 6 pm" meals={lunchMeals} onDelete={handleDeleteMeal} />
         <MealSlotRow slot="dinner" icon={<Moon size={14} />} label="Dinner" timeRange="6 pm – 10 pm" meals={dinnerMeals} onDelete={handleDeleteMeal} />
       </div>      {/* ── SPACER TO PREVENT FAB OVERLAP ── */}
-      <div style={{ height: '80px', flexShrink: 0 }} aria-hidden="true" />
+      <div style={{ height: '120px', flexShrink: 0 }} aria-hidden="true" />
 
       </div>
       {/* ── FLOATING ADD BUTTON ── */}
