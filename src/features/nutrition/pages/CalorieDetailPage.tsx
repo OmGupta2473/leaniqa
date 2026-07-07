@@ -6,7 +6,7 @@ import { mealService } from "../services/mealService";
 import { useCalculatedProfile } from "@/shared/hooks/useCalculatedProfile";
 import { useUserStore } from "@/features/profile/store/userStore";
 
-import { calculateBestDailyStreak, calculateEarnedAwards, calculateCurrentDailyStreak } from "@/shared/utils/streaks";
+import { calculateEarnedAwards, calculateCurrentDailyStreak } from "@/shared/utils/streaks";
 import { reportService } from "@/features/reports/services/reportService";
 
 function getLocalDateString() {
@@ -21,10 +21,7 @@ export function CalorieDetailPage() {
   const navigate = useNavigate();
   const { profileData: onboardingData } = useCalculatedProfile();
   const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
-  const currentStreak = calculateCurrentDailyStreak(metrics);
-  const earnedAwards = calculateEarnedAwards(metrics);
-
-  const { data: profile } = useQuery({
+const { data: profile } = useQuery({
     queryKey: ["profile"],
     queryFn: () => profileService.getProfile(),
   });
@@ -47,10 +44,7 @@ export function CalorieDetailPage() {
   const caloriesConsumed = meals ? meals.reduce((acc, m) => acc + m.calories, 0) : 0;
 
   const isUnderTarget = caloriesConsumed <= dailyCalorieGoal;
-
-  const allTimeBestStreak = calculateBestDailyStreak(metrics);
-
-  // Inject live data for today's chart entry
+// Inject live data for today's chart entry
   const chartLogs = useMemo(() => {
     const logs = [...metrics];
     const todayIdx = logs.findIndex(l => l.date === todayStr);
@@ -113,9 +107,7 @@ export function CalorieDetailPage() {
   };
 
   const chartHtml = buildCalorieBarChart(chartLogs, dailyCalorieGoal);
-  const calAwards = earnedAwards.filter((a) => a.category === "calories");
-
-  return (
+return (
     <div
       className="screen-container screen-enter"
       style={{ minHeight: "100dvh", background: "#1c1c1e", overflowY: "auto" }}
@@ -184,68 +176,7 @@ export function CalorieDetailPage() {
               {isUnderTarget ? "Under target ✓" : "Over target ✗"}
             </div>
 
-            <div
-              style={{
-                fontSize: "var(--font-sm)",
-                color: "#D4FF00",
-                fontWeight: 600,
-                display: "flex",
-                alignItems: "center",
-                gap: "4px",
-              }}
-            >
-              🔥 {currentStreak} day streak
-            </div>
-          </div>
-        </div>
 
-        {/* Streak Stats */}
-        <div className="streak-stats-grid mb-[24px]">
-          <div className="glass-card p-[16px] text-center">
-            <div
-              style={{
-                fontSize: "11px",
-                textTransform: "uppercase",
-                color: "rgba(235,235,245,0.5)",
-                fontWeight: 600,
-                letterSpacing: "0.05em",
-                marginBottom: "4px",
-              }}
-            >
-              Current Streak
-            </div>
-            <div
-              style={{
-                fontSize: "var(--font-stat)",
-                color: "#D4FF00",
-                fontWeight: 700,
-              }}
-            >
-              {currentStreak}
-            </div>
-          </div>
-          <div className="glass-card p-[16px] text-center">
-            <div
-              style={{
-                fontSize: "11px",
-                textTransform: "uppercase",
-                color: "rgba(235,235,245,0.5)",
-                fontWeight: 600,
-                letterSpacing: "0.05em",
-                marginBottom: "4px",
-              }}
-            >
-              Best Streak
-            </div>
-            <div
-              style={{
-                fontSize: "var(--font-stat)",
-                color: "white",
-                fontWeight: 700,
-              }}
-            >
-              {allTimeBestStreak}
-            </div>
           </div>
         </div>
 
@@ -297,94 +228,7 @@ export function CalorieDetailPage() {
           </div>
         </div>
 
-        {/* Awards Progress */}
-        <div className="mb-[12px] text-[13px] font-semibold uppercase tracking-[0.05em] text-[#EBEBF599] ml-[4px]">
-          Awards Progress
-        </div>
-        <div className="flex flex-col gap-[12px]">
-          {calAwards.map((award) => {
-            const isEarned = award.earned;
-            return (
-              <div key={award.id} className="glass-card p-[16px] flex items-center gap-[12px]">
-                <div
-                  style={{
-                    width: "36px",
-                    height: "36px",
-                    borderRadius: award.shape === "hexagon" ? "8px" : "50%",
-                    background: isEarned
-                      ? `linear-gradient(135deg, ${award.primaryColor}20, ${award.accentColor}40)`
-                      : "rgba(255,255,255,0.05)",
-                    border: `1px solid ${isEarned ? award.primaryColor + "80" : "rgba(255,255,255,0.1)"}`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "18px",
-                    opacity: isEarned ? 1 : 0.4,
-                    flexShrink: 0,
-                  }}
-                >
-                  {award.symbol}
-                </div>
-                <div className="flex-1">
-                  <div
-                    style={{
-                      fontSize: "14px",
-                      fontWeight: 600,
-                      color: isEarned ? "white" : "rgba(255,255,255,0.5)",
-                    }}
-                  >
-                    {award.name}
-                  </div>
-                  {isEarned ? (
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        color: "#D4FF00",
-                        fontWeight: 500,
-                      }}
-                    >
-                      Earned{" "}
-                      {award.earnedDate
-                        ? new Date(award.earnedDate).toLocaleDateString()
-                        : "recently"}
-                    </div>
-                  ) : (
-                    <div
-                      style={{
-                        fontSize: "11px",
-                        color: "rgba(255,255,255,0.4)",
-                        marginTop: "4px",
-                      }}
-                    >
-                      Reach a {award.streakRequired}-day streak to unlock
-                      <div
-                        style={{
-                          height: "4px",
-                          background: "rgba(255,255,255,0.1)",
-                          borderRadius: "2px",
-                          marginTop: "6px",
-                          overflow: "hidden",
-                        }}
-                      >
-                        <div
-                          style={{
-                            height: "100%",
-                            background: "rgba(255,255,255,0.3)",
-                            width: "100%",
-                            transformOrigin: "left",
-                            willChange: "transform",
-                            transform: `translateX(-${100 - Math.min(100, (currentStreak / award.streakRequired) * 100)}%)`,
-                            transition: "transform 0.3s",
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+
       </div>
     </div>
   );
