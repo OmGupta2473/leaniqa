@@ -1251,7 +1251,8 @@ input[type='number'] {
 /* ── Meal Logger FAB ── */
 .meal-fab-positioner {
   position: fixed;
-  bottom: calc(env(safe-area-inset-bottom) + 16px);
+  /* 60px bottom nav + 20px spacing */
+  bottom: calc(env(safe-area-inset-bottom) + 80px);
   left: 0;
   width: 100vw;
   z-index: 50;
@@ -1260,6 +1261,8 @@ input[type='number'] {
 
 @media (min-width: 768px) {
   .meal-fab-positioner {
+    /* No bottom nav on desktop/tablet, reduce bottom spacing */
+    bottom: calc(env(safe-area-inset-bottom) + 32px);
     left: 64px;
     width: calc(100vw - 64px);
   }
@@ -1277,10 +1280,8 @@ input[type='number'] {
   max-width: 480px;
   margin: 0 auto;
   display: flex;
-  justify-content: flex-end;
-  padding-right: 24px;
+  justify-content: center;
 }
-
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
