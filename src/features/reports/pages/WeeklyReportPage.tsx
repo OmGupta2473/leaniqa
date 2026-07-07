@@ -5,7 +5,7 @@ import { profileService } from '@/features/profile/services/profileService';
 import { mealService } from '@/features/nutrition/services/mealService';
 import { reportService } from '../services/reportService';
 import { complianceService } from '../services/complianceService';
-import { calculateCurrentCalorieStreak, calculateCurrentProteinStreak, calculateEarnedAwards } from '@/shared/utils/streaks';
+import { calculateCurrentDailyStreak, calculateEarnedAwards } from '@/shared/utils/streaks';
 import { ProgressRing } from '../components/ProgressRing';
 import { MicroRing } from '../components/MicroRing';
 import { HourlyBarChart } from '../components/HourlyBarChart';
@@ -36,8 +36,7 @@ export function WeeklyReportPage() {
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
   const { data: meals = [] } = useQuery({ queryKey: ['meals', 'month'], queryFn: () => mealService.getMeals({ days: 35, limit: 2000 }) });
   const { data: dailyMetrics = [] } = useQuery({ queryKey: ['dailyMetrics'], queryFn: () => reportService.getDailyMetrics() });
-  const calorieStreak = calculateCurrentCalorieStreak(dailyMetrics);
-  const proteinStreak = calculateCurrentProteinStreak(dailyMetrics);
+  const currentStreak = calculateCurrentDailyStreak(dailyMetrics);
   const earnedAwards = calculateEarnedAwards(dailyMetrics);
 
   const calorieGoal = profile?.maintenance_kcal && goal?.deficit_kcal !== undefined ? profile.maintenance_kcal - goal.deficit_kcal : 2000;
@@ -202,8 +201,8 @@ export function WeeklyReportPage() {
                 <div style={{ fontSize: 'var(--font-sm)', fontWeight: 700 }}>Trends</div>
               </div>
               <div style={{ fontSize: 'var(--font-sm)', color: 'rgba(235,235,245,0.7)', lineHeight: 1.5 }}>
-                {calorieStreak > 0 ? `You're on a ${calorieStreak}-day calorie streak. ` : 'Log today to start a new streak. '}
-                {proteinStreak > 0 ? `Protein target hit ${proteinStreak} days in a row.` : ''}
+                {currentStreak > 0 ? `You're on a ${currentStreak}-day daily streak. ` : 'Log today to start a new streak. '}
+
               </div>
             </div>
 

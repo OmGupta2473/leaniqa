@@ -116,16 +116,14 @@ export function AwardsPage() {
   const navigate = useNavigate();
       const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
   const earnedAwards = calculateEarnedAwards(metrics);
-  const calorieStreak = earnedAwards.find(a => a.category === 'calories')?.currentStreak || 0;
-  const proteinStreak = earnedAwards.find(a => a.category === 'protein')?.currentStreak || 0;
+  const currentStreak = earnedAwards.find(a => a.category === 'daily')?.currentStreak || 0;
 
 
 
   const selectedAward = useAwardStore(s => s.selectedAward);
   const setSelectedAward = useAwardStore(s => s.setSelectedAward);
 
-  const calAwards = earnedAwards.filter((a) => a.category === "calories");
-  const proAwards = earnedAwards.filter((a) => a.category === "protein");
+  const dailyAwards = earnedAwards.filter((a) => a.category === "daily");
 
   const earnedCount = earnedAwards.filter((a) => a.earned).length;
   const totalCount = earnedAwards.length;
@@ -176,7 +174,7 @@ export function AwardsPage() {
               fontWeight: 700,
             }}
           >
-            {calorieStreak}
+            {currentStreak}
           </div>
           <div
             style={{
@@ -187,7 +185,7 @@ export function AwardsPage() {
               marginTop: "4px",
             }}
           >
-            Day Calorie Streak
+            Daily Streak
           </div>
         </div>
         <div
@@ -201,7 +199,7 @@ export function AwardsPage() {
               fontWeight: 700,
             }}
           >
-            {proteinStreak}
+            {currentStreak}
           </div>
           <div
             style={{
@@ -212,7 +210,7 @@ export function AwardsPage() {
               marginTop: "4px",
             }}
           >
-            Day Protein Streak
+            
           </div>
         </div>
       </div>
@@ -240,7 +238,7 @@ export function AwardsPage() {
         </div>
       </div>
       <div className="awards-grid">
-        {calAwards.map((award) => (
+        {dailyAwards.map((award) => (
           <div
             key={award.id}
             className="award-cell"
@@ -310,7 +308,7 @@ export function AwardsPage() {
         </div>
       </div>
       <div className="awards-grid">
-        {proAwards.map((award) => (
+        {dailyAwards.map((award) => (
           <div
             key={award.id}
             className="award-cell"
@@ -455,10 +453,8 @@ export function AwardsPage() {
                       style={{
                         height: "100%",
                         background:
-                          selectedAward.category === "calories"
-                            ? "#D4FF00"
-                            : "#FF4D1C",
-                        width: `${Math.min(100, ((selectedAward.category === "calories" ? calorieStreak : proteinStreak) / selectedAward.streakRequired) * 100)}%`,
+                          selectedAward.primaryColor || "#D4FF00",
+                        width: `${Math.min(100, ((currentStreak) / selectedAward.streakRequired) * 100)}%`,
                       }}
                     ></div>
                   </div>
@@ -470,9 +466,7 @@ export function AwardsPage() {
                       fontWeight: 500,
                     }}
                   >
-                    {selectedAward.category === "calories"
-                      ? calorieStreak
-                      : proteinStreak}{" "}
+                    {currentStreak}{" "}
                     / {selectedAward.streakRequired} days
                   </div>
                 </>

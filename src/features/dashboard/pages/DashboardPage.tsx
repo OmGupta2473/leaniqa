@@ -1,7 +1,7 @@
 import { useUserStore } from "@/features/profile/store/userStore";
 import { useAppStore } from "@/app/store";
 import { reportService } from "@/features/reports/services/reportService";
-import { calculateCurrentCalorieStreak, calculateCurrentProteinStreak } from "@/shared/utils/streaks";
+import { calculateCurrentDailyStreak } from "@/shared/utils/streaks";
 import { Target, Footprints, Utensils, CheckCircle2, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCalculatedProfile } from "@/shared/hooks/useCalculatedProfile";
@@ -82,8 +82,7 @@ export function DashboardPage() {
   const dismissedBanners = useAppStore(s => s.dismissedBanners);
   const dismissBanner = useAppStore(s => s.dismissBanner);
     const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
-  const calorieStreak = calculateCurrentCalorieStreak(metrics);
-  const proteinStreak = calculateCurrentProteinStreak(metrics);
+  const currentStreak = calculateCurrentDailyStreak(metrics);
   const queryClient = useQueryClient();
   const { profileData: onboardingData, profile, goal } = useCalculatedProfile();
   const isProfileError = false;
@@ -262,25 +261,14 @@ export function DashboardPage() {
 
       {/* Streak chips */}
       <div className="streak-row mb-[16px]">
-        <div className={`streak-chip ${calorieStreak >= 7 ? 'hot' : ''}`}>
-          <span style={{ fontSize: '18px' }}>🔥</span>
+        <div className={`streak-chip ${currentStreak >= 7 ? 'hot' : ''}`} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: '16px' }}>
+          <span style={{ fontSize: '32px', marginRight: '12px' }}>{currentStreak > 0 ? '🔥' : '❄️'}</span>
           <div>
-            <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: calorieStreak > 0 ? '#D4FF00' : 'rgba(235,235,245,0.4)', lineHeight: 1 }}>
-              {calorieStreak > 0 ? calorieStreak : '—'}
+            <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: currentStreak > 0 ? '#D4FF00' : 'rgba(235,235,245,0.4)', lineHeight: 1 }}>
+              {currentStreak > 0 ? currentStreak : '—'}
             </div>
             <div style={{ fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.5)', textTransform: 'uppercase', fontWeight: 600 }}>
-              cal streak
-            </div>
-          </div>
-        </div>
-        <div className={`streak-chip ${proteinStreak >= 7 ? 'hot-protein' : ''}`}>
-          <span style={{ fontSize: '18px' }}>💪</span>
-          <div>
-            <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: proteinStreak > 0 ? '#FF4D1C' : 'rgba(235,235,245,0.4)', lineHeight: 1 }}>
-              {proteinStreak > 0 ? proteinStreak : '—'}
-            </div>
-            <div style={{ fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.5)', textTransform: 'uppercase', fontWeight: 600 }}>
-              protein streak
+              daily streak
             </div>
           </div>
         </div>
