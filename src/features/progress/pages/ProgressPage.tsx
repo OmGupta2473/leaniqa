@@ -6,7 +6,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileService } from '@/features/profile/services/profileService';
 import { weightService } from '../services/weightService';
 import { complianceService } from '@/features/reports/services/complianceService';
-import { calculateProjections } from '@/shared/utils/projectionEngine';
 
 export function ProgressPage() {
   const [weight, setWeight] = useState('');
@@ -18,9 +17,7 @@ export function ProgressPage() {
   
   const queryClient = useQueryClient();
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
-  const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
   const { data: weightLogs = [] } = useQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
-  const { data: scores } = useQuery({ queryKey: ['complianceScore'], queryFn: () => complianceService.getScores() });
 
   const currentWeight = weightLogs.length > 0 ? weightLogs[weightLogs.length - 1].weight : profile?.weight || 80;
   
@@ -95,19 +92,6 @@ export function ProgressPage() {
   if (chartData.length === 0) {
     chartData.push({ name: 'Start', weight: currentWeight });
   }
-
-  const currentBf = goal?.current_bf ?? 20;
-  const targetBf = goal?.target_bf || 12;
-  const weeklyDeficitKcal = (goal?.deficit_kcal ?? 400) * 7; // Average weekly deficit
-  const complianceScore = scores?.weeklyAverage ?? 80;
-
-  const projections = calculateProjections({
-    currentWeight,
-    currentBf,
-    targetBf,
-    weeklyDeficitKcal,
-    complianceScore,
-  });
 
   return (
     <div className="screen-container screen-enter">
@@ -205,59 +189,6 @@ export function ProgressPage() {
             Log your weight to see trends.
           </div>
         )}
-      </div>
-
-      <div className="glass-card" style={{ padding: '16px' }}>
-        <div className="text-[11px] font-medium uppercase tracking-widest mb-3" style={{ color: 'rgba(235,235,245,0.5)' }}>Physique Transformation Roadmap</div>
-        
-        <div className="relative pl-6 space-y-6 py-2">
-          {/* Vertical timeline line */}
-          <div className="absolute top-0 bottom-0 left-2.5 w-[2px]" style={{ background: 'rgba(255,255,255,0.12)' }}></div>
-          
-          {projections.map((p, index) => {
-            const isCompleted = p.status === 'completed';
-            const isCurrent = !isCompleted && (index === 0 || projections[index - 1].status === 'completed');
-            
-            return (
-              <div key={p.bfTarget} className="relative">
-                {/* Timeline Dot */}
-                <div 
-                  className={`absolute -left-6 top-1 w-3 h-3 rounded-full border-2 z-10`} 
-                  style={{ 
-                    background: isCompleted ? 'rgba(235,235,245,0.8)' : '#1C1C1E',
-                    borderColor: isCompleted ? 'rgba(235,235,245,0.8)' : isCurrent ? '#D4FF00' : 'rgba(255,255,255,0.12)',
-                    boxShadow: isCurrent ? '0 0 10px rgba(212,255,0,0.5)' : 'none'
-                  }}
-                ></div>
-                
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div 
-                      className={`text-[15px] font-medium ${isCompleted ? 'text-text-tertiary line-through' : 'text-text-primary'}`}
-                      style={isCurrent ? { color: '#D4FF00' } : {}}
-                    >
-                      {p.bfTarget}% Body Fat {p.bfTarget === targetBf ? '(Goal)' : ''}
-                    </div>
-                    {!isCompleted && (
-                      <div className="text-[12px] text-text-secondary mt-1">
-                        Est. Weight: ~{p.estWeight.toFixed(1)} kg
-                      </div>
-                    )}
-                  </div>
-                  <div 
-                    className={`text-[12px] font-mono px-2 py-1 rounded-md ${isCompleted ? 'bg-border-tertiary text-text-secondary' : ''}`}
-                    style={!isCompleted ? { background: 'rgba(212,255,0,0.1)', color: '#D4FF00' } : {}}
-                  >
-                    {isCompleted ? 'Completed' : `ETA: ${p.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })}`}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-          {projections.length === 0 && (
-            <div className="text-[12px]" style={{ color: 'rgba(235,235,245,0.5)' }}>Provide valid goal info to see projections.</div>
-          )}
-        </div>
       </div>
     </div>
   );
