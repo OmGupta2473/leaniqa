@@ -245,8 +245,8 @@ export function DashboardPage() {
         </div>
         <div className="flex items-center gap-[16px]">
           <div className="flex items-center gap-[6px]">
-            <span className="text-[18px]">🔥</span>
-            <span className="text-[17px] text-white font-bold tracking-[-0.2px]">{currentStreak > 0 ? currentStreak : '0'}</span>
+            <span className="text-[18px]">{currentStreak > 0 ? '🔥' : '❄️'}</span>
+            <span className={`text-[17px] font-bold tracking-[-0.2px] ${currentStreak > 0 ? 'text-white' : 'text-[#EBEBF566]'}`}>{currentStreak > 0 ? currentStreak : '—'}</span>
           </div>
           <div className="w-[1px] h-[28px] bg-[rgba(235,235,245,0.15)]" />
           <div className="flex flex-col items-center">
@@ -266,24 +266,7 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* Streak chips */}
-      <div className="streak-row mb-[16px]">
-        <div className={`streak-chip ${currentStreak >= 7 ? 'hot' : ''}`} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: '16px' }}>
-          <span style={{ fontSize: '32px', marginRight: '12px' }}>{currentStreak > 0 ? '🔥' : '❄️'}</span>
-          <div>
-            <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: currentStreak > 0 ? '#D4FF00' : 'rgba(235,235,245,0.4)', lineHeight: 1 }}>
-              {currentStreak > 0 ? currentStreak : '—'}
-            </div>
-            <div style={{ fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.5)', textTransform: 'uppercase', fontWeight: 600 }}>
-              daily streak
-            </div>
-          </div>
-        </div>
-      </div>
-
-
-
-      {/* SECTION 3 — Body fat hero card */}
+{/* SECTION 3 — Body fat hero card */}
       <div
         className="progress-section-tappable"
         onClick={() => navigate("/transformation")}
