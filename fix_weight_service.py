@@ -3,27 +3,16 @@ import re
 with open("src/features/progress/services/weightService.ts", "r") as f:
     content = f.read()
 
-# Replace addWeightLog implementation to check for existing date
-# We will do a query to find a log for the same user_id and same date prefix.
-old_add = """    const payload = {
-      ...logData,
-      body_fat: bodyFatEstimate,
-      user_id: userId,
-    };
-    const { data, error } = await supabase
-      .from('weight_logs')
-      .insert(payload)
-      .select()
-      .maybeSingle();"""
+# Replace everything from `const payload = {` to `if (error && error.code !== 'PGRST116') {`
+pattern = re.compile(r"const payload = \{.*?(?=if \(error && error\.code !== 'PGRST116'\) \{)", re.DOTALL)
 
-new_add = """    const payload = {
+new_add = """const payload = {
       ...logData,
       body_fat: bodyFatEstimate,
       user_id: userId,
     };
 
     // Check if an entry for this local date already exists
-    // The date is typically 'YYYY-MM-DD' or ISO string. We match the first 10 chars.
     const datePrefix = logData.date.substring(0, 10);
     
     const { data: existing } = await supabase
@@ -53,9 +42,11 @@ new_add = """    const payload = {
         .maybeSingle();
       data = res.data;
       error = res.error;
-    }"""
+    }
 
-content = content.replace(old_add, new_add)
+    """
+
+content = pattern.sub(new_add, content)
 
 with open("src/features/progress/services/weightService.ts", "w") as f:
     f.write(content)
