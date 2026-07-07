@@ -63,7 +63,7 @@ export const weightService = {
     // Update profile weight and goal body fat if calculated
     if (profile) {
       const promises: Promise<any>[] = [
-        profileService.upsertProfile({ weight: logData.weight })
+        profileService.updateProfile({ weight: logData.weight })
       ];
       if (bodyFatEstimate) {
         promises.push(supabase.from("goals").update({ current_bf: bodyFatEstimate }).eq("user_id", userId) as any);
