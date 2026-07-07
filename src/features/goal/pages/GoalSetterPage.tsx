@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from 'react';
 import { useUserStore } from '@/features/profile/store/userStore';
+import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
 import { useAppStore } from '@/app/store';
 import { cn } from '@/shared/utils/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -28,7 +29,7 @@ const Silhouette = ({ active }: { active: boolean }) => (
 
 export function GoalSetterPage() {
   const navigate = useNavigate();
-  const onboardingData = useUserStore(s => s.onboardingData);
+  const { profileData: onboardingData } = useCalculatedProfile();
   const setOnboardingData = useUserStore(s => s.setOnboardingData);
   const queryClient = useQueryClient();
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });

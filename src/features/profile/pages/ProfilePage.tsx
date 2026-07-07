@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useUserStore } from "../store/userStore";
 import { useAppStore } from "@/app/store";
 import { profileService } from "../services/profileService";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useHasCompletedOnboarding } from '@/shared/hooks/useHasCompletedOnboarding';
+import { calculateMacros, calculateGoalStats } from '@/shared/utils/profileCalculations';
 import { useNavigate } from "react-router-dom";
 
 export function ProfilePage() {
@@ -14,7 +16,7 @@ export function ProfilePage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
-  const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
+  const { profile, goal } = useHasCompletedOnboarding();
 
   const editOpen = activeModal === 'profile_edit';
   const setEditOpen = (isOpen: boolean) => setActiveModal(isOpen ? 'profile_edit' : null);
@@ -77,33 +79,48 @@ export function ProfilePage() {
     setSaving(false);
   };
 
-  // All the existing display values
+// All the existing display values
   const displayVal = (val: any) => val !== undefined && val !== null && !Number.isNaN(val) ? val : '—';
-  const name_ = onboardingData?.name ?? profile?.name ?? '';
-  const age_ = onboardingData?.age ?? profile?.age;
-  const gender_ = onboardingData?.gender ?? profile?.gender;
-  const activityLevel_ = onboardingData?.activityLevel ?? profile?.activity_level;
-  const weightKg_ = onboardingData?.weightKg ?? profile?.weight;
-  const heightCm_ = onboardingData?.heightCm ?? profile?.height;
-  const tdee_ = onboardingData?.tdee ?? profile?.maintenance_kcal;
-  const proteinMin_ = onboardingData?.proteinMin;
-  const proteinMax_ = onboardingData?.proteinMax;
-  const fatMin_ = onboardingData?.fatMin;
-  const fatMax_ = onboardingData?.fatMax;
-  const carbMin_ = onboardingData?.carbMin;
-  const carbMax_ = onboardingData?.carbMax;
-  const fiberMin_ = onboardingData?.fiberMin;
-  const fiberMax_ = onboardingData?.fiberMax;
-  const waterLitres_ = onboardingData?.waterLitres;
-  const currentBodyFatPct_ = onboardingData?.currentBodyFatPct;
-  const targetBodyFatPct_ = onboardingData?.targetBodyFatPct;
-  const fatToLoseKg_ = onboardingData?.fatToLoseKg;
-  const targetWeightKg_ = onboardingData?.targetWeightKg;
-  const chosenStrategyName_ = onboardingData?.chosenStrategyName;
-  const dailyCalorieGoal_ = onboardingData?.dailyCalorieGoal;
-  const dailyDeficit_ = onboardingData?.dailyDeficit;
-  const estimatedWeeks_ = onboardingData?.estimatedWeeks;
-  const estimatedCompletionDate_ = onboardingData?.estimatedCompletionDate;
+  
+  const name_ = profile?.name ?? onboardingData?.name ?? '';
+  const age_ = profile?.age ?? onboardingData?.age;
+  const gender_ = profile?.gender ?? onboardingData?.gender;
+  const activityLevel_ = profile?.activity_level ?? onboardingData?.activityLevel;
+  const weightKg_ = profile?.weight ?? onboardingData?.weightKg;
+  const heightCm_ = profile?.height ?? onboardingData?.heightCm;
+  
+  let calcMacros: any = null;
+  if (weightKg_ && heightCm_ && age_ && gender_ && activityLevel_) {
+    calcMacros = calculateMacros(weightKg_, heightCm_, age_, gender_, activityLevel_);
+  }
+  
+  let calcGoalStats: any = null;
+  const currentBodyFatPct_ = goal?.current_bf ?? onboardingData?.currentBodyFatPct;
+  const targetBodyFatPct_ = goal?.target_bf ?? onboardingData?.targetBodyFatPct;
+  const deficit_kcal_ = goal?.deficit_kcal ?? onboardingData?.dailyDeficit;
+  
+  if (calcMacros?.tdee && weightKg_ && currentBodyFatPct_ && targetBodyFatPct_ && deficit_kcal_ !== undefined) {
+    calcGoalStats = calculateGoalStats(calcMacros.tdee, weightKg_, currentBodyFatPct_, targetBodyFatPct_, deficit_kcal_);
+  }
+
+  const tdee_ = profile?.maintenance_kcal ?? calcMacros?.tdee ?? onboardingData?.tdee;
+  const proteinMin_ = calcMacros?.proteinMin ?? onboardingData?.proteinMin;
+  const proteinMax_ = calcMacros?.proteinMax ?? onboardingData?.proteinMax;
+  const fatMin_ = calcMacros?.fatMin ?? onboardingData?.fatMin;
+  const fatMax_ = calcMacros?.fatMax ?? onboardingData?.fatMax;
+  const carbMin_ = calcMacros?.carbMin ?? onboardingData?.carbMin;
+  const carbMax_ = calcMacros?.carbMax ?? onboardingData?.carbMax;
+  const fiberMin_ = calcMacros?.fiberMin ?? onboardingData?.fiberMin;
+  const fiberMax_ = calcMacros?.fiberMax ?? onboardingData?.fiberMax;
+  const waterLitres_ = calcMacros?.waterLitres ?? onboardingData?.waterLitres;
+
+  const fatToLoseKg_ = calcGoalStats?.fatToLoseKg ?? onboardingData?.fatToLoseKg;
+  const targetWeightKg_ = goal?.target_weight ?? calcGoalStats?.targetWeightKg ?? onboardingData?.targetWeightKg;
+  const chosenStrategyName_ = goal?.strategy ?? onboardingData?.chosenStrategyName;
+  const dailyCalorieGoal_ = calcGoalStats?.dailyCalorieGoal ?? onboardingData?.dailyCalorieGoal;
+  const dailyDeficit_ = goal?.deficit_kcal ?? onboardingData?.dailyDeficit;
+  const estimatedWeeks_ = calcGoalStats?.estimatedWeeks ?? onboardingData?.estimatedWeeks;
+  const estimatedCompletionDate_ = goal?.target_date ? new Date(goal.target_date).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : (calcGoalStats?.targetDateStr ?? onboardingData?.estimatedCompletionDate);
   let initials = '—';
   if (name_ && name_.trim().length > 0) { const words = name_.trim().split(' '); initials = words.length > 1 ? (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase() : words[0].substring(0, 2).toUpperCase(); }
   let heightStr = displayVal(heightCm_);

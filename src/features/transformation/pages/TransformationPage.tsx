@@ -1,11 +1,12 @@
 import React, { useEffect } from "react";
+import { useCalculatedProfile } from "@/shared/hooks/useCalculatedProfile";
 import { useUserStore } from "@/features/profile/store/userStore";
 import { useQuery } from "@tanstack/react-query";
 import { profileService } from "@/features/profile/services/profileService";
 import { useNavigate } from "react-router-dom";
 
 export function TransformationPage() {
-  const onboardingData = useUserStore(s => s.onboardingData);
+  const { profileData: onboardingData } = useCalculatedProfile();
   const navigate = useNavigate();
 
   const { data: profile } = useQuery({

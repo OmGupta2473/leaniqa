@@ -3,6 +3,7 @@ import React, { useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { profileService } from "@/features/profile/services/profileService";
 import { mealService } from "../services/mealService";
+import { useCalculatedProfile } from "@/shared/hooks/useCalculatedProfile";
 import { useUserStore } from "@/features/profile/store/userStore";
 
 import { calculateBestCalorieStreak, calculateEarnedAwards, calculateCurrentCalorieStreak } from "@/shared/utils/streaks";
@@ -18,7 +19,7 @@ function getLocalDateString() {
 
 export function CalorieDetailPage() {
   const navigate = useNavigate();
-  const onboardingData = useUserStore(s => s.onboardingData);
+  const { profileData: onboardingData } = useCalculatedProfile();
   const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
   const calorieStreak = calculateCurrentCalorieStreak(metrics);
   const earnedAwards = calculateEarnedAwards(metrics);
