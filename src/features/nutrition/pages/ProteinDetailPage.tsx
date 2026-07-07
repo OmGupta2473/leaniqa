@@ -8,6 +8,7 @@ import { useUserStore } from "@/features/profile/store/userStore";
 
 
 import { reportService } from "@/features/reports/services/reportService";
+import { DailyHistoryChart } from "../components/DailyHistoryChart";
 
 function getLocalDateString() {
   const d = new Date();
@@ -56,50 +57,15 @@ const { data: profile } = useQuery({
     return logs;
   }, [metrics, todayStr, proteinConsumed, target_protein, isTargetHit]);
 
-  // Build chart
-  const buildProteinBarChart = (logs: typeof metrics, target: number) => {
-    const sorted = [...logs]
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .slice(-30);
+  const chartData = useMemo(() => {
+    return chartLogs.map(l => ({
+      date: l.date,
+      actual: l.actual_protein,
+      target: l.target_protein
+    }));
+  }, [chartLogs]);
 
-    const chartWidth = 320;
-    const chartHeight = 140;
-    const barAreaHeight = 100;
-    const maxVal = Math.max(
-      ...sorted.map((d) => d.actual_protein),
-      target * 1.3,
-    );
-    const barWidth = Math.max(6, chartWidth / Math.max(sorted.length, 1) - 3);
-
-    let bars = "";
-    sorted.forEach((day, i) => {
-      const barH = (day.actual_protein / maxVal) * barAreaHeight;
-      const x = i * (barWidth + 3);
-      const y = barAreaHeight - barH;
-      const color = (day.actual_protein >= day.target_protein && day.actual_protein > 0) ? "#FF4D1C" : "rgba(255,255,255,0.15)";
-      bars += `<rect x="${x}" y="${y}" width="${barWidth}" height="${barH}" rx="3" fill="${color}" opacity="0.85"/>`;
-    });
-
-    const lineY = barAreaHeight - (target / maxVal) * barAreaHeight;
-    const targetLine = `<line x1="0" y1="${lineY}" x2="${chartWidth}" y2="${lineY}" stroke="rgba(255,77,28,0.5)" stroke-width="1" stroke-dasharray="4 4"/>`;
-    const targetLabel = `<text x="${chartWidth - 2}" y="${lineY - 4}" text-anchor="end" font-size="9" fill="rgba(255,77,28,0.6)">target</text>`;
-
-    let dayLabels = "";
-    sorted.forEach((day, i) => {
-      if (i % 5 === 0 || i === sorted.length - 1) {
-        const x = i * (barWidth + 3) + barWidth / 2;
-        const dayNum = i + 1;
-        dayLabels += `<text x="${x}" y="${chartHeight}" text-anchor="middle" font-size="8" fill="rgba(235,235,245,0.35)">D${dayNum}</text>`;
-      }
-    });
-
-    return `<svg width="100%" viewBox="0 0 ${chartWidth} ${chartHeight}" preserveAspectRatio="xMidYMid meet" overflow="visible">
-      ${bars}${targetLine}${targetLabel}${dayLabels}
-    </svg>`;
-  };
-
-  const chartHtml = buildProteinBarChart(chartLogs, target_protein);
-return (
+  return (
     <div
       className="screen-container screen-enter"
       style={{ minHeight: "100dvh", background: "#1c1c1e", overflowY: "auto" }}
@@ -156,9 +122,9 @@ return (
             <div
               style={{
                 background: isTargetHit
-                  ? "rgba(255,77,28,0.15)"
-                  : "rgba(255,255,255,0.1)",
-                color: isTargetHit ? "#FF4D1C" : "rgba(255,255,255,0.5)",
+                  ? "rgba(212,255,0,0.15)"
+                  : "rgba(255,77,28,0.15)",
+                color: isTargetHit ? "#D4FF00" : "#FF4D1C",
                 padding: "6px 12px",
                 borderRadius: "100px",
                 fontSize: "12px",
@@ -176,51 +142,15 @@ return (
         <div className="mb-[12px] text-[13px] font-semibold uppercase tracking-[0.05em] text-[#EBEBF599] ml-[4px]">
           Daily protein history
         </div>
-        <div
-          className="chart-container mb-[12px]"
-          dangerouslySetInnerHTML={{ __html: chartHtml }}
+        
+        <DailyHistoryChart 
+          logs={chartData} 
+          todayStr={todayStr} 
+          unit="g" 
+          type="protein" 
         />
 
-        <div className="flex items-center gap-[16px] ml-[4px] mb-[32px]">
-          <div className="flex items-center gap-[6px]">
-            <div
-              style={{
-                width: "8px",
-                height: "8px",
-                borderRadius: "50%",
-                background: "#FF4D1C",
-              }}
-            ></div>
-            <span
-              style={{
-                fontSize: "var(--font-xs)",
-                color: "rgba(235,235,245,0.5)",
-              }}
-            >
-              Target Hit
-            </span>
-          </div>
-          <div className="flex items-center gap-[6px]">
-            <div
-              style={{
-                width: "8px",
-                height: "8px",
-                borderRadius: "50%",
-                background: "rgba(255,255,255,0.15)",
-              }}
-            ></div>
-            <span
-              style={{
-                fontSize: "var(--font-xs)",
-                color: "rgba(235,235,245,0.5)",
-              }}
-            >
-              Target missed
-            </span>
-          </div>
-        </div>
-
-        <div style={{ fontSize: "11px", color: "rgba(235,235,245,0.5)", fontStyle: "italic", marginLeft: "4px", marginTop: "-16px", marginBottom: "32px" }}>
+        <div style={{ fontSize: "11px", color: "rgba(235,235,245,0.5)", fontStyle: "italic", marginLeft: "4px", marginTop: "-8px", marginBottom: "32px" }}>
           * Still in calculation. Today's result will be finalized at the end of the day.
         </div>
       </div>
