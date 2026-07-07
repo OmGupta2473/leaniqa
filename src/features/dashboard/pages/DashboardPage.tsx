@@ -245,8 +245,8 @@ export function DashboardPage() {
         </div>
         <div className="flex items-center gap-[16px]">
           <div className="flex items-center gap-[6px]">
-            <span className="text-[18px]">{currentStreak > 0 ? '🔥' : '❄️'}</span>
-            <span className={`text-[17px] font-bold tracking-[-0.2px] ${currentStreak > 0 ? 'text-white' : 'text-[#EBEBF566]'}`}>{currentStreak > 0 ? currentStreak : '—'}</span>
+            <span className="text-[18px]">🔥</span>
+            <span className="text-[17px] text-white font-bold tracking-[-0.2px]">{currentStreak}</span>
           </div>
           <div className="w-[1px] h-[28px] bg-[rgba(235,235,245,0.15)]" />
           <div className="flex flex-col items-center">
