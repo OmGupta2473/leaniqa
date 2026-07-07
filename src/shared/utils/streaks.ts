@@ -47,17 +47,8 @@ export function calculateCurrentStreak(metrics: DbDailyMetric[], predicate: (m: 
   const todayDayNum = toUtcDay(new Date());
   
   let streak = 0;
-  let currentDayNum = todayDayNum;
-  
-  if (dayMap.has(todayDayNum) && !predicate(dayMap.get(todayDayNum)!)) {
-      return 0;
-  }
-  
-  if (dayMap.has(todayDayNum) && predicate(dayMap.get(todayDayNum)!)) {
-      streak++;
-  }
-  
-  currentDayNum--;
+  // Evaluate the streak only after the day is complete (start from yesterday)
+  let currentDayNum = todayDayNum - 1;
   
   while (dayMap.has(currentDayNum)) {
       if (predicate(dayMap.get(currentDayNum)!)) {
