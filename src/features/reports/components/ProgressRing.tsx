@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { computeRingGeometry } from '@/shared/utils/ringMath';
+import { motion } from 'motion/react';
 
 interface ProgressRingProps {
   current: number;
@@ -44,7 +45,7 @@ export const ProgressRing = memo(function ProgressRing({
           strokeWidth={strokeWidth}
         />
         {/* Progress arc */}
-        <circle
+        <motion.circle
           cx={center}
           cy={center}
           r={geo.radius}
@@ -53,12 +54,14 @@ export const ProgressRing = memo(function ProgressRing({
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeDasharray={geo.circumference}
-          strokeDashoffset={geo.dashOffset}
-          style={{ transition: 'stroke-dashoffset 0.8s cubic-bezier(0.34,1.56,0.64,1)' }}
+          initial={{ strokeDashoffset: geo.circumference }}
+          animate={{ strokeDashoffset: geo.dashOffset }}
+          transition={{ type: 'spring', stiffness: 120, damping: 14, mass: 1 }}
+          style={{ filter: `drop-shadow(0 0 8px ${color}66)` }}
         />
         {/* Overflow tip marker — distinct bright dot when goal exceeded */}
         {geo.isOverflow && showOverflowTip && (
-          <circle
+          <motion.circle
             cx={tipX}
             cy={tipY}
             r={strokeWidth * 0.45}
@@ -66,6 +69,8 @@ export const ProgressRing = memo(function ProgressRing({
             stroke={color}
             strokeWidth={2}
             style={{ transform: `rotate(90deg)`, transformOrigin: `${center}px ${center}px` }}
+            animate={{ opacity: [0.6, 1, 0.6] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
           />
         )}
       </svg>
