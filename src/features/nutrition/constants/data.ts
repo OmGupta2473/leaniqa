@@ -29,6 +29,7 @@ export interface CachedMealMacros {
   carbs: number;
   confidence: number;
   per100g?: boolean;
+  pieceWeightGrams?: number;
 }
 
 // Cache keyed by normalized food name
@@ -91,6 +92,7 @@ export const MealMacroCache: Record<string, CachedMealMacros> = {
   'protein powder': { calories: 120, protein: 24, fat: 1.5, carbs: 5, confidence: 88 },
   
   // Vegetables (per 100g)
+  'sprouts': { calories: 30, protein: 3, fat: 0.2, carbs: 6, confidence: 95, per100g: true, pieceWeightGrams: 100 },
   'spinach': { calories: 23, protein: 2.9, fat: 0.4, carbs: 3.6, confidence: 97, per100g: true },
   'broccoli': { calories: 34, protein: 2.8, fat: 0.4, carbs: 7, confidence: 97, per100g: true },
   'potato': { calories: 77, protein: 2, fat: 0.1, carbs: 17, confidence: 95, per100g: true },
@@ -145,7 +147,8 @@ export const MealMacroCache: Record<string, CachedMealMacros> = {
   'upma': { calories: 230, protein: 5, fat: 8, carbs: 33, confidence: 85 },
   'poha': { calories: 250, protein: 4, fat: 6, carbs: 44, confidence: 87 },
   'oats': { calories: 68, protein: 2.4, fat: 1.4, carbs: 12, confidence: 95, per100g: true },
-  'almonds': { calories: 579, protein: 21, fat: 50, carbs: 22, confidence: 97, per100g: true },
+  'almonds': { calories: 579, protein: 21, fat: 50, carbs: 22, confidence: 97, per100g: true, pieceWeightGrams: 1.2 },
+  'almond': { calories: 579, protein: 21, fat: 50, carbs: 22, confidence: 97, per100g: true, pieceWeightGrams: 1.2 },
   'banana': { calories: 89, protein: 1.1, fat: 0.3, carbs: 23, confidence: 97 },
   'apple': { calories: 52, protein: 0.3, fat: 0.2, carbs: 14, confidence: 97 },
 };
@@ -186,16 +189,24 @@ export function lookupCachedMeal(text: string): (CachedMealMacros & { scaledCalo
   const searchKey = extracted?.foodKey || normalized;
 
   // Helper to scale macros
-  const scaleMacros = (macros: CachedMealMacros, quantity: number, unit?: string) => {
+  const scaleMacros = (macros: any, quantity: number, unit?: string) => {
     const isGrams = unit === 'g';
     let multiplier = 1;
+
     if (macros.per100g && isGrams) {
       multiplier = quantity / 100;
     } else if (macros.per100g && !isGrams) {
-      multiplier = 1;
+      if (macros.pieceWeightGrams) {
+         multiplier = (quantity * macros.pieceWeightGrams) / 100;
+      } else {
+         return null;
+      }
+    } else if (!macros.per100g && isGrams) {
+       return null;
     } else {
       multiplier = quantity;
     }
+
     return {
       ...macros,
       scaledCalories: Math.round(macros.calories * multiplier),
@@ -207,25 +218,22 @@ export function lookupCachedMeal(text: string): (CachedMealMacros & { scaledCalo
 
   const quantity = extracted?.quantity ?? 1;
 
-  // 1. Try EXACT match first (highest precision)
   if (MealMacroCache[searchKey]) {
-    return scaleMacros(MealMacroCache[searchKey], quantity, extracted?.unit);
+    const macros = MealMacroCache[searchKey];
+    const result = scaleMacros(macros, quantity, extracted?.unit);
+    
+    console.group('Cache Lookup Audit: ' + text);
+    console.log('User Input:', text);
+    console.log('Parsed Food:', searchKey);
+    console.log('Parsed Quantity:', quantity);
+    console.log('Parsed Unit:', extracted?.unit || 'count');
+    console.log('Nutrition per Serving:', macros);
+    console.log('Final Nutrition:', result);
+    console.groupEnd();
+    
+    return result; // Can be null if unit mismatch
   }
-
-  // 2. Try CONTAINS match (searchKey contains a known food key)
-  for (const [key, macros] of Object.entries(MealMacroCache)) {
-    if (searchKey === key) continue;
-    if (searchKey.includes(key) && searchKey.length - key.length <= 6) {
-      return scaleMacros(macros, quantity, extracted?.unit);
-    }
-  }
-
-  // 3. Try REVERSE CONTAINS (a known key contains the search text)
-  for (const [key, macros] of Object.entries(MealMacroCache)) {
-    if (key.includes(searchKey)) {
-      return scaleMacros(macros, quantity, extracted?.unit);
-    }
-  }
-
+  
+  // No fuzzy matching allowed per rules!
   return null;
 }

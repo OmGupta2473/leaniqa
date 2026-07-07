@@ -278,18 +278,54 @@ export function MealLoggerPage() {
     onSuccess: (data, text) => {
       const foodsDetected = Array.isArray(data?.foods_detected) && data?.foods_detected.length > 0 ? data.foods_detected.join(', ') : text;
       
-      let responseText = `✓ Logged: ${foodsDetected}`;
-      if (data?._localOnly) {
-        responseText = `Saved locally — will sync when connection is restored.`;
-      } else if (data?._fromCache) {
-        responseText = `✓ Logged: ${foodsDetected}`;
-      } else if (data?._errorMessage) {
-        responseText = `📊 Estimated: ${foodsDetected}`;
-      }
+      const newEatenKcal = eatenKcal + Math.round(data.calories);
+      const newEatenProtein = eatenProtein + Math.round(data.protein);
       
-      const confidence = data?.confidence ?? 0;
-      const confidenceTag = (confidence >= 90 || data?._localOnly) ? '' : ` · ${confidence}% confidence`;
-      addChatMessage({ role: 'ai', text: responseText + confidenceTag, data });
+      const newRemainingKcal = Math.max(0, dailyTargetKcal - newEatenKcal);
+      const newRemainingProtein = Math.max(0, proteinTarget - newEatenProtein);
+
+      console.group('Meal Parsing Audit: ' + text);
+      console.log('User Input:', text);
+      console.log('Parsed Food:', foodsDetected);
+      console.log('Final Nutrition:', {
+        calories: data.calories,
+        protein: data.protein,
+        fat: data.fat,
+        carbs: data.carbs
+      });
+      console.log('Updated Daily Totals:', {
+        calories: newEatenKcal,
+        protein: newEatenProtein
+      });
+      console.log('Remaining Targets:', {
+        calories: newRemainingKcal,
+        protein: newRemainingProtein
+      });
+      console.groupEnd();
+
+      let responseText = `✅ Logged: ${foodsDetected}
+
+Calories: ${Math.round(data.calories)} kcal
+Protein: ${Math.round(data.protein)} g
+Fat: ${Math.round(data.fat)} g
+Carbs: ${Math.round(data.carbs)} g
+
+Today's Total:
+Calories: ${newEatenKcal} kcal
+Protein: ${newEatenProtein} g
+
+Remaining:
+Calories: ${newRemainingKcal} kcal
+Protein: ${newRemainingProtein} g`;
+
+      if (data?.coaching_tip) {
+          responseText += `
+
+${data.coaching_tip}`;
+      }
+
+      // Add to chat but remove data so we don't double render chips if we're showing it in text
+      addChatMessage({ role: 'ai', text: responseText, data: undefined });
       setLoading(false);
     },
     onError: (err) => {
@@ -498,7 +534,7 @@ export function MealLoggerPage() {
               <div ref={chatRef} style={{ flex: 1, overflowY: 'auto', padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '120px' }}>
                 {chat.map((msg, i) => (
                   <div key={i} className={cn("max-w-[88%] p-[10px_14px] text-[14px] leading-relaxed", msg.role === "user" ? "bg-[#D4FF00] text-[#0A0A0A] rounded-[14px] rounded-br-[4px] self-end" : "glass-card text-white rounded-[14px] rounded-bl-[4px] self-start")}>
-                    <div>{msg.text}</div>
+                    <div className="whitespace-pre-wrap">{msg.text}</div>
                     {msg.data && (
                       <div className="flex gap-[6px] flex-wrap mt-[8px]">
                         <span className="text-[10px] px-[7px] py-[2px] rounded-full font-semibold bg-[rgba(255,77,28,0.15)] text-[#FF4D1C]">~{msg.data.calories} kcal</span>
