@@ -79,10 +79,11 @@ export function GoalSetterPage() {
         target_bf: strategyData.target_bf,
         strategy: strategyData.strategy,
         deficit_kcal: strategyData.deficit_kcal,
-        target_date: strategyData.targetDateIso
+        target_date: strategyData.targetDateIso,
+        target_weight: strategyData.targetWeightKg
       });
       // Important: finalize onboarding status
-      await profileService.upsertProfile({ onboarding_completed: true });
+      await profileService.updateProfile({ onboarding_completed: true });
       return { strategyData, savedGoal };
     },
     onMutate: async (strategyData: any) => {

@@ -33,7 +33,7 @@ export function ProgressPage() {
         if (neck) updates.neck = parseFloat(neck);
         if (hip) updates.hip = parseFloat(hip);
         if (Object.keys(updates).length > 0) {
-          await profileService.upsertProfile(updates);
+          await profileService.updateProfile(updates);
         }
       }
       return weightService.addWeightLog({

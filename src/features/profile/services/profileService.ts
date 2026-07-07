@@ -35,6 +35,39 @@ export const profileService = {
     }
   },
 
+  async updateProfile(profileData: Partial<DbProfile>): Promise<DbProfile | null> {
+    try {
+      const userId = await authService.getUserId();
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(profileData)
+        .eq('id', userId)
+        .select()
+        .maybeSingle();
+        
+      if (error) {
+        throw new AppError({
+          code: ErrorCodes.INTERNAL_SERVER_ERROR,
+          message: 'Failed to update profile',
+          retryable: true,
+          status: 500,
+          details: error,
+        });
+      }
+      return data;
+    } catch (err) {
+      if (err instanceof AppError) throw err;
+      throw new AppError({
+        code: ErrorCodes.INTERNAL_SERVER_ERROR,
+        message: 'An unexpected error occurred while updating profile',
+        retryable: false,
+        status: 500,
+        details: err,
+      });
+    }
+  },
+
   async upsertProfile(profileData: Partial<DbProfile>): Promise<DbProfile | null> {
     try {
       const [userId, { data: { session } }] = await Promise.all([
