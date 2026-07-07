@@ -13,9 +13,9 @@ import {
   User,
 } from "lucide-react";
 import { supabase } from "@/shared/utils/supabase";
-import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { profileService } from '@/features/profile/services/profileService';
+import { useQueryClient } from "@tanstack/react-query";
 import { NavLink } from "react-router-dom";
+import { useHasCompletedOnboarding } from '@/shared/hooks/useHasCompletedOnboarding';
 
 const navItems = [
   { id: "/goal", icon: Target, label: "Goal Setter" },
@@ -36,13 +36,7 @@ export function Sidebar({ className }: { className?: string }) {
     await supabase.auth.signOut();
   };
 
-  const { data: profile } = useQuery({
-    queryKey: ['profile'],
-    queryFn: () => profileService.getProfile(),
-    staleTime: 5 * 60 * 1000,
-  });
-  
-  const hasCompletedOnboarding = profile?.onboarding_completed;
+  const { hasCompletedOnboarding } = useHasCompletedOnboarding();
 
   return (
     <div className={cn("flex flex-col h-full w-full overflow-hidden", className)}>

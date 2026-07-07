@@ -6,8 +6,7 @@ import {
   Target,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
-import { useQuery } from '@tanstack/react-query';
-import { profileService } from '@/features/profile/services/profileService';
+import { useHasCompletedOnboarding } from '@/shared/hooks/useHasCompletedOnboarding';
 
 const navItems = [
   { id: "/goal", icon: Target, label: "Goal" },
@@ -18,13 +17,7 @@ const navItems = [
 ];
 
 export function BottomNav() {
-  const { data: profile } = useQuery({
-    queryKey: ['profile'],
-    queryFn: () => profileService.getProfile(),
-    staleTime: 5 * 60 * 1000,
-  });
-  
-  const hasCompletedOnboarding = profile?.onboarding_completed;
+  const { hasCompletedOnboarding } = useHasCompletedOnboarding();
 
   return (
     <div className="flex justify-around items-center h-[60px] w-full">

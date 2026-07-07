@@ -8,6 +8,7 @@ import { useNetworkStatus } from '@/shared/utils/utils';
 import { WifiOff } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useHasCompletedOnboarding } from '@/shared/hooks/useHasCompletedOnboarding';
 
 const TITLES: Record<string, string> = {
   '/login': 'Sign In',
@@ -44,18 +45,12 @@ export function Header() {
     });
   }, []);
 
-  const { data: profile } = useQuery({
-    queryKey: ['profile'],
-    queryFn: () => profileService.getProfile(),
-    enabled: !!session,
-  });
+  const { profile, hasCompletedOnboarding } = useHasCompletedOnboarding();
 
   const todayStr = getLocalDateString();
   const hasNewAwards = earnedAwards.some(a => a.earned && a.earnedDate === todayStr);
 
   const title = TITLES[location.pathname] || 'LeanIQA';
-
-  const hasCompletedOnboarding = profile?.onboarding_completed;
 
   return (
     <div className="px-5 py-4 border-b-[0.5px] border-border-tertiary flex items-center justify-between shrink-0 bg-background-primary z-10">
