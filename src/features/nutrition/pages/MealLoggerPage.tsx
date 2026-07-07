@@ -3,7 +3,7 @@ import { useAppStore } from "@/app/store";
 import { useChatStore } from "@/app/store";
 import { useNutritionStore } from "../store/nutritionStore";
 import {
-  Send, Loader2, Dumbbell, Sun, Sunrise, Moon, Plus, X,
+  Send, Loader2, Dumbbell, Lightbulb, Sun, Sunrise, Moon, Plus, X,
 } from "lucide-react";
 import { cn } from "@/shared/utils/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -367,29 +367,19 @@ export function MealLoggerPage() {
       });
       console.groupEnd();
 
-      let responseText = `✅ Logged: ${foodsDetected}
-
-Calories: ${Math.round(data.calories)} kcal
-Protein: ${Math.round(data.protein)} g
-Fat: ${Math.round(data.fat)} g
-Carbs: ${Math.round(data.carbs)} g
-
-Today's Total:
-Calories: ${newEatenKcal} kcal
-Protein: ${newEatenProtein} g
-
-Remaining:
-Calories: ${newRemainingKcal} kcal
-Protein: ${newRemainingProtein} g`;
-
-      if (data?.coaching_tip) {
-          responseText += `
-
-${data.coaching_tip}`;
+      let responseText = `✓ Logged: ${foodsDetected}`;
+      if (data?._localOnly) {
+        responseText = `Saved locally — will sync when connection is restored.`;
+      } else if (data?._fromCache) {
+        responseText = `✓ Logged: ${foodsDetected}`;
+      } else if (data?._errorMessage) {
+        responseText = `📊 Estimated: ${foodsDetected}`;
       }
-
-      // Add to chat but remove data so we don't double render chips if we're showing it in text
-      addChatMessage({ role: 'ai', text: responseText, data: undefined });
+      
+      const confidence = data?.confidence ?? 0;
+      const confidenceTag = (confidence >= 90 || data?._localOnly) ? '' : ` · ${confidence}% confidence`;
+      
+      addChatMessage({ role: 'ai', text: responseText + confidenceTag, data });
       setLoading(false);
     },
     onError: (err) => {
@@ -609,7 +599,7 @@ ${data.coaching_tip}`;
                     )}
                     {msg.data?.coaching_tip && (
                       <div className="mt-[10px] pt-[8px] border-t border-[rgba(255,255,255,0.06)] flex gap-[6px]">
-                        <Dumbbell size={13} className="text-[#D4FF00] mt-[2px] shrink-0" />
+                        <Lightbulb size={13} className="text-[#D4FF00] mt-[2px] shrink-0" />
                         <div className="text-[12px] text-[rgba(235,235,245,0.65)] italic">{msg.data.coaching_tip}</div>
                       </div>
                     )}
