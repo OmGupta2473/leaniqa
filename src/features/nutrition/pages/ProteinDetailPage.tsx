@@ -165,7 +165,7 @@ return (
                 fontWeight: 600,
               }}
             >
-              {isTargetHit ? "Target hit ✓" : "Missed target ✗"}
+              {isTargetHit ? "Target Hit ✓" : "Missed Target ✗*"}
             </div>
 
             
@@ -197,7 +197,7 @@ return (
                 color: "rgba(235,235,245,0.5)",
               }}
             >
-              Target hit
+              Target Hit
             </span>
           </div>
           <div className="flex items-center gap-[6px]">
@@ -220,7 +220,9 @@ return (
           </div>
         </div>
 
-
+        <div style={{ fontSize: "11px", color: "rgba(235,235,245,0.5)", fontStyle: "italic", marginLeft: "4px", marginTop: "-16px", marginBottom: "32px" }}>
+          * Still in calculation. Today's result will be finalized at the end of the day.
+        </div>
       </div>
     </div>
   );

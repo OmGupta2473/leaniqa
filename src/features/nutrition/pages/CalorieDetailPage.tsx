@@ -173,7 +173,7 @@ return (
                 fontWeight: 600,
               }}
             >
-              {isUnderTarget ? "Under target ✓" : "Over target ✗"}
+              {isUnderTarget ? "Under Target ✓*" : "Over Target ✗*"}
             </div>
 
 
@@ -205,7 +205,7 @@ return (
                 color: "rgba(235,235,245,0.5)",
               }}
             >
-              Under target
+              Under Target
             </span>
           </div>
           <div className="flex items-center gap-[6px]">
@@ -223,12 +223,14 @@ return (
                 color: "rgba(235,235,245,0.5)",
               }}
             >
-              Over target
+              Over Target
             </span>
           </div>
         </div>
 
-
+        <div style={{ fontSize: "11px", color: "rgba(235,235,245,0.5)", fontStyle: "italic", marginLeft: "4px", marginTop: "-16px", marginBottom: "32px" }}>
+          * Still in calculation. Today's result will be finalized at the end of the day.
+        </div>
       </div>
     </div>
   );
