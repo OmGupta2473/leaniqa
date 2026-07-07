@@ -71,6 +71,21 @@ export const mealService = {
     return data || payload;
   },
   
+  
+  async deleteMeal(id: string): Promise<boolean> {
+    const userId = await authService.getUserId();
+    const { error } = await supabase
+      .from('meal_logs')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId);
+      
+    if (error) {
+      console.error('Error deleting meal:', error);
+      throw error;
+    }
+    return true;
+  },
   async getMealsByDate(dateStr: string): Promise<DbMealLog[]> {
     const userId = await authService.getUserId();
     const { data, error } = await supabase
