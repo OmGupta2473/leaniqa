@@ -243,7 +243,13 @@ export function DashboardPage() {
             {dateString}
           </div>
         </div>
-        <div className="flex flex-col items-center">
+        <div className="flex items-center gap-[16px]">
+          <div className="flex items-center gap-[6px]">
+            <span className="text-[18px]">🔥</span>
+            <span className="text-[17px] text-white font-bold tracking-[-0.2px]">{currentStreak > 0 ? currentStreak : '0'}</span>
+          </div>
+          <div className="w-[1px] h-[28px] bg-[rgba(235,235,245,0.15)]" />
+          <div className="flex flex-col items-center">
           <motion.div
             key={todayScore}
             initial={{ scale: 1.3, rotate: -10 }}
@@ -256,6 +262,7 @@ export function DashboardPage() {
           <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599] mt-[8px]">
             Score
           </div>
+        </div>
         </div>
       </div>
 
