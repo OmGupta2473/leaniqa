@@ -1277,11 +1277,26 @@ input[type='number'] {
 
 .meal-fab-container {
   width: 100%;
-  max-width: 480px;
-  margin: 0 auto;
   display: flex;
-  justify-content: center;
+  justify-content: center; /* Center on mobile */
+  pointer-events: none;
 }
+
+@media (min-width: 768px) {
+  .meal-fab-container {
+    justify-content: flex-end; /* Right align on tablet/desktop */
+    padding-right: 28px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .meal-fab-container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding-right: 32px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
