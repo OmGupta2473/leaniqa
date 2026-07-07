@@ -82,8 +82,7 @@ export function GoalSetterPage() {
         target_date: strategyData.targetDateIso,
         target_weight: strategyData.targetWeightKg
       });
-      // Important: finalize onboarding status
-      await profileService.updateProfile({ onboarding_completed: true });
+      // Important: onboarding is implicitly completed when goal is saved
       return { strategyData, savedGoal };
     },
     onMutate: async (strategyData: any) => {
@@ -121,11 +120,6 @@ export function GoalSetterPage() {
         estimatedWeeks: data.strategyData.estimatedWeeks,
         estimatedCompletionDate: data.strategyData.estimatedCompletionDate
       });
-      
-      const oldProfile = queryClient.getQueryData(['profile']) as any;
-      if (oldProfile) {
-        queryClient.setQueryData(['profile'], { ...oldProfile, onboarding_completed: true });
-      }
       
       navigate('/dashboard');
     },

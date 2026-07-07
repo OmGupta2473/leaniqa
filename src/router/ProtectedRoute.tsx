@@ -1,21 +1,14 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthSession } from './useAuthSession';
-import { useQuery } from '@tanstack/react-query';
-import { profileService } from '@/features/profile/services/profileService';
 import { ScreenSkeleton } from '@/shared/components/ScreenSkeleton';
+import { useHasCompletedOnboarding } from '@/shared/hooks/useHasCompletedOnboarding';
 
 export function ProtectedRoute() {
   const { session, loading: authLoading } = useAuthSession();
   const location = useLocation();
-  
-  const { data: profile, isLoading: profileLoading } = useQuery({
-    queryKey: ['profile'],
-    queryFn: () => profileService.getProfile(),
-    enabled: !!session,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+  const { hasCompletedOnboarding, isLoading: onboardingLoading } = useHasCompletedOnboarding();
 
-  if (authLoading || (session && profileLoading)) {
+  if (authLoading || (session && onboardingLoading)) {
     return <ScreenSkeleton />;
   }
 
@@ -24,7 +17,6 @@ export function ProtectedRoute() {
   }
   
   const isAllowedDuringOnboarding = location.pathname === '/onboarding' || location.pathname === '/goal';
-  const hasCompletedOnboarding = profile?.onboarding_completed;
   
   if (!hasCompletedOnboarding && !isAllowedDuringOnboarding) {
     return <Navigate to="/onboarding" replace />;
