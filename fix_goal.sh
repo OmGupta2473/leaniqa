@@ -1,3 +1,2 @@
-sed -i 's/const { onboardingData, setOnboardingData, goalSetCompleted, setGoalSetCompleted } = useAppStore();/const { onboardingData, setOnboardingData } = useAppStore();\n  const { data: goal } = useQuery({ queryKey: ["goal"], queryFn: () => profileService.getGoal() });/g' src/screens/GoalSetter.tsx
-sed -i 's/if (goalSetCompleted)/if (goal)/g' src/screens/GoalSetter.tsx
-sed -i '/setGoalSetCompleted(true);/d' src/screens/GoalSetter.tsx
+sed -i "s|import { useUserStore } from \"@/features/profile/store/userStore\";|import { useCalculatedProfile } from \"@/shared/hooks/useCalculatedProfile\";\nimport { useUserStore } from \"@/features/profile/store/userStore\";|" src/features/goal/pages/GoalSetterPage.tsx
+sed -i "s|  const onboardingData = useUserStore(s => s.onboardingData);|  const { profileData: onboardingData } = useCalculatedProfile();|" src/features/goal/pages/GoalSetterPage.tsx

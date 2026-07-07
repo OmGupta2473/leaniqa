@@ -4,6 +4,7 @@ import { reportService } from "@/features/reports/services/reportService";
 import { calculateCurrentCalorieStreak, calculateCurrentProteinStreak } from "@/shared/utils/streaks";
 import { Target, Footprints, Utensils, CheckCircle2, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCalculatedProfile } from "@/shared/hooks/useCalculatedProfile";
 import { useMemo } from "react";
 import { profileService } from "@/features/profile/services/profileService";
 import { mealService } from "@/features/nutrition/services/mealService";
@@ -78,13 +79,20 @@ const AnimatedNumber = memo(function AnimatedNumber({
 });
 
 export function DashboardPage() {
-  const onboardingData = useUserStore(s => s.onboardingData);
   const dismissedBanners = useAppStore(s => s.dismissedBanners);
   const dismissBanner = useAppStore(s => s.dismissBanner);
     const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
   const calorieStreak = calculateCurrentCalorieStreak(metrics);
   const proteinStreak = calculateCurrentProteinStreak(metrics);
   const queryClient = useQueryClient();
+  const { profileData: onboardingData, profile, goal } = useCalculatedProfile();
+  const isProfileError = false;
+  const isGoalError = false;
+  const profileError = null;
+  const goalError = null;
+  const refetchProfile = () => {};
+  const refetchGoal = () => {};
+
   const navigate = useNavigate();
   const bannerDismissed = dismissedBanners.includes('premium_beta');
   const setBannerDismissed = (dismissed: boolean) => dismissed && dismissBanner('premium_beta');
@@ -94,21 +102,6 @@ export function DashboardPage() {
     setMounted(true);
   }, []);
 
-  const {
-    data: profile,
-    isError: isProfileError,
-    error: profileError,
-    refetch: refetchProfile,
-  } = useQuery({
-    queryKey: ["profile"],
-    queryFn: () => profileService.getProfile(),
-  });
-  const {
-    data: goal,
-    isError: isGoalError,
-    error: goalError,
-    refetch: refetchGoal,
-  } = useQuery({ queryKey: ["goal"], queryFn: () => profileService.getGoal() });
   const {
     data: meals,
     isError: isMealsError,
