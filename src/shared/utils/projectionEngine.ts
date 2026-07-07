@@ -4,6 +4,7 @@ export interface ProjectionParams {
   targetBf: number;
   weeklyDeficitKcal: number;
   complianceScore: number;
+  actualPaceKgPerWeek?: number;
 }
 
 export interface ProjectionResult {
@@ -20,6 +21,7 @@ export function calculateProjections({
   targetBf,
   weeklyDeficitKcal,
   complianceScore,
+  actualPaceKgPerWeek,
 }: ProjectionParams): ProjectionResult[] {
   const currentBfDec = currentBf / 100;
   const fatMass = currentWeight * currentBfDec;
@@ -29,7 +31,10 @@ export function calculateProjections({
   const effectiveDeficit = weeklyDeficitKcal * (complianceScore / 100);
   
   // 1 kg of fat is approx 7700 kcal
-  const fatLossPerWeekKg = effectiveDeficit / 7700;
+  // If actual pace is provided and is positive (losing weight), blend it or use it.
+  // We'll prefer actual pace if it's losing weight, otherwise fallback to theoretical.
+  const theoreticalFatLoss = effectiveDeficit / 7700;
+  const fatLossPerWeekKg = (actualPaceKgPerWeek && actualPaceKgPerWeek > 0) ? actualPaceKgPerWeek : theoreticalFatLoss;
   
   if (fatLossPerWeekKg <= 0) {
     return []; // No projection if no deficit or 0 compliance

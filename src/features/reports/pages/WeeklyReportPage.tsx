@@ -149,7 +149,7 @@ export function WeeklyReportPage() {
       <div style={{ maxWidth: '480px', margin: '0 auto', padding: '20px 16px calc(env(safe-area-inset-bottom) + 40px)' }}>
 
         {/* Header with view switcher */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', stiffness: 300, damping: 24 }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <div>
             <div style={{ fontSize: 'var(--font-xs)', fontWeight: 600, color: 'rgba(235,235,245,0.5)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Activity</div>
             <div style={{ fontSize: 'var(--font-2xl)', fontWeight: 800, letterSpacing: '-0.4px' }}>
@@ -188,7 +188,7 @@ export function WeeklyReportPage() {
               </motion.button>
             ))}
           </div>
-        </div>
+        </motion.div>
 
         <AnimatePresence mode="wait">
         {/* ── DASHBOARD VIEW ── */}
