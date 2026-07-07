@@ -44,15 +44,9 @@ export function Header() {
     });
   }, []);
 
-  const { data: profile, isLoading: profileLoading } = useQuery({
+  const { data: profile } = useQuery({
     queryKey: ['profile'],
     queryFn: () => profileService.getProfile(),
-    enabled: !!session,
-  });
-
-  const { data: goal, isLoading: goalLoading } = useQuery({
-    queryKey: ['goal'],
-    queryFn: () => profileService.getGoal(),
     enabled: !!session,
   });
 
@@ -61,7 +55,7 @@ export function Header() {
 
   const title = TITLES[location.pathname] || 'LeanIQA';
 
-  const hasCompletedOnboarding = profileLoading || goalLoading || !session ? undefined : (!!profile && !!goal);
+  const hasCompletedOnboarding = profile?.onboarding_completed;
 
   return (
     <div className="px-5 py-4 border-b-[0.5px] border-border-tertiary flex items-center justify-between shrink-0 bg-background-primary z-10">

@@ -18,19 +18,13 @@ const navItems = [
 ];
 
 export function BottomNav() {
-  const { data: profile, isLoading: profileLoading } = useQuery({
+  const { data: profile } = useQuery({
     queryKey: ['profile'],
     queryFn: () => profileService.getProfile(),
     staleTime: 5 * 60 * 1000,
   });
-
-  const { data: goal, isLoading: goalLoading } = useQuery({
-    queryKey: ['goal'],
-    queryFn: () => profileService.getGoal(),
-    staleTime: 5 * 60 * 1000,
-  });
   
-  const hasCompletedOnboarding = profileLoading || goalLoading ? true : (!!profile && !!goal);
+  const hasCompletedOnboarding = profile?.onboarding_completed;
 
   return (
     <div className="flex justify-around items-center h-[60px] w-full">

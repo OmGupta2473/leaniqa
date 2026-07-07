@@ -36,19 +36,13 @@ export function Sidebar({ className }: { className?: string }) {
     await supabase.auth.signOut();
   };
 
-  const { data: profile, isLoading: profileLoading } = useQuery({
+  const { data: profile } = useQuery({
     queryKey: ['profile'],
     queryFn: () => profileService.getProfile(),
     staleTime: 5 * 60 * 1000,
   });
-
-  const { data: goal, isLoading: goalLoading } = useQuery({
-    queryKey: ['goal'],
-    queryFn: () => profileService.getGoal(),
-    staleTime: 5 * 60 * 1000,
-  });
   
-  const hasCompletedOnboarding = profileLoading || goalLoading ? true : (!!profile && !!goal);
+  const hasCompletedOnboarding = profile?.onboarding_completed;
 
   return (
     <div className={cn("flex flex-col h-full w-full overflow-hidden", className)}>

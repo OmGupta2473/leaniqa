@@ -55,27 +55,8 @@ export const profileService = {
         .upsert(payload, { onConflict: 'id' })
         .select()
         .maybeSingle();
-
+        
       if (error && error.code !== 'PGRST116') {
-        console.error("UPSERT PROFILE ERROR", {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-          payload
-        });
-
-        if (error.code === '23503') {
-          await authService.logout();
-          throw new AppError({
-            code: ErrorCodes.UNAUTHORIZED,
-            message: 'Your session is invalid or user was deleted. Please sign in again.',
-            retryable: false,
-            status: 401,
-            details: error,
-          });
-        }
-
         throw new AppError({
           code: ErrorCodes.INTERNAL_SERVER_ERROR,
           message: 'Failed to upsert profile',

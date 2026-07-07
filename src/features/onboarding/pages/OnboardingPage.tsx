@@ -338,8 +338,7 @@ export function OnboardingPage() {
       gender: gender || 'Male', 
       activity_level: activity || 'Lightly Active',
       maintenance_kcal: results.tdee, 
-      protein_target: results.proteinMid,
-      onboarding_completed: true
+      protein_target: results.proteinMid
     });
   };
 

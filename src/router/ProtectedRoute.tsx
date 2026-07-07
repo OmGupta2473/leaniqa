@@ -15,14 +15,7 @@ export function ProtectedRoute() {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const { data: goal, isLoading: goalLoading } = useQuery({
-    queryKey: ['goal'],
-    queryFn: () => profileService.getGoal(),
-    enabled: !!session,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  if (authLoading || (session && (profileLoading || goalLoading))) {
+  if (authLoading || (session && profileLoading)) {
     return <ScreenSkeleton />;
   }
 
@@ -30,13 +23,14 @@ export function ProtectedRoute() {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
   
-  const hasCompletedOnboarding = !!profile && !!goal;
+  const isAllowedDuringOnboarding = location.pathname === '/onboarding' || location.pathname === '/goal';
+  const hasCompletedOnboarding = profile?.onboarding_completed;
   
-  if (!hasCompletedOnboarding && location.pathname !== '/onboarding' && location.pathname !== '/goal') {
+  if (!hasCompletedOnboarding && !isAllowedDuringOnboarding) {
     return <Navigate to="/onboarding" replace />;
   }
   
-  if (hasCompletedOnboarding && (location.pathname === '/onboarding' || location.pathname === '/goal')) {
+  if (hasCompletedOnboarding && location.pathname === '/onboarding') {
     return <Navigate to="/dashboard" replace />;
   }
 
