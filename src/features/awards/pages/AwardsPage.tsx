@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { useAwardStore } from "../store/awardStore";
 import { useQuery } from "@tanstack/react-query";
 import { reportService } from "@/features/reports/services/reportService";
-import { calculateEarnedAwards, calculateBestDailyStreak, calculateCurrentDailyStreak } from "@/shared/utils/streaks";
+import { calculateEarnedAwards, calculateBestDailyStreak, calculateCurrentDailyStreak, isDailyGoalMet, toUtcDay } from "@/shared/utils/streaks";
 
 export function renderBadge(
   award: any,
@@ -118,6 +118,8 @@ export function AwardsPage() {
 
   const currentStreak = dbUserStreak?.current_streak ?? calculateCurrentDailyStreak(metrics);
   const bestStreak = dbUserStreak?.highest_streak ?? calculateBestDailyStreak(metrics);
+  const todayMetric = metrics.find(m => toUtcDay(m.date) === toUtcDay(new Date()));
+  const todayMet = todayMetric ? isDailyGoalMet(todayMetric) : false;
 
   const earnedAwards = calculateEarnedAwards(metrics).map(award => {
     const dbAward = dbUserAwards.find(a => a.award_id === award.id);
