@@ -1,7 +1,6 @@
 import React, { useEffect } from "react";
 import { useCalculatedProfile } from "@/shared/hooks/useCalculatedProfile";
 import { useUserStore } from "@/features/profile/store/userStore";
-import { AnimatedProgressBar } from "@/shared/components/AnimatedProgressBar";
 import { useQuery } from "@tanstack/react-query";
 import { profileService } from "@/features/profile/services/profileService";
 import { useNavigate } from "react-router-dom";
@@ -475,13 +474,12 @@ export function TransformationPage() {
             </span>
           </div>
 
-          <AnimatedProgressBar
-            value={progressPercent}
-            color="#D4FF00"
-            trackColor="rgba(255, 255, 255, 0.08)"
-            height={8}
-            className="my-[10px]"
-          />
+          <div className="timeline-track">
+            <div
+              className="timeline-fill"
+              style={{ transform: `translateX(-${100 - progressPercent}%)` }}
+            ></div>
+          </div>
 
           <div className="milestone-row">
             <span className="milestone active">Start</span>

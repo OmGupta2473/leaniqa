@@ -1,4 +1,3 @@
-import { AnimatedProgressBar } from "@/shared/components/AnimatedProgressBar";
 import { useUserStore } from "@/features/profile/store/userStore";
 import { useAppStore } from "@/app/store";
 import { reportService } from "@/features/reports/services/reportService";
@@ -301,14 +300,15 @@ export function DashboardPage() {
         </div>
 
         {/* Animated Progress Bar */}
-        <div className="mt-[20px] relative z-10 w-full">
-          <AnimatedProgressBar
-            value={progressPercent}
-            gradient={true}
-            height={4}
-            delay={0.3}
-            trackColor="rgba(255,255,255,0.1)"
-          />
+        <div className="h-[4px] bg-[rgba(255,255,255,0.1)] rounded-[100px] overflow-hidden mt-[20px] relative z-10">
+          <div
+            className="h-full w-full rounded-[100px] bg-gradient-to-r from-[#D4FF00] to-[#A8CC00] origin-left"
+            style={{
+              transform: mounted ? `translateX(-${100 - progressPercent}%)` : "translateX(-100%)",
+              transition: "transform 0.8s cubic-bezier(0.34,1.56,0.64,1) 0.3s",
+              willChange: "transform"
+            }}
+          ></div>
         </div>
         <div className="text-[13px] font-normal text-[#EBEBF599] mt-[12px] text-center relative z-10">
           {isMaintenance
@@ -370,15 +370,18 @@ export function DashboardPage() {
                   <i className="ti ti-chevron-right" style={{ fontSize: '12px', color: '#D4FF00' }} aria-hidden="true"></i>
                 </div>
 
-                <div className="absolute bottom-0 left-0 w-full">
-                  <AnimatedProgressBar
-                    value={dailyTargetKcal ? (eatenKcal / dailyTargetKcal) * 100 : 0}
-                    color="#FF4D1C"
-                    height={4}
-                    delay={0.4}
-                    trackColor="rgba(255, 77, 28, 0.2)"
-                    className="!rounded-none [&>div]:!rounded-none [&>div>div]:!rounded-none"
-                  />
+                <div className="absolute bottom-0 left-0 h-[4px] bg-[#FF4D1C]/20 w-full">
+                  <div
+                    className="h-full bg-[#FF4D1C]"
+                    style={{
+                      width:
+                        mounted && dailyTargetKcal
+                          ? `${Math.min(100, (eatenKcal / dailyTargetKcal) * 100)}%`
+                          : "0%",
+                      transition:
+                        "width 0.8s cubic-bezier(0.34,1.56,0.64,1) 0.4s",
+                    }}
+                  ></div>
                 </div>
               </>
             )}
@@ -418,15 +421,18 @@ export function DashboardPage() {
                   <i className="ti ti-chevron-right" style={{ fontSize: '12px', color: '#D4FF00' }} aria-hidden="true"></i>
                 </div>
 
-                <div className="absolute bottom-0 left-0 w-full">
-                  <AnimatedProgressBar
-                    value={proteinTarget ? (eatenProtein / proteinTarget) * 100 : 0}
-                    color="#378ADD"
-                    height={4}
-                    delay={0.5}
-                    trackColor="rgba(55, 138, 221, 0.2)"
-                    className="!rounded-none [&>div]:!rounded-none [&>div>div]:!rounded-none"
-                  />
+                <div className="absolute bottom-0 left-0 h-[4px] bg-[#378ADD]/20 w-full">
+                  <div
+                    className="h-full bg-[#378ADD]"
+                    style={{
+                      width:
+                        mounted && proteinTarget
+                          ? `${Math.min(100, (eatenProtein / proteinTarget) * 100)}%`
+                          : "0%",
+                      transition:
+                        "width 0.8s cubic-bezier(0.34,1.56,0.64,1) 0.5s",
+                    }}
+                  ></div>
                 </div>
               </>
             )}
