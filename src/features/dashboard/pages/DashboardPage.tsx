@@ -1,3 +1,4 @@
+import { AnimatedProgressBar } from "@/shared/components/AnimatedProgressBar";
 import { useUserStore } from "@/features/profile/store/userStore";
 import { useAppStore } from "@/app/store";
 import { reportService } from "@/features/reports/services/reportService";
