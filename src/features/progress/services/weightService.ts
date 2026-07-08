@@ -54,7 +54,8 @@ export const weightService = {
       .from('weight_logs')
       .select('id')
       .eq('user_id', userId)
-      .like('date', `${datePrefix}%`)
+      .eq('date', datePrefix)
+      .limit(1)
       .maybeSingle();
 
     let data, error;
