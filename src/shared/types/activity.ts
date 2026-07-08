@@ -10,6 +10,11 @@ export interface DailyActivityData {
   carbsTarget: number;
   complianceScore: number; // 0-100
   hourlyCalories?: number[]; // length 24, optional — index 0 = 12am-1am
+  mealDistribution?: {
+    Breakfast: { calories: number; protein: number; fat: number; carbs: number };
+    Lunch: { calories: number; protein: number; fat: number; carbs: number };
+    Dinner: { calories: number; protein: number; fat: number; carbs: number };
+  };
 }
 
 export interface RingMetric {

@@ -8,7 +8,7 @@ import { complianceService } from '../services/complianceService';
 import { calculateCurrentDailyStreak, calculateEarnedAwards } from '@/shared/utils/streaks';
 import { ProgressRing } from '../components/ProgressRing';
 import { MicroRing } from '../components/MicroRing';
-import { HourlyBarChart } from '../components/HourlyBarChart';
+import { MealDistributionChart } from '../components/MealDistributionChart';
 import { ChevronLeft, ChevronRight, Flame, Trophy } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AnimatedNumber } from '../components/AnimatedNumber';
@@ -222,10 +222,9 @@ export function WeeklyReportPage() {
               </div>
             </motion.div>
 
-            {/* Hourly bar chart card */}
+            {/* Meal Distribution card */}
             <motion.div variants={itemVariants} style={{ background: 'linear-gradient(180deg, #222224 0%, #18181A 100%)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '20px', padding: '18px', marginBottom: '14px' }}>
-              <div style={{ fontSize: 'var(--font-xs)', fontWeight: 600, color: 'rgba(235,235,245,0.5)', textTransform: 'uppercase', marginBottom: '12px' }}>Hourly Intake</div>
-              <HourlyBarChart hourlyValues={todayActivity.hourlyCalories || Array(24).fill(0)} color={NEON_PINK} height={70} />
+              <MealDistributionChart color={NEON_PINK} />
             </motion.div>
 
             {/* Trends card */}
