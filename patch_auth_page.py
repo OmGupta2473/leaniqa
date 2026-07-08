@@ -93,24 +93,25 @@ export function AuthPage() {
   const showEmailSuggestion = message.includes("Authentication failed") || message.includes("configuration error");
 
   return (
-    <div className="min-h-[100dvh] flex flex-col lg:grid lg:grid-cols-[45%_55%] bg-[#0A0A0A] text-white">
+    <div className="min-h-[100dvh] w-full flex flex-col lg:flex-row bg-[#0A0A0A] text-white overflow-x-hidden">
       
       {/* Hero Section */}
-      <div className="relative flex flex-col items-center lg:items-start lg:justify-center p-6 lg:p-12 xl:p-16 overflow-hidden lg:border-r border-white/5 lg:bg-[#0F0F11]">
+      <div className="relative flex flex-col items-center lg:items-start lg:justify-center p-6 sm:p-8 lg:p-12 xl:p-16 overflow-hidden lg:border-r border-white/5 lg:bg-[#0F0F11] w-full lg:w-[45%] flex-shrink-0">
+        
         {/* Desktop glow effects */}
         <div className="hidden lg:block absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-[#D4FF00]/10 blur-[120px] pointer-events-none" />
         <div className="hidden lg:block absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-[#D4FF00]/5 blur-[120px] pointer-events-none" />
         
         {/* Header / Logo */}
-        <div className="flex flex-col lg:flex-row items-center gap-4 lg:gap-3 mt-6 lg:mt-0 lg:absolute lg:top-12 xl:top-16 lg:left-12 xl:left-16 z-10 w-full lg:w-auto">
-           <div className="w-14 h-14 lg:w-12 lg:h-12 rounded-[18px] lg:rounded-xl bg-[#D4FF00]/10 flex items-center justify-center border border-[#D4FF00]/20 shadow-[0_0_30px_rgba(212,255,0,0.15)] lg:shadow-none">
-              <DumbbellIcon className="w-7 h-7 lg:w-6 lg:h-6 text-[#D4FF00]" />
+        <div className="flex flex-col lg:flex-row items-center gap-4 lg:gap-3 mt-4 sm:mt-6 lg:mt-0 lg:absolute lg:top-12 xl:top-16 lg:left-12 xl:left-16 z-10 w-full lg:w-auto">
+           <div className="w-16 h-16 lg:w-12 lg:h-12 rounded-[18px] lg:rounded-xl bg-[#D4FF00]/10 flex items-center justify-center border border-[#D4FF00]/20 shadow-[0_0_30px_rgba(212,255,0,0.15)] lg:shadow-none">
+              <DumbbellIcon className="w-8 h-8 lg:w-6 lg:h-6 text-[#D4FF00]" />
            </div>
            <span className="text-[28px] lg:text-[24px] font-bold tracking-tight">LeanIQA</span>
         </div>
 
         {/* Mobile Subtitle */}
-        <p className="lg:hidden text-[16px] text-white/60 font-medium tracking-tight mt-2 text-center w-full">
+        <p className="lg:hidden text-[16px] text-white/60 font-medium tracking-tight mt-2 text-center w-full max-w-[280px]">
            Your AI Body Transformation Coach
         </p>
         
@@ -125,15 +126,15 @@ export function AuthPage() {
            
            <div className="flex flex-col gap-5 xl:gap-6">
              <div className="flex items-center gap-4 text-[15px] xl:text-[16px] text-white/80 font-medium">
-                <div className="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center text-[#D4FF00] text-sm">✓</div>
+                <div className="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center text-[#D4FF00] text-sm flex-shrink-0">✓</div>
                 AI Nutrition Coach
              </div>
              <div className="flex items-center gap-4 text-[15px] xl:text-[16px] text-white/80 font-medium">
-                <div className="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center text-[#D4FF00] text-sm">✓</div>
+                <div className="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center text-[#D4FF00] text-sm flex-shrink-0">✓</div>
                 Daily Progress Tracking
              </div>
              <div className="flex items-center gap-4 text-[15px] xl:text-[16px] text-white/80 font-medium">
-                <div className="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center text-[#D4FF00] text-sm">✓</div>
+                <div className="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center text-[#D4FF00] text-sm flex-shrink-0">✓</div>
                 Secure Authentication
              </div>
            </div>
@@ -146,9 +147,12 @@ export function AuthPage() {
       </div>
 
       {/* Right Column / Mobile Auth Card */}
-      <div className="flex flex-col items-center justify-start lg:justify-center p-6 lg:p-12 xl:p-16 relative w-full flex-grow">
+      <div className="flex flex-col items-center p-6 sm:p-8 lg:p-12 xl:p-16 relative w-full lg:w-[55%] flex-grow min-h-0">
         
-        <div className="w-full max-w-[480px] lg:max-w-[480px] md:max-w-[420px] sm:max-w-[100%] lg:bg-[#141416]/90 lg:backdrop-blur-2xl lg:border border-white/10 rounded-[24px] lg:rounded-[28px] p-0 lg:p-10 lg:shadow-2xl relative z-10 my-6 lg:my-0 flex-grow lg:flex-grow-0 flex flex-col justify-center">
+        {/* Top spacer for desktop centering */}
+        <div className="hidden lg:block flex-1" />
+
+        <div className="w-full max-w-[420px] lg:max-w-[480px] lg:bg-[#141416]/90 lg:backdrop-blur-2xl lg:border border-white/10 rounded-[24px] lg:rounded-[28px] p-0 lg:p-10 lg:shadow-2xl relative z-10 my-4 lg:my-0 flex-shrink-0">
            
            <div className="text-center mb-8 hidden lg:block">
               <h2 className="text-[28px] font-bold tracking-tight text-white mb-2">Welcome</h2>
@@ -185,7 +189,7 @@ export function AuthPage() {
 
            <div className="flex items-center gap-4 my-8">
               <div className="flex-1 h-[1px] bg-white/10"></div>
-              <div className="text-[12px] font-bold text-white/40 uppercase tracking-[0.08em]">OR CONTINUE WITH EMAIL</div>
+              <div className="text-[12px] font-bold text-white/40 uppercase tracking-[0.08em] whitespace-nowrap">OR CONTINUE WITH EMAIL</div>
               <div className="flex-1 h-[1px] bg-white/10"></div>
            </div>
 
@@ -223,7 +227,7 @@ export function AuthPage() {
                    <div>
                        <h3 className="text-[24px] font-bold text-white mb-2 tracking-tight">Check your inbox</h3>
                        <p className="text-[16px] text-white/60 font-medium leading-relaxed">
-                          We sent a secure link to <br/><span className="text-white">{email}</span>
+                          We sent a secure link to <br/><span className="text-white break-all">{email}</span>
                        </p>
                    </div>
                    <button
@@ -249,10 +253,12 @@ export function AuthPage() {
 
         </div>
 
-        {/* Footer */}
-        <div className="mt-auto lg:absolute lg:bottom-12 flex gap-6 text-[13px] lg:text-[14px] font-medium text-white/30 pt-8 lg:pt-0 pb-2">
-           <span className="hover:text-white/60 transition-colors cursor-pointer">Privacy Policy</span>
-           <span className="hover:text-white/60 transition-colors cursor-pointer">Terms of Service</span>
+        {/* Bottom spacer and footer */}
+        <div className="flex-1 flex items-end justify-center w-full mt-8 lg:mt-0">
+           <div className="flex gap-6 text-[13px] lg:text-[14px] font-medium text-white/30 pb-4 lg:pb-0">
+             <span className="hover:text-white/60 transition-colors cursor-pointer">Privacy Policy</span>
+             <span className="hover:text-white/60 transition-colors cursor-pointer">Terms of Service</span>
+           </div>
         </div>
       </div>
     </div>
