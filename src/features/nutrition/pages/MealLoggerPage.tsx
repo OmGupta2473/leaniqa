@@ -468,7 +468,8 @@ export function MealLoggerPage() {
   }, [input, loading, selectedMealSlot, addChatMessage, addMealMutation]);
 
   return (
-    <>\n      <div className="screen-container screen-enter" style={{ display: 'flex', flexDirection: 'column' }}>
+    <>
+      <div className="screen-container screen-enter" style={{ display: 'flex', flexDirection: 'column' }}>
       {/* ── PAGE HEADER ── */}
       <div className="mb-[20px] flex items-center justify-between">
         <div className="flex flex-col">
