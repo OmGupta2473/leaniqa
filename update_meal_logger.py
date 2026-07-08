@@ -3,47 +3,38 @@ import re
 with open("src/features/nutrition/pages/MealLoggerPage.tsx", "r") as f:
     content = f.read()
 
-# 1. Update onSuccess to use the requested format
-on_success_pattern = r'    onSuccess: \(data, text\) => \{.*?setLoading\(false\);\n    \},'
+# First replace the useChatStore hooks to include initializeSession
+old_hooks = """  const chatHistory = useChatStore(s => s.chatHistory);
+  const addChatMessage = useChatStore(s => s.addChatMessage);
+  const clearOldChats = useChatStore(s => s.clearOldChats);"""
 
-on_success_replacement = """    onSuccess: (data, text) => {
-      const foodsDetected = Array.isArray(data?.foods_detected) && data?.foods_detected.length > 0 ? data.foods_detected.join(', ') : text;
-      
-      const newEatenKcal = eatenKcal + Math.round(data.calories);
-      const newEatenProtein = eatenProtein + Math.round(data.protein);
-      
-      const newRemainingKcal = Math.max(0, dailyTargetKcal - newEatenKcal);
-      const newRemainingProtein = Math.max(0, proteinTarget - newEatenProtein);
+new_hooks = """  const chatHistory = useChatStore(s => s.chatHistory);
+  const addChatMessage = useChatStore(s => s.addChatMessage);
+  const clearOldChats = useChatStore(s => s.clearOldChats);
+  const initializeSession = useChatStore(s => s.initializeSession);"""
 
-      let responseText = `✅ Logged: ${foodsDetected}
+if old_hooks in content:
+    content = content.replace(old_hooks, new_hooks)
+else:
+    print("Failed to find old hooks")
 
-Calories: ${Math.round(data.calories)} kcal
-Protein: ${Math.round(data.protein)} g
-Fat: ${Math.round(data.fat)} g
-Carbs: ${Math.round(data.carbs)} g
+# Now add the useEffect just below the profile query
+old_query = """  const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => profileService.getProfile() });"""
 
-Today's Total:
-Calories: ${newEatenKcal} kcal
-Protein: ${newEatenProtein} g
+new_query = """  const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => profileService.getProfile() });
 
-Remaining:
-Calories: ${newRemainingKcal} kcal
-Protein: ${newRemainingProtein} g`;
+  useEffect(() => {
+    if (profile?.id) {
+      initializeSession(profile.id);
+    }
+  }, [profile?.id, initializeSession]);"""
 
-      if (data?.coaching_tip) {
-          responseText += `\n\n${data.coaching_tip}`;
-      }
-
-      // Add to chat but remove data so we don't double render chips if we're showing it in text
-      addChatMessage({ role: 'ai', text: responseText, data: undefined });
-      setLoading(false);
-    },"""
-
-content = re.sub(on_success_pattern, on_success_replacement, content, flags=re.DOTALL)
-
-# 2. Add whitespace-pre-wrap to the chat message rendering
-content = content.replace('<div>{msg.text}</div>', '<div className="whitespace-pre-wrap">{msg.text}</div>')
+if old_query in content:
+    content = content.replace(old_query, new_query)
+else:
+    print("Failed to find profile query")
 
 with open("src/features/nutrition/pages/MealLoggerPage.tsx", "w") as f:
     f.write(content)
 
+print("MealLoggerPage updated successfully")

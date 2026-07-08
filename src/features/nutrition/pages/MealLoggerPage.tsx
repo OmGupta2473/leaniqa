@@ -100,6 +100,7 @@ export function MealLoggerPage() {
   const chatHistory = useChatStore(s => s.chatHistory);
   const addChatMessage = useChatStore(s => s.addChatMessage);
   const clearOldChats = useChatStore(s => s.clearOldChats);
+  const initializeSession = useChatStore(s => s.initializeSession);
   const activeModal = useAppStore(s => s.activeModal);
   const setActiveModal = useAppStore(s => s.setActiveModal);
   const modalOpen = activeModal === 'meal_logger';
@@ -132,6 +133,12 @@ export function MealLoggerPage() {
 
   const queryClient = useQueryClient();
   const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => profileService.getProfile() });
+
+  useEffect(() => {
+    if (profile?.id) {
+      initializeSession(profile.id);
+    }
+  }, [profile?.id, initializeSession]);
   const { data: goal } = useQuery({ queryKey: ["goal"], queryFn: () => profileService.getGoal() });
   const { data: meals = [] } = useQuery({ queryKey: ["meals", "today"], queryFn: () => mealService.getTodaysMeals() });
 
