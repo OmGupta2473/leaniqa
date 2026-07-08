@@ -2,7 +2,6 @@ import { useNavigate } from "react-router-dom";
 import React, { useEffect } from "react";
 import { useMemo } from 'react';
 import { useAwardStore } from "../store/awardStore";
-import { AnimatedProgressBar } from "@/shared/components/AnimatedProgressBar";
 import { useQuery } from "@tanstack/react-query";
 import { reportService } from "@/features/reports/services/reportService";
 import { calculateEarnedAwards, calculateBestDailyStreak, calculateCurrentDailyStreak } from "@/shared/utils/streaks";
@@ -352,24 +351,17 @@ export function AwardsPage() {
               }}
             >
               {selectedAward.earned ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                  <div
-                    style={{
-                      background: "rgba(212,255,0,0.15)",
-                      color: "#D4FF00",
-                      padding: "6px 16px",
-                      borderRadius: "100px",
-                      fontSize: "var(--font-sm)",
-                      fontWeight: 600,
-                    }}
-                  >
-                    ✓ Earned
-                  </div>
-                  {selectedAward.earnedDate && (
-                    <div style={{ fontSize: '13px', color: 'rgba(235,235,245,0.5)' }}>
-                      Unlocked: {new Date(selectedAward.earnedDate).toLocaleDateString()}
-                    </div>
-                  )}
+                <div
+                  style={{
+                    background: "rgba(212,255,0,0.15)",
+                    color: "#D4FF00",
+                    padding: "6px 16px",
+                    borderRadius: "100px",
+                    fontSize: "var(--font-sm)",
+                    fontWeight: 600,
+                  }}
+                >
+                  ✓ Earned
                 </div>
               ) : (
                 <>
@@ -382,12 +374,24 @@ export function AwardsPage() {
                   >
                     Reach a {selectedAward.streakRequired}-day streak to unlock
                   </div>
-                  <AnimatedProgressBar
-                    value={(currentStreak / selectedAward.streakRequired) * 100}
-                    color={selectedAward.primaryColor || "#D4FF00"}
-                    trackColor="rgba(255,255,255,0.1)"
-                    height={6}
-                  />
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "6px",
+                      background: "rgba(255,255,255,0.1)",
+                      borderRadius: "3px",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: "100%",
+                        background:
+                          selectedAward.primaryColor || "#D4FF00",
+                        width: `${Math.min(100, ((currentStreak) / selectedAward.streakRequired) * 100)}%`,
+                      }}
+                    ></div>
+                  </div>
                   <div
                     style={{
                       fontSize: "12px",

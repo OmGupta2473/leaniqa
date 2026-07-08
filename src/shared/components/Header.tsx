@@ -33,8 +33,7 @@ function getLocalDateString() {
 export function Header() {
   
   const { data: metrics = [] } = useQuery({ queryKey: ['dailyMetrics'], queryFn: () => reportService.getDailyMetrics() });
-  const { data: dbUserAwards = [] } = useQuery({ queryKey: ['userAwards'], queryFn: () => import('@/features/awards/services/awardService').then(m => m.awardService.getUserAwards()) });
-  const earnedAwards = calculateEarnedAwards(metrics).map(award => { const dbAward = dbUserAwards.find(a => a.award_id === award.id); return { ...award, earned: !!dbAward || award.earned, earnedDate: dbAward?.unlocked_at ? dbAward.unlocked_at.split('T')[0] : award.earnedDate }; });
+  const earnedAwards = calculateEarnedAwards(metrics);
 
   const { isOnline } = useNetworkStatus();
   const [session, setSession] = useState(null);

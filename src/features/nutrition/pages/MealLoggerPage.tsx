@@ -6,14 +6,14 @@ import {
   Send, Loader2, Dumbbell, Lightbulb, Sun, Sunrise, Moon, Plus, X, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { cn } from "@/shared/utils/utils";
+import { SmoothInput } from "@/shared/components/SmoothInput";
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { mealService } from "../services/mealService";
 import { profileService } from "@/features/profile/services/profileService";
 import { complianceService } from "@/features/reports/services/complianceService";
 import { supabase } from "@/shared/utils/supabase";
 import { motion, AnimatePresence } from "motion/react";
-import { AnimatedProgressBar } from "@/shared/components/AnimatedProgressBar";
-
 import { lookupCachedMeal } from '../constants/data';
 
 const getDeterministicFallback = (text: string) => {
@@ -251,15 +251,11 @@ export function MealLoggerPage() {
         queryClient.invalidateQueries({ queryKey: ["meals", "date", dateKeyStr] }),
         ...(isToday(selectedDate) ? [queryClient.invalidateQueries({ queryKey: ["meals", "today"] })] : []),
         queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] }),
-            queryClient.invalidateQueries({ queryKey: ["userStreak"] }),
-            queryClient.invalidateQueries({ queryKey: ["userAwards"] }),
         complianceService.recalculateDayScore(selectedDate.getFullYear() + '-' + String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + String(selectedDate.getDate()).padStart(2, '0')).then(() => {
           console.log('Updated Dashboard & Progress Rings');
           return Promise.all([
             queryClient.invalidateQueries({ queryKey: ["complianceScore"] }),
-            queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] }),
-            queryClient.invalidateQueries({ queryKey: ["userStreak"] }),
-            queryClient.invalidateQueries({ queryKey: ["userAwards"] })
+            queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] })
           ])
         }).catch(console.error)
       ]).then(() => {
@@ -454,14 +450,10 @@ export function MealLoggerPage() {
         queryClient.invalidateQueries({ queryKey: ["meals", "date", dateKeyStr] }),
         ...(isToday(selectedDate) ? [queryClient.invalidateQueries({ queryKey: ["meals", "today"] })] : []),
         queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] }),
-            queryClient.invalidateQueries({ queryKey: ["userStreak"] }),
-            queryClient.invalidateQueries({ queryKey: ["userAwards"] }),
         complianceService.recalculateDayScore(selectedDate.getFullYear() + '-' + String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + String(selectedDate.getDate()).padStart(2, '0')).then(() => 
           Promise.all([
             queryClient.invalidateQueries({ queryKey: ["complianceScore"] }),
-            queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] }),
-            queryClient.invalidateQueries({ queryKey: ["userStreak"] }),
-            queryClient.invalidateQueries({ queryKey: ["userAwards"] })
+            queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] })
           ])
         ).catch(console.error)
       ]);
@@ -533,30 +525,25 @@ export function MealLoggerPage() {
           </div>
         </div>
         {/* Calorie bar */}
-        <AnimatedProgressBar 
-          value={caloriePercent} 
-          color={eatenKcal > dailyTargetKcal ? '#FF4D1C' : '#D4FF00'} 
-          className="mb-[10px]"
-          trackColor="rgba(255,255,255,0.08)"
-          label={
-            <div className="flex justify-between">
-              <span className="text-[11px] text-[rgba(235,235,245,0.5)]">Calories</span>
-              <span className="text-[11px] font-semibold text-white">{eatenKcal} / {dailyTargetKcal} kcal</span>
-            </div>
-          }
-        />
+        <div className="mb-[10px]">
+          <div className="flex justify-between mb-[4px]">
+            <span className="text-[11px] text-[rgba(235,235,245,0.5)]">Calories</span>
+            <span className="text-[11px] font-semibold text-white">{eatenKcal} / {dailyTargetKcal} kcal</span>
+          </div>
+          <div className="h-[6px] bg-[rgba(255,255,255,0.08)] rounded-full overflow-hidden">
+            <div className="h-full w-full rounded-full origin-left transition-transform duration-700 will-change-transform" style={{ transform: `translateX(-${100 - caloriePercent}%)`, background: eatenKcal > dailyTargetKcal ? '#FF4D1C' : '#D4FF00' }}></div>
+          </div>
+        </div>
         {/* Protein bar */}
-        <AnimatedProgressBar 
-          value={proteinPercent} 
-          color="#378ADD" 
-          trackColor="rgba(255,255,255,0.08)"
-          label={
-            <div className="flex justify-between">
-              <span className="text-[11px] text-[rgba(235,235,245,0.5)]">Protein</span>
-              <span className="text-[11px] font-semibold text-white">{eatenProtein}g / {proteinTarget}g</span>
-            </div>
-          }
-        />
+        <div>
+          <div className="flex justify-between mb-[4px]">
+            <span className="text-[11px] text-[rgba(235,235,245,0.5)]">Protein</span>
+            <span className="text-[11px] font-semibold text-white">{eatenProtein}g / {proteinTarget}g</span>
+          </div>
+          <div className="h-[6px] bg-[rgba(255,255,255,0.08)] rounded-full overflow-hidden">
+            <div className="h-full w-full rounded-full bg-[#378ADD] origin-left transition-transform duration-700 will-change-transform" style={{ transform: `translateX(-${100 - proteinPercent}%)` }}></div>
+          </div>
+        </div>
         {/* Macros row */}
         <div className="grid grid-cols-4 gap-[8px] mt-[14px] pt-[12px] border-t border-[rgba(255,255,255,0.06)]">
           {[{ label: 'Kcal', val: eatenKcal, color: '#FF4D1C' }, { label: 'Protein', val: `${eatenProtein}g`, color: '#378ADD' }, { label: 'Fat', val: `${eatenFat}g`, color: 'white' }, { label: 'Carbs', val: `${eatenCarbs}g`, color: 'white' }].map(item => (
