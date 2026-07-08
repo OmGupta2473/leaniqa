@@ -111,6 +111,15 @@ export function MealLoggerPage() {
   const setLoading = useNutritionStore(s => s.setAiParsingLoading);
   const aiStatus = useNutritionStore(s => s.aiStatus);
   const setAiStatus = useNutritionStore(s => s.setAiStatus);
+  const queryClient = useQueryClient();
+  const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => profileService.getProfile() });
+
+  useEffect(() => {
+    if (profile?.id) {
+      initializeSession(profile.id);
+    }
+  }, [profile?.id, initializeSession]);
+
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
 
   const isToday = (d: Date) => {
@@ -127,6 +136,16 @@ export function MealLoggerPage() {
            d.getMonth() === yesterday.getMonth() &&
            d.getFullYear() === yesterday.getFullYear();
   };
+
+  const isAtOrBeforeCreatedAt = (d: Date) => {
+    if (!profile?.created_at) return false;
+    const createdAt = new Date(profile.created_at);
+    // compare only year, month, day
+    const dTime = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const cTime = new Date(createdAt.getFullYear(), createdAt.getMonth(), createdAt.getDate()).getTime();
+    return dTime <= cTime;
+  };
+
 
   const formatDateLabel = (d: Date) => {
     if (isToday(d)) return "Today";
@@ -165,14 +184,7 @@ export function MealLoggerPage() {
     checkAI();
   }, []);
 
-  const queryClient = useQueryClient();
-  const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => profileService.getProfile() });
 
-  useEffect(() => {
-    if (profile?.id) {
-      initializeSession(profile.id);
-    }
-  }, [profile?.id, initializeSession]);
   const { data: goal } = useQuery({ queryKey: ["goal"], queryFn: () => profileService.getGoal() });
   const { data: meals = [] } = useQuery({ queryKey: ["meals", "date", dateKeyStr], queryFn: () => mealService.getMealsForDate(selectedDate) });
 
@@ -466,11 +478,17 @@ export function MealLoggerPage() {
         <div className="flex items-center gap-2">
           <button 
             onClick={() => {
+              if (isAtOrBeforeCreatedAt(selectedDate)) return;
               const d = new Date(selectedDate);
               d.setDate(d.getDate() - 1);
               setSelectedDate(d);
             }}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] transition-colors"
+            disabled={isAtOrBeforeCreatedAt(selectedDate)}
+            className={cn(
+              "w-8 h-8 flex items-center justify-center rounded-full transition-colors",
+              isAtOrBeforeCreatedAt(selectedDate) ? "opacity-30 cursor-not-allowed" : "bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] cursor-pointer"
+            )}
+            title={isAtOrBeforeCreatedAt(selectedDate) ? "This is your first day on LeanIQA. No meal history exists before this date." : "Previous Day"}
           >
             <ChevronLeft size={16} className="text-white" />
           </button>
