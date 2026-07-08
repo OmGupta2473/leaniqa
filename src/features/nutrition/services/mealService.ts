@@ -77,18 +77,42 @@ export const mealService = {
       ...mealData,
       user_id: userId,
     };
-
-    const { data, error } = await supabase
+    
+    // Ensure all numeric fields are integers (Supabase expects integers based on schema)
+    payload.calories = Math.round(payload.calories || 0);
+    payload.protein = Math.round(payload.protein || 0);
+    payload.fat = Math.round(payload.fat || 0);
+    payload.carbs = Math.round(payload.carbs || 0);
+    
+    console.log('--- SUPABASE INSERT PAYLOAD ---', payload);
+    
+    let res = await supabase
       .from('meal_logs')
       .insert(payload)
       .select()
       .maybeSingle();
       
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error adding meal:', error);
-      throw error;
+    // If the error indicates a missing column (PGRST204 or PGRST205 or message includes column), try without meal_slot
+    if (res.error && (res.error.code?.startsWith('PGRST20') || res.error.message?.toLowerCase().includes('column'))) {
+      console.warn('Column might be missing. Retrying without meal_slot.');
+      const fallbackPayload = { ...payload };
+      delete (fallbackPayload as any).meal_slot;
+      res = await supabase
+        .from('meal_logs')
+        .insert(fallbackPayload)
+        .select()
+        .maybeSingle();
     }
-    return data || payload;
+      
+    if (res.error && res.error.code !== 'PGRST116') {
+      console.error('--- SUPABASE INSERT ERROR ---');
+      console.error('Payload:', payload);
+      console.error('Error Details:', JSON.stringify(res.error, null, 2));
+      console.error('Raw Error:', res.error);
+      throw res.error;
+    }
+    console.log('--- SUPABASE INSERT SUCCESS ---', res.data);
+    return res.data || payload;
   },
   
   
@@ -108,11 +132,16 @@ export const mealService = {
   },
   async getMealsByDate(dateStr: string): Promise<DbMealLog[]> {
     const userId = await authService.getUserId();
+    // dateStr is 'YYYY-MM-DD'
+    const startOfDay = new Date(dateStr).toISOString();
+    const endOfDay = new Date(new Date(dateStr).getTime() + 24 * 60 * 60 * 1000).toISOString();
+    
     const { data, error } = await supabase
       .from('meal_logs')
       .select('*')
       .eq('user_id', userId)
-      .like('meal_time', `${dateStr}%`)
+      .gte('meal_time', startOfDay)
+      .lt('meal_time', endOfDay)
       .order('meal_time', { ascending: true });
       
     if (error) {
