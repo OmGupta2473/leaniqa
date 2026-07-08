@@ -6,6 +6,8 @@ import {
   Send, Loader2, Dumbbell, Lightbulb, Sun, Sunrise, Moon, Plus, X, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { cn } from "@/shared/utils/utils";
+import { SmoothInput } from "@/shared/components/SmoothInput";
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { mealService } from "../services/mealService";
 import { profileService } from "@/features/profile/services/profileService";
