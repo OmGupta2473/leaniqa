@@ -3,8 +3,19 @@ import re
 with open("src/features/awards/pages/AwardsPage.tsx", "r") as f:
     content = f.read()
 
-# Instead of two awards blocks, we just want one. Let's see how the old one was structured.
-# The user wants "Highest Streak Achieved (optional)" in the top bar.
+# Check if today is met
+# We need to compute it
+old_streaks_bar = """      {/* Streaks Summary */}
+      <div className="streaks-bar glass-card">
+        <div className="text-center py-[14px]">
+          <div"""
 
-# I'll just rewrite the whole AwardsPage.tsx entirely.
-# Let's save a clean version.
+new_streaks_bar = """      {/* Streaks Summary */}
+      <div className="streaks-bar glass-card">
+        <div className="text-center py-[14px]">
+          <div"""
+
+content = content.replace(old_streaks_bar, new_streaks_bar)
+
+with open("src/features/awards/pages/AwardsPage.tsx", "w") as f:
+    f.write(content)

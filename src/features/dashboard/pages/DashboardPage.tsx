@@ -1,7 +1,7 @@
 import { useUserStore } from "@/features/profile/store/userStore";
 import { useAppStore } from "@/app/store";
 import { reportService } from "@/features/reports/services/reportService";
-import { calculateCurrentDailyStreak } from "@/shared/utils/streaks";
+import { calculateCurrentDailyStreak, isDailyGoalMet, toUtcDay } from "@/shared/utils/streaks";
 import { Target, Footprints, Utensils, CheckCircle2, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCalculatedProfile } from "@/shared/hooks/useCalculatedProfile";
@@ -83,6 +83,8 @@ export function DashboardPage() {
   const dismissBanner = useAppStore(s => s.dismissBanner);
     const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
   const currentStreak = calculateCurrentDailyStreak(metrics);
+  const todayMetric = metrics.find(m => toUtcDay(m.date) === toUtcDay(new Date()));
+  const todayMet = todayMetric ? isDailyGoalMet(todayMetric) : false;
   const queryClient = useQueryClient();
   const { profileData: onboardingData, profile, goal } = useCalculatedProfile();
   const isProfileError = false;
@@ -247,6 +249,11 @@ export function DashboardPage() {
           <div className="flex items-center gap-[6px]">
             <span className="text-[18px]">🔥</span>
             <span className="text-[17px] text-white font-bold tracking-[-0.2px]">{currentStreak}</span>
+            {todayMet && (
+               <span style={{ fontSize: '12px', background: 'rgba(212,255,0,0.1)', color: '#D4FF00', padding: '2px 8px', borderRadius: '100px', fontWeight: 600, marginLeft: '4px' }}>
+                 ⏳ In Progress
+               </span>
+            )}
           </div>
           <div className="w-[1px] h-[28px] bg-[rgba(235,235,245,0.15)]" />
           <div className="flex flex-col items-center">

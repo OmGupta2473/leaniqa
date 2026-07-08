@@ -69,6 +69,7 @@ export function calculateBestStreak(metrics: DbDailyMetric[], predicate: (m: DbD
   if (!metrics || metrics.length === 0) return 0;
   
   const sorted = [...metrics].sort((a, b) => toUtcDay(a.date) - toUtcDay(b.date));
+  const todayDayNum = toUtcDay(new Date());
   
   let best = 0;
   let current = 0;
@@ -76,6 +77,12 @@ export function calculateBestStreak(metrics: DbDailyMetric[], predicate: (m: DbD
   
   for (const m of sorted) {
     const dayNum = toUtcDay(m.date);
+    
+    // Streak logic must ignore today's metrics as they are still in progress
+    if (dayNum >= todayDayNum) {
+      continue;
+    }
+
     if (predicate(m)) {
         if (prevDayNum !== null && dayNum === prevDayNum) {
             // duplicate day, ignore
