@@ -7,7 +7,7 @@ interface AuthLayoutProps {
 
 export function AuthLayout({ children }: AuthLayoutProps) {
   return (
-    <div className="min-h-screen bg-background-primary flex flex-col">
+    <div className="min-h-[100dvh] w-full flex-1 bg-background-primary flex flex-col">
       {children || <Outlet />}
     </div>
   );

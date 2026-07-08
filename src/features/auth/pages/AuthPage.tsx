@@ -88,17 +88,17 @@ export function AuthPage() {
   const showEmailSuggestion = message.includes("Authentication failed") || message.includes("configuration error");
 
   return (
-    <div className="min-h-[100dvh] w-full flex flex-col lg:flex-row bg-[#0A0A0A] text-white overflow-x-hidden">
+    <div className="min-h-[100dvh] w-full flex-1 flex flex-col lg:flex-row bg-[#0A0A0A] text-white overflow-x-hidden">
       
       {/* Hero Section */}
-      <div className="relative flex flex-col items-center lg:items-start lg:justify-center p-6 sm:p-8 lg:p-12 xl:p-16 overflow-hidden lg:border-r border-white/5 lg:bg-[#0F0F11] w-full lg:w-[45%] flex-shrink-0">
+      <div className="relative flex flex-col p-6 sm:p-8 lg:p-12 xl:p-16 overflow-hidden lg:border-r border-white/5 lg:bg-[#0F0F11] w-full lg:w-1/2 flex-shrink-0 min-h-[40vh]">
         
         {/* Desktop glow effects */}
         <div className="hidden lg:block absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-[#D4FF00]/10 blur-[120px] pointer-events-none" />
         <div className="hidden lg:block absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-[#D4FF00]/5 blur-[120px] pointer-events-none" />
         
         {/* Header / Logo */}
-        <div className="flex flex-col lg:flex-row items-center gap-4 lg:gap-3 mt-4 sm:mt-6 lg:mt-0 lg:absolute lg:top-12 xl:top-16 lg:left-12 xl:left-16 z-10 w-full lg:w-auto">
+        <div className="flex flex-col lg:flex-row items-center gap-4 lg:gap-3 mt-4 sm:mt-6 lg:mt-0 z-10 w-full lg:w-auto lg:self-start">
            <div className="w-16 h-16 lg:w-12 lg:h-12 rounded-[18px] lg:rounded-xl bg-[#D4FF00]/10 flex items-center justify-center border border-[#D4FF00]/20 shadow-[0_0_30px_rgba(212,255,0,0.15)] lg:shadow-none">
               <DumbbellIcon className="w-8 h-8 lg:w-6 lg:h-6 text-[#D4FF00]" />
            </div>
@@ -106,12 +106,12 @@ export function AuthPage() {
         </div>
 
         {/* Mobile Subtitle */}
-        <p className="lg:hidden text-[16px] text-white/60 font-medium tracking-tight mt-2 text-center w-full max-w-[280px]">
+        <p className="lg:hidden text-[16px] text-white/60 font-medium tracking-tight mt-2 text-center w-full max-w-[280px] self-center">
            Your AI Body Transformation Coach
         </p>
         
         {/* Desktop Hero Content */}
-        <div className="hidden lg:flex flex-col z-10 w-full max-w-[500px]">
+        <div className="hidden lg:flex flex-col justify-center flex-1 z-10 w-full max-w-[500px] lg:self-center py-10">
            <h2 className="text-[clamp(36px,4vw,56px)] font-bold tracking-tight leading-[1.1] text-white mb-6 xl:mb-8">
               Your AI Body <br/><span className="text-[#D4FF00]">Transformation Coach</span>
            </h2>
@@ -136,16 +136,15 @@ export function AuthPage() {
         </div>
         
         {/* Trusted By (Desktop Only) */}
-        <div className="hidden lg:block absolute bottom-12 xl:bottom-16 left-12 xl:left-16 z-10 text-[14px] text-white/40 font-medium">
+        <div className="hidden lg:block z-10 text-[14px] text-white/40 font-medium lg:self-start">
            Trusted by athletes and fitness enthusiasts.
         </div>
       </div>
 
       {/* Right Column / Mobile Auth Card */}
-      <div className="flex flex-col items-center p-6 sm:p-8 lg:p-12 xl:p-16 relative w-full lg:w-[55%] flex-grow min-h-0">
+      <div className="flex flex-col items-center justify-center p-6 sm:p-8 lg:p-12 xl:p-16 relative w-full lg:w-1/2 flex-shrink-0 min-h-0">
         
-        {/* Top spacer for desktop centering */}
-        <div className="hidden lg:block flex-1" />
+        
 
         <div className="w-full max-w-[420px] lg:max-w-[480px] lg:bg-[#141416]/90 lg:backdrop-blur-2xl lg:border border-white/10 rounded-[24px] lg:rounded-[28px] p-0 lg:p-10 lg:shadow-2xl relative z-10 my-4 lg:my-0 flex-shrink-0">
            
@@ -248,9 +247,9 @@ export function AuthPage() {
 
         </div>
 
-        {/* Bottom spacer and footer */}
-        <div className="flex-1 flex items-end justify-center w-full mt-8 lg:mt-0">
-           <div className="flex gap-6 text-[13px] lg:text-[14px] font-medium text-white/30 pb-4 lg:pb-0">
+        {/* Footer */}
+        <div className="w-full flex justify-center lg:absolute lg:bottom-8 lg:left-0 mt-auto lg:mt-0">
+           <div className="flex gap-6 text-[13px] lg:text-[14px] font-medium text-white/30 pt-8 lg:pt-0 pb-4 lg:pb-0">
              <span className="hover:text-white/60 transition-colors cursor-pointer">Privacy Policy</span>
              <span className="hover:text-white/60 transition-colors cursor-pointer">Terms of Service</span>
            </div>

@@ -51,6 +51,7 @@ body {
   height: 100dvh;
   overflow: hidden;
   display: flex;
+  flex-direction: column;
 }
 
 /* ── App shell: the top-level flex container ── */
