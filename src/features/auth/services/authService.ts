@@ -1,3 +1,4 @@
+import { useChatStore } from '@/app/store/chatStore';
 import { supabase } from '@/shared/utils/supabase';
 import { AppError, ErrorCodes } from '@/shared/utils/errors';
 
@@ -32,6 +33,7 @@ export const authService = {
     if (userError || !user) {
       console.warn('Local session exists but user is invalid on server. Logging out.');
       await supabase.auth.signOut();
+      useChatStore.getState().clearChatStore();
       throw new AppError({
         code: ErrorCodes.UNAUTHORIZED,
         message: 'User session invalid or expired. Please log in again.',
@@ -45,6 +47,7 @@ export const authService = {
   
   async logout(): Promise<void> {
     await supabase.auth.signOut();
+    useChatStore.getState().clearChatStore();
   }
 };
 

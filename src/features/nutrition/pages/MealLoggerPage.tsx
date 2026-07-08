@@ -3,7 +3,7 @@ import { useAppStore } from "@/app/store";
 import { useChatStore } from "@/app/store";
 import { useNutritionStore } from "../store/nutritionStore";
 import {
-  Send, Loader2, Dumbbell, Lightbulb, Sun, Sunrise, Moon, Plus, X,
+  Send, Loader2, Dumbbell, Lightbulb, Sun, Sunrise, Moon, Plus, X, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { cn } from "@/shared/utils/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -111,6 +111,40 @@ export function MealLoggerPage() {
   const setLoading = useNutritionStore(s => s.setAiParsingLoading);
   const aiStatus = useNutritionStore(s => s.aiStatus);
   const setAiStatus = useNutritionStore(s => s.setAiStatus);
+  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
+
+  const isToday = (d: Date) => {
+    const today = new Date();
+    return d.getDate() === today.getDate() &&
+           d.getMonth() === today.getMonth() &&
+           d.getFullYear() === today.getFullYear();
+  };
+
+  const isYesterday = (d: Date) => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return d.getDate() === yesterday.getDate() &&
+           d.getMonth() === yesterday.getMonth() &&
+           d.getFullYear() === yesterday.getFullYear();
+  };
+
+  const formatDateLabel = (d: Date) => {
+    if (isToday(d)) return "Today";
+    if (isYesterday(d)) return "Yesterday";
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const dateKeyStr = `${selectedDate.getFullYear()}-${selectedDate.getMonth() + 1}-${selectedDate.getDate()}`;
+
+  const getMealTime = () => {
+    const d = new Date(selectedDate);
+    const now = new Date();
+    d.setHours(now.getHours());
+    d.setMinutes(now.getMinutes());
+    d.setSeconds(now.getSeconds());
+    return d;
+  };
+
   const selectedMealSlot = useNutritionStore(s => s.selectedMealSlot);
   const setSelectedMealSlot = useNutritionStore(s => s.setSelectedMealSlot);
 
@@ -140,7 +174,7 @@ export function MealLoggerPage() {
     }
   }, [profile?.id, initializeSession]);
   const { data: goal } = useQuery({ queryKey: ["goal"], queryFn: () => profileService.getGoal() });
-  const { data: meals = [] } = useQuery({ queryKey: ["meals", "today"], queryFn: () => mealService.getTodaysMeals() });
+  const { data: meals = [] } = useQuery({ queryKey: ["meals", "date", dateKeyStr], queryFn: () => mealService.getMealsForDate(selectedDate) });
 
   const eatenKcal = meals.reduce((acc, m) => acc + m.calories, 0);
   const eatenProtein = meals.reduce((acc, m) => acc + m.protein, 0);
@@ -177,12 +211,12 @@ export function MealLoggerPage() {
       return id;
     },
     onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: ["meals", "today"] });
-      const previousMeals = queryClient.getQueryData<any[]>(["meals", "today"]);
+      await queryClient.cancelQueries({ queryKey: ["meals", "date", dateKeyStr] });
+      const previousMeals = queryClient.getQueryData<any[]>(["meals", "date", dateKeyStr]);
       
       const newMeals = previousMeals ? previousMeals.filter((m: any) => m.id !== id) : [];
       
-      queryClient.setQueryData(["meals", "today"], newMeals);
+      queryClient.setQueryData(["meals", "date", dateKeyStr], newMeals);
       
       console.log('Remaining Meals:', newMeals.length);
       const newKcal = newMeals.reduce((s, m) => s + m.calories, 0);
@@ -195,12 +229,13 @@ export function MealLoggerPage() {
       console.error('Delete failed, rolling back:', err);
       console.groupEnd();
       if (context?.previousMeals) {
-        queryClient.setQueryData(["meals", "today"], context.previousMeals);
+        queryClient.setQueryData(["meals", "date", dateKeyStr], context.previousMeals);
       }
     },
     onSettled: () => {
       Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["meals", "today"] }),
+        queryClient.invalidateQueries({ queryKey: ["meals", "date", dateKeyStr] }),
+        ...(isToday(selectedDate) ? [queryClient.invalidateQueries({ queryKey: ["meals", "today"] })] : []),
         queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] }),
         complianceService.updateTodayScore().then(() => {
           console.log('Updated Dashboard & Progress Rings');
@@ -233,7 +268,7 @@ export function MealLoggerPage() {
       if (!isCompoundMeal) {
         const cachedResult = lookupCachedMeal(text);
         if (cachedResult && cachedResult.confidence >= 90) {
-          await mealService.addMeal({ meal_text: text, calories: cachedResult.scaledCalories, protein: cachedResult.scaledProtein, fat: cachedResult.scaledFat, carbs: cachedResult.scaledCarbs, meal_time: new Date().toISOString(), tip: text, meal_slot: selectedMealSlot || undefined });
+          await mealService.addMeal({ meal_text: text, calories: cachedResult.scaledCalories, protein: cachedResult.scaledProtein, fat: cachedResult.scaledFat, carbs: cachedResult.scaledCarbs, meal_time: getMealTime().toISOString(), tip: text, meal_slot: selectedMealSlot || undefined });
           return { calories: cachedResult.scaledCalories, protein: cachedResult.scaledProtein, fat: cachedResult.scaledFat, carbs: cachedResult.scaledCarbs, confidence: cachedResult.confidence, foods_detected: [text], coaching_tip: `Logged from nutritional database. ${Math.round(cachedResult.scaledCalories)} kcal · ${cachedResult.scaledProtein}g protein`, _fromCache: true };
         }
       }
@@ -259,7 +294,7 @@ export function MealLoggerPage() {
             throw new Error(msg || 'AI failed');
           }
           if (!data || typeof data.calories !== 'number') { lastError = new Error('Invalid response'); if (attempt < 2) continue; throw new Error('Invalid AI data'); }
-          await mealService.addMeal({ meal_text: text, calories: Math.round(data.calories), protein: Math.round(data.protein), fat: Math.round(data.fat), carbs: Math.round(data.carbs), meal_time: new Date().toISOString(), tip: data.foods_detected?.join(', ') || text, meal_slot: selectedMealSlot || undefined });
+          await mealService.addMeal({ meal_text: text, calories: Math.round(data.calories), protein: Math.round(data.protein), fat: Math.round(data.fat), carbs: Math.round(data.carbs), meal_time: getMealTime().toISOString(), tip: data.foods_detected?.join(', ') || text, meal_slot: selectedMealSlot || undefined });
           return data;
         } catch (err: any) {
           console.error(`[parse-meal] attempt ${attempt + 1} error:`, err.message);
@@ -303,7 +338,7 @@ export function MealLoggerPage() {
           protein: fallback.protein,
           fat: fallback.fat,
           carbs: fallback.carbs,
-          meal_time: new Date().toISOString(),
+          meal_time: getMealTime().toISOString(),
           tip: `Estimated: ${text}`,
           meal_slot: selectedMealSlot || undefined,
         });
@@ -324,8 +359,8 @@ export function MealLoggerPage() {
       // ── END STEP 3 ─────────────────────────────────────────────────────────────
     },
     onMutate: async (text: string) => {
-      await queryClient.cancelQueries({ queryKey: ["meals", "today"] });
-      const previousMeals = queryClient.getQueryData(["meals", "today"]);
+      await queryClient.cancelQueries({ queryKey: ["meals", "date", dateKeyStr] });
+      const previousMeals = queryClient.getQueryData(["meals", "date", dateKeyStr]);
       
       const estimate = getDeterministicFallback(text);
       const optimisticMeal = {
@@ -336,10 +371,10 @@ export function MealLoggerPage() {
         fat: estimate.fat,
         carbs: estimate.carbs,
         meal_slot: selectedMealSlot || "lunch",
-        meal_time: new Date().toISOString()
+        meal_time: getMealTime().toISOString()
       };
       
-      queryClient.setQueryData(["meals", "today"], (old: any) => {
+      queryClient.setQueryData(["meals", "date", dateKeyStr], (old: any) => {
         if (!old) return [optimisticMeal];
         return [...old, optimisticMeal];
       });
@@ -398,7 +433,8 @@ export function MealLoggerPage() {
     },
     onSettled: () => {
       Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["meals", "today"] }),
+        queryClient.invalidateQueries({ queryKey: ["meals", "date", dateKeyStr] }),
+        ...(isToday(selectedDate) ? [queryClient.invalidateQueries({ queryKey: ["meals", "today"] })] : []),
         queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] }),
         complianceService.updateTodayScore().then(() => 
           Promise.all([
@@ -422,15 +458,47 @@ export function MealLoggerPage() {
   return (
     <>\n      <div className="screen-container screen-enter" style={{ display: 'flex', flexDirection: 'column' }}>
       {/* ── PAGE HEADER ── */}
-      <div className="mb-[20px]">
-        <h2 className="text-[22px] font-bold text-white tracking-[-0.3px]">Today's Meals</h2>
-        <div className="text-[13px] text-[rgba(235,235,245,0.5)] mt-[2px]">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</div>
+      <div className="mb-[20px] flex items-center justify-between">
+        <div className="flex flex-col">
+          <h2 className="text-[22px] font-bold text-white tracking-[-0.3px]">Meal Log</h2>
+          <div className="text-[13px] text-[rgba(235,235,245,0.5)] mt-[2px]">{selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => {
+              const d = new Date(selectedDate);
+              d.setDate(d.getDate() - 1);
+              setSelectedDate(d);
+            }}
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] transition-colors"
+          >
+            <ChevronLeft size={16} className="text-white" />
+          </button>
+          <span className="text-[14px] font-medium text-white min-w-[80px] text-center">
+            {formatDateLabel(selectedDate)}
+          </span>
+          <button 
+            onClick={() => {
+              if (isToday(selectedDate)) return;
+              const d = new Date(selectedDate);
+              d.setDate(d.getDate() + 1);
+              setSelectedDate(d);
+            }}
+            disabled={isToday(selectedDate)}
+            className={cn(
+              "w-8 h-8 flex items-center justify-center rounded-full transition-colors",
+              isToday(selectedDate) ? "opacity-30 cursor-not-allowed" : "bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] cursor-pointer"
+            )}
+          >
+            <ChevronRight size={16} className="text-white" />
+          </button>
+        </div>
       </div>
 
       {/* ── CALORIE RING SUMMARY ── */}
       <div className="glass-card p-[16px_20px] mb-[16px]">
         <div className="flex justify-between items-center mb-[12px]">
-          <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[rgba(235,235,245,0.5)]">Today's Progress</div>
+          <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[rgba(235,235,245,0.5)]">Daily Summary</div>
           <div className="text-[12px] font-semibold" style={{ color: eatenKcal > dailyTargetKcal ? '#FF4D1C' : '#D4FF00' }}>
             {eatenKcal > dailyTargetKcal ? `${eatenKcal - dailyTargetKcal} over` : `${dailyTargetKcal - eatenKcal} left`}
           </div>
@@ -469,7 +537,10 @@ export function MealLoggerPage() {
       {/* ── MEAL SLOT ROWS ── */}
       <div>
         <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[rgba(235,235,245,0.5)] mb-[10px]">Meal Log</div>
-                <MealSlotRow slot="breakfast" icon={<Sunrise size={14} />} label="Breakfast" timeRange="6 am – 12 pm" meals={breakfastMeals} onDelete={handleDeleteMeal} />
+                {meals.length === 0 && (
+          <div className="text-[14px] text-center text-[rgba(235,235,245,0.5)] mb-[16px] italic">No meals logged for this day.</div>
+        )}
+        <MealSlotRow slot="breakfast" icon={<Sunrise size={14} />} label="Breakfast" timeRange="6 am – 12 pm" meals={breakfastMeals} onDelete={handleDeleteMeal} />
         <MealSlotRow slot="lunch" icon={<Sun size={14} />} label="Lunch" timeRange="12 pm – 6 pm" meals={lunchMeals} onDelete={handleDeleteMeal} />
         <MealSlotRow slot="dinner" icon={<Moon size={14} />} label="Dinner" timeRange="6 pm – 10 pm" meals={dinnerMeals} onDelete={handleDeleteMeal} />
       </div>      {/* ── SPACER TO PREVENT FAB OVERLAP ── */}

@@ -1,3 +1,4 @@
+import { authService } from '@/features/auth/services/authService';
 import { useCallback } from 'react';
 import { useUserStore } from "@/features/profile/store/userStore";
 import { useAppStore } from "@/app/store";
@@ -33,7 +34,7 @@ export function Sidebar({ className }: { className?: string }) {
     
     clearUserStore();
     queryClient.clear();
-    await supabase.auth.signOut();
+    await authService.logout();
   };
 
   const { hasCompletedOnboarding } = useHasCompletedOnboarding();

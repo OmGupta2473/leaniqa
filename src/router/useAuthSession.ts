@@ -1,3 +1,4 @@
+import { useChatStore } from '@/app/store/chatStore';
 import { useEffect, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/shared/utils/supabase';
@@ -22,6 +23,7 @@ export function useAuthSession() {
           if (error || !user) {
             console.warn('Local session found but user is invalid on server. Clearing session.');
             await supabase.auth.signOut();
+            useChatStore.getState().clearChatStore();
             if (mounted) {
               setSession(null);
             }
@@ -57,6 +59,7 @@ export function useAuthSession() {
          const { data: { user } } = await supabase.auth.getUser();
          if (!user) {
             await supabase.auth.signOut();
+            useChatStore.getState().clearChatStore();
             if (mounted) setSession(null);
             return;
          }
