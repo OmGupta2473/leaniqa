@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { useAwardStore } from "../store/awardStore";
 import { useQuery } from "@tanstack/react-query";
 import { reportService } from "@/features/reports/services/reportService";
-import { calculateEarnedAwards } from "@/shared/utils/streaks";
+import { calculateEarnedAwards, calculateBestDailyStreak, calculateCurrentDailyStreak } from "@/shared/utils/streaks";
 
 export function renderBadge(
   award: any,
@@ -26,7 +26,6 @@ export function renderBadge(
     }
     return `M ${pts.join(" L ")} Z`;
   }
-
   function shieldPath(cx: number, cy: number, r: number) {
     const w = r * 1.5;
     const h = r * 1.8;
@@ -74,7 +73,6 @@ export function renderBadge(
       <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>`
     : "";
-
   const glowAttr = earned ? `filter="url(#glow-${award.id})"` : "";
 
   // Animation for detail view
@@ -97,7 +95,6 @@ export function renderBadge(
       }
     </style>`
       : "";
-
   const wrapClass = animate && earned ? `badge-spin-${award.id}` : "";
 
   return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible">
@@ -114,19 +111,29 @@ export function renderBadge(
 
 export function AwardsPage() {
   const navigate = useNavigate();
-      const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
-  const earnedAwards = calculateEarnedAwards(metrics);
-  const currentStreak = earnedAwards.find(a => a.category === 'daily')?.currentStreak || 0;
+  
+  const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
+  const { data: dbUserStreak } = useQuery({ queryKey: ["userStreak"], queryFn: () => import('@/features/awards/services/awardService').then(m => m.awardService.getUserStreak()) });
+  const { data: dbUserAwards = [] } = useQuery({ queryKey: ["userAwards"], queryFn: () => import('@/features/awards/services/awardService').then(m => m.awardService.getUserAwards()) });
 
+  const currentStreak = dbUserStreak?.current_streak ?? calculateCurrentDailyStreak(metrics);
+  const bestStreak = dbUserStreak?.highest_streak ?? calculateBestDailyStreak(metrics);
 
+  const earnedAwards = calculateEarnedAwards(metrics).map(award => {
+    const dbAward = dbUserAwards.find(a => a.award_id === award.id);
+    return {
+      ...award,
+      earned: !!dbAward || award.earned,
+      earnedDate: dbAward?.unlocked_at || award.earnedDate
+    };
+  });
 
   const selectedAward = useAwardStore(s => s.selectedAward);
   const setSelectedAward = useAwardStore(s => s.setSelectedAward);
 
   const dailyAwards = earnedAwards.filter((a) => a.category === "daily");
-
-  const earnedCount = earnedAwards.filter((a) => a.earned).length;
-  const totalCount = earnedAwards.length;
+  const earnedCount = dailyAwards.filter((a) => a.earned).length;
+  const totalCount = dailyAwards.length;
 
   return (
     <div
@@ -185,7 +192,7 @@ export function AwardsPage() {
               marginTop: "4px",
             }}
           >
-            Daily Streak
+            Current Streak
           </div>
         </div>
         <div
@@ -199,7 +206,7 @@ export function AwardsPage() {
               fontWeight: 700,
             }}
           >
-            {currentStreak}
+            {bestStreak}
           </div>
           <div
             style={{
@@ -210,12 +217,12 @@ export function AwardsPage() {
               marginTop: "4px",
             }}
           >
-            
+            Highest Streak
           </div>
         </div>
       </div>
 
-      {/* Calories */}
+      {/* Daily Streak Awards */}
       <div className="mt-[32px] px-[20px] mb-[12px]">
         <h2
           style={{
@@ -225,7 +232,7 @@ export function AwardsPage() {
             margin: 0,
           }}
         >
-          🔥 Calorie Awards
+          🔥 Daily Streak Awards
         </h2>
         <div
           style={{
@@ -234,9 +241,10 @@ export function AwardsPage() {
             marginTop: "4px",
           }}
         >
-          Stay under your daily calorie target
+          Hit your calorie and protein targets consistently
         </div>
       </div>
+
       <div className="awards-grid">
         {dailyAwards.map((award) => (
           <div
@@ -285,75 +293,6 @@ export function AwardsPage() {
         ))}
       </div>
 
-      {/* Protein */}
-      <div className="mt-[32px] px-[20px] mb-[12px]">
-        <h2
-          style={{
-            fontSize: "var(--font-xl)",
-            fontWeight: 700,
-            color: "white",
-            margin: 0,
-          }}
-        >
-          💪 Protein Awards
-        </h2>
-        <div
-          style={{
-            fontSize: "14px",
-            color: "rgba(235,235,245,0.5)",
-            marginTop: "4px",
-          }}
-        >
-          Hit your daily protein target consistently
-        </div>
-      </div>
-      <div className="awards-grid">
-        {dailyAwards.map((award) => (
-          <div
-            key={award.id}
-            className="award-cell"
-            onClick={() => setSelectedAward(award)}
-          >
-            <div
-              dangerouslySetInnerHTML={{
-                __html: renderBadge(award, 72, award.earned, false),
-              }}
-            />
-            <div
-              style={{
-                fontSize: "var(--font-xs)",
-                fontWeight: 600,
-                color: award.earned ? "white" : "rgba(235,235,245,0.5)",
-                textAlign: "center",
-                lineHeight: 1.2,
-                marginTop: "4px",
-              }}
-            >
-              {award.name}
-            </div>
-            <div
-              style={{
-                fontSize: "var(--font-xs)",
-                color: "rgba(235,235,245,0.4)",
-                textTransform: "capitalize",
-                textAlign: "center",
-              }}
-            >
-              {award.tier}
-            </div>
-            {!award.earned && (
-              <i
-                className="ti ti-lock"
-                style={{
-                  fontSize: "12px",
-                  color: "rgba(235,235,245,0.35)",
-                  marginTop: "2px",
-                }}
-              ></i>
-            )}
-          </div>
-        ))}
-      </div>
       <div style={{ height: "40px" }}></div>
 
       {/* Overlay */}
@@ -377,7 +316,6 @@ export function AwardsPage() {
                 ),
               }}
             />
-
             <div
               style={{
                 fontSize: "28px",
@@ -389,7 +327,6 @@ export function AwardsPage() {
             >
               {selectedAward.name}
             </div>
-
             <div
               style={{
                 fontSize: "15px",
@@ -424,10 +361,7 @@ export function AwardsPage() {
                     fontWeight: 600,
                   }}
                 >
-                  ✓ Earned{" "}
-                  {selectedAward.earnedDate
-                    ? `on ${new Date(selectedAward.earnedDate).toLocaleDateString()}`
-                    : ""}
+                  ✓ Earned
                 </div>
               ) : (
                 <>
