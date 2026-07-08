@@ -6,7 +6,7 @@ export function GuestRoute() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background-primary text-text-secondary text-[14px]">
+      <div className="min-h-screen w-full flex items-center justify-center bg-background-primary text-text-secondary text-[14px]">
         Loading...
       </div>
     );
