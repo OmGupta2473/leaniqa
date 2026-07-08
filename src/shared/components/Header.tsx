@@ -1,3 +1,4 @@
+import { authService } from '@/features/auth/services/authService';
 import { useAppStore } from '@/app/store';
 import { reportService } from '@/features/reports/services/reportService';
 import { calculateEarnedAwards } from '@/shared/utils/streaks';
@@ -65,7 +66,7 @@ export function Header() {
       <div className="flex items-center gap-3">
         {hasCompletedOnboarding === false && (
           <button
-            onClick={() => supabase.auth.signOut()}
+            onClick={() => authService.logout()}
             className="text-[12px] text-text-secondary hover:text-coral transition-colors"
           >
             Logout

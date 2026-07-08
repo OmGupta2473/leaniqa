@@ -51,6 +51,26 @@ export const mealService = {
     return data || [];
   },
 
+  async getMealsForDate(date: Date): Promise<DbMealLog[]> {
+    const userId = await authService.getUserId();
+    const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString();
+    const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1).toISOString();
+    
+    const { data, error } = await supabase
+      .from('meal_logs')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('meal_time', startOfDay)
+      .lt('meal_time', endOfDay)
+      .order('meal_time', { ascending: true });
+      
+    if (error) {
+      console.error('Error fetching meals for date:', error);
+      return [];
+    }
+    return data || [];
+  },
+
   async addMeal(mealData: Omit<DbMealLog, 'id' | 'user_id'>): Promise<DbMealLog | null> {
     const userId = await authService.getUserId();
     const payload = {
