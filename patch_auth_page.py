@@ -1,4 +1,9 @@
-// OAUTH SETUP REQUIRED:
+import re
+
+with open("src/features/auth/pages/AuthPage.tsx", "r") as f:
+    content = f.read()
+
+new_content = """// OAUTH SETUP REQUIRED:
 // 1. Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client ID
 // 2. Authorized JavaScript origins: http://localhost:3000 (dev) + https://leaniqa.com (prod)
 // 3. Authorized redirect URIs: https://YOUR_PROJECT.supabase.co/auth/v1/callback
@@ -253,3 +258,7 @@ export function AuthPage() {
     </div>
   );
 }
+"""
+
+with open("src/features/auth/pages/AuthPage.tsx", "w") as f:
+    f.write(new_content)
