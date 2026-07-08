@@ -49,7 +49,7 @@ export const profileService = {
       if (error) {
         throw new AppError({
           code: ErrorCodes.INTERNAL_SERVER_ERROR,
-          message: 'Failed to update profile',
+          message: `Failed to update profile: ${error.message} (code: ${error.code})`,
           retryable: true,
           status: 500,
           details: error,
@@ -82,17 +82,47 @@ export const profileService = {
         email: realEmail,
       };
       
+      console.log('Attempting profile upsert for user_id:', userId, 'Payload:', payload);
 
-      const { data, error } = await supabase
+      // Check if profile exists first
+      const { data: existingProfile, error: fetchError } = await supabase
         .from('profiles')
-        .upsert(payload, { onConflict: 'id' })
-        .select()
+        .select('id')
+        .eq('id', userId)
         .maybeSingle();
+
+      console.log('Existing profile check:', existingProfile, 'Error:', fetchError);
+
+      let data, error;
+
+      if (existingProfile) {
+        console.log('Profile exists, performing update');
+        const updateRes = await supabase
+          .from('profiles')
+          .update(profileData)
+          .eq('id', userId)
+          .select()
+          .maybeSingle();
+        data = updateRes.data;
+        error = updateRes.error;
+      } else {
+        console.log('Profile does not exist, performing insert');
+        const insertRes = await supabase
+          .from('profiles')
+          .insert(payload)
+          .select()
+          .maybeSingle();
+        data = insertRes.data;
+        error = insertRes.error;
+      }
+
+      console.log('Upsert result:', data, 'Error:', error);
         
       if (error && error.code !== 'PGRST116') {
+        console.error('upsertProfile error:', error);
         throw new AppError({
           code: ErrorCodes.INTERNAL_SERVER_ERROR,
-          message: 'Failed to upsert profile',
+          message: `Failed to upsert profile: ${error.message} (code: ${error.code})`,
           retryable: true,
           status: 500,
           details: error,
@@ -151,16 +181,46 @@ export const profileService = {
         user_id: userId,
       };
 
-      const { data, error } = await supabase
+      console.log('Attempting goal upsert for user_id:', userId, 'Payload:', payload);
+
+      const { data: existingGoal, error: fetchError } = await supabase
         .from('goals')
-        .upsert(payload, { onConflict: 'user_id' })
-        .select()
+        .select('id')
+        .eq('user_id', userId)
         .maybeSingle();
         
+      console.log('Existing goal check:', existingGoal, 'Error:', fetchError);
+
+      let data, error;
+
+      if (existingGoal) {
+        console.log('Goal exists, performing update');
+        const updateRes = await supabase
+          .from('goals')
+          .update(goalData)
+          .eq('user_id', userId)
+          .select()
+          .maybeSingle();
+        data = updateRes.data;
+        error = updateRes.error;
+      } else {
+        console.log('Goal does not exist, performing insert');
+        const insertRes = await supabase
+          .from('goals')
+          .insert(payload)
+          .select()
+          .maybeSingle();
+        data = insertRes.data;
+        error = insertRes.error;
+      }
+
+      console.log('Upsert goal result:', data, 'Error:', error);
+        
       if (error && error.code !== 'PGRST116') {
+        console.error('upsertGoal error:', error);
         throw new AppError({
           code: ErrorCodes.INTERNAL_SERVER_ERROR,
-          message: 'Failed to upsert goal',
+          message: `Failed to upsert goal: ${error.message} (code: ${error.code})`,
           retryable: true,
           status: 500,
           details: error,
