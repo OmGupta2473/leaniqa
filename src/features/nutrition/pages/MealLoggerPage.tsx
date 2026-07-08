@@ -76,7 +76,7 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
                 <span className="text-[10px] bg-[rgba(55,138,221,0.12)] text-[#378ADD] px-[6px] py-[2px] rounded-full font-semibold">{m.protein}g</span>
                 {m.id && !m.id.toString().startsWith('opt-') && (
                    <button onClick={() => {
-                      if (window.confirm("Delete Meal?\nThis action cannot be undone.")) {
+                      if (window.confirm("Delete Meal? This action cannot be undone.")) {
                          onDelete(m.id);
                       }
                    }} className="w-[20px] h-[20px] rounded-full bg-[rgba(255,255,255,0.08)] flex items-center justify-center text-[rgba(235,235,245,0.6)] hover:bg-[rgba(255,77,28,0.2)] hover:text-[#FF4D1C] transition-colors ml-1">
@@ -249,7 +249,7 @@ export function MealLoggerPage() {
         queryClient.invalidateQueries({ queryKey: ["meals", "date", dateKeyStr] }),
         ...(isToday(selectedDate) ? [queryClient.invalidateQueries({ queryKey: ["meals", "today"] })] : []),
         queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] }),
-        complianceService.updateTodayScore().then(() => {
+        complianceService.recalculateDayScore(selectedDate.getFullYear() + '-' + String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + String(selectedDate.getDate()).padStart(2, '0')).then(() => {
           console.log('Updated Dashboard & Progress Rings');
           return Promise.all([
             queryClient.invalidateQueries({ queryKey: ["complianceScore"] }),
@@ -448,7 +448,7 @@ export function MealLoggerPage() {
         queryClient.invalidateQueries({ queryKey: ["meals", "date", dateKeyStr] }),
         ...(isToday(selectedDate) ? [queryClient.invalidateQueries({ queryKey: ["meals", "today"] })] : []),
         queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] }),
-        complianceService.updateTodayScore().then(() => 
+        complianceService.recalculateDayScore(selectedDate.getFullYear() + '-' + String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + String(selectedDate.getDate()).padStart(2, '0')).then(() => 
           Promise.all([
             queryClient.invalidateQueries({ queryKey: ["complianceScore"] }),
             queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] })

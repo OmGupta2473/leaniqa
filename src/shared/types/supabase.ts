@@ -82,3 +82,17 @@ export interface DbSubscription {
   beta_expires_at?: string;
   created_at?: string;
 }
+
+export interface DbUserStreak {
+  user_id: string;
+  current_streak: number;
+  highest_streak: number;
+  updated_at?: string;
+}
+
+export interface DbUserAward {
+  id?: string;
+  user_id: string;
+  award_id: string;
+  unlocked_at?: string;
+}

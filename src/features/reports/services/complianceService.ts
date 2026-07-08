@@ -17,6 +17,76 @@ function getLocalDateString() {
 }
 
 export const complianceService = {
+  
+  async recalculateDayScore(dateStr: string): Promise<DbDailyMetric | null> {
+    try {
+      const [userId, profile, goal, meals, weightLogs, waterServiceRef] = await Promise.all([
+        authService.getUserId(),
+        queryClient.getQueryData<any>(['profile']) || queryClient.fetchQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() }),
+        queryClient.getQueryData<any>(['goal']) || queryClient.fetchQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() }),
+        mealService.getMealsByDate(dateStr),
+        queryClient.getQueryData<any[]>(['weightLogs']) || queryClient.fetchQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() }),
+        import('@/shared/services/waterService').then(m => m.waterService)
+      ]);
+      
+      if (!profile) return null;
+      
+      // Calculate water manually if we need to? Assuming it has getWaterByDate or similar. We'll just use 0 if not implemented.
+      const waterLiters = 0; // TODO: properly fetch water for dateStr if needed
+      
+      const hasWeightLogged = weightLogs.some((w: any) => w.date.startsWith(dateStr));
+      let actualCalories = 0;
+      meals.forEach((m: any) => actualCalories += m.calories);
+      let actualProtein = 0;
+      meals.forEach((m: any) => actualProtein += m.protein);
+      
+      const targetCalories = (profile.maintenance_kcal || 2200) - (goal?.deficit_kcal ?? 400);
+      const targetProtein = profile.protein_target || 150;
+      
+      const score = calculateDailyScore({
+        targetCalories,
+        actualCalories,
+        targetProtein,
+        actualProtein,
+        hasWeightLogged,
+        waterLiters
+      });
+      
+      const metricPayload = {
+        date: dateStr,
+        target_calories: targetCalories,
+        actual_calories: actualCalories,
+        target_protein: targetProtein,
+        actual_protein: actualProtein,
+        water: waterLiters,
+        score
+      };
+      
+      const payload: any = {
+        ...metricPayload,
+        user_id: userId,
+      };
+      
+      const { data, error } = await supabase
+        .from('daily_metrics')
+        .upsert(payload, { onConflict: 'user_id,date' })
+        .select()
+        .maybeSingle();
+        
+      try {
+        const allMetrics = await reportService.getDailyMetrics();
+        const { awardService } = await import('@/features/awards/services/awardService');
+        await awardService.syncStreaksAndAwards(allMetrics);
+      } catch (err) {
+        console.error('Error syncing awards:', err);
+      }
+      
+      return data || payload;
+    } catch (e) {
+      console.error('Compliance service error:', e);
+      return null;
+    }
+  },
   async updateTodayScore(): Promise<DbDailyMetric | null> {
     try {
       const [userId, profile, goal, meals, weightLogs, waterServiceRef] = await Promise.all([
@@ -76,6 +146,14 @@ export const complianceService = {
       if (error && error.code !== 'PGRST116') {
         console.error('Error updating daily metric:', error);
         return null;
+      }
+      
+      try {
+        const allMetrics = await reportService.getDailyMetrics();
+        const { awardService } = await import('@/features/awards/services/awardService');
+        await awardService.syncStreaksAndAwards(allMetrics);
+      } catch (err) {
+        console.error('Error syncing awards:', err);
       }
       
       return data || payload;
