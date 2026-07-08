@@ -1,10 +1,42 @@
-import { useEffect, useState } from 'react';
-import { Session } from '@supabase/supabase-js';
+import re
+
+with open("src/router/useAuthSession.ts", "r") as f:
+    content = f.read()
+
+old_auth = """import { useEffect, useState } from 'react';
 import { supabase } from '@/shared/utils/supabase';
+import { Session } from '@supabase/supabase-js';
 
 export function useAuthSession() {
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setIsLoading(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  return { session, isLoading };
+}"""
+
+new_auth = """import { useEffect, useState } from 'react';
+import { supabase } from '@/shared/utils/supabase';
+import { Session } from '@supabase/supabase-js';
+
+export function useAuthSession() {
+  const [session, setSession] = useState<Session | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -42,7 +74,7 @@ export function useAuthSession() {
         }
       } finally {
         if (mounted) {
-          setLoading(false);
+          setIsLoading(false);
         }
       }
     };
@@ -53,7 +85,8 @@ export function useAuthSession() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       if (newSession && _event === 'SIGNED_IN') {
-         // Verify on sign in as well
+         // Optionally verify on sign in as well, though usually not needed if coming from the provider
+         // But for robust checks:
          const { data: { user } } = await supabase.auth.getUser();
          if (!user) {
             await supabase.auth.signOut();
@@ -63,7 +96,7 @@ export function useAuthSession() {
       }
       if (mounted) {
         setSession(newSession);
-        setLoading(false);
+        setIsLoading(false);
       }
     });
 
@@ -73,5 +106,11 @@ export function useAuthSession() {
     };
   }, []);
 
-  return { session, loading };
-}
+  return { session, isLoading };
+}"""
+
+content = content.replace(old_auth, new_auth)
+
+with open("src/router/useAuthSession.ts", "w") as f:
+    f.write(content)
+
