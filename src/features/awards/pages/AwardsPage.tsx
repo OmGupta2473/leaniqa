@@ -172,6 +172,13 @@ export function AwardsPage() {
       </div>
 
       {/* Streaks Summary */}
+      {todayMet && (
+        <div style={{ padding: '0 20px', marginBottom: '16px', textAlign: 'center' }}>
+           <div style={{ display: 'inline-block', background: 'rgba(212,255,0,0.1)', border: '1px solid rgba(212,255,0,0.2)', padding: '6px 12px', borderRadius: '100px', fontSize: '11px', fontWeight: 600, color: '#D4FF00' }}>
+             ⏳ Today's streak is in progress. It will be finalized at the end of the day.
+           </div>
+        </div>
+      )}
       <div className="streaks-bar glass-card">
         <div className="text-center py-[14px]">
           <div
