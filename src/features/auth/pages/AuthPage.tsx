@@ -98,7 +98,7 @@ export function AuthPage() {
         <div className="hidden lg:block absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-[#D4FF00]/5 blur-[120px] pointer-events-none" />
         
         {/* Header / Logo */}
-        <div className="flex flex-col lg:flex-row items-center gap-4 lg:gap-3 mt-4 sm:mt-6 lg:mt-0 z-10 w-full lg:w-auto lg:self-start">
+        <div className="flex flex-col lg:flex-row items-center gap-4 lg:gap-3 mt-4 sm:mt-6 lg:mt-0 lg:absolute lg:top-12 lg:left-12 xl:top-16 xl:left-16 z-10 w-full lg:w-auto">
            <div className="w-16 h-16 lg:w-12 lg:h-12 rounded-[18px] lg:rounded-xl bg-[#D4FF00]/10 flex items-center justify-center border border-[#D4FF00]/20 shadow-[0_0_30px_rgba(212,255,0,0.15)] lg:shadow-none">
               <DumbbellIcon className="w-8 h-8 lg:w-6 lg:h-6 text-[#D4FF00]" />
            </div>
@@ -111,7 +111,7 @@ export function AuthPage() {
         </p>
         
         {/* Desktop Hero Content */}
-        <div className="hidden lg:flex flex-col justify-center flex-1 z-10 w-full max-w-[500px] lg:self-center py-10">
+        <div className="hidden lg:flex flex-col justify-center flex-1 z-10 w-full max-w-[500px] lg:self-center py-10 mt-20 lg:mt-0 pt-20 lg:pt-32 pb-10">
            <h2 className="text-[clamp(36px,4vw,56px)] font-bold tracking-tight leading-[1.1] text-white mb-6 xl:mb-8">
               Your AI Body <br/><span className="text-[#D4FF00]">Transformation Coach</span>
            </h2>
@@ -163,9 +163,9 @@ export function AuthPage() {
               </button>
               
               <button 
-                 onClick={() => handleOAuthLogin('apple')}
+                 onClick={() => window.alert('This feature is currently unavailable.')}
                  disabled={loading}
-                 className="w-full h-[56px] lg:h-[60px] flex items-center justify-center gap-3 bg-[#1C1C1E] hover:bg-[#2C2C2E] active:scale-[0.98] transition-all border border-white/5 rounded-[16px] text-white text-[16px] font-bold tracking-tight disabled:opacity-50"
+                 className="w-full h-[56px] lg:h-[60px] flex items-center justify-center gap-3 bg-[#1C1C1E] hover:bg-[#2C2C2E] active:scale-[0.98] transition-all border border-white/5 rounded-[16px] text-white text-[16px] font-bold tracking-tight disabled:opacity-50 opacity-50 cursor-not-allowed"
               >
                  <Apple className="w-[24px] h-[24px]" fill="currentColor" strokeWidth={0} /> Continue with Apple
               </button>
