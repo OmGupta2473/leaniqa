@@ -20,7 +20,9 @@ export const awardService = {
       );
     
     if (streakError) {
-      console.error('Error syncing user_streaks:', streakError);
+      if (!streakError.message?.includes('404') && streakError.code !== 'PGRST116' && !streakError.code?.startsWith('PGRST20')) {
+        console.error('Error syncing user_streaks:', streakError);
+      }
     }
 
     // Determine newly unlocked awards
@@ -48,7 +50,9 @@ export const awardService = {
         .insert(awardsToInsert);
         
       if (awardsError) {
-        console.error('Error inserting user_awards:', awardsError);
+        if (!awardsError.message?.includes('404') && awardsError.code !== 'PGRST116' && !awardsError.code?.startsWith('PGRST20')) {
+          console.error('Error inserting user_awards:', awardsError);
+        }
       }
     }
   },
