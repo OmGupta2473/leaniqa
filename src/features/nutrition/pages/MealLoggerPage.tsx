@@ -286,9 +286,9 @@ export function MealLoggerPage() {
         const cachedResult = lookupCachedMeal(text);
         if (cachedResult && cachedResult.confidence >= 90) {
           console.log("Nutrition Source Used: Cache");
-          console.log("Parsed Food Name:", cachedResult.baseFood);
-          console.log("Parsed Quantity:", cachedResult.parsedQuantity);
-          console.log("Parsed Unit:", cachedResult.parsedUnit);
+          console.log("Parsed Food Name:", text);
+          
+          
           console.log("Nutrition Values Returned:", cachedResult);
           try {
              await mealService.addMeal({ meal_text: text, calories: cachedResult.scaledCalories, protein: cachedResult.scaledProtein, fat: cachedResult.scaledFat, carbs: cachedResult.scaledCarbs, meal_time: getMealTime().toISOString(), tip: text, meal_slot: selectedMealSlot || undefined });
