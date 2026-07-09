@@ -24,6 +24,7 @@ const AwardsPage = lazy(() => import('@/features/awards/pages/AwardsPage').then(
 const AuthPage = lazy(() => import('@/features/auth/pages/AuthPage').then(module => ({ default: module.AuthPage })));
 const OnboardingPage = lazy(() => import('@/features/onboarding/pages/OnboardingPage').then(module => ({ default: module.OnboardingPage })));
 const GoalSetterPage = lazy(() => import('@/features/goal/pages/GoalSetterPage').then(module => ({ default: module.GoalSetterPage })));
+const LandingPage = lazy(() => import('@/features/landing/pages/LandingPage').then(module => ({ default: module.LandingPage })));
 const NotFoundPage = lazy(() => import('@/shared/components/NotFoundPage').then(module => ({ default: module.NotFoundPage })));
 
 function RootLayout() {
@@ -45,7 +46,14 @@ export const routes: RouteObject[] = [
     children: [
       {
         path: '/',
-        element: <RootRedirect />
+        element: <GuestRoute />,
+        children: [
+          {
+            index: true,
+            element: <Suspense fallback={<ScreenSkeleton />}><LandingPage /></Suspense>,
+            handle: { title: 'LeanIQA - AI Body Transformation Coach' }
+          }
+        ]
       },
       {
         path: '/login',
