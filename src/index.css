@@ -112,7 +112,6 @@ body {
   overflow: hidden;
   position: relative;
 }
-
 /* ── Scrollable area inside content ── */
 .app-scroll {
   flex: 1;
@@ -120,6 +119,8 @@ body {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
+  /* Add padding to the bottom so content clears the floating nav */
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 120px); 
 }
 
 /* Content is centered and constrained on large screens */
@@ -130,17 +131,33 @@ body {
     margin-right: auto;
   }
 }
-
-/* ── Bottom nav: visible only on mobile ── */
 .app-bottom-nav {
-  display: flex; /* visible on mobile */
-  flex-shrink: 0;
-  border-top: 0.5px solid rgba(255,255,255,0.08);
-  background: rgba(14,14,16,0.97);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  z-index: 20;
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 12px) + 20px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 420px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  
+  /* Apple-style Glassmorphism */
+  background: rgba(28, 28, 30, 0.65);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 0.5px solid rgba(255, 255, 255, 0.15);
+  border-radius: 100px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  padding: 0 12px;
+}
+
+@media (min-width: 768px) {
+  .app-bottom-nav {
+    display: none; /* hidden on tablet+ */
+  }
 }
 
 @media (min-width: 768px) {

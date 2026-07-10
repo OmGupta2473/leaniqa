@@ -10,24 +10,29 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   return (
-    <div className="app-shell">
+    <div className="app-shell relative">
       {/* ── Desktop/tablet sidebar ── */}
       <aside className="app-sidebar">
         <Sidebar />
       </aside>
 
       {/* ── Main content ── */}
-      <main className="app-content">
+      <main className="app-content relative min-h-screen">
         <Header />
         
-        {children || (
-          <div className="app-scroll">
+        {/* Added bottom padding (pb-32) to ensure content clears the floating nav */}
+        {children ? (
+          <div className="pb-32">
+            {children}
+          </div>
+        ) : (
+          <div className="app-scroll pb-32">
             <Outlet />
           </div>
         )}
 
         {/* ── Mobile bottom nav ── */}
-        <nav className="app-bottom-nav">
+        <nav className="md:hidden">
           <BottomNav />
         </nav>
       </main>
