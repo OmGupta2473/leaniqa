@@ -24,19 +24,8 @@ const AwardsPage = lazy(() => import('@/features/awards/pages/AwardsPage').then(
 const AuthPage = lazy(() => import('@/features/auth/pages/AuthPage').then(module => ({ default: module.AuthPage })));
 const OnboardingPage = lazy(() => import('@/features/onboarding/pages/OnboardingPage').then(module => ({ default: module.OnboardingPage })));
 const GoalSetterPage = lazy(() => import('@/features/goal/pages/GoalSetterPage').then(module => ({ default: module.GoalSetterPage })));
-const LandingPage = lazy(() => import('@/features/landing').then(module => ({ default: module.LandingPage })));
+const LandingPage = lazy(() => import('@/LandingPage').then(module => ({ default: module.LandingPage })));
 const NotFoundPage = lazy(() => import('@/shared/components/NotFoundPage').then(module => ({ default: module.NotFoundPage })));
-
-import { useNavigate } from 'react-router-dom';
-
-function LandingPageWrapper() {
-  const navigate = useNavigate();
-  return (
-    <Suspense fallback={<ScreenSkeleton />}>
-      <LandingPage onGetStarted={() => navigate('/login')} />
-    </Suspense>
-  );
-}
 
 function RootLayout() {
   return (
@@ -61,7 +50,7 @@ export const routes: RouteObject[] = [
         children: [
           {
             index: true,
-            element: <LandingPageWrapper />,
+            element: <Suspense fallback={<ScreenSkeleton />}><LandingPage /></Suspense>,
             handle: { title: 'LeanIQA - AI Body Transformation Coach' }
           }
         ]

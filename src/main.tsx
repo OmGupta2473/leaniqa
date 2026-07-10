@@ -3,7 +3,6 @@ import App from './app/App.tsx';
 import { AppProvider } from './app/providers/AppProvider';
 import './index.css';
 
-
 // One-time branding migration for localStorage keys
 const migrateLocalStorage = () => {
   const migrations: Record<string, string> = {
