@@ -14,6 +14,7 @@ import { profileService } from "@/features/profile/services/profileService";
 import { complianceService } from "@/features/reports/services/complianceService";
 import { supabase } from "@/shared/utils/supabase";
 import { motion, AnimatePresence } from "motion/react";
+import { useVisualViewport } from "@/shared/hooks/useVisualViewport";
 import { lookupCachedMeal } from '../constants/data';
 
 const getDeterministicFallback = (text: string) => {
@@ -115,6 +116,7 @@ export function MealLoggerPage() {
   const setAiStatus = useNutritionStore(s => s.setAiStatus);
   const queryClient = useQueryClient();
   const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => profileService.getProfile() });
+  const keyboardOffset = useVisualViewport();
 
   useEffect(() => {
     if (profile?.id) {
@@ -638,7 +640,7 @@ export function MealLoggerPage() {
                 WebkitBackdropFilter: 'blur(12px)',
                 borderRadius: '20px 20px 0 0',
                 borderTop: '0.5px solid rgba(255,255,255,0.12)',
-                paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)',
+                paddingBottom: `calc(env(safe-area-inset-bottom) + 16px + ${keyboardOffset}px)`,
                 maxHeight: '88dvh',
                 display: 'flex',
                 flexDirection: 'column',
@@ -728,14 +730,19 @@ export function MealLoggerPage() {
               {/* Input row */}
               <div style={{ display: 'flex', gap: '10px', padding: '12px 20px 0', alignItems: 'center' }}>
                 <input
-                  style={{ flex: 1, background: 'rgba(255,255,255,0.07)', border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: '100px', padding: '12px 16px', color: 'white', fontSize: '15px', outline: 'none' }}
+                  style={{ flex: 1, background: 'rgba(255,255,255,0.07)', border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: '100px', padding: '12px 16px', color: 'white', fontSize: '16px', outline: 'none' }}
                   type="text"
                   placeholder={selectedMealSlot ? "e.g. 2 boiled eggs and chai" : "Select breakfast / lunch / dinner"}
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSend()}
+                  onFocus={(e) => {
+                    const target = e.target;
+                    setTimeout(() => {
+                      target.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    }, 300);
+                  }}
                   disabled={loading || !selectedMealSlot}
-                  autoFocus
                 />
                 <button
                   onClick={handleSend}
