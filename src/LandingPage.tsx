@@ -41,24 +41,35 @@ function Reveal({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: 0.5, delay }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{
+        duration: 0.55,
+        delay,
+        ease: [0.22, 1, 0.36, 1],
+      }}
     >
       {children}
     </motion.div>
   );
 }
 
-function GridCard({ feature, delay }: { feature: any; delay: number; key?: React.Key }) {
+function GridCard({
+  feature,
+  delay,
+}: {
+  feature: any;
+  delay: number;
+  key?: React.Key;
+}) {
   const cardRef = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
-  const mouseXSpring = useSpring(x, { stiffness: 300, damping: 20 });
-  const mouseYSpring = useSpring(y, { stiffness: 300, damping: 20 });
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["10deg", "-10deg"]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-10deg", "10deg"]);
+  const mouseXSpring = useSpring(x, { stiffness: 180, damping: 28 });
+  const mouseYSpring = useSpring(y, { stiffness: 180, damping: 28 });
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["8deg", "-8deg"]);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-8deg", "8deg"]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
@@ -73,15 +84,25 @@ function GridCard({ feature, delay }: { feature: any; delay: number; key?: React
       ref={cardRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: 0.5, delay }}
-      style={{ transformStyle: "preserve-3d", rotateX, rotateY }}
-      className="bg-[#111112] border border-zinc-800/50 p-6 sm:p-8 flex flex-col hover:border-zinc-700 transition-colors min-h-[200px]"
+      whileHover={{ borderColor: "rgba(63,63,70,0.9)" }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] }}
+      style={{
+        transformStyle: "preserve-3d",
+        rotateX,
+        rotateY,
+        willChange: "transform",
+      }}
+      className="bg-[#111112] border border-zinc-800/50 p-6 sm:p-8 flex flex-col min-h-[200px] cursor-default"
     >
       <div className="flex justify-between items-start mb-10 sm:mb-16">
-        <span style={{ transform: "translateZ(20px)" }} className="text-zinc-500 font-mono text-xs uppercase tracking-wider">
+        <span
+          style={{ transform: "translateZ(20px)" }}
+          className="text-zinc-500 font-mono text-xs uppercase tracking-wider"
+        >
           {feature.subsystem}
         </span>
         <div style={{ transform: "translateZ(40px)" }} className="text-[#D4FF00]">
@@ -89,10 +110,16 @@ function GridCard({ feature, delay }: { feature: any; delay: number; key?: React
         </div>
       </div>
       <div className="mt-auto">
-        <h3 style={{ transform: "translateZ(30px)" }} className="text-lg font-medium mb-3 text-zinc-100">
+        <h3
+          style={{ transform: "translateZ(30px)" }}
+          className="text-lg font-medium mb-3 text-zinc-100"
+        >
           {feature.title}
         </h3>
-        <p style={{ transform: "translateZ(20px)" }} className="text-zinc-400 text-sm leading-relaxed">
+        <p
+          style={{ transform: "translateZ(20px)" }}
+          className="text-zinc-400 text-sm leading-relaxed"
+        >
           {feature.desc}
         </p>
       </div>
@@ -224,8 +251,9 @@ function DashboardScreen() {
                <circle cx="50%" cy="50%" r="42%" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8%" />
                <motion.circle 
                  initial={{ pathLength: 0 }}
-                 animate={{ pathLength: 0.15 }}
-                 transition={{ duration: 1.5, ease: "easeOut" }}
+                 whileInView={{ pathLength: 0.15 }}
+                 viewport={{ once: true }}
+                 transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
                  cx="50%" cy="50%" r="42%" fill="none" stroke="#D4FF00" strokeWidth="8%" strokeLinecap="round"
                />
              </svg>
@@ -249,8 +277,9 @@ function DashboardScreen() {
                       className="h-full rounded-full" 
                       style={{ backgroundColor: m.col }}
                       initial={{ width: "0%" }}
-                      animate={{ width: m.pct }}
-                      transition={{ duration: 1, delay: i * 0.1 }}
+                      whileInView={{ width: m.pct }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.9, delay: i * 0.08, ease: [0.22, 1, 0.36, 1] }}
                     />
                  </div>
                </div>
@@ -311,16 +340,18 @@ function TimelineScreen() {
               stroke="#D4FF00" 
               strokeWidth="3"
               initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 1.5, ease: "easeInOut" }}
+              whileInView={{ pathLength: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
             />
           </svg>
           <motion.div 
             className="absolute bg-[#D4FF00] rounded-full border-2 border-[#1C1C1E] shadow-[0_0_15px_#D4FF00]"
             style={{ width: "8%", aspectRatio: "1", right: "0%", bottom: "10%", x: "50%", y: "50%" }}
             initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 1.2, duration: 0.6, ease: "easeOut" }}
+            whileInView={{ scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 1.2, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
           />
        </div>
     </div>
@@ -587,6 +618,12 @@ function StickyScrollFeatures() {
 ───────────────────────────────────────────── */
 export function LandingPage() {
   const navigate = useNavigate();
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
   
   const handleEnterApp = () => {
     navigate('/login');
@@ -604,22 +641,33 @@ export function LandingPage() {
       />
 
       {/* ── Navbar ── */}
-      <nav className="fixed top-0 w-full z-50 border-b border-zinc-800/50 bg-[#0A0A0B]/90 backdrop-blur-md">
+      <motion.nav
+        className="fixed top-0 w-full z-50 backdrop-blur-md"
+        animate={{
+          backgroundColor: scrolled ? "rgba(10,10,11,0.95)" : "rgba(10,10,11,0)",
+          borderBottomColor: scrolled ? "rgba(39,39,42,0.6)" : "rgba(39,39,42,0)",
+          borderBottomWidth: "1px",
+          borderBottomStyle: "solid",
+        }}
+        transition={{ duration: 0.25, ease: "easeOut" }}
+      >
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-6 h-6 bg-[#D4FF00] rounded-sm flex items-center justify-center">
-               <span className="text-black text-xs font-bold">L</span>
+              <span className="text-black text-xs font-bold">L</span>
             </div>
             <span className="font-semibold tracking-tight text-lg">LeanIQA</span>
           </div>
-          <button
+          <motion.button
             onClick={handleEnterApp}
-            className="text-sm font-medium text-zinc-400 hover:text-zinc-100 transition-colors"
+            whileHover={{ color: "#f4f4f5" }}
+            transition={{ duration: 0.15 }}
+            className="text-sm font-medium text-zinc-400"
           >
             Sign In
-          </button>
+          </motion.button>
         </div>
-      </nav>
+      </motion.nav>
 
       {/* ── Hero ── */}
       <section className="pt-28 sm:pt-32 lg:pt-40 pb-16 sm:pb-24 px-6 relative z-10">
@@ -653,14 +701,32 @@ export function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
+              className="flex flex-col sm:flex-row items-center gap-4"
             >
-              <button
+              {/* Primary CTA */}
+              <motion.button
                 onClick={handleEnterApp}
-                className="bg-[#D4FF00] text-black w-full sm:w-auto px-6 sm:px-8 py-4 font-semibold hover:bg-white transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm uppercase tracking-wide rounded-full"
+                whileHover={{ scale: 1.03, backgroundColor: "#ffffff" }}
+                whileTap={{ scale: 0.97 }}
+                transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                className="bg-[#D4FF00] text-black w-full sm:w-auto px-6 sm:px-8 py-4 font-semibold flex items-center justify-center gap-2 text-xs sm:text-sm uppercase tracking-wide rounded-full"
+                style={{ willChange: "transform" }}
               >
                 Start Your Journey
                 <ArrowRight className="w-4 h-4 flex-shrink-0" />
-              </button>
+              </motion.button>
+
+              {/* Secondary CTA */}
+              <motion.button
+                onClick={handleEnterApp}
+                whileHover={{ scale: 1.03, borderColor: "rgba(161,161,170,0.8)" }}
+                whileTap={{ scale: 0.97 }}
+                transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                className="border border-zinc-700 text-zinc-300 w-full sm:w-auto px-6 sm:px-8 py-4 font-medium text-xs sm:text-sm uppercase tracking-wide rounded-full"
+                style={{ willChange: "transform" }}
+              >
+                See How It Works
+              </motion.button>
             </motion.div>
           </div>
         </div>
@@ -715,16 +781,21 @@ export function LandingPage() {
               { name: "Pro",  price: "₹499",   sub: "per month", accent: LIME,     features: ["Unlimited AI Meal Logging","Adaptive Calorie & Macro Targets","Consistency Engine & Analytics","Physique Prediction Timeline","Priority Support"], missing: [], badge: "Most Popular", delay: 0.1 },
             ].map((p, i) => (
               <Reveal key={i} delay={p.delay}>
-                <div
+                <motion.div
+                  whileHover={{ y: -5 }}
+                  whileTap={{ scale: 0.99 }}
+                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
                   style={{
                     background: p.badge ? "rgba(212,255,0,0.04)" : "rgba(255,255,255,0.02)",
                     border: p.badge ? `2px solid ${LIME}40` : "1px solid rgba(255,255,255,0.07)",
-                    borderRadius: 24, padding: "32px 24px",
+                    borderRadius: 24,
+                    padding: "32px 24px",
                     boxShadow: p.badge ? `0 0 60px ${LIME}10` : "none",
-                    transition: "transform 0.2s", position: "relative", overflow: "hidden", height: "100%",
+                    position: "relative",
+                    overflow: "hidden",
+                    height: "100%",
+                    willChange: "transform",
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.transform = "translateY(-4px)")}
-                  onMouseLeave={e => (e.currentTarget.style.transform = "translateY(0)")}
                 >
                   {p.badge && (
                     <div style={{ position: "absolute", top: 0, right: 0, background: LIME, color: "#020817", fontSize: 10, fontWeight: 800, padding: "6px 16px", borderRadius: "0 22px 0 16px", letterSpacing: 1, textTransform: "uppercase" }}>
@@ -762,7 +833,7 @@ export function LandingPage() {
                   >
                     {p.price === "Free" ? "Get started free" : "Start free trial"}
                   </button>
-                </div>
+                </motion.div>
               </Reveal>
             ))}
           </div>
@@ -782,12 +853,16 @@ export function LandingPage() {
           <p className="text-[#D4FF00] mb-10 text-lg sm:text-xl font-medium">
             LeanIQA helps you do both.
           </p>
-          <button
+          <motion.button
             onClick={handleEnterApp}
-            className="bg-white text-black px-8 py-4 font-semibold hover:bg-[#D4FF00] transition-all inline-flex items-center gap-2 text-sm uppercase tracking-wide rounded-full hover:scale-105 active:scale-95 shadow-[0_0_40px_rgba(255,255,255,0.1)]"
+            whileHover={{ scale: 1.04, backgroundColor: "#D4FF00" }}
+            whileTap={{ scale: 0.96 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            className="bg-white text-black px-8 py-4 font-semibold inline-flex items-center gap-2 text-sm uppercase tracking-wide rounded-full shadow-[0_0_40px_rgba(255,255,255,0.1)]"
+            style={{ willChange: "transform" }}
           >
             Start Your Journey <ArrowRight className="w-4 h-4" />
-          </button>
+          </motion.button>
         </div>
       </section>
 
