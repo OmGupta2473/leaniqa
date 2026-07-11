@@ -37,14 +37,14 @@ export function AppLayout({ children }: AppLayoutProps) {
               paddingBottom: isKeyboardOpen ? `${Math.max(keyboardOffset, 100)}px` : 'calc(100px + env(safe-area-inset-bottom))' 
             }}
           >
-            <div className="h-full w-full">
+            <div className="flex flex-col min-h-full w-full">
               <Outlet />
             </div>
           </div>
         )}
 
         {/* ── Mobile bottom nav ── */}
-        {!isKeyboardOpen && (
+        {!isKeyboardOpen && location.pathname !== '/onboarding' && (
           <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50">
             <BottomNav />
           </nav>
