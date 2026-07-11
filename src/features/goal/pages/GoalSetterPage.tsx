@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useUserStore } from '@/features/profile/store/userStore';
 import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
 import { useAppStore } from '@/app/store';
@@ -8,6 +8,35 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileService } from '@/features/profile/services/profileService';
 import { complianceService } from '@/features/reports/services/complianceService';
 import { CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { pageVariants, itemVariants, hover, tap } from '@/features/reports/components/motion';
+
+function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: number }) {
+  const [displayValue, setDisplayValue] = useState(0);
+  const elementRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    let start: number | null = null;
+    let animationFrameId: number;
+
+    const update = (time: number) => {
+      if (!start) start = time;
+      const elapsed = time - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const ease = 1 - Math.pow(1 - progress, 4); 
+      setDisplayValue(Math.round(ease * value));
+
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(update);
+      }
+    };
+
+    animationFrameId = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [value, duration]);
+
+  return <span ref={elementRef}>{displayValue}</span>;
+}
 
 const bodyFatOptions = [
   { range: 'Under 5%', label: 'Essential fat', desc: 'Extremely lean, visible striations, competition level', mid: 2.5 },
@@ -18,14 +47,6 @@ const bodyFatOptions = [
   { range: '30–40%', label: 'Above average', desc: 'Noticeable belly, rounder build, low energy common', mid: 35 },
   { range: 'Above 40%', label: 'High body fat', desc: 'Significant fat storage across the whole body', mid: 45 }
 ];
-
-const Silhouette = ({ active }: { active: boolean }) => (
-  <div className={cn("flex justify-center items-center py-2 mb-2 opacity-80", active ? "text-[#D4FF00]" : "text-[#EBEBF599]")}>
-    <svg width="40" height="60" viewBox="0 0 24 36" fill="currentColor">
-      <path d="M12,2 C10.3431458,2 9,3.34314575 9,5 C9,6.65685425 10.3431458,8 12,8 C13.6568542,8 15,6.65685425 15,5 C15,3.34314575 13.6568542,2 12,2 Z M8,9 C6.34314575,9 5,10.3431458 5,12 L5,20 C5,21.1045695 5.8954305,22 7,22 L7,34 C7,35.1045695 7.8954305,36 9,36 L11,36 C11.5522847,36 12,35.5522847 12,35 L12,24 L13,24 L13,35 C13,35.5522847 13.4477153,36 14,36 L16,36 C17.1045695,36 18,35.1045695 18,34 L18,22 C19.1045695,22 20,21.1045695 20,20 L20,12 C20,10.3431458 18.6568542,9 17,9 L8,9 Z" />
-    </svg>
-  </div>
-);
 
 export function GoalSetterPage() {
   const navigate = useNavigate();
@@ -83,7 +104,6 @@ export function GoalSetterPage() {
         target_date: strategyData.targetDateIso,
         target_weight: strategyData.targetWeightKg
       });
-      // Important: onboarding is implicitly completed when goal is saved
       return { strategyData, savedGoal };
     },
     onMutate: async (strategyData: any) => {
@@ -161,32 +181,32 @@ export function GoalSetterPage() {
     }
   ] : fatToLoseKg > 0 ? [
     {
-      name: 'Aggressive Cut',
+      name: 'Aggressive',
       deficit: 600,
       pros: 'Fastest route to your goal',
-      cons: 'Higher risk of muscle loss, fatigue, harder to sustain',
-      proteinNote: `Protein becomes critical — stay above ${proteinMax}g/day to protect muscle`,
-      styleClass: 'bg-[rgba(255,77,28,0.08)] border-[0.5px] border-[rgba(255,77,28,0.25)]',
-      btnClass: 'bg-[rgba(255,255,255,0.1)] text-white border-[0.5px] border-[rgba(255,255,255,0.2)] rounded-[100px] p-[14px_28px] font-semibold text-[15px]'
+      cons: 'Higher risk of muscle loss',
+      proteinNote: `Protein critical — stay above ${proteinMax}g`,
+      styleClass: 'border-[rgba(255,77,28,0.25)]',
+      activeClass: 'border-[#FF4D1C] bg-[rgba(255,77,28,0.06)] shadow-[0_0_20px_rgba(255,77,28,0.15)]',
     },
     {
       name: 'Recommended',
       deficit: 400,
       isRecommended: true,
-      pros: 'Best balance of speed and muscle retention',
-      cons: 'Requires consistency but very sustainable',
-      proteinNote: `Aim for ${proteinMid || proteinMax}g/day protein — muscle loss is minimal at this pace`,
-      styleClass: 'bg-[rgba(212,255,0,0.08)] border-[1.5px] border-[rgba(212,255,0,0.4)]',
-      btnClass: 'bg-[#D4FF00] text-[#0A0A0A] font-bold text-[17px] rounded-[100px] p-[16px_32px] border-none tracking-[-0.2px] hover:scale-[1.02] hover:opacity-[0.95] active:scale-[0.97]'
+      pros: 'Best balance of speed and retention',
+      cons: 'Requires consistency',
+      proteinNote: `Aim for ${proteinMid || proteinMax}g/day protein`,
+      styleClass: 'border-[rgba(212,255,0,0.4)]',
+      activeClass: 'border-[#D4FF00] bg-[rgba(212,255,0,0.06)] shadow-[0_0_20px_rgba(212,255,0,0.15)]',
     },
     {
-      name: 'Steady & Sustainable',
+      name: 'Slow & Steady',
       deficit: 200,
-      pros: 'Easiest to maintain, almost no muscle loss risk',
-      cons: 'Slowest — requires patience and long-term commitment',
-      proteinNote: `Protein target is ${proteinMin || proteinMax}g/day — muscle preservation is excellent`,
-      styleClass: 'bg-[rgba(55,138,221,0.08)] border-[0.5px] border-[rgba(55,138,221,0.25)]',
-      btnClass: 'bg-[rgba(255,255,255,0.1)] text-white border-[0.5px] border-[rgba(255,255,255,0.2)] rounded-[100px] p-[14px_28px] font-semibold text-[15px]'
+      pros: 'Easiest to maintain',
+      cons: 'Slowest — requires patience',
+      proteinNote: `Target is ${proteinMin || proteinMax}g/day`,
+      styleClass: 'border-[rgba(55,138,221,0.25)]',
+      activeClass: 'border-[#378ADD] bg-[rgba(55,138,221,0.06)] shadow-[0_0_20px_rgba(55,138,221,0.15)]',
     }
   ] : [];
 
@@ -197,17 +217,21 @@ export function GoalSetterPage() {
     
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() + weeks * 7);
-    const dateStr = s.deficit > 0 ? targetDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Ongoing';
+    const dateStr = s.deficit > 0 ? targetDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Ongoing';
     const targetDateIso = targetDate.toISOString().split('T')[0];
 
-    return {
-      ...s,
-      dailyTarget,
-      weeks,
-      dateStr,
-      targetDateIso
-    };
+    return { ...s, dailyTarget, weeks, dateStr, targetDateIso };
   });
+
+  const [selectedStrategy, setSelectedStrategy] = useState<any>(null);
+  
+  useEffect(() => {
+    if (calculatedStrategies.length > 0 && !selectedStrategy) {
+      setSelectedStrategy(calculatedStrategies.find(s => s.isRecommended) || calculatedStrategies[0]);
+    } else if (calculatedStrategies.length === 0) {
+      setSelectedStrategy(null);
+    }
+  }, [calculatedStrategies]);
 
   if (goal) {
     const activeGoal = goal || onboardingData;
@@ -216,35 +240,39 @@ export function GoalSetterPage() {
       : activeGoal?.dailyCalorieGoal;
 
     return (
-      <div className="screen-container animate-in fade-in slide-in-from-bottom-2 duration-300">
-        <div className="text-center py-6">
-          <CheckCircle2 className="w-16 h-16 text-[#D4FF00] mx-auto mb-4" />
-          <h2 className="text-[34px] font-bold text-white tracking-[-0.5px] mb-2">Goal Set</h2>
-          <p className="text-[15px] font-normal tracking-[-0.1px] text-[#EBEBF5CC]">You have already set your physique goal.</p>
+      <motion.div 
+        variants={pageVariants} initial="hidden" animate="visible" exit="exit"
+        className="screen-container pt-8 pb-24"
+      >
+        <div className="flex flex-col items-center justify-center py-10 mb-8 text-center">
+          <CheckCircle2 className="w-12 h-12 text-[#D4FF00] mb-4" />
+          <h2 className="text-[28px] font-bold text-white tracking-tight mb-2">Goal Set</h2>
+          <p className="text-[14px] text-[rgba(255,255,255,0.5)]">You have already set your physique goal.</p>
         </div>
 
-        <div className="glass-card p-[16px_20px] mb-6">
-          <h3 className="text-[13px] font-semibold tracking-[0.06em] uppercase text-[#EBEBF599] mb-[12px]">Current Goal Data</h3>
-          <div className="space-y-[12px]">
-            <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-[12px]">
-              <span className="text-[15px] font-normal text-[#EBEBF5CC]">Current BF%</span>
-              <span className="text-[17px] font-semibold text-white">{activeGoal?.current_bf || activeGoal?.currentBodyFatPct || '-'}%</span>
+        <div className="bg-[#111113] border border-[rgba(255,255,255,0.06)] rounded-2xl p-6 mb-8 shadow-sm">
+          <h3 className="text-[11px] font-semibold uppercase tracking-widest text-[rgba(255,255,255,0.4)] mb-4">Current Goal Data</h3>
+          
+          <div className="space-y-4">
+            <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-4">
+              <span className="text-[14px] text-[rgba(255,255,255,0.6)]">Current BF%</span>
+              <span className="text-[16px] font-medium text-white">{activeGoal?.current_bf || activeGoal?.currentBodyFatPct || '-'}%</span>
             </div>
-            <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-[12px]">
-              <span className="text-[15px] font-normal text-[#EBEBF5CC]">Target BF%</span>
-              <span className="text-[17px] font-semibold text-white">{activeGoal?.target_bf || activeGoal?.targetBodyFatPct || '-'}%</span>
+            <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-4">
+              <span className="text-[14px] text-[rgba(255,255,255,0.6)]">Target BF%</span>
+              <span className="text-[16px] font-medium text-white">{activeGoal?.target_bf || activeGoal?.targetBodyFatPct || '-'}%</span>
             </div>
-            <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-[12px]">
-              <span className="text-[15px] font-normal text-[#EBEBF5CC]">Strategy</span>
-              <span className="text-[17px] font-semibold text-white">{activeGoal?.strategy || activeGoal?.chosenStrategyName || '-'}</span>
+            <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-4">
+              <span className="text-[14px] text-[rgba(255,255,255,0.6)]">Strategy</span>
+              <span className="text-[16px] font-medium text-white">{activeGoal?.strategy || activeGoal?.chosenStrategyName || '-'}</span>
             </div>
-            <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-[12px]">
-              <span className="text-[15px] font-normal text-[#EBEBF5CC]">Daily Target</span>
-              <span className="text-[17px] font-semibold text-white">{dailyKcal || '-'} <span className="text-[13px] font-normal text-[#EBEBF599]">kcal</span></span>
+            <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-4">
+              <span className="text-[14px] text-[rgba(255,255,255,0.6)]">Daily Target</span>
+              <span className="text-[16px] font-medium text-white">{dailyKcal || '-'} <span className="text-[12px] text-[rgba(255,255,255,0.4)]">kcal</span></span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-[15px] font-normal text-[#EBEBF5CC]">Estimated Time</span>
-              <span className="text-[17px] font-semibold text-white">
+              <span className="text-[14px] text-[rgba(255,255,255,0.6)]">Estimated Time</span>
+              <span className="text-[16px] font-medium text-white">
                 {activeGoal?.deficit_kcal === 0 || activeGoal?.dailyDeficit === 0 ? 'Ongoing' : 
                  activeGoal?.target_date ? new Date(activeGoal.target_date).toLocaleDateString() : 
                  activeGoal?.estimatedWeeks ? `~${activeGoal.estimatedWeeks} weeks` : '-'}
@@ -253,268 +281,246 @@ export function GoalSetterPage() {
           </div>
         </div>
 
-        <button 
+        <motion.button 
+          whileHover={hover.subtle}
+          whileTap={tap.scale}
           onClick={() => setResetGoalConfirm(true)}
-          className="w-full py-[14px] bg-[rgba(255,255,255,0.1)] text-white font-semibold text-[15px] rounded-[100px] border-[0.5px] border-[rgba(255,255,255,0.2)] transition-transform active:scale-[0.96]"
+          className="btn-ghost w-full hover:text-[#FF4D1C] hover:border-[rgba(255,77,28,0.3)] transition-colors duration-200"
         >
           Reset goal
-        </button>
+        </motion.button>
         
-        {resetGoalConfirm && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-            <div style={{ background: '#1C1C1E', borderRadius: '24px', padding: '28px 24px', width: '100%', maxWidth: '360px', textAlign: 'center', border: '0.5px solid rgba(255,255,255,0.1)', boxShadow: '0 24px 48px rgba(0,0,0,0.4)' }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: 'white', marginBottom: '12px', letterSpacing: '-0.4px' }}>
-                Reset body goal?
-              </div>
-              <div style={{ fontSize: '15px', color: 'rgba(235,235,245,0.6)', lineHeight: 1.5, marginBottom: '32px' }}>
-                This will permanently erase your target body fat, strategy, and timeline. Your meal history and body stats will remain. This cannot be undone.
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <button 
-                  onClick={() => setResetGoalConfirm(false)}
-                  style={{
-                    width: '100%', padding: '14px',
-                    borderRadius: '100px',
-                    background: 'rgba(255,255,255,0.1)',
-                    border: '0.5px solid rgba(255,255,255,0.2)',
-                    color: 'white', fontWeight: 600,
-                    fontSize: 'var(--font-md)', cursor: 'pointer'
-                  }}
-                >
-                  Keep my goal
-                </button>
-                <button 
-                  onClick={async () => {
-                    try {
-                      await profileService.deleteGoal();
-                      setResetGoalConfirm(false);
-                      queryClient.setQueryData(['goal'], null);
-                      navigate('/goal');
-                    } catch { alert('Failed to reset goal. Try again.'); }
-                  }}
-                  style={{
-                    width: '100%', padding: '14px',
-                    borderRadius: '100px',
-                    background: '#FF3B30',
-                    border: 'none',
-                    color: 'white', fontWeight: 700,
-                    fontSize: 'var(--font-md)', cursor: 'pointer'
-                  }}
-                >
-                  Yes, reset goal
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+        <AnimatePresence>
+          {resetGoalConfirm && (
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-[rgba(0,0,0,0.85)] z-[100] flex items-center justify-center p-6"
+            >
+              <motion.div 
+                initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 10 }}
+                className="bg-[#1C1C1E] rounded-3xl p-8 w-full max-w-[360px] text-center border border-[rgba(255,255,255,0.1)] shadow-[0_24px_48px_rgba(0,0,0,0.4)]"
+              >
+                <div className="text-4xl mb-4">⚠️</div>
+                <div className="text-[20px] font-bold text-white mb-3 tracking-tight">Reset body goal?</div>
+                <div className="text-[14px] text-[rgba(255,255,255,0.6)] leading-relaxed mb-8">
+                  This will permanently erase your target body fat, strategy, and timeline. Your meal history and body stats will remain. This cannot be undone.
+                </div>
+                <div className="flex flex-col gap-3">
+                  <button onClick={() => setResetGoalConfirm(false)} className="w-full py-3.5 rounded-full bg-[rgba(255,255,255,0.1)] border border-[rgba(255,255,255,0.2)] text-white font-semibold text-[15px]">
+                    Keep my goal
+                  </button>
+                  <button onClick={async () => {
+                      try {
+                        await profileService.deleteGoal();
+                        setResetGoalConfirm(false);
+                        queryClient.setQueryData(['goal'], null);
+                        navigate('/goal');
+                      } catch { alert('Failed to reset goal. Try again.'); }
+                    }} 
+                    className="w-full py-3.5 rounded-full bg-[#FF3B30] text-white font-bold text-[15px]"
+                  >
+                    Yes, reset goal
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     );
   }
 
   return (
-    <div className="screen-container screen-enter">
-      <div className="py-[28px] mb-[12px]">
-        <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599] mb-[8px]">Step 2 of 2</div>
-        <h2 className="text-[34px] font-bold text-white tracking-[-0.5px] leading-tight mb-[8px]">Body Goals</h2>
-        <p className="text-[15px] font-normal text-[#EBEBF5CC] tracking-[-0.1px]">Set your target body fat and choose a timeline.</p>
-      </div>
+    <motion.div variants={pageVariants} initial="hidden" animate="visible" exit="exit" className="screen-container pb-28 pt-6">
+      
+      <motion.div variants={itemVariants} className="mb-8">
+        <h2 className="text-[26px] font-semibold text-white tracking-tight -tracking-[0.4px] leading-tight mb-2">Body Goals</h2>
+        <p className="text-[15px] text-[rgba(255,255,255,0.8)] tracking-[-0.1px]">Set your target body fat and choose a timeline.</p>
+      </motion.div>
 
       {/* SECTION A */}
-      <div className="mb-[28px]">
-        <div className="flex items-center gap-2 mb-[12px] mt-[28px]">
-          <h2 className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599]">Current Body</h2>
-          {currentBfMid && <div className="flex items-center gap-1 text-[#D4FF00] text-[11px] font-bold uppercase tracking-widest bg-[rgba(212,255,0,0.1)] px-2 py-0.5 rounded-full"><CheckCircle2 size={12} /> Step complete</div>}
+      <motion.div variants={itemVariants} className="mb-10">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-[11px] font-bold uppercase tracking-widest text-[rgba(255,255,255,0.4)] mb-1">Current Body</h2>
+            <h3 className="text-[18px] font-semibold text-white tracking-tight">Select your current physique</h3>
+          </div>
+          {currentBfMid && <div className="text-[#D4FF00]"><CheckCircle2 size={20} /></div>}
         </div>
-        <h3 className="text-[22px] font-semibold text-white tracking-[-0.3px] mb-1">Select your current physique</h3>
-        <p className="text-[15px] text-[#EBEBF5CC] mb-4 tracking-[-0.1px]">This helps us calculate how much fat you're actually carrying</p>
         
-        <div className="flex gap-[12px] overflow-x-auto pb-4 snap-x hide-scrollbar touch-pan-x">
-          {bodyFatOptions.map((opt) => (
-            <button
-              key={opt.range}
-              onClick={() => setCurrentBfMid(opt.mid)}
-              className={cn(
-                "bf-card flex-none w-[clamp(160px,44vw,200px)] p-[16px] rounded-[16px] cursor-pointer transition-all snap-start flex flex-col text-left",
-                currentBfMid === opt.mid 
-                  ? "bg-[rgba(212,255,0,0.1)] border-[1.5px] border-[#D4FF00] scale-[1.03]" 
-                  : "bg-[rgba(44,44,46,0.7)] border-[0.5px] border-[rgba(255,255,255,0.1)] hover:bg-[rgba(44,44,46,0.9)]"
-              )}
-            >
-              <Silhouette active={currentBfMid === opt.mid} />
-              <div className="mt-2 text-[28px] font-bold text-white tracking-[-0.5px]">{opt.range}</div>
-              <div className="text-[15px] font-semibold text-[#EBEBF5CC] mt-1">{opt.label}</div>
-              <div className="text-[12px] font-normal text-[#EBEBF599] mt-2 leading-relaxed">{opt.desc}</div>
-            </button>
-          ))}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {bodyFatOptions.map((opt) => {
+            const isSelected = currentBfMid === opt.mid;
+            return (
+              <motion.button
+                key={opt.range}
+                onClick={() => setCurrentBfMid(opt.mid)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={cn(
+                  "bg-[#111113] border-[0.5px] border-[rgba(255,255,255,0.06)] rounded-2xl p-4 cursor-pointer transition-all duration-200 text-left flex flex-col hover:border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.04)]",
+                  isSelected && "border-[#D4FF00] bg-[rgba(212,255,0,0.06)] shadow-[0_0_20px_rgba(212,255,0,0.15)] hover:border-[#D4FF00]"
+                )}
+              >
+                <div className={cn("text-[20px] font-bold tracking-tight mb-1", isSelected ? "text-[#D4FF00]" : "text-white")}>{opt.range}</div>
+                <div className="text-[13px] font-medium text-[rgba(255,255,255,0.8)] mb-1">{opt.label}</div>
+                <div className="text-[11px] text-[rgba(255,255,255,0.45)] leading-relaxed">{opt.desc}</div>
+              </motion.button>
+            )
+          })}
         </div>
-      </div>
+      </motion.div>
 
       {/* SECTION B */}
-      <div className={cn("mb-[28px] transition-all duration-300", !currentBfMid ? "opacity-[0.35] pointer-events-none grayscale-[0.5]" : "opacity-100 card-reveal")}>
-        <div className="flex items-center gap-2 mb-[12px] mt-[28px]">
-          <h2 className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599]">Target Body</h2>
-          {targetBfMid && <div className="flex items-center gap-1 text-[#D4FF00] text-[11px] font-bold uppercase tracking-widest bg-[rgba(212,255,0,0.1)] px-2 py-0.5 rounded-full"><CheckCircle2 size={12} /> Step complete</div>}
+      <motion.div variants={itemVariants} className={cn("mb-10 transition-all duration-300", !currentBfMid ? "opacity-30 pointer-events-none grayscale" : "opacity-100")}>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-[11px] font-bold uppercase tracking-widest text-[rgba(255,255,255,0.4)] mb-1">Target Body</h2>
+            <h3 className="text-[18px] font-semibold text-white tracking-tight">Now choose your target</h3>
+          </div>
+          {targetBfMid && <div className="text-[#D4FF00]"><CheckCircle2 size={20} /></div>}
         </div>
-        <h3 className="text-[22px] font-semibold text-white tracking-[-0.3px] mb-1">Now choose your target</h3>
-        <p className="text-[15px] text-[#EBEBF5CC] mb-4 tracking-[-0.1px]">You can only target a lower body fat % than where you are now</p>
 
         {currentBfMid === 2.5 && (
-          <div className="text-[15px] font-medium text-[#D4FF00] flex items-center gap-2 mb-4 p-[16px] bg-[rgba(212,255,0,0.08)] border border-[rgba(212,255,0,0.4)] rounded-xl">
+          <div className="text-[14px] font-medium text-[#D4FF00] mb-4 p-4 bg-[rgba(212,255,0,0.08)] border border-[rgba(212,255,0,0.4)] rounded-xl">
             You're already at elite level. Only maintenance is available.
           </div>
         )}
 
-        <div className="flex gap-[12px] overflow-x-auto pb-4 snap-x hide-scrollbar touch-pan-x">
-          {bodyFatOptions.filter(opt => !currentBfMid || opt.mid < currentBfMid).map((opt) => (
-            <button
-              key={opt.range}
-              onClick={() => setTargetBfMid(opt.mid)}
-              className={cn(
-                "bf-card flex-none w-[clamp(160px,44vw,200px)] p-[16px] rounded-[16px] cursor-pointer transition-all snap-start flex flex-col text-left",
-                targetBfMid === opt.mid 
-                  ? "bg-[rgba(212,255,0,0.1)] border-[1.5px] border-[#D4FF00] scale-[1.03]" 
-                  : "bg-[rgba(44,44,46,0.7)] border-[0.5px] border-[rgba(255,255,255,0.1)] hover:bg-[rgba(44,44,46,0.9)]"
-              )}
-            >
-              <Silhouette active={targetBfMid === opt.mid} />
-              <div className="mt-2 text-[28px] font-bold text-white tracking-[-0.5px]">{opt.range}</div>
-              <div className="text-[15px] font-semibold text-[#EBEBF5CC] mt-1">{opt.label}</div>
-              <div className="text-[12px] font-normal text-[#EBEBF599] mt-2 leading-relaxed">{opt.desc}</div>
-            </button>
-          ))}
-          {currentBfMid && (
-            <button
-              key="maintain"
-              onClick={() => setTargetBfMid(currentBfMid)}
-              className={cn(
-                "bf-card flex-none w-[clamp(160px,44vw,200px)] p-[16px] rounded-[16px] cursor-pointer transition-all snap-start flex flex-col text-left",
-                targetBfMid === currentBfMid 
-                  ? "bg-[rgba(212,255,0,0.1)] border-[1.5px] border-[#D4FF00] scale-[1.03]" 
-                  : "bg-[rgba(44,44,46,0.7)] border-[0.5px] border-[rgba(255,255,255,0.1)] hover:bg-[rgba(44,44,46,0.9)]"
-              )}
-            >
-              <Silhouette active={targetBfMid === currentBfMid} />
-              <div className="mt-2 text-[22px] font-bold text-white tracking-[-0.5px] leading-tight mb-[6px]">Maintain current</div>
-              <div className="text-[15px] font-semibold text-[#EBEBF5CC] mt-1">Stay at {currentBfMid}%</div>
-              <div className="text-[12px] font-normal text-[#EBEBF599] mt-2 leading-relaxed">Keep your current physique and maintain weight</div>
-            </button>
-          )}
-        </div>
-
-        {currentBfMid && targetBfMid && targetBfMid < currentBfMid && (
-          <div className="glass-card p-[16px_20px] mt-[12px] animate-in fade-in slide-in-from-top-2">
-            <div className="grid grid-cols-2 gap-y-[16px] gap-x-[20px]">
-              <div>
-                <div className="text-[13px] font-medium text-[#EBEBF599] uppercase tracking-[0.05em] mb-[4px]">Current</div>
-                <div className="text-[17px] font-semibold text-white">{currentBfMid}% <span className="text-[15px] text-[#EBEBF5CC] font-normal">({currentFatMass.toFixed(1)}kg fat)</span></div>
-              </div>
-              <div>
-                <div className="text-[13px] font-medium text-[#EBEBF599] uppercase tracking-[0.05em] mb-[4px]">Target</div>
-                <div className="text-[17px] font-semibold text-white">{targetBfMid}% <span className="text-[15px] text-[#EBEBF5CC] font-normal">({targetFatMass.toFixed(1)}kg fat)</span></div>
-              </div>
-              <div>
-                <div className="text-[13px] font-medium text-[#EBEBF599] uppercase tracking-[0.05em] mb-[4px]">Fat to lose</div>
-                <div className="text-[17px] font-semibold text-[#FF4D1C]">{fatToLoseKg.toFixed(1)} kg</div>
-              </div>
-              <div>
-                <div className="text-[13px] font-medium text-[#EBEBF599] uppercase tracking-[0.05em] mb-[4px]">New body weight</div>
-                <div className="text-[17px] font-semibold text-white">~{targetWeightKg.toFixed(1)} kg</div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* SECTION C */}
-      <div className={cn("transition-all duration-300", (!currentBfMid || !targetBfMid) ? "opacity-[0.35] pointer-events-none grayscale-[0.5]" : "opacity-100")}>
-        <div className="flex items-center gap-2 mb-[12px] mt-[28px]">
-          <h2 className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599]">Plan Strategy</h2>
-        </div>
-        <h3 className="text-[22px] font-semibold text-white tracking-[-0.3px] mb-1">How do you want to get there?</h3>
-        <p className="text-[15px] text-[#EBEBF5CC] mb-4 tracking-[-0.1px]">Each approach has a different speed, risk, and lifestyle demand</p>
-
-        {currentBfMid && targetBfMid && targetBfMid > currentBfMid && (
-          <div className="text-[15px] text-[#FF3B30] flex items-center gap-2 mb-4 p-[16px] bg-[rgba(255,59,48,0.05)] border border-[rgba(255,59,48,0.6)] rounded-xl">
-            <AlertTriangle size={16} /> Please select a target body fat % lower than or equal to your current level.
-          </div>
-        )}
-
-        {currentBfMid && targetBfMid && targetBfMid <= currentBfMid && (
-          <div className="flex flex-col gap-[16px]">
-            {calculatedStrategies.map((s, i) => (
-            <div 
-              key={s.name} 
-              className={cn(
-                "strategy-card card-reveal relative flex flex-col p-[20px_24px] rounded-[16px]",
-                s.styleClass || "glass-card"
-              )}
-            >
-              {s.isRecommended && (
-                <div className="absolute top-[-10px] right-[24px]">
-                  <div className="bg-[#D4FF00] text-[#0A0A0A] text-[11px] font-bold px-[10px] py-[4px] rounded-[100px] shadow-sm uppercase tracking-[0.04em]">
-                    Recommended
-                  </div>
-                </div>
-              )}
-              
-              <div className="mb-[16px]">
-                <h3 className="text-[17px] font-semibold text-white mb-[8px] tracking-[-0.2px]">{s.name}</h3>
-                <div className="flex items-baseline gap-[8px]">
-                  <span className="text-[40px] font-bold tracking-[-1px] text-white leading-none">{s.dailyTarget}</span>
-                  <span className="text-[15px] text-[#EBEBF5CC] font-medium">kcal/day</span>
-                </div>
-                <div className="text-[15px] text-[#EBEBF5CC] mt-[4px] border-b border-[rgba(255,255,255,0.1)] pb-[16px]">
-                  {s.deficit} kcal deficit
-                </div>
-              </div>
-
-              <div className="mb-[16px]">
-                <div className="text-[17px] font-semibold text-white mb-[4px]">
-                  {s.deficit === 0 ? (
-                    <span className="text-[#D4FF00]">Ongoing Maintenance</span>
-                  ) : (
-                    <>~{s.weeks} weeks <span className="text-[#EBEBF599] font-normal text-[15px]">(by {s.dateStr})</span></>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex-grow flex flex-col gap-[12px] mb-[20px]">
-                <div className="flex items-start gap-[12px]">
-                  <div className="bg-[rgba(255,255,255,0.1)] rounded-full p-[2px] shrink-0 mt-[2px]">
-                    <CheckCircle2 size={16} className="text-white" />
-                  </div>
-                  <span className="text-[15px] text-white font-normal leading-[1.4]">{s.pros}</span>
-                </div>
-                <div className="flex items-start gap-[12px]">
-                  <div className="bg-[rgba(255,77,28,0.1)] rounded-full p-[2px] shrink-0 mt-[2px]">
-                    <AlertTriangle size={16} className="text-[#FF4D1C]" />
-                  </div>
-                  <span className="text-[15px] text-[#EBEBF5CC] font-normal leading-[1.4]">{s.cons}</span>
-                </div>
-              </div>
-
-              <div className="bg-[rgba(255,255,255,0.05)] p-[12px_16px] text-[13px] text-[#EBEBF5CC] leading-[1.4] mb-[20px] border border-[rgba(255,255,255,0.1)] rounded-[12px]">
-                <span className="font-semibold text-white block mb-[2px]">Protein Note</span>
-                {s.proteinNote}
-              </div>
-
-              <button 
-                onClick={() => handleChooseStrategy(s)}
-                disabled={saveMutation.isPending}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {bodyFatOptions.filter(opt => !currentBfMid || opt.mid < currentBfMid).map((opt) => {
+            const isSelected = targetBfMid === opt.mid;
+            return (
+              <motion.button
+                key={opt.range}
+                onClick={() => setTargetBfMid(opt.mid)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 className={cn(
-                  "w-full transition-transform active:scale-[0.96] flex items-center justify-center gap-[8px] group",
-                  s.btnClass || "bg-[rgba(255,255,255,0.1)] text-white border-[0.5px] border-[rgba(255,255,255,0.2)] rounded-[100px] p-[14px_28px] font-semibold text-[15px]"
+                  "bg-[#111113] border-[0.5px] border-[rgba(255,255,255,0.06)] rounded-2xl p-4 cursor-pointer transition-all duration-200 text-left flex flex-col hover:border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.04)]",
+                  isSelected && "border-[#D4FF00] bg-[rgba(212,255,0,0.06)] shadow-[0_0_20px_rgba(212,255,0,0.15)] hover:border-[#D4FF00]"
                 )}
               >
-                {saveMutation.isPending ? 'Saving...' : 'Choose this plan'}
-                {s.isRecommended && <ArrowRight size={20} className="transition-transform duration-200 group-hover:translate-x-[3px]" />}
-              </button>
-            </div>
-          ))}
+                <div className={cn("text-[20px] font-bold tracking-tight mb-1", isSelected ? "text-[#D4FF00]" : "text-white")}>{opt.range}</div>
+                <div className="text-[13px] font-medium text-[rgba(255,255,255,0.8)] mb-1">{opt.label}</div>
+                <div className="text-[11px] text-[rgba(255,255,255,0.45)] leading-relaxed">{opt.desc}</div>
+              </motion.button>
+            )
+          })}
+          {currentBfMid && (
+            <motion.button
+              key="maintain"
+              onClick={() => setTargetBfMid(currentBfMid)}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className={cn(
+                "bg-[#111113] border-[0.5px] border-[rgba(255,255,255,0.06)] rounded-2xl p-4 cursor-pointer transition-all duration-200 text-left flex flex-col hover:border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.04)]",
+                targetBfMid === currentBfMid && "border-[#D4FF00] bg-[rgba(212,255,0,0.06)] shadow-[0_0_20px_rgba(212,255,0,0.15)] hover:border-[#D4FF00]"
+              )}
+            >
+              <div className={cn("text-[20px] font-bold tracking-tight mb-1", targetBfMid === currentBfMid ? "text-[#D4FF00]" : "text-white")}>Maintain</div>
+              <div className="text-[13px] font-medium text-[rgba(255,255,255,0.8)] mb-1">Stay at {currentBfMid}%</div>
+              <div className="text-[11px] text-[rgba(255,255,255,0.45)] leading-relaxed">Keep your current physique</div>
+            </motion.button>
+          )}
+        </div>
+      </motion.div>
+
+      {/* SECTION C */}
+      <motion.div variants={itemVariants} className={cn("transition-all duration-300", (!currentBfMid || !targetBfMid) ? "opacity-30 pointer-events-none grayscale" : "opacity-100")}>
+        <div className="mb-6">
+          <h2 className="text-[11px] font-bold uppercase tracking-widest text-[rgba(255,255,255,0.4)] mb-1">Plan Strategy</h2>
+          <h3 className="text-[18px] font-semibold text-white tracking-tight">How do you want to get there?</h3>
+        </div>
+
+        {currentBfMid && targetBfMid && targetBfMid > currentBfMid && (
+          <div className="text-[14px] text-[#FF3B30] flex items-center gap-2 mb-4 p-4 bg-[rgba(255,59,48,0.05)] border border-[rgba(255,59,48,0.6)] rounded-xl">
+            <AlertTriangle size={16} /> Target body fat must be lower than current.
           </div>
         )}
-      </div>
-    </div>
+
+        {currentBfMid && targetBfMid && targetBfMid <= currentBfMid && calculatedStrategies.length > 0 && (
+          <div className="space-y-6">
+            
+            {fatToLoseKg > 0 && (
+              <div className="grid grid-cols-3 gap-2 md:gap-3">
+                {calculatedStrategies.map((s) => {
+                  const isSelected = selectedStrategy?.name === s.name;
+                  return (
+                    <motion.button 
+                      key={s.name}
+                      onClick={() => setSelectedStrategy(s)}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={cn(
+                        "relative bg-[#111113] border-[0.5px] rounded-xl p-3 flex flex-col items-center text-center cursor-pointer transition-all duration-200 hover:border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.04)]",
+                        isSelected ? s.activeClass : "border-[rgba(255,255,255,0.06)]"
+                      )}
+                    >
+                      {s.isRecommended && (
+                        <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-[#D4FF00] text-black text-[7px] font-extrabold uppercase px-2 py-0.5 rounded-full whitespace-nowrap tracking-wide">
+                          Best
+                        </div>
+                      )}
+                      <div className="text-[12px] font-semibold text-white mb-1 leading-tight">{s.name}</div>
+                      <div className="text-[11px] text-[rgba(255,255,255,0.5)]">-{s.deficit} kcal</div>
+                    </motion.button>
+                  )
+                })}
+              </div>
+            )}
+
+            {selectedStrategy && (
+              <motion.div 
+                key={selectedStrategy.name}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="card-lime overflow-hidden"
+              >
+                <div className="p-6 text-center border-b border-[rgba(212,255,0,0.1)]">
+                  <div className="text-[36px] font-bold text-[#D4FF00] tracking-[-1px] leading-none mb-1">
+                    {selectedStrategy.deficit === 0 ? 'Maintenance' : (
+                      <><AnimatedNumber value={selectedStrategy.weeks} /> weeks</>
+                    )}
+                  </div>
+                  <div className="text-[13px] text-[rgba(255,255,255,0.5)]">
+                    {selectedStrategy.deficit === 0 ? 'Keep your current physique' : `Estimated completion by ${selectedStrategy.dateStr}`}
+                  </div>
+                </div>
+                
+                <div className="p-6 space-y-4">
+                  <div className="flex justify-between items-center text-[14px]">
+                    <span className="text-[rgba(255,255,255,0.5)]">Daily Target</span>
+                    <span className="font-semibold text-white">{selectedStrategy.dailyTarget} kcal</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[14px]">
+                    <span className="text-[rgba(255,255,255,0.5)]">Pros</span>
+                    <span className="font-medium text-white text-right max-w-[60%]">{selectedStrategy.pros}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[14px]">
+                    <span className="text-[rgba(255,255,255,0.5)]">Cons</span>
+                    <span className="font-medium text-[rgba(255,255,255,0.8)] text-right max-w-[60%]">{selectedStrategy.cons}</span>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {selectedStrategy && (
+              <div className="fixed bottom-0 left-0 right-0 p-4 z-50 bg-gradient-to-t from-[#080809] via-[#080809] to-transparent pb-[calc(1rem+env(safe-area-inset-bottom))] pt-8">
+                <motion.button 
+                  whileHover={hover.glow}
+                  whileTap={tap.scale}
+                  onClick={() => handleChooseStrategy(selectedStrategy)}
+                  disabled={saveMutation.isPending}
+                  className="btn-primary w-full max-w-[400px] mx-auto block"
+                >
+                  {saveMutation.isPending ? 'Saving...' : `Start ${selectedStrategy.name} Plan`}
+                </motion.button>
+              </div>
+            )}
+          </div>
+        )}
+      </motion.div>
+    </motion.div>
   );
 }
