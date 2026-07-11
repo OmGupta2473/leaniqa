@@ -1,4 +1,6 @@
-import {
+const fs = require('fs');
+
+const content = `import {
   LayoutDashboard,
   MessageSquare,
   TrendingUp,
@@ -54,7 +56,7 @@ export function BottomNav() {
               return (
                 <motion.div 
                   whileTap={{ scale: 0.9 }}
-                  className={`flex flex-col items-center justify-center gap-1 w-full h-full rounded-full relative z-10 ${isItemDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={\`flex flex-col items-center justify-center gap-1 w-full h-full rounded-full relative z-10 \${isItemDisabled ? 'opacity-50 cursor-not-allowed' : ''}\`}
                 >
                   {isActive && !isItemDisabled && (
                     <motion.div
@@ -98,3 +100,5 @@ export function BottomNav() {
     </div>
   );
 }
+`
+fs.writeFileSync('src/shared/components/BottomNav.tsx', content);
