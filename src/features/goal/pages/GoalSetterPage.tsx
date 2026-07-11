@@ -1,3 +1,5 @@
+import React, { Profiler } from 'react';
+import { onRenderCallback, useRenderTracker } from '@/shared/utils/perfDebug';
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from 'react';
 import { useUserStore } from '@/features/profile/store/userStore';
@@ -49,6 +51,7 @@ const bodyFatOptions = [
 ];
 
 export function GoalSetterPage() {
+  useRenderTracker('GoalSetterPage');
   const navigate = useNavigate();
   const { profileData: onboardingData } = useCalculatedProfile();
   const setOnboardingData = useUserStore(s => s.setOnboardingData);
@@ -331,7 +334,8 @@ export function GoalSetterPage() {
   }
 
   return (
-    <motion.div variants={pageVariants} initial="hidden" animate="visible" exit="exit" className="screen-container pb-28 pt-6">
+    <Profiler id="GoalSetterPage" onRender={onRenderCallback}>
+      <motion.div variants={pageVariants} initial="hidden" animate="visible" exit="exit" className="screen-container pb-28 pt-6">
       
       <motion.div variants={itemVariants} className="mb-8">
         <h2 className="text-[26px] font-semibold text-white tracking-tight -tracking-[0.4px] leading-tight mb-2">Body Goals</h2>
@@ -522,5 +526,6 @@ export function GoalSetterPage() {
         )}
       </motion.div>
     </motion.div>
+    </Profiler>
   );
 }

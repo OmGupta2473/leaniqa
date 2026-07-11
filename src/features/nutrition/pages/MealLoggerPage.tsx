@@ -1,3 +1,5 @@
+import React, { Profiler } from 'react';
+import { onRenderCallback, useRenderTracker } from '@/shared/utils/perfDebug';
 import {  useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
 import { createPortal } from "react-dom";
 import { useAppStore } from "@/app/store";
@@ -53,7 +55,8 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
   const kcal = meals.reduce((s, m) => s + m.calories, 0);
   const pro = meals.reduce((s, m) => s + m.protein, 0);
   return (
-    <div className="card-base mb-3 overflow-hidden">
+    <Profiler id="MealLoggerPage" onRender={onRenderCallback}>
+      <div className="card-base mb-3 overflow-hidden">
       <div className="p-4 flex items-center justify-between select-none cursor-pointer" onClick={() => setExpanded(!expanded)}>
         <div className="flex items-center gap-3">
           <div className="text-[rgba(255,255,255,0.7)]">{icon}</div>
@@ -109,11 +112,13 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
         )}
       </AnimatePresence>
     </div>
+    </Profiler>
   );
 }
 
 // ── MAIN SCREEN ────────────────────────────────────────────────────────────
 export function MealLoggerPage() {
+  useRenderTracker('MealLoggerPage');
   const chatHistory = useChatStore(s => s.chatHistory);
   const addChatMessage = useChatStore(s => s.addChatMessage);
   const clearOldChats = useChatStore(s => s.clearOldChats);
@@ -492,6 +497,7 @@ export function MealLoggerPage() {
   });
 
   const handleSend = useCallback(() => {
+    if (import.meta.env.DEV) console.time('[PERF] MealLogger handleSend');
     const text = input.trim();
     if (!text || loading || !selectedMealSlot) return;
     setInput("");

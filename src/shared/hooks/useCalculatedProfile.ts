@@ -3,6 +3,7 @@ import { useUserStore } from '@/features/profile/store/userStore';
 import { calculateMacros, calculateGoalStats } from '../utils/profileCalculations';
 
 export function useCalculatedProfile() {
+  if (import.meta.env.DEV) console.time('[PERF] useCalculatedProfile');
   const { profile, goal, hasCompletedOnboarding, isLoading } = useHasCompletedOnboarding();
   const onboardingData = useUserStore(s => s.onboardingData);
   
@@ -48,5 +49,6 @@ export function useCalculatedProfile() {
     }
   }
 
+  if (import.meta.env.DEV) console.timeEnd('[PERF] useCalculatedProfile');
   return { profileData: mergedData, profile, goal, hasCompletedOnboarding, isLoading };
 }

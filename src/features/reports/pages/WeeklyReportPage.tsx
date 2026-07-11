@@ -1,5 +1,7 @@
+
+import { onRenderCallback, useRenderTracker } from '@/shared/utils/perfDebug';
 import { useReportStore } from "../store/reportStore";
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, Profiler } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { profileService } from '@/features/profile/services/profileService';
 import { mealService } from '@/features/nutrition/services/mealService';
@@ -20,6 +22,7 @@ function getLocalDateString(d: Date) {
 }
 
 export function WeeklyReportPage() {
+  useRenderTracker('WeeklyReportPage');
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
   const { data: meals = [] } = useQuery({ queryKey: ['meals', 'month'], queryFn: () => mealService.getMeals({ days: 35, limit: 2000 }) });
@@ -84,7 +87,8 @@ export function WeeklyReportPage() {
   };
 
   return (
-    <div className="page-enter px-4 py-4 min-h-[100dvh] bg-[#0A0A0A] pb-[calc(100px+env(safe-area-inset-bottom))]">
+    <Profiler id="WeeklyReportPage" onRender={onRenderCallback}>
+      <div className="page-enter px-4 py-4 min-h-[100dvh] bg-[#0A0A0A] pb-[calc(100px+env(safe-area-inset-bottom))]">
       
       {/* Week Selector */}
       <div className="flex justify-between items-center mb-6">
@@ -188,5 +192,6 @@ export function WeeklyReportPage() {
         </motion.div>
       )}
     </div>
+    </Profiler>
   );
 }
