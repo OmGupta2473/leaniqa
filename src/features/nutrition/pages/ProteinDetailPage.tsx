@@ -1,15 +1,59 @@
 import { useNavigate } from "react-router-dom";
-import React, { useMemo, useEffect } from "react";
+import React, { useMemo, useEffect, useState, useRef, memo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { profileService } from "@/features/profile/services/profileService";
 import { mealService } from "../services/mealService";
 import { useCalculatedProfile } from "@/shared/hooks/useCalculatedProfile";
 import { useUserStore } from "@/features/profile/store/userStore";
 import { reportService } from "@/features/reports/services/reportService";
-import { BarChart, Bar, XAxis, ResponsiveContainer, Cell } from "recharts";
-import { ChevronLeft } from "lucide-react";
+import { DailyHistoryChart } from "../components/DailyHistoryChart";
+import { ChevronLeft, Utensils } from "lucide-react";
 import { motion } from "motion/react";
 import { cn } from "@/shared/utils/utils";
+
+const AnimatedNumber = memo(function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: number }) {
+  const [displayValue, setDisplayValue] = useState(0);
+  const elementRef = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    let observer: IntersectionObserver;
+    let animationFrameId: number;
+    let start: number | null = null;
+    let lastUpdate = 0;
+    const update = (time: number) => {
+      if (!start) start = time;
+      const elapsed = time - start;
+      if (time - lastUpdate > 32 || elapsed >= duration) {
+        lastUpdate = time;
+        const progress = Math.min(elapsed / duration, 1);
+        const ease = 1 - Math.pow(1 - progress, 4);
+        const nextValue = Math.round(ease * value);
+        setDisplayValue(prev => (prev !== nextValue ? nextValue : prev));
+      }
+      if (elapsed < duration) {
+        animationFrameId = requestAnimationFrame(update);
+      }
+    };
+    const startAnimation = () => {
+      start = null;
+      lastUpdate = 0;
+      animationFrameId = requestAnimationFrame(update);
+    };
+    if (elementRef.current) {
+      observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          startAnimation();
+          observer.disconnect();
+        }
+      }, { threshold: 0.1 });
+      observer.observe(elementRef.current);
+    }
+    return () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      if (observer) observer.disconnect();
+    };
+  }, [value, duration]);
+  return <span ref={elementRef}>{displayValue}</span>;
+});
 
 function getLocalDateString() {
   const d = new Date();
@@ -23,14 +67,8 @@ export function ProteinDetailPage() {
   const navigate = useNavigate();
   const { profileData: onboardingData } = useCalculatedProfile();
   const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
-  const { data: profile } = useQuery({
-    queryKey: ["profile"],
-    queryFn: () => profileService.getProfile(),
-  });
-  const { data: meals = [] } = useQuery({
-    queryKey: ["meals", "today"],
-    queryFn: () => mealService.getTodaysMeals(),
-  });
+  const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => profileService.getProfile() });
+  const { data: meals = [] } = useQuery({ queryKey: ["meals", "today"], queryFn: () => mealService.getTodaysMeals() });
 
   const target_protein = profile?.protein_target ?? onboardingData?.proteinMid ?? 150;
 
@@ -51,34 +89,34 @@ export function ProteinDetailPage() {
         target_protein,
       });
     }
-    // Take last 7 days
-    const recentLogs = logs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).slice(-7);
-    return recentLogs;
+    return logs;
   }, [metrics, todayStr, proteinConsumed, target_protein]);
 
   const chartData = useMemo(() => {
-    return chartLogs.map(l => {
-      const d = new Date(l.date);
-      const isToday = l.date === todayStr;
-      return {
-        date: l.date,
-        dayLabel: isToday ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' }),
-        actual: l.actual_protein,
-        isToday
-      };
-    });
-  }, [chartLogs, todayStr]);
+    return chartLogs.map(l => ({
+      date: l.date,
+      actual: l.actual_protein,
+      target: l.target_protein
+    }));
+  }, [chartLogs]);
 
-  const breakfastPro = meals.filter(m => m.meal_slot === 'breakfast').reduce((a, b) => a + b.protein, 0);
-  const lunchPro = meals.filter(m => m.meal_slot === 'lunch').reduce((a, b) => a + b.protein, 0);
-  const dinnerPro = meals.filter(m => m.meal_slot === 'dinner').reduce((a, b) => a + b.protein, 0);
-  const otherPro = meals.filter(m => !['breakfast', 'lunch', 'dinner'].includes(m.meal_slot || '')).reduce((a, b) => a + b.protein, 0);
+  const slots = [
+    { id: 'breakfast', label: 'Breakfast', items: meals.filter(m => m.meal_slot === 'breakfast') },
+    { id: 'lunch', label: 'Lunch', items: meals.filter(m => m.meal_slot === 'lunch') },
+    { id: 'dinner', label: 'Dinner', items: meals.filter(m => m.meal_slot === 'dinner') },
+    { id: 'other', label: 'Snacks / Other', items: meals.filter(m => !['breakfast', 'lunch', 'dinner'].includes(m.meal_slot || '')) },
+  ];
+
+  const proPct = target_protein ? Math.min(proteinConsumed / target_protein, 1.1) : 0;
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   return (
     <div className="page-enter pt-[calc(env(safe-area-inset-top)+20px)] pb-[calc(100px+env(safe-area-inset-bottom))] min-h-[100dvh] bg-[#0A0A0A] px-5">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <button onClick={() => navigate("/dashboard")} className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.05)] flex items-center justify-center">
+        <button onClick={() => navigate("/dashboard")} className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.05)] flex items-center justify-center transition-colors hover:bg-[rgba(255,255,255,0.1)]">
           <ChevronLeft size={20} className="text-white" />
         </button>
         <h1 className="text-[17px] font-semibold text-white tracking-tight">Protein</h1>
@@ -86,64 +124,60 @@ export function ProteinDetailPage() {
       </div>
 
       {/* Hero Number Section */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center justify-center text-center mb-10 mt-4">
-        <div className="text-[12px] uppercase tracking-widest font-semibold text-[rgba(255,255,255,0.4)] mb-2">Total consumed</div>
-        <div className="flex items-baseline gap-1.5 mb-1">
-          <span className="text-[54px] font-bold text-[#378ADD] tracking-[-1.5px] leading-none">{proteinConsumed}</span>
-          <span className="text-[18px] text-[rgba(255,255,255,0.6)] font-medium">g</span>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center justify-center text-center mb-8 mt-4">
+        <div className="flex items-baseline gap-1.5 mb-2">
+          <span className="text-[52px] font-bold text-white tracking-tighter leading-none"><AnimatedNumber value={proteinConsumed} /></span>
         </div>
-        <div className="text-[14px] text-white font-medium mt-1">/ {target_protein}g daily target</div>
+        <div className="text-[14px] text-[rgba(255,255,255,0.45)] mb-6">of {target_protein} g</div>
+        
+        {/* Progress bar */}
+        <div className="w-full max-w-[280px] progress-track h-2 rounded-full overflow-hidden bg-[rgba(255,255,255,0.1)]">
+          <div 
+            className="h-full rounded-full transition-all duration-1000 ease-out bg-[#378ADD]" 
+            style={{ width: mounted ? `${Math.min(100, proPct * 100)}%` : '0%' }} 
+          />
+        </div>
       </motion.div>
 
       {/* 7-Day History Chart */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card-base p-5 mb-8">
-        <div className="text-[14px] font-semibold text-white mb-6">7-Day History</div>
-        <div className="h-[160px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-              <XAxis 
-                dataKey="dayLabel" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} 
-                dy={10} 
-              />
-              <Bar dataKey="actual" radius={[4, 4, 4, 4]} maxBarSize={32}>
-                {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.isToday ? '#378ADD' : 'rgba(255,255,255,0.15)'} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card-base p-4 mb-8">
+        <div className="text-[14px] font-semibold text-white mb-6">Daily protein history</div>
+        <DailyHistoryChart logs={chartData} todayStr={todayStr} unit="g" type="protein" />
       </motion.div>
 
       {/* Meal Breakdown Section */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="stagger-children">
         <div className="text-[18px] font-semibold text-white mb-4">Today's Meals</div>
         
         {meals.length === 0 ? (
-          <div className="text-[14px] text-[rgba(255,255,255,0.3)] text-center py-8 italic">No meals logged yet today</div>
+          <div className="flex flex-col items-center justify-center py-12">
+            <Utensils size={32} className="text-[rgba(255,255,255,0.15)] mb-4" />
+            <div className="text-[13px] text-[rgba(255,255,255,0.35)] mb-4 text-center">No meals logged yet</div>
+            <button onClick={() => navigate('/meals')} className="btn-ghost text-[14px] text-[#378ADD] border-[rgba(55,138,221,0.3)] hover:bg-[rgba(55,138,221,0.1)]">
+              Log your first meal →
+            </button>
+          </div>
         ) : (
-          <div className="card-base p-4">
-            <div className="flex items-center justify-between py-3 border-b border-[rgba(255,255,255,0.06)]">
-              <span className="text-[15px] font-medium text-white">Breakfast</span>
-              <span className="text-[15px] font-bold text-white">{breakfastPro} <span className="text-[12px] font-normal text-[rgba(255,255,255,0.4)]">g</span></span>
-            </div>
-            <div className="flex items-center justify-between py-3 border-b border-[rgba(255,255,255,0.06)]">
-              <span className="text-[15px] font-medium text-white">Lunch</span>
-              <span className="text-[15px] font-bold text-white">{lunchPro} <span className="text-[12px] font-normal text-[rgba(255,255,255,0.4)]">g</span></span>
-            </div>
-            <div className="flex items-center justify-between py-3 border-b border-[rgba(255,255,255,0.06)]">
-              <span className="text-[15px] font-medium text-white">Dinner</span>
-              <span className="text-[15px] font-bold text-white">{dinnerPro} <span className="text-[12px] font-normal text-[rgba(255,255,255,0.4)]">g</span></span>
-            </div>
-            {otherPro > 0 && (
-              <div className="flex items-center justify-between py-3">
-                <span className="text-[15px] font-medium text-white">Snacks / Other</span>
-                <span className="text-[15px] font-bold text-white">{otherPro} <span className="text-[12px] font-normal text-[rgba(255,255,255,0.4)]">g</span></span>
-              </div>
-            )}
+          <div>
+            {slots.filter(s => s.items.length > 0).map(slot => {
+              const slotPro = slot.items.reduce((a, b) => a + b.protein, 0);
+              return (
+                <div key={slot.id} className="card-base mb-3 overflow-hidden">
+                  <div className="flex items-center justify-between p-4 bg-[rgba(255,255,255,0.02)] border-b border-[rgba(255,255,255,0.06)]">
+                    <span className="text-[14px] font-semibold text-white">{slot.label}</span>
+                    <span className="text-[14px] font-bold text-white">{slotPro} g</span>
+                  </div>
+                  <div className="px-4">
+                    {slot.items.map((item, i) => (
+                      <div key={item.id || i} className={cn("flex items-center justify-between py-3", i < slot.items.length - 1 && "border-b border-[rgba(255,255,255,0.06)]")}>
+                        <span className="text-[14px] text-[rgba(255,255,255,0.8)] capitalize pr-4">{item.meal_text}</span>
+                        <span className="text-[14px] font-medium text-[#378ADD] shrink-0">{item.protein} g</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </motion.div>
