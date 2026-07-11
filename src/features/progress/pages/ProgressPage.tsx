@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useDashboardStore } from '@/features/dashboard/store/dashboardStore';
-import { Target, Scale } from 'lucide-react';
+import { Target, Scale, TrendingDown, TrendingUp } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { calculateProjections } from '@/shared/utils/projectionEngine';
 import { profileService } from '@/features/profile/services/profileService';
 import { weightService } from '../services/weightService';
 import { complianceService } from '@/features/reports/services/complianceService';
+import { motion } from "motion/react";
+import { cn } from "@/shared/utils/utils";
 
 function getLocalDateString(d: Date) {
   const year = d.getFullYear();
@@ -56,7 +58,6 @@ export function ProgressPage() {
   
   const addWeightMutation = useMutation({
     mutationFn: async (val: number) => {
-      // First update profile measurements if provided
       if (showAdvanced) {
         const updates: any = {};
         if (waist) updates.waist = parseFloat(waist);
@@ -83,17 +84,13 @@ export function ProgressPage() {
       
       queryClient.setQueryData(['weightLogs'], (old: any) => {
         if (!old) return [newLog];
-        
-        // Find if an entry for today already exists
         const todayPrefix = newLog.date.substring(0, 10);
         const existingIndex = old.findIndex((l: any) => l.date.startsWith(todayPrefix));
-        
         if (existingIndex >= 0) {
           const updated = [...old];
           updated[existingIndex] = { ...updated[existingIndex], weight: val };
           return updated;
         }
-        
         return [...old, newLog];
       });
 
@@ -149,10 +146,7 @@ export function ProgressPage() {
   };
 
   const chartData = weightLogs.map((log) => {
-    // Some dates might be YYYY-MM-DD or full ISO
-    // The timestamp makes it work correctly on XAxis with type="number"
     const parsedDate = new Date(log.date);
-    // If log.date is just YYYY-MM-DD, the timezone could shift it, but we can display as UTC
     const name = parsedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
     return {
       name,
@@ -167,7 +161,6 @@ export function ProgressPage() {
     chartData.push({ name: 'Today', weight: currentWeight, timestamp: now });
   } else if (chartData.length === 1) {
     const single = chartData[0];
-    // Add a dummy point 1 day earlier so area chart renders a line
     chartData.unshift({
       name: 'Start',
       weight: single.weight,
@@ -176,15 +169,16 @@ export function ProgressPage() {
   }
 
   return (
-    <div className="screen-container screen-enter">
-      <div className="mb-4">
-        <h2 className="text-[18px] font-medium text-text-primary mb-1">Morning Weight</h2>
-        <p className="text-[12px] text-text-secondary">Log your weight daily to track your physique timeline.</p>
+    <div className="page-enter px-5 py-4 min-h-[100dvh] bg-[#0A0A0A] pb-[calc(100px+env(safe-area-inset-bottom))]">
+      <div className="mb-6 mt-2">
+        <h2 className="text-[22px] font-semibold text-white tracking-tight mb-1">Progress</h2>
+        <p className="text-[13px] text-[rgba(255,255,255,0.45)]">Track your body transformation journey.</p>
       </div>
 
-      <div className="mb-4 flex flex-col gap-3">
+      <div className="card-base p-4 mb-6">
+        <div className="text-[13px] font-semibold text-white mb-3">Morning Weight</div>
         {errorMsg && (
-          <div className="p-3 bg-[rgba(255,45,85,0.1)] text-[#FF2D55] text-[12px] rounded-lg border border-[rgba(255,45,85,0.2)]">
+          <div className="p-3 bg-[rgba(255,45,85,0.1)] text-[#FF2D55] text-[12px] rounded-xl border border-[rgba(255,45,85,0.2)] mb-3">
             {errorMsg}
           </div>
         )}
@@ -196,54 +190,43 @@ export function ProgressPage() {
               setWeight(e.target.value);
               setErrorMsg('');
             }} 
-            placeholder={`Weight e.g. ${currentWeight}kg`} 
-            className="input-field"
+            placeholder={`e.g. ${currentWeight} kg`} 
+            className="input-apple flex-1"
             disabled={addWeightMutation.isPending}
           />
           <button 
-            onClick={() => handleLog(false)} 
-            disabled={addWeightMutation.isPending} 
-            className="disabled:opacity-50 tracking-widest text-[12px] uppercase shrink-0"
-            style={{ background: '#D4FF00', color: '#0A0A0A', fontWeight: 700, border: 'none', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer' }}
+            onClick={() => handleLog(hasLoggedToday)} 
+            disabled={addWeightMutation.isPending || !weight} 
+            className="btn-primary w-auto px-6 disabled:opacity-50"
           >
-            {addWeightMutation.isPending ? '...' : 'Log'}
+            {addWeightMutation.isPending ? '...' : (hasLoggedToday ? 'Update' : 'Log')}
           </button>
-          {hasLoggedToday && (
-            <button 
-              onClick={() => handleLog(true)} 
-              disabled={addWeightMutation.isPending} 
-              className="disabled:opacity-50 tracking-widest text-[12px] uppercase shrink-0"
-              style={{ background: 'rgba(255,255,255,0.1)', color: 'white', fontWeight: 700, border: '1px solid rgba(255,255,255,0.1)', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer' }}
-            >
-              {addWeightMutation.isPending ? '...' : "Update Today's Weight"}
-            </button>
-          )}
         </div>
         
-        <div>
+        <div className="mt-4">
           <button 
             onClick={() => setShowAdvanced(!showAdvanced)} 
-            className="text-[11px] text-purple hover:underline bg-transparent border-none cursor-pointer p-0"
+            className="text-[12px] text-[#D4FF00] hover:underline bg-transparent border-none cursor-pointer p-0 font-medium opacity-80"
           >
-            {showAdvanced ? '- Hide Measurements Check-in' : '+ Update body measurements (monthly)'}
+            {showAdvanced ? 'Hide Measurements' : 'Update Body Measurements (Optional)'}
           </button>
           
           {showAdvanced && (
-            <div className="grid grid-cols-2 gap-2 mt-3 animate-in fade-in slide-in-from-top-2">
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="grid grid-cols-2 gap-3 mt-3 overflow-hidden">
               <input 
                 type="number" 
                 value={waist} 
                 onChange={(e) => setWaist(e.target.value)} 
-                placeholder={`Waist (cm) e.g. ${profile?.waist || 85}`} 
-                className="input-field disabled:opacity-50"
+                placeholder={`Waist (cm)`} 
+                className="input-apple disabled:opacity-50"
                 disabled={addWeightMutation.isPending}
               />
               <input 
                 type="number" 
                 value={neck} 
                 onChange={(e) => setNeck(e.target.value)} 
-                placeholder={`Neck (cm) e.g. ${profile?.neck || 38}`} 
-                className="input-field disabled:opacity-50"
+                placeholder={`Neck (cm)`} 
+                className="input-apple disabled:opacity-50"
                 disabled={addWeightMutation.isPending}
               />
               {profile?.gender === 'Female' && (
@@ -251,89 +234,102 @@ export function ProgressPage() {
                   type="number" 
                   value={hip} 
                   onChange={(e) => setHip(e.target.value)} 
-                  placeholder={`Hip (cm) e.g. ${profile?.hip || 95}`} 
-                  className="col-span-2 input-field disabled:opacity-50"
+                  placeholder={`Hip (cm)`} 
+                  className="col-span-2 input-apple disabled:opacity-50"
                   disabled={addWeightMutation.isPending}
                 />
               )}
-            </div>
+            </motion.div>
           )}
         </div>
       </div>
 
-      <div className="glass-card" style={{ padding: '16px', marginBottom: '16px' }}>
-        <div className="flex justify-between items-center mb-3">
-          <div className="text-[11px] font-medium uppercase tracking-widest" style={{ color: 'rgba(235,235,245,0.5)' }}>Weight Trend</div>
+      <div className="card-base p-4 mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <div className="text-[13px] font-semibold text-white">Weight Trend</div>
           {actualPace !== 0 && (
-            <div className="text-[11px] font-medium" style={{ color: actualPace > 0 ? '#D4FF00' : '#FF2D55' }}>
-              {Math.abs(actualPace).toFixed(2)} kg/wk {actualPace > 0 ? 'lost' : 'gained'}
+            <div className="flex items-center gap-1 bg-[rgba(255,255,255,0.05)] px-2.5 py-1 rounded-full">
+              {actualPace > 0 ? <TrendingDown size={12} className="text-[#D4FF00]" /> : <TrendingUp size={12} className="text-[#FF4D1C]" />}
+              <div className="text-[11px] font-semibold" style={{ color: actualPace > 0 ? '#D4FF00' : '#FF4D1C' }}>
+                {Math.abs(actualPace).toFixed(2)} kg/wk
+              </div>
             </div>
           )}
         </div>
         {weightLogs.length > 0 ? (
-          <div className="h-[200px] w-full">
+          <div className="h-[220px] w-full -ml-2">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
+              <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#D4FF00" stopOpacity={0.3}/>
+                    <stop offset="5%" stopColor="#D4FF00" stopOpacity={0.15}/>
                     <stop offset="95%" stopColor="#D4FF00" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
                 <XAxis 
                   dataKey="timestamp" 
                   type="number" 
                   scale="time" 
                   domain={['dataMin', 'dataMax']} 
                   tickFormatter={(tick) => new Date(tick).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })} 
-                  tick={{ fontSize: 10, fill: 'rgba(235,235,245,0.5)' }} 
+                  tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.32)' }} 
                   axisLine={false} 
                   tickLine={false} 
-                  minTickGap={20}
+                  minTickGap={30}
+                  dy={10}
                 />
-                <YAxis domain={['dataMin - 2', 'dataMax + 2']} tick={{ fontSize: 10, fill: 'rgba(235,235,245,0.5)' }} axisLine={false} tickLine={false} />
+                <YAxis domain={['dataMin - 1', 'dataMax + 1']} tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.32)' }} axisLine={false} tickLine={false} dx={-10} />
                 <Tooltip 
                   labelFormatter={(val) => {
                     const d = chartData.find(c => c.timestamp === val);
                     return d ? d.name : new Date(val).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
                   }}
-                  contentStyle={{ backgroundColor: '#1C1C1E', border: '1px solid rgba(255,255,255,0.1)' }}
-                  itemStyle={{ color: 'white' }}
+                  contentStyle={{ backgroundColor: '#1A1A1C', border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: '10px' }}
+                  labelStyle={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', marginBottom: '4px' }}
+                  itemStyle={{ color: '#D4FF00', fontSize: '13px', fontWeight: 600 }}
                 />
-                <Area type="monotone" dataKey="weight" stroke="#D4FF00" strokeWidth={2} fillOpacity={1} fill="url(#colorWeight)" />
+                <Area type="monotone" dataKey="weight" stroke="#D4FF00" strokeWidth={2.5} fillOpacity={1} fill="url(#colorWeight)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         ) : (
-          <div className="h-[150px] flex items-center justify-center text-[12px] text-text-secondary border-[0.5px] border-dashed border-border-secondary">
+          <div className="h-[180px] flex items-center justify-center text-[13px] text-[rgba(255,255,255,0.35)]">
             Log your weight to see trends.
           </div>
         )}
       </div>
 
       {projections.length > 0 && (
-        <div className="glass-card" style={{ padding: '16px', marginBottom: '40px' }}>
-          <div className="text-[11px] font-medium uppercase tracking-widest mb-4" style={{ color: 'rgba(235,235,245,0.5)' }}>Milestone Projections</div>
-          <div className="flex flex-col gap-3">
-            {projections.map((p, i) => (
-              <div key={i} className="flex justify-between items-center py-2 border-b border-[rgba(255,255,255,0.06)] last:border-0 last:pb-0">
-                <div className="flex flex-col">
-                  <span className="text-[14px] font-semibold text-text-primary">{p.bfTarget}% BF</span>
-                  <span className="text-[12px] text-text-secondary">~{p.estWeight.toFixed(1)} kg</span>
-                </div>
-                <div className="flex flex-col items-end">
-                  <span className="text-[14px] font-medium text-text-primary">
-                    {p.status === 'completed' ? 'Completed' : p.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </span>
-                  <span className="text-[12px]" style={{ color: p.status === 'completed' ? '#D4FF00' : 'rgba(235,235,245,0.5)' }}>
-                    {p.status === 'completed' ? 'Achieved' : `in ${p.weeks} weeks`}
-                  </span>
-                </div>
-              </div>
-            ))}
+        <div className="card-base p-5 mb-8">
+          <div className="text-[13px] font-semibold text-white mb-6">Milestone Roadmap</div>
+          <div className="flex flex-col relative pb-2">
+            <div className="absolute left-[18px] top-[8px] bottom-[24px] w-[1px] bg-[rgba(255,255,255,0.1)]"></div>
+            {projections.map((p, i) => {
+              const isCompleted = p.status === 'completed';
+              return (
+                <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} key={i} className="flex justify-between items-center py-3 relative z-10 pl-[42px]">
+                  <div className={cn("absolute left-[14px] w-[9px] h-[9px] rounded-full top-1/2 -translate-y-1/2", isCompleted ? 'bg-[#D4FF00] shadow-[0_0_8px_rgba(212,255,0,0.5)]' : 'border-[1.5px] border-[rgba(255,255,255,0.2)] bg-[#111113]')}></div>
+                  
+                  <div className="flex flex-col">
+                    <span className="text-[14px] font-medium text-white tracking-tight">{p.bfTarget}% BF</span>
+                    <span className="text-[12px] text-[rgba(255,255,255,0.4)] mt-0.5">~{p.estWeight.toFixed(1)} kg</span>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    {isCompleted ? (
+                      <span className="badge-lime px-2 py-0.5 text-[10px]">Achieved</span>
+                    ) : (
+                      <>
+                        <span className="text-[13px] font-medium text-white tracking-tight">{p.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                        <span className="text-[11px] text-[rgba(255,255,255,0.4)] mt-0.5">in {p.weeks} weeks</span>
+                      </>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
-          <div className="mt-4 text-[10px] text-text-secondary text-center">
+          <div className="mt-4 pt-4 border-t border-[rgba(255,255,255,0.06)] text-[11px] text-[rgba(255,255,255,0.35)] text-center leading-relaxed">
             {actualPace > 0 
               ? `Projections based on your actual pace of ${actualPace.toFixed(2)} kg/wk lost.`
               : `Based on current ${complianceScore.toFixed(0)}% compliance and ${(goal?.deficit_kcal || 500) * 7} kcal weekly deficit.`
