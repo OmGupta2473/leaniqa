@@ -1,5 +1,6 @@
-import { Check, X, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Shield, Clock, CreditCard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
 
 export function PricingPage() {
   const navigate = useNavigate();
@@ -10,62 +11,114 @@ export function PricingPage() {
   };
 
   return (
-    <div className="screen-container screen-enter">
-      <div className="text-center py-2 pb-4">
-        <h2 className="text-[20px] font-medium text-text-primary mb-1.5">Launch pricing</h2>
-        <p className="text-[13px] text-text-secondary max-w-[320px] mx-auto">Get early access at a significant discount.</p>
-        
-        <div style={{ background: 'rgba(212,255,0,0.1)', border: '1px solid rgba(212,255,0,0.3)', color: '#D4FF00', padding: '12px', borderRadius: '12px', fontSize: '13px', fontWeight: 600, marginTop: '16px' }}>
-          LeanIQA Beta — Premium features unlocked.
+    <div className="page-enter min-h-[100dvh] bg-[#0A0A0A] pt-[calc(env(safe-area-inset-top)+20px)] pb-[calc(100px+env(safe-area-inset-bottom))] px-5 flex flex-col">
+      
+      <div className="flex-1">
+        <div className="text-center py-6 mb-4">
+          <h2 className="text-[30px] font-bold text-white tracking-tight leading-tight mb-2">Invest in your<br/>consistency.</h2>
+          <p className="text-[15px] text-[rgba(255,255,255,0.5)] max-w-[400px] mx-auto leading-relaxed">
+            Get early access to our premium features at a significant discount.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-4 max-w-[400px] mx-auto">
+          {/* Free Card */}
+          <div className="card-base p-7 flex flex-col">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-[#378ADD] mb-2">Free</div>
+            <div className="flex items-baseline gap-1 mb-1">
+              <span className="text-[44px] font-bold text-white tracking-tighter leading-none">₹0</span>
+            </div>
+            <div className="text-[13px] text-[rgba(255,255,255,0.4)] mb-6">Forever free tier</div>
+
+            <ul className="flex flex-col gap-3 flex-1 mb-8">
+              <li className="flex items-start gap-2.5 text-[14px] text-white">
+                <CheckCircle2 size={18} className="text-[rgba(255,255,255,0.4)] shrink-0" />
+                <span>Basic macro tracking</span>
+              </li>
+              <li className="flex items-start gap-2.5 text-[14px] text-white">
+                <CheckCircle2 size={18} className="text-[rgba(255,255,255,0.4)] shrink-0" />
+                <span>Progress logging</span>
+              </li>
+              <li className="flex items-start gap-2.5 text-[14px] text-[rgba(255,255,255,0.3)] line-through">
+                <CheckCircle2 size={18} className="text-[rgba(255,255,255,0.3)] shrink-0" />
+                <span>Weekly AI Insights</span>
+              </li>
+              <li className="flex items-start gap-2.5 text-[14px] text-[rgba(255,255,255,0.3)] line-through">
+                <CheckCircle2 size={18} className="text-[rgba(255,255,255,0.3)] shrink-0" />
+                <span>Advanced body fat metrics</span>
+              </li>
+            </ul>
+
+            <button 
+              onClick={activateBeta}
+              className="btn-ghost w-full py-3.5 text-[15px]"
+            >
+              Start Free
+            </button>
+          </div>
+
+          {/* Pro Card */}
+          <div className="bg-[rgba(212,255,0,0.04)] border-[1.5px] border-[rgba(212,255,0,0.3)] rounded-3xl p-7 flex flex-col relative mt-2">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#D4FF00] text-black px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest shadow-[0_4px_12px_rgba(212,255,0,0.2)]">
+              Most Popular
+            </div>
+
+            <div className="text-[10px] font-bold uppercase tracking-widest text-[#D4FF00] mb-2 mt-1">Pro Yearly</div>
+            <div className="flex items-baseline gap-1 mb-1">
+              <span className="text-[44px] font-bold text-white tracking-tighter leading-none">₹999</span>
+              <span className="text-[16px] font-medium text-[rgba(255,255,255,0.4)]">/yr</span>
+            </div>
+            <div className="text-[13px] text-[rgba(255,255,255,0.4)] mb-6">Billed annually (₹83/mo)</div>
+
+            <ul className="flex flex-col gap-3 flex-1 mb-8">
+              <li className="flex items-start gap-2.5 text-[14px] text-white">
+                <CheckCircle2 size={18} className="text-[#D4FF00] shrink-0" />
+                <span>Everything in Free</span>
+              </li>
+              <li className="flex items-start gap-2.5 text-[14px] text-white">
+                <CheckCircle2 size={18} className="text-[#D4FF00] shrink-0" />
+                <span>Advanced AI Weekly Reports</span>
+              </li>
+              <li className="flex items-start gap-2.5 text-[14px] text-white">
+                <CheckCircle2 size={18} className="text-[#D4FF00] shrink-0" />
+                <span>US Navy BF% calculations</span>
+              </li>
+              <li className="flex items-start gap-2.5 text-[14px] text-white">
+                <CheckCircle2 size={18} className="text-[#D4FF00] shrink-0" />
+                <span>Physique timeline & projections</span>
+              </li>
+            </ul>
+
+            <motion.button 
+              whileHover={{ scale: 1.02, boxShadow: '0 0 20px rgba(212,255,0,0.3)' }}
+              whileTap={{ scale: 0.98 }}
+              onClick={activateBeta}
+              className="w-full py-3.5 rounded-full bg-[#D4FF00] text-black text-[15px] font-bold shadow-[0_4px_16px_rgba(212,255,0,0.2)]"
+            >
+              Get Premium Access
+            </motion.button>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 mb-4 opacity-75">
-        <div style={{ border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', background: 'rgba(44,44,46,0.7)' }}>
-          <div><span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium mb-2 bg-purple-bg text-text-primary border border-border-primary">Monthly</span></div>
-          <div className="text-[13px] font-medium text-text-primary">Pro Monthly</div>
-          <div style={{ fontSize: '26px', fontWeight: 700, color: 'white', margin: '8px 0 4px' }}>₹199</div>
-          <div className="text-[11px] text-text-secondary">/month · cancel anytime</div>
-          <ul className="list-none my-3 space-y-1.5 flex-1">
-            <li className="text-[12px] text-text-secondary flex items-start gap-1.5"><Check size={14} style={{ color: '#D4FF00', flexShrink: 0, marginTop: '2px' }} /> Full macro engine</li>
-            <li className="text-[12px] text-text-secondary flex items-start gap-1.5"><Check size={14} style={{ color: '#D4FF00', flexShrink: 0, marginTop: '2px' }} /> US Navy body fat standard</li>
-            <li className="text-[12px] text-text-secondary flex items-start gap-1.5"><Check size={14} style={{ color: '#D4FF00', flexShrink: 0, marginTop: '2px' }} /> Physique timeline</li>
-            <li className="text-[12px] text-text-secondary flex items-start gap-1.5"><Check size={14} style={{ color: '#D4FF00', flexShrink: 0, marginTop: '2px' }} /> Weekly reports</li>
-          </ul>
-          <button 
-            onClick={activateBeta}
-            className="w-full p-2.5 rounded-md cursor-pointer"
-            style={{ border: '0.5px solid rgba(255,255,255,0.15)', color: 'white', background: 'transparent', fontSize: '14px', fontWeight: 500 }}
-          >
-            Continue
-          </button>
+      {/* Trust Bar */}
+      <div className="flex items-center justify-center gap-4 py-6 mt-4">
+        <div className="flex items-center gap-1.5">
+          <Shield size={16} className="text-[rgba(255,255,255,0.4)]" />
+          <span className="text-[12px] text-[rgba(255,255,255,0.35)]">Secure</span>
         </div>
-        
-        <div style={{ border: '2px solid #D4FF00', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', background: 'rgba(44,44,46,0.7)', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: 0, right: 0, background: '#D4FF00', color: '#0A0A0A', fontSize: '9px', fontWeight: 700, padding: '4px 8px', textTransform: 'uppercase', letterSpacing: '0.06em', borderRadius: '0 14px 0 8px' }}>Best Value</div>
-          <div><span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium mb-2 bg-purple text-background-primary">Early Adopter</span></div>
-          <div className="text-[13px] font-medium text-text-primary">Pro Yearly</div>
-          <div style={{ fontSize: '26px', fontWeight: 700, color: '#D4FF00', margin: '8px 0 4px' }}>₹999</div>
-          <div className="text-[11px] text-text-secondary">/year · ₹83/mo equivalent</div>
-          <ul className="list-none my-3 space-y-1.5 flex-1">
-            <li className="text-[12px] text-text-secondary flex items-start gap-1.5"><Check size={14} style={{ color: '#D4FF00', flexShrink: 0, marginTop: '2px' }} /> Everything in monthly</li>
-            <li className="text-[12px] text-text-secondary flex items-start gap-1.5"><Check size={14} style={{ color: '#D4FF00', flexShrink: 0, marginTop: '2px' }} /> Priority AI processing</li>
-            <li className="text-[12px] text-text-secondary flex items-start gap-1.5"><Check size={14} style={{ color: '#D4FF00', flexShrink: 0, marginTop: '2px' }} /> Locked in early pricing</li>
-          </ul>
-          <button 
-            onClick={activateBeta}
-            className="w-full p-2.5 rounded-md cursor-pointer transition-opacity hover:opacity-90"
-            style={{ background: '#D4FF00', color: '#0A0A0A', border: 'none', fontWeight: 700, fontSize: '14px' }}
-          >
-            Continue
-          </button>
+        <div className="w-[1px] h-4 bg-[rgba(255,255,255,0.08)]"></div>
+        <div className="flex items-center gap-1.5">
+          <Clock size={16} className="text-[rgba(255,255,255,0.4)]" />
+          <span className="text-[12px] text-[rgba(255,255,255,0.35)]">Cancel anytime</span>
+        </div>
+        <div className="w-[1px] h-4 bg-[rgba(255,255,255,0.08)]"></div>
+        <div className="flex items-center gap-1.5">
+          <CreditCard size={16} className="text-[rgba(255,255,255,0.4)]" />
+          <span className="text-[12px] text-[rgba(255,255,255,0.35)]">No hidden fees</span>
         </div>
       </div>
 
-      <div style={{ background: 'rgba(44,44,46,0.7)', border: '0.5px solid rgba(255,255,255,0.06)', borderRadius: '6px', padding: '12px', textAlign: 'center', fontSize: '12px', color: 'rgba(235,235,245,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-        <ShieldCheck size={16} style={{ color: '#D4FF00' }} />
-        <span>No barcode scanner. No social feed. A focused tool that works.</span>
-      </div>
     </div>
   );
 }

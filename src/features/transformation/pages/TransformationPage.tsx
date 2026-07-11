@@ -1,686 +1,177 @@
-import React, { useEffect } from "react";
-import { useCalculatedProfile } from "@/shared/hooks/useCalculatedProfile";
-import { useUserStore } from "@/features/profile/store/userStore";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { profileService } from "@/features/profile/services/profileService";
-import { useNavigate } from "react-router-dom";
+import { ChevronLeft, TrendingDown, TrendingUp, Target, Bolt, Flame, Minus, Calendar, Flag } from "lucide-react";
+import { useCalculatedProfile } from "@/shared/hooks/useCalculatedProfile";
+
+function displayVal(val: any) {
+  return val === undefined || val === null || isNaN(val) ? '—' : val;
+}
 
 export function TransformationPage() {
-  const { profileData: onboardingData } = useCalculatedProfile();
   const navigate = useNavigate();
 
-  const { data: profile } = useQuery({
-    queryKey: ["profile"],
-    queryFn: () => profileService.getProfile(),
-  });
-  const { data: goal } = useQuery({
-    queryKey: ["goal"],
-    queryFn: () => profileService.getGoal(),
-  });
+  const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => profileService.getProfile() });
+  const { data: goal } = useQuery({ queryKey: ["goal"], queryFn: () => profileService.getGoal() });
 
-  // Read all values from existing app state
-  const name = profile?.name ?? onboardingData?.name;
-  const gender = profile?.gender ?? onboardingData?.gender;
-  const weightKg = profile?.weight ?? onboardingData?.weightKg;
-  const currentBodyFatPct =
-    goal?.current_bf ?? onboardingData?.currentBodyFatPct;
-  const targetBodyFatPct = goal?.target_bf ?? onboardingData?.targetBodyFatPct;
-  const fatToLoseKg = onboardingData?.fatToLoseKg;
-  const targetWeightKg = onboardingData?.targetWeightKg;
-  const chosenStrategyName =
-    goal?.strategy ?? onboardingData?.chosenStrategyName;
-  const dailyDeficit = goal?.deficit_kcal ?? onboardingData?.dailyDeficit;
+  const { profileData: calculated } = useCalculatedProfile();
 
-  const dailyCalorieGoal =
-    profile?.maintenance_kcal && goal?.deficit_kcal !== undefined
-      ? profile.maintenance_kcal - goal.deficit_kcal
-      : onboardingData?.dailyCalorieGoal;
+  const {
+    weightKg, currentBodyFatPct, targetBodyFatPct,
+    fatToLoseKg, targetWeightKg, chosenStrategyName, dailyCalorieGoal, dailyDeficit, estimatedWeeks, estimatedCompletionDate
+  } = calculated;
 
-  let estimatedWeeks = onboardingData?.estimatedWeeks;
-  let estimatedCompletionDate = onboardingData?.estimatedCompletionDate;
-
-  // Re-calculate projected date string if we have goal data from DB
-  if (goal?.target_date) {
-    const targetDateObj = new Date(goal.target_date);
-    if (!isNaN(targetDateObj.getTime())) {
-      estimatedCompletionDate = targetDateObj.toLocaleDateString("en-US", {
-        month: "long",
-        year: "numeric",
-      });
-      // Calculate weeks difference roughly if not using onboardingData
-      const start = goal.created_at ? new Date(goal.created_at) : new Date();
-      const diffMs = targetDateObj.getTime() - start.getTime();
-      const diffWeeks = Math.max(
-        1,
-        Math.round(diffMs / (1000 * 60 * 60 * 24 * 7)),
-      );
-      if (!estimatedWeeks) estimatedWeeks = diffWeeks;
-    }
-  }
-
-  // Display fallback
-  const displayVal = (val: any) =>
-    val !== undefined && val !== null ? val : "—";
-
-  // Body Fat SVG Selector
-  const getBodySvg = (bf: number | undefined | null) => {
-    if (bf === undefined || bf === null) return "slim";
-    if (bf > 25) return "wide";
-    if (bf >= 15 && bf <= 25) return "moderate";
-    return "slim";
-  };
-
-  const currentSilhouette = getBodySvg(currentBodyFatPct);
-  // Goal is always slim
-  const goalSilhouette = "slim";
-
-  // Strategy description logic
-  let strategyDescription = `Daily deficit of ${displayVal(dailyDeficit)} kcal`;
-  if (chosenStrategyName) {
-    if (chosenStrategyName.includes("Aggressive")) {
-      strategyDescription = "−600 kcal/day · fastest route to goal";
-    } else if (chosenStrategyName.includes("Recommended")) {
-      strategyDescription =
-        "−400 kcal/day · best balance of speed and muscle retention";
-    } else if (
-      chosenStrategyName.includes("Steady") ||
-      chosenStrategyName.includes("Sustainable")
-    ) {
-      strategyDescription =
-        "−200 kcal/day · most sustainable, maximum muscle retention";
-    }
-  }
-
-  // Calculate timeline progress
-  let currentDay = 0;
-  let totalDays = 0;
-  let isMaintenance = dailyDeficit === 0;
-
-  if (goal?.created_at) {
-    const start = new Date(goal.created_at);
-    start.setHours(0, 0, 0, 0);
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    currentDay = Math.max(
-      0,
-      Math.round((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)),
-    );
-
-    if (goal?.target_date && !isMaintenance) {
-      const end = new Date(goal.target_date);
-      end.setHours(0, 0, 0, 0);
-      totalDays = Math.max(
-        1,
-        Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)),
-      );
-      if (currentDay > totalDays) currentDay = totalDays;
-    }
-  } else if (estimatedWeeks && !isMaintenance) {
-    totalDays = estimatedWeeks * 7;
-    currentDay = 0;
-  }
-
-  const progressPercent =
-    totalDays > 0
-      ? Math.min(100, Math.max(0, (currentDay / totalDays) * 100))
-      : 0;
-
-  // Format completion date nicely
-  let completionDateStr = displayVal(estimatedCompletionDate);
-  if (
-    completionDateStr !== "—" &&
-    typeof completionDateStr === "string" &&
-    !completionDateStr.includes(",")
-  ) {
-    // If it's just 'March 2027' make it look nice, if it's full date try to format it
-    const d = new Date(completionDateStr);
+  let completionDateStr = "—";
+  if (estimatedCompletionDate) {
+    const d = new Date(estimatedCompletionDate);
     if (!isNaN(d.getTime())) {
-      completionDateStr = d.toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
+      completionDateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    } else {
+      completionDateStr = estimatedCompletionDate as string;
     }
   }
 
-  // Render SVG function
-  const renderSvg = (type: "wide" | "moderate" | "slim") => {
-    if (type === "wide") {
-      return (
-        <svg
-          width="60"
-          height="110"
-          viewBox="0 0 60 110"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <circle
-            cx="30"
-            cy="14"
-            r="10"
-            fill="rgba(255,255,255,0.15)"
-            stroke="rgba(255,255,255,0.2)"
-            strokeWidth="0.5"
-          />
-          <rect
-            x="26"
-            y="23"
-            width="8"
-            height="8"
-            rx="2"
-            fill="rgba(255,255,255,0.12)"
-          />
-          <path
-            d="M10 35 Q8 55 10 80 Q18 88 30 88 Q42 88 50 80 Q52 55 50 35 Q42 30 30 30 Q18 30 10 35Z"
-            fill="rgba(255,255,255,0.1)"
-            stroke="rgba(255,255,255,0.18)"
-            strokeWidth="0.5"
-          />
-          <path
-            d="M10 38 Q4 52 6 68"
-            stroke="rgba(255,255,255,0.15)"
-            strokeWidth="5"
-            strokeLinecap="round"
-          />
-          <path
-            d="M50 38 Q56 52 54 68"
-            stroke="rgba(255,255,255,0.15)"
-            strokeWidth="5"
-            strokeLinecap="round"
-          />
-          <path
-            d="M22 88 Q20 100 20 110"
-            stroke="rgba(255,255,255,0.15)"
-            strokeWidth="6"
-            strokeLinecap="round"
-          />
-          <path
-            d="M38 88 Q40 100 40 110"
-            stroke="rgba(255,255,255,0.15)"
-            strokeWidth="6"
-            strokeLinecap="round"
-          />
-        </svg>
-      );
-    } else if (type === "moderate") {
-      return (
-        <svg
-          width="60"
-          height="110"
-          viewBox="0 0 60 110"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <circle
-            cx="30"
-            cy="14"
-            r="10"
-            fill="rgba(255,255,255,0.15)"
-            stroke="rgba(255,255,255,0.2)"
-            strokeWidth="0.5"
-          />
-          <rect
-            x="26"
-            y="23"
-            width="8"
-            height="8"
-            rx="2"
-            fill="rgba(255,255,255,0.12)"
-          />
-          <path
-            d="M13 35 Q11 55 14 78 Q20 84 30 84 Q40 84 46 78 Q49 55 47 35 Q40 30 30 30 Q20 30 13 35Z"
-            fill="rgba(255,255,255,0.1)"
-            stroke="rgba(255,255,255,0.18)"
-            strokeWidth="0.5"
-          />
-          <path
-            d="M13 38 Q8 52 10 68"
-            stroke="rgba(255,255,255,0.15)"
-            strokeWidth="5"
-            strokeLinecap="round"
-          />
-          <path
-            d="M47 38 Q52 52 50 68"
-            stroke="rgba(255,255,255,0.15)"
-            strokeWidth="5"
-            strokeLinecap="round"
-          />
-          <path
-            d="M23 84 Q22 100 22 110"
-            stroke="rgba(255,255,255,0.15)"
-            strokeWidth="6"
-            strokeLinecap="round"
-          />
-          <path
-            d="M37 84 Q38 100 38 110"
-            stroke="rgba(255,255,255,0.15)"
-            strokeWidth="6"
-            strokeLinecap="round"
-          />
-        </svg>
-      );
-    } else {
-      // slim
-      return (
-        <svg
-          width="60"
-          height="110"
-          viewBox="0 0 60 110"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <circle
-            cx="30"
-            cy="14"
-            r="10"
-            fill="rgba(255,255,255,0.15)"
-            stroke="rgba(255,255,255,0.2)"
-            strokeWidth="0.5"
-          />
-          <rect
-            x="26"
-            y="23"
-            width="8"
-            height="8"
-            rx="2"
-            fill="rgba(255,255,255,0.12)"
-          />
-          <path
-            d="M16 35 Q15 55 18 76 Q23 80 30 80 Q37 80 42 76 Q45 55 44 35 Q37 30 30 30 Q23 30 16 35Z"
-            fill="rgba(255,255,255,0.1)"
-            stroke="rgba(255,255,255,0.18)"
-            strokeWidth="0.5"
-          />
-          <path
-            d="M16 38 Q12 52 14 68"
-            stroke="rgba(255,255,255,0.15)"
-            strokeWidth="4"
-            strokeLinecap="round"
-          />
-          <path
-            d="M44 38 Q48 52 46 68"
-            stroke="rgba(255,255,255,0.15)"
-            strokeWidth="4"
-            strokeLinecap="round"
-          />
-          <path
-            d="M24 80 Q24 100 24 110"
-            stroke="rgba(255,255,255,0.15)"
-            strokeWidth="5"
-            strokeLinecap="round"
-          />
-          <path
-            d="M36 80 Q36 100 36 110"
-            stroke="rgba(255,255,255,0.15)"
-            strokeWidth="5"
-            strokeLinecap="round"
-          />
-        </svg>
-      );
-    }
-  };
+  // Determine change direction
+  const isDecreasing = (fatToLoseKg && fatToLoseKg > 0) || (targetBodyFatPct && currentBodyFatPct && targetBodyFatPct < currentBodyFatPct);
 
   return (
-    <div className="transformation-screen">
-      <div className="transform-header">
-        <i
-          className="ti ti-arrow-left"
-          style={{ fontSize: "22px", color: "#FFFFFF", cursor: "pointer" }}
-          aria-label="Go back"
-          onClick={() => navigate("/dashboard")}
-        ></i>
-        <h1
-          style={{
-            fontSize: "var(--font-2xl)",
-            fontWeight: 700,
-            color: "white",
-            letterSpacing: "-0.3px",
-            margin: 0,
-          }}
-        >
-          Transformation
-        </h1>
-        <i
-          className="ti ti-share"
-          style={{ fontSize: "20px", color: "rgba(235,235,245,0.5)" }}
-          aria-hidden="true"
-        ></i>
+    <div className="page-enter min-h-[100dvh] bg-[#0A0A0A] pt-[calc(env(safe-area-inset-top)+20px)] pb-[calc(100px+env(safe-area-inset-bottom))] px-5">
+      
+      {/* Header */}
+      <div className="flex justify-between items-center mb-8">
+        <button onClick={() => navigate('/dashboard')} className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.05)] flex items-center justify-center transition-colors hover:bg-[rgba(255,255,255,0.1)]">
+          <ChevronLeft size={20} className="text-white" />
+        </button>
+        <div className="text-[17px] font-semibold text-white tracking-tight">Transformation Plan</div>
+        <div className="w-8" />
       </div>
 
-      <div className="transformation-scroll-area">
-        {/* Physique Comparison Card */}
-        <div className="physique-card">
-          <div className="physique-comparison">
-            {/* Left - Current */}
-            <div className="physique-current">
-              {renderSvg(currentSilhouette)}
-              <div className="physique-label">
-                <div className="physique-pct">
-                  {displayVal(currentBodyFatPct)}%
-                </div>
-                <div className="physique-sublabel">Current</div>
-              </div>
-            </div>
+      {/* Hero Projection Card */}
+      <div className="bg-[rgba(212,255,0,0.03)] border border-[rgba(212,255,0,0.15)] rounded-3xl p-6 flex flex-col items-center justify-center text-center mb-8">
+        <div className="text-[10px] font-bold uppercase tracking-widest text-[#D4FF00] mb-2 opacity-80">
+          Projected weight
+        </div>
+        
+        <div className="text-[48px] font-bold text-white tracking-[-1.5px] leading-none mb-3">
+          {displayVal(targetWeightKg)}<span className="text-[24px] text-[rgba(255,255,255,0.5)] font-medium ml-1">kg</span>
+        </div>
+        
+        {fatToLoseKg && fatToLoseKg > 0 ? (
+          <div className="bg-[rgba(212,255,0,0.1)] text-[#D4FF00] rounded-full px-3 py-1 text-[12px] font-semibold flex items-center gap-1">
+            <TrendingDown size={14} className="animate-pulse" />
+            {displayVal(fatToLoseKg)} kg to lose
+          </div>
+        ) : (
+          <div className="bg-[rgba(255,77,28,0.1)] text-[#FF4D1C] rounded-full px-3 py-1 text-[12px] font-semibold flex items-center gap-1">
+            <TrendingUp size={14} className="animate-pulse" />
+            {displayVal(Math.abs(fatToLoseKg || 0))} kg to gain
+          </div>
+        )}
+        
+        <div className="text-[12px] text-[rgba(255,255,255,0.45)] mt-4 max-w-[240px]">
+          Based on 80% program compliance and your selected strategy.
+        </div>
+      </div>
 
-            {/* Center divider */}
-            <div className="physique-divider">
-              <i
-                className="ti ti-arrow-right"
-                style={{ fontSize: "16px", color: "#0A0A0A", fontWeight: 700 }}
-                aria-hidden="true"
-              ></i>
+      {/* BF% Progression / Milestone Pattern */}
+      <div className="card-base p-5 mb-8">
+        <div className="text-[13px] font-semibold text-white mb-6">Physique Timeline</div>
+        
+        <div className="flex flex-col relative pb-2">
+          <div className="absolute left-[18px] top-[8px] bottom-[24px] w-[1px] bg-[rgba(255,255,255,0.1)]"></div>
+          
+          <div className="flex justify-between items-center py-3 relative z-10 pl-[42px]">
+            <div className="absolute left-[14px] w-[9px] h-[9px] rounded-full top-1/2 -translate-y-1/2 bg-[#D4FF00] shadow-[0_0_8px_rgba(212,255,0,0.5)]"></div>
+            <div className="flex flex-col">
+              <span className="text-[14px] font-medium text-white tracking-tight">Starting Point</span>
+              <span className="text-[12px] text-[rgba(255,255,255,0.4)] mt-0.5">{displayVal(currentBodyFatPct)}% BF</span>
             </div>
-
-            {/* Right - Goal */}
-            <div
-              className="physique-current"
-              style={{
-                background:
-                  "linear-gradient(180deg, rgba(212,255,0,0.06) 0%, rgba(28,28,30,0.95) 100%)",
-                borderRight: "none",
-                boxShadow: "inset 2px 0 20px rgba(212,255,0,0.04)",
-              }}
-            >
-              {renderSvg(goalSilhouette)}
-              <div className="physique-label">
-                <div className="physique-pct" style={{ color: "#D4FF00" }}>
-                  {displayVal(targetBodyFatPct)}%
-                </div>
-                <div className="physique-sublabel">Goal</div>
-              </div>
+            <div className="flex flex-col items-end">
+              <span className="text-[13px] font-medium text-white tracking-tight">{displayVal(weightKg)} kg</span>
+              <span className="text-[11px] text-[#D4FF00] mt-0.5 font-medium">Now</span>
             </div>
           </div>
+          
+          <div className="flex justify-between items-center py-3 relative z-10 pl-[42px]">
+            <div className="absolute left-[14px] w-[9px] h-[9px] rounded-full top-1/2 -translate-y-1/2 border-[1.5px] border-[rgba(255,255,255,0.2)] bg-[#111113]"></div>
+            <div className="flex flex-col">
+              <span className="text-[14px] font-medium text-white tracking-tight">Target Goal</span>
+              <span className="text-[12px] text-[rgba(255,255,255,0.4)] mt-0.5">{displayVal(targetBodyFatPct)}% BF</span>
+            </div>
+            <div className="flex flex-col items-end">
+              <span className="text-[13px] font-medium text-white tracking-tight">{displayVal(targetWeightKg)} kg</span>
+              <span className="text-[11px] text-[rgba(255,255,255,0.4)] mt-0.5">in {displayVal(estimatedWeeks)} wks</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
-          <div className="physique-bottom-strip">
+      {/* Projection details cards */}
+      <div className="text-[16px] font-semibold text-white tracking-tight mb-4">Transformation Goals</div>
+      <div className="grid grid-cols-2 gap-3 mb-8">
+        
+        <div className="card-base p-[14px] flex flex-col">
+          <div className="w-10 h-10 rounded-xl bg-[rgba(212,255,0,0.08)] flex items-center justify-center mb-3">
+            <Target size={20} className="text-[#D4FF00]" />
+          </div>
+          <div className="text-[14px] font-medium text-white">{displayVal(targetWeightKg)} kg</div>
+          <div className="text-[12px] text-[rgba(255,255,255,0.5)]">Target weight</div>
+        </div>
+
+        <div className="card-base p-[14px] flex flex-col">
+          <div className="w-10 h-10 rounded-xl bg-[rgba(255,77,28,0.08)] flex items-center justify-center mb-3">
+            <TrendingDown size={20} className="text-[#FF4D1C]" />
+          </div>
+          <div className="text-[14px] font-medium text-white">{displayVal(fatToLoseKg)} kg</div>
+          <div className="text-[12px] text-[rgba(255,255,255,0.5)]">Fat to lose</div>
+        </div>
+
+        <div className="card-base p-[14px] flex flex-col">
+          <div className="w-10 h-10 rounded-xl bg-[rgba(55,138,221,0.08)] flex items-center justify-center mb-3">
+            <Bolt size={20} className="text-[#378ADD]" />
+          </div>
+          <div className="text-[14px] font-medium text-[#378ADD] leading-tight">{displayVal(chosenStrategyName)}</div>
+          <div className="text-[12px] text-[rgba(255,255,255,0.5)] mt-auto pt-1">Strategy</div>
+        </div>
+
+        <div className="card-base p-[14px] flex flex-col">
+          <div className="w-10 h-10 rounded-xl bg-[rgba(212,255,0,0.08)] flex items-center justify-center mb-3">
+            <Flame size={20} className="text-[#D4FF00]" />
+          </div>
+          <div className="text-[14px] font-medium text-white">{displayVal(dailyCalorieGoal)} kcal</div>
+          <div className="text-[12px] text-[rgba(255,255,255,0.5)]">Daily target</div>
+        </div>
+
+        <div className="card-base p-[14px] flex flex-col">
+          <div className="w-10 h-10 rounded-xl bg-[rgba(255,255,255,0.05)] flex items-center justify-center mb-3">
+            <Minus size={20} className="text-white" />
+          </div>
+          <div className="text-[14px] font-medium text-white">{displayVal(dailyDeficit)} kcal</div>
+          <div className="text-[12px] text-[rgba(255,255,255,0.5)]">Daily deficit</div>
+        </div>
+
+        <div className="card-base p-[14px] flex flex-col">
+          <div className="w-10 h-10 rounded-xl bg-[rgba(255,255,255,0.05)] flex items-center justify-center mb-3">
+            <Calendar size={20} className="text-white" />
+          </div>
+          <div className="text-[14px] font-medium text-white">{displayVal(estimatedWeeks)} weeks</div>
+          <div className="text-[12px] text-[rgba(255,255,255,0.5)]">Estimated time</div>
+        </div>
+
+        <div className="card-base p-[14px] flex flex-col col-span-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[rgba(255,255,255,0.05)] flex items-center justify-center shrink-0">
+              <Flag size={20} className="text-white" />
+            </div>
             <div>
-              <div
-                style={{
-                  fontSize: "var(--font-xs)",
-                  color: "rgba(235,235,245,0.6)",
-                  textTransform: "uppercase",
-                  marginBottom: "2px",
-                }}
-              >
-                Fat to lose
-              </div>
-              <div
-                style={{
-                  fontSize: "var(--font-xl)",
-                  fontWeight: 700,
-                  color: "#FFFFFF",
-                }}
-              >
-                {displayVal(fatToLoseKg)} kg
-              </div>
-            </div>
-            <div
-              style={{
-                borderLeft: "0.5px solid rgba(255,255,255,0.08)",
-                height: "32px",
-              }}
-            ></div>
-            <div style={{ textAlign: "right" }}>
-              <div
-                style={{
-                  fontSize: "var(--font-xs)",
-                  color: "rgba(235,235,245,0.6)",
-                  textTransform: "uppercase",
-                  marginBottom: "2px",
-                }}
-              >
-                Target weight
-              </div>
-              <div
-                style={{
-                  fontSize: "var(--font-xl)",
-                  fontWeight: 700,
-                  color: "#FFFFFF",
-                }}
-              >
-                {displayVal(targetWeightKg)} kg
-              </div>
+              <div className="text-[14px] font-medium text-white">{completionDateStr}</div>
+              <div className="text-[12px] text-[rgba(255,255,255,0.5)]">Estimated target date</div>
             </div>
           </div>
         </div>
 
-        {/* Timeline Section */}
-        <div className="timeline-section">
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <span
-              style={{
-                fontSize: "var(--font-sm)",
-                color: "rgba(235,235,245,0.6)",
-                textTransform: "uppercase",
-                fontWeight: 500,
-              }}
-            >
-              Journey progress
-            </span>
-            <span
-              style={{
-                fontSize: "var(--font-sm)",
-                color: "#FFFFFF",
-                fontWeight: 500,
-              }}
-            >
-              Day {currentDay} of {totalDays}
-            </span>
-          </div>
-
-          <div className="timeline-track">
-            <div
-              className="timeline-fill"
-              style={{ transform: `translateX(-${100 - progressPercent}%)` }}
-            ></div>
-          </div>
-
-          <div className="milestone-row">
-            <span className="milestone active">Start</span>
-            <span
-              className={`milestone ${progressPercent >= 50 ? "active" : ""}`}
-            >
-              50%
-            </span>
-            <span
-              className={`milestone ${progressPercent >= 100 ? "active" : ""}`}
-            >
-              Goal {completionDateStr !== "—" && `· ${completionDateStr}`}
-            </span>
-          </div>
-        </div>
-
-        {/* Transformation Goals Card */}
-        <div
-          className="goals-card"
-          style={{ margin: "0 20px clamp(12px, 3vw, 16px)" }}
-        >
-          <div
-            style={{
-              fontSize: "15px",
-              fontWeight: 600,
-              color: "white",
-              marginBottom: "10px",
-              paddingLeft: "4px",
-            }}
-          >
-            Transformation goals
-          </div>
-          <div
-            className="profile-card"
-            style={{ padding: "0 clamp(16px, 4vw, 20px)" }}
-          >
-            <div className="goal-row">
-              <div className="goal-row-left">
-                <div
-                  className="goal-icon-wrap"
-                  style={{ background: "rgba(255,77,28,0.15)" }}
-                >
-                  <i
-                    className="ti ti-trending-down"
-                    style={{ fontSize: "16px", color: "#FF4D1C" }}
-                    aria-hidden="true"
-                  ></i>
-                </div>
-                <div className="goal-row-label">Fat to lose</div>
-              </div>
-              <div className="goal-row-value">{displayVal(fatToLoseKg)} kg</div>
-            </div>
-
-            <div className="goal-row">
-              <div className="goal-row-left">
-                <div
-                  className="goal-icon-wrap"
-                  style={{ background: "rgba(55,138,221,0.15)" }}
-                >
-                  <i
-                    className="ti ti-target"
-                    style={{ fontSize: "16px", color: "#378ADD" }}
-                    aria-hidden="true"
-                  ></i>
-                </div>
-                <div className="goal-row-label">Target weight</div>
-              </div>
-              <div className="goal-row-value">
-                {displayVal(targetWeightKg)} kg
-              </div>
-            </div>
-
-            <div className="goal-row">
-              <div className="goal-row-left">
-                <div
-                  className="goal-icon-wrap"
-                  style={{ background: "rgba(212,255,0,0.12)" }}
-                >
-                  <i
-                    className="ti ti-bolt"
-                    style={{ fontSize: "16px", color: "#D4FF00" }}
-                    aria-hidden="true"
-                  ></i>
-                </div>
-                <div className="goal-row-label">Strategy</div>
-              </div>
-              <div className="goal-row-value" style={{ color: "#D4FF00" }}>
-                {displayVal(chosenStrategyName)}
-              </div>
-            </div>
-
-            <div className="goal-row">
-              <div className="goal-row-left">
-                <div
-                  className="goal-icon-wrap"
-                  style={{ background: "rgba(212,255,0,0.12)" }}
-                >
-                  <i
-                    className="ti ti-flame"
-                    style={{ fontSize: "16px", color: "#D4FF00" }}
-                    aria-hidden="true"
-                  ></i>
-                </div>
-                <div className="goal-row-label">Daily calorie goal</div>
-              </div>
-              <div className="goal-row-value">
-                {displayVal(dailyCalorieGoal)} kcal
-              </div>
-            </div>
-
-            <div className="goal-row">
-              <div className="goal-row-left">
-                <div
-                  className="goal-icon-wrap"
-                  style={{ background: "rgba(255,59,48,0.12)" }}
-                >
-                  <i
-                    className="ti ti-minus"
-                    style={{ fontSize: "16px", color: "#FF3B30" }}
-                    aria-hidden="true"
-                  ></i>
-                </div>
-                <div className="goal-row-label">Daily deficit</div>
-              </div>
-              <div className="goal-row-value">
-                {displayVal(dailyDeficit)} kcal
-              </div>
-            </div>
-
-            <div className="goal-row">
-              <div className="goal-row-left">
-                <div
-                  className="goal-icon-wrap"
-                  style={{ background: "rgba(99,153,34,0.15)" }}
-                >
-                  <i
-                    className="ti ti-calendar"
-                    style={{ fontSize: "16px", color: "#639922" }}
-                    aria-hidden="true"
-                  ></i>
-                </div>
-                <div className="goal-row-label">Estimated time</div>
-              </div>
-              <div className="goal-row-value">
-                {displayVal(estimatedWeeks)} weeks
-              </div>
-            </div>
-
-            <div className="goal-row">
-              <div className="goal-row-left">
-                <div
-                  className="goal-icon-wrap"
-                  style={{ background: "rgba(186,117,23,0.15)" }}
-                >
-                  <i
-                    className="ti ti-flag"
-                    style={{ fontSize: "16px", color: "#BA7517" }}
-                    aria-hidden="true"
-                  ></i>
-                </div>
-                <div className="goal-row-label">Target date</div>
-              </div>
-              <div className="goal-row-value">{completionDateStr}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Strategy Highlight */}
-        <div className="strategy-highlight">
-          <div className="strategy-icon-large">
-            <i
-              className="ti ti-bolt"
-              style={{ fontSize: "22px", color: "#D4FF00" }}
-              aria-hidden="true"
-            ></i>
-          </div>
-          <div>
-            <div
-              style={{
-                fontSize: "var(--font-lg)",
-                fontWeight: 700,
-                color: "#D4FF00",
-                marginBottom: "2px",
-              }}
-            >
-              {displayVal(chosenStrategyName)}
-            </div>
-            <div
-              style={{
-                fontSize: "var(--font-sm)",
-                fontWeight: 400,
-                color: "rgba(235,235,245,0.55)",
-              }}
-            >
-              {strategyDescription}
-            </div>
-          </div>
-        </div>
-
-        <div className="transform-bottom-spacer"></div>
       </div>
+
     </div>
   );
 }

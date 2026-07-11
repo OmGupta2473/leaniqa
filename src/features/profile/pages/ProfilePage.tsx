@@ -1,187 +1,283 @@
-import { useState } from "react";
-import { useUserStore } from "../store/userStore";
-import { useAppStore } from "@/app/store";
-import { profileService } from "../services/profileService";
-import { useQueryClient } from "@tanstack/react-query";
-import { useHasCompletedOnboarding } from '@/shared/hooks/useHasCompletedOnboarding';
-import { calculateMacros, calculateGoalStats } from '@/shared/utils/profileCalculations';
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { profileService } from '../services/profileService';
+import { useState } from 'react';
+import { ChevronLeft, LogOut, Trash2, AlertTriangle, User, Flame, Droplet, CheckCircle2 } from 'lucide-react';
+import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
+import { motion, AnimatePresence } from 'motion/react';
+import { authService } from '@/features/auth/services/authService';
+
+function displayVal(val: any) {
+  return val === undefined || val === null || isNaN(val) ? '—' : val;
+}
 
 export function ProfilePage() {
-  const onboardingData = useUserStore(s => s.onboardingData);
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [showResetModal, setShowResetModal] = useState(false);
 
-  const { profile, goal } = useHasCompletedOnboarding();
+  const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
+  const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
 
+  const { profileData: calculated } = useCalculatedProfile();
 
-// All the existing display values
-  const displayVal = (val: any) => val !== undefined && val !== null && !Number.isNaN(val) ? val : '—';
-  
-  const name_ = profile?.name ?? onboardingData?.name ?? '';
-  const age_ = profile?.age ?? onboardingData?.age;
-  const gender_ = profile?.gender ?? onboardingData?.gender;
-  const activityLevel_ = profile?.activity_level ?? onboardingData?.activityLevel;
-  const weightKg_ = profile?.weight ?? onboardingData?.weightKg;
-  const heightCm_ = profile?.height ?? onboardingData?.heightCm;
-  
-  let calcMacros: any = null;
-  if (weightKg_ && heightCm_ && age_ && gender_ && activityLevel_) {
-    calcMacros = calculateMacros(weightKg_, heightCm_, age_, gender_, activityLevel_);
+  const resetMutation = useMutation({
+    mutationFn: async () => {
+      await profileService.deleteGoal();
+      await profileService.deleteProfile();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['goal'] });
+      navigate('/onboarding/1');
+    },
+  });
+
+  const handleLogout = async () => {
+    await authService.logout();
+    queryClient.clear();
+    navigate('/auth');
+  };
+
+  const {
+    name, gender, age, activityLevel,
+    weightKg, heightCm, currentBodyFatPct, targetBodyFatPct,
+    tdee, proteinMin, proteinMax, fatMin, fatMax, carbMin, carbMax, fiberMin, fiberMax, waterLitres,
+    fatToLoseKg, targetWeightKg, chosenStrategyName, dailyCalorieGoal, dailyDeficit, estimatedWeeks, estimatedCompletionDate
+  } = calculated;
+
+  let heightStr = '—';
+  let heightSub = '';
+  if (heightCm) {
+    heightStr = String(heightCm);
+    const feet = Math.floor(heightCm / 30.48);
+    const inches = Math.round((heightCm / 2.54) % 12);
+    heightSub = `${feet}'${inches}"`;
   }
-  
-  let calcGoalStats: any = null;
-  const currentBodyFatPct_ = goal?.current_bf ?? onboardingData?.currentBodyFatPct;
-  const targetBodyFatPct_ = goal?.target_bf ?? onboardingData?.targetBodyFatPct;
-  const deficit_kcal_ = goal?.deficit_kcal ?? onboardingData?.dailyDeficit;
-  
-  if (calcMacros?.tdee && weightKg_ && currentBodyFatPct_ && targetBodyFatPct_ && deficit_kcal_ !== undefined) {
-    calcGoalStats = calculateGoalStats(calcMacros.tdee, weightKg_, currentBodyFatPct_, targetBodyFatPct_, deficit_kcal_);
-  }
 
-  const tdee_ = profile?.maintenance_kcal ?? calcMacros?.tdee ?? onboardingData?.tdee;
-  const proteinMin_ = calcMacros?.proteinMin ?? onboardingData?.proteinMin;
-  const proteinMax_ = calcMacros?.proteinMax ?? onboardingData?.proteinMax;
-  const fatMin_ = calcMacros?.fatMin ?? onboardingData?.fatMin;
-  const fatMax_ = calcMacros?.fatMax ?? onboardingData?.fatMax;
-  const carbMin_ = calcMacros?.carbMin ?? onboardingData?.carbMin;
-  const carbMax_ = calcMacros?.carbMax ?? onboardingData?.carbMax;
-  const fiberMin_ = calcMacros?.fiberMin ?? onboardingData?.fiberMin;
-  const fiberMax_ = calcMacros?.fiberMax ?? onboardingData?.fiberMax;
-  const waterLitres_ = calcMacros?.waterLitres ?? onboardingData?.waterLitres;
-
-  const fatToLoseKg_ = calcGoalStats?.fatToLoseKg ?? onboardingData?.fatToLoseKg;
-  const targetWeightKg_ = goal?.target_weight ?? calcGoalStats?.targetWeightKg ?? onboardingData?.targetWeightKg;
-  const chosenStrategyName_ = goal?.strategy ?? onboardingData?.chosenStrategyName;
-  const dailyCalorieGoal_ = calcGoalStats?.dailyCalorieGoal ?? onboardingData?.dailyCalorieGoal;
-  const dailyDeficit_ = goal?.deficit_kcal ?? onboardingData?.dailyDeficit;
-  const estimatedWeeks_ = calcGoalStats?.estimatedWeeks ?? onboardingData?.estimatedWeeks;
-  const estimatedCompletionDate_ = goal?.target_date ? new Date(goal.target_date).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : (calcGoalStats?.targetDateStr ?? onboardingData?.estimatedCompletionDate);
-  let initials = '—';
-  if (name_ && name_.trim().length > 0) { const words = name_.trim().split(' '); initials = words.length > 1 ? (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase() : words[0].substring(0, 2).toUpperCase(); }
-  let heightStr = displayVal(heightCm_);
-  let heightSub = null;
-  if (heightCm_ && heightCm_ >= 150) { const feet = Math.floor(heightCm_ / 30.48); const inches = Math.round((heightCm_ / 2.54) % 12); heightSub = `${feet}'${inches}"`; }
   let dateStr = '—';
-  if (estimatedCompletionDate_) { const d = new Date(estimatedCompletionDate_); if (!isNaN(d.getTime())) dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }); else dateStr = estimatedCompletionDate_; }
+  if (estimatedCompletionDate) {
+    const d = new Date(estimatedCompletionDate);
+    if (!isNaN(d.getTime())) {
+      dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    } else {
+      dateStr = estimatedCompletionDate as string;
+    }
+  }
 
   return (
-    <div className="profile-screen">
-      <div className="profile-scroll-area">
-        {/* Header */}
-        <div className="profile-header">
-          <i className="ti ti-arrow-left" style={{ fontSize: '22px', color: '#FFFFFF', cursor: 'pointer' }} onClick={() => navigate('/dashboard')}></i>
-          <div style={{ fontSize: 'var(--font-2xl)', fontWeight: 700, color: '#FFFFFF', letterSpacing: '-0.3px' }}>Profile</div>
-        </div>
+    <div className="page-enter pt-[calc(env(safe-area-inset-top)+20px)] pb-[calc(100px+env(safe-area-inset-bottom))] min-h-[100dvh] bg-[#0A0A0A] px-5">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-8">
+        <button onClick={() => navigate('/dashboard')} className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.05)] flex items-center justify-center transition-colors hover:bg-[rgba(255,255,255,0.1)]">
+          <ChevronLeft size={20} className="text-white" />
+        </button>
+        <div className="text-[17px] font-semibold text-white tracking-tight">Profile</div>
+        <div className="w-8" />
+      </div>
 
-        {/* Avatar */}
-        <div className="avatar-section" style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <div className="profile-avatar">{initials}</div>
-          <div style={{ fontSize: 'var(--font-3xl)', fontWeight: 700, color: '#FFFFFF', letterSpacing: '-0.4px', marginBottom: '8px' }}>{displayVal(name_)}</div>
-          <div className="identity-row">
-            <div className="identity-pill">{gender_ ? gender_.charAt(0).toUpperCase() + gender_.slice(1) : '—'}</div>
-            <div className="identity-pill">{displayVal(age_)} yrs</div>
-            <div className="identity-pill">{displayVal(activityLevel_)}</div>
-          </div>
-          <div style={{ borderBottom: '0.5px solid rgba(255,255,255,0.08)', paddingBottom: '20px', marginBottom: '4px' }}></div>
+      {/* Avatar & Basic Info */}
+      <div className="flex flex-col items-center mb-10">
+        <div className="w-20 h-20 rounded-full bg-[rgba(255,255,255,0.08)] text-[28px] font-semibold flex items-center justify-center text-white mb-4 border-[0.5px] border-[rgba(255,255,255,0.15)]">
+          {name ? name.substring(0, 2).toUpperCase() : 'U'}
         </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '0 4px', marginBottom: '16px' }}>
-          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, color: 'white' }}>
-            1
+        <div className="text-[24px] font-bold text-white tracking-tight mb-2">{name || 'User'}</div>
+        <div className="flex gap-2">
+          <div className="bg-[rgba(255,255,255,0.06)] border-[0.5px] border-[rgba(255,255,255,0.1)] px-3 py-1 rounded-full text-[12px] font-medium text-[rgba(255,255,255,0.6)]">
+            {gender ? gender.charAt(0).toUpperCase() + gender.slice(1) : '—'}
           </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '17px', fontWeight: 600, color: 'white', letterSpacing: '-0.2px' }}>
-              Personal Info
+          <div className="bg-[rgba(255,255,255,0.06)] border-[0.5px] border-[rgba(255,255,255,0.1)] px-3 py-1 rounded-full text-[12px] font-medium text-[rgba(255,255,255,0.6)]">
+            {displayVal(age)} yrs
+          </div>
+          <div className="bg-[rgba(255,255,255,0.06)] border-[0.5px] border-[rgba(255,255,255,0.1)] px-3 py-1 rounded-full text-[12px] font-medium text-[rgba(255,255,255,0.6)]">
+            {displayVal(activityLevel)}
+          </div>
+        </div>
+      </div>
+
+      {/* Step 1: Personal Info */}
+      <div className="mb-10">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-[10px] bg-[rgba(212,255,0,0.1)] border-[0.5px] border-[rgba(212,255,0,0.2)] flex items-center justify-center">
+              <span className="text-[#D4FF00] font-extrabold text-[16px]">1</span>
             </div>
-            <div style={{ fontSize: '13px', color: 'rgba(235,235,245,0.6)' }}>
-              Step 1 of 2 · Body stats & activity level
-            </div>
-          </div>
-
-        </div>
-
-        {/* Body stats */}
-        <div className="profile-card">
-          <div className="profile-card-label">Body stats</div>
-          <div className="stats-grid">
-            <div className="stat-tile"><div className="stat-tile-label">Weight</div><div className="stat-tile-value">{displayVal(weightKg_)} <span className="stat-tile-unit">kg</span></div></div>
-            <div className="stat-tile"><div className="stat-tile-label">Height</div><div className="stat-tile-value">{heightStr} <span className="stat-tile-unit">cm</span></div>{heightSub && <div style={{ fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.45)' }}>{heightSub}</div>}</div>
-            <div className="stat-tile"><div className="stat-tile-label">Current body fat</div><div className="stat-tile-value">{displayVal(currentBodyFatPct_)}<span className="stat-tile-unit">%</span></div></div>
-            <div className="stat-tile" style={{ background: 'rgba(212,255,0,0.08)', border: '0.5px solid rgba(212,255,0,0.2)' }}><div className="stat-tile-label" style={{ color: 'rgba(212,255,0,0.6)' }}>Target body fat</div><div className="stat-tile-value" style={{ color: '#D4FF00' }}>{displayVal(targetBodyFatPct_)}<span className="stat-tile-unit" style={{ color: 'rgba(212,255,0,0.6)' }}>%</span></div></div>
-          </div>
-        </div>
-
-        {/* Nutrition targets */}
-        <div className="profile-card">
-          <div className="profile-card-label">Daily nutrition targets</div>
-          {[
-            { icon: 'ti-flame', color: '#D4FF00', bg: 'rgba(212,255,0,0.15)', label: 'Calories', val: `${displayVal(tdee_)} kcal`, valColor: '#D4FF00' },
-            { icon: 'ti-meat', color: '#FF4D1C', bg: 'rgba(255,77,28,0.15)', label: 'Protein', val: `${displayVal(proteinMin_)}–${displayVal(proteinMax_)} g/day` },
-            { icon: 'ti-droplet', color: '#378ADD', bg: 'rgba(55,138,221,0.15)', label: 'Fat', val: `${displayVal(fatMin_)}–${displayVal(fatMax_)} g/day` },
-            { icon: 'ti-grain', color: '#BA7517', bg: 'rgba(186,117,23,0.15)', label: 'Carbohydrates', val: `${displayVal(carbMin_)}–${displayVal(carbMax_)} g/day` },
-            { icon: 'ti-leaf', color: '#639922', bg: 'rgba(99,153,34,0.15)', label: 'Fiber', val: `${displayVal(fiberMin_)}–${displayVal(fiberMax_)} g/day` },
-            { icon: 'ti-droplets', color: '#378ADD', bg: 'rgba(55,138,221,0.12)', label: 'Water', val: `${displayVal(waterLitres_)} L/day` },
-          ].map((row, i) => (
-            <div key={i} className="nutrition-profile-row">
-              <div className="np-label"><div className="np-icon" style={{ background: row.bg }}><i className={`ti ${row.icon}`} style={{ color: row.color, fontSize: '14px' }}></i></div>{row.label}</div>
-              <div className="np-value" style={row.valColor ? { color: row.valColor } : {}}>{row.val}</div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '0 4px', marginTop: '32px', marginBottom: '16px' }}>
-          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, color: 'white' }}>
-            2
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '17px', fontWeight: 600, color: 'white', letterSpacing: '-0.2px' }}>
-              Body Goal
-            </div>
-            <div style={{ fontSize: '13px', color: 'rgba(235,235,245,0.6)' }}>
-              Step 2 of 2 · Target physique & strategy
+            <div>
+              <div className="text-[16px] font-semibold text-white tracking-tight leading-tight">Personal Info</div>
+              <div className="text-[12px] text-[rgba(255,255,255,0.4)]">Body stats & activity</div>
             </div>
           </div>
           <button 
-            onClick={() => {
-              navigate('/goal');
-            }}
-            style={{
-              background: 'rgba(55,138,221,0.12)',
-              border: '0.5px solid rgba(55,138,221,0.3)',
-              borderRadius: '8px',
-              padding: '6px 12px',
-              color: '#378ADD',
-              fontSize: 'var(--font-xs)',
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
+            onClick={() => navigate('/onboarding/1')} 
+            className="btn-ghost"
+            style={{ padding: '6px 12px', fontSize: '12px' }}
           >
-            Update →
+            Edit
           </button>
         </div>
 
-        {/* Transformation goal */}
-        <div className="profile-card">
-          <div className="profile-card-label">Transformation goal</div>
-          {[
-            { icon: 'ti-trending-down', color: '#FF4D1C', bg: 'rgba(255,77,28,0.15)', label: 'Fat to lose', val: `${displayVal(fatToLoseKg_)} kg` },
-            { icon: 'ti-target', color: '#378ADD', bg: 'rgba(55,138,221,0.15)', label: 'Target weight', val: `${displayVal(targetWeightKg_)} kg` },
-            { icon: 'ti-bolt', color: '#D4FF00', bg: 'rgba(212,255,0,0.15)', label: 'Strategy', val: displayVal(chosenStrategyName_), valColor: '#D4FF00' },
-            { icon: 'ti-flame', color: '#D4FF00', bg: 'rgba(212,255,0,0.15)', label: 'Daily calorie goal', val: `${displayVal(dailyCalorieGoal_)} kcal` },
-            { icon: 'ti-minus', color: '#FFFFFF', bg: 'rgba(255,255,255,0.15)', label: 'Daily deficit', val: `${displayVal(dailyDeficit_)} kcal` },
-            { icon: 'ti-calendar', color: '#FFFFFF', bg: 'rgba(255,255,255,0.15)', label: 'Estimated time', val: `${displayVal(estimatedWeeks_)} weeks` },
-            { icon: 'ti-flag', color: '#FFFFFF', bg: 'rgba(255,255,255,0.15)', label: 'Target date', val: dateStr },
-          ].map((row, i) => (
-            <div key={i} className="nutrition-profile-row">
-              <div className="np-label"><div className="np-icon" style={{ background: row.bg }}><i className={`ti ${row.icon}`} style={{ color: row.color, fontSize: '14px' }}></i></div>{row.label}</div>
-              <div className="np-value" style={(row as any).valColor ? { color: (row as any).valColor } : {}}>{row.val}</div>
+        <div className="card-base p-0 overflow-hidden">
+          <div className="flex justify-between items-center py-3.5 px-4 border-b border-[rgba(255,255,255,0.06)]">
+            <span className="text-[14px] text-[rgba(255,255,255,0.5)]">Weight</span>
+            <span className="text-[14px] font-medium text-white">{displayVal(weightKg)} kg</span>
+          </div>
+          <div className="flex justify-between items-center py-3.5 px-4 border-b border-[rgba(255,255,255,0.06)]">
+            <span className="text-[14px] text-[rgba(255,255,255,0.5)]">Height</span>
+            <span className="text-[14px] font-medium text-white">{heightStr} cm <span className="text-[12px] text-[rgba(255,255,255,0.3)] ml-1">({heightSub})</span></span>
+          </div>
+          <div className="flex justify-between items-center py-3.5 px-4 border-b border-[rgba(255,255,255,0.06)]">
+            <span className="text-[14px] text-[rgba(255,255,255,0.5)]">Current BF</span>
+            <span className="text-[14px] font-medium text-white">{displayVal(currentBodyFatPct)}%</span>
+          </div>
+          <div className="flex justify-between items-center py-3.5 px-4 bg-[rgba(212,255,0,0.02)]">
+            <span className="text-[14px] text-[rgba(212,255,0,0.5)]">Target BF</span>
+            <span className="text-[14px] font-bold text-[#D4FF00]">{displayVal(targetBodyFatPct)}%</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Step 2: Body Goal */}
+      <div className="mb-10">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-[10px] bg-[rgba(55,138,221,0.1)] border-[0.5px] border-[rgba(55,138,221,0.2)] flex items-center justify-center">
+              <span className="text-[#378ADD] font-extrabold text-[16px]">2</span>
             </div>
-          ))}
+            <div>
+              <div className="text-[16px] font-semibold text-white tracking-tight leading-tight">Body Goal</div>
+              <div className="text-[12px] text-[rgba(255,255,255,0.4)]">Target physique & strategy</div>
+            </div>
+          </div>
+          <button 
+            onClick={() => navigate('/goal')} 
+            className="bg-[rgba(55,138,221,0.12)] border-[0.5px] border-[rgba(55,138,221,0.3)] rounded-lg text-[#378ADD] font-semibold"
+            style={{ padding: '6px 12px', fontSize: '12px' }}
+          >
+            Update
+          </button>
         </div>
 
-        <div className="profile-bottom-spacer"></div>
+        <div className="card-base p-0 overflow-hidden mb-4">
+          <div className="flex justify-between items-center py-3.5 px-4 border-b border-[rgba(255,255,255,0.06)]">
+            <span className="text-[14px] text-[rgba(255,255,255,0.5)]">Fat to lose</span>
+            <span className="text-[14px] font-medium text-white">{displayVal(fatToLoseKg)} kg</span>
+          </div>
+          <div className="flex justify-between items-center py-3.5 px-4 border-b border-[rgba(255,255,255,0.06)]">
+            <span className="text-[14px] text-[rgba(255,255,255,0.5)]">Target weight</span>
+            <span className="text-[14px] font-medium text-white">{displayVal(targetWeightKg)} kg</span>
+          </div>
+          <div className="flex justify-between items-center py-3.5 px-4 border-b border-[rgba(255,255,255,0.06)]">
+            <span className="text-[14px] text-[rgba(255,255,255,0.5)]">Strategy</span>
+            <span className="text-[14px] font-medium text-[#D4FF00]">{displayVal(chosenStrategyName)}</span>
+          </div>
+          <div className="flex justify-between items-center py-3.5 px-4 border-b border-[rgba(255,255,255,0.06)]">
+            <span className="text-[14px] text-[rgba(255,255,255,0.5)]">Daily deficit</span>
+            <span className="text-[14px] font-medium text-white">{displayVal(dailyDeficit)} kcal</span>
+          </div>
+          <div className="flex justify-between items-center py-3.5 px-4 border-b border-[rgba(255,255,255,0.06)]">
+            <span className="text-[14px] text-[rgba(255,255,255,0.5)]">Estimated time</span>
+            <span className="text-[14px] font-medium text-white">{displayVal(estimatedWeeks)} weeks</span>
+          </div>
+          <div className="flex justify-between items-center py-3.5 px-4">
+            <span className="text-[14px] text-[rgba(255,255,255,0.5)]">Target date</span>
+            <span className="text-[14px] font-medium text-white">{dateStr}</span>
+          </div>
+        </div>
       </div>
+
+      {/* Macros Section */}
+      <div className="mb-12">
+        <div className="text-[16px] font-semibold text-white tracking-tight mb-3">Daily Nutrition Targets</div>
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <div className="card-base p-4 flex flex-col items-center justify-center text-center">
+            <div className="text-[10px] uppercase tracking-widest text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Calories</div>
+            <div className="text-[20px] font-bold text-[#D4FF00]">{displayVal(dailyCalorieGoal)}<span className="text-[12px] font-medium text-[rgba(212,255,0,0.5)] ml-1">kcal</span></div>
+          </div>
+          <div className="card-base p-4 flex flex-col items-center justify-center text-center">
+            <div className="text-[10px] uppercase tracking-widest text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Protein</div>
+            <div className="text-[20px] font-bold text-[#FF4D1C]">{displayVal(proteinMin)}–{displayVal(proteinMax)}<span className="text-[12px] font-medium text-[rgba(255,77,28,0.5)] ml-1">g</span></div>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="card-base p-4 flex flex-col items-center justify-center text-center">
+            <div className="text-[10px] uppercase tracking-widest text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Carbs</div>
+            <div className="text-[16px] font-bold text-white">{displayVal(carbMin)}–{displayVal(carbMax)}</div>
+          </div>
+          <div className="card-base p-4 flex flex-col items-center justify-center text-center">
+            <div className="text-[10px] uppercase tracking-widest text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Fat</div>
+            <div className="text-[16px] font-bold text-white">{displayVal(fatMin)}–{displayVal(fatMax)}</div>
+          </div>
+          <div className="card-base p-4 flex flex-col items-center justify-center text-center">
+            <div className="text-[10px] uppercase tracking-widest text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Water</div>
+            <div className="text-[16px] font-bold text-[#378ADD]">{displayVal(waterLitres)} L</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Danger Zone */}
+      <div className="flex flex-col gap-4">
+        <button 
+          onClick={handleLogout} 
+          className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.7)] font-medium text-[15px] transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+        >
+          <LogOut size={18} />
+          Sign Out
+        </button>
+        <button 
+          onClick={() => setShowResetModal(true)} 
+          className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-[rgba(255,59,48,0.1)] border border-[rgba(255,59,48,0.2)] text-[#FF3B30] font-medium text-[15px] transition-colors hover:bg-[rgba(255,59,48,0.15)]"
+        >
+          <Trash2 size={18} />
+          Reset Profile
+        </button>
+      </div>
+
+      <AnimatePresence>
+        {showResetModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+              onClick={() => !resetMutation.isPending && setShowResetModal(false)}
+            />
+            
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 10 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="bg-[#1A1A1C] border border-[rgba(255,255,255,0.1)] rounded-3xl p-6 w-full max-w-[340px] relative z-10 flex flex-col items-center text-center shadow-2xl"
+            >
+              <div className="w-14 h-14 rounded-full bg-[rgba(255,77,28,0.1)] flex items-center justify-center mb-4">
+                <AlertTriangle size={28} color="#FF4D1C" />
+              </div>
+              <h3 className="text-[18px] font-bold text-white mb-2 tracking-tight">Reset Everything?</h3>
+              <p className="text-[14px] text-[rgba(255,255,255,0.5)] mb-6 leading-relaxed">
+                This will delete your body stats and goals. Your logged meals and progress will remain, but you will need to complete onboarding again.
+              </p>
+              
+              <div className="flex flex-col w-full gap-3">
+                <button 
+                  onClick={() => resetMutation.mutate()} 
+                  disabled={resetMutation.isPending}
+                  className="btn-primary-style rounded-full w-full py-3.5 bg-[#FF3B30] text-white text-[15px] font-semibold disabled:opacity-50 transition-opacity hover:opacity-90"
+                >
+                  {resetMutation.isPending ? 'Resetting...' : 'Yes, reset profile'}
+                </button>
+                <button 
+                  onClick={() => setShowResetModal(false)} 
+                  disabled={resetMutation.isPending}
+                  className="btn-ghost w-full py-3.5 text-[15px] font-medium"
+                >
+                  Keep my profile
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
