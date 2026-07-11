@@ -1,4 +1,6 @@
-import {
+const fs = require('fs');
+
+const content = `import {
   LayoutDashboard,
   MessageSquare,
   TrendingUp,
@@ -56,7 +58,7 @@ export function BottomNav() {
               return (
                 <motion.div 
                   whileTap={{ scale: 0.9 }}
-                  className={`flex flex-col items-center justify-center gap-[4px] py-[8px] px-[8px] rounded-[20px] w-[56px] ${isItemDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={\`flex flex-col items-center justify-center gap-[4px] py-[8px] px-[8px] rounded-[20px] w-[56px] \${isItemDisabled ? 'opacity-50 cursor-not-allowed' : ''}\`}
                   style={{
                     backgroundColor: bgColor,
                     transition: "background-color 300ms cubic-bezier(0.4,0,0.2,1)",
@@ -90,3 +92,5 @@ export function BottomNav() {
     </div>
   );
 }
+`
+fs.writeFileSync('src/shared/components/BottomNav.tsx', content);

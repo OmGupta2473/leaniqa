@@ -1,4 +1,6 @@
-import {
+const fs = require('fs');
+
+const content = `import {
   LayoutDashboard,
   MessageSquare,
   TrendingUp,
@@ -12,7 +14,7 @@ import { motion, AnimatePresence } from "motion/react";
 const navItems = [
   { id: "/goal", icon: Target, label: "Goal" },
   { id: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { id: "/meals", icon: MessageSquare, label: "Log Meal" },
+  { id: "/meals", icon: MessageSquare, label: "Log Meal", primary: true },
   { id: "/progress", icon: TrendingUp, label: "Progress" },
   { id: "/activity", icon: FileBarChart, label: "Activity" },
 ];
@@ -25,7 +27,7 @@ export function BottomNav() {
       <div 
         className="flex items-center justify-between px-2 py-2 rounded-[32px] w-full max-w-[400px] pointer-events-auto"
         style={{
-          background: "rgba(28,28,30,0.85)",
+          background: "rgba(28,28,30,0.75)",
           backdropFilter: "blur(32px) saturate(180%)",
           WebkitBackdropFilter: "blur(32px) saturate(180%)",
           border: "0.5px solid rgba(255,255,255,0.15)",
@@ -56,7 +58,7 @@ export function BottomNav() {
               return (
                 <motion.div 
                   whileTap={{ scale: 0.9 }}
-                  className={`flex flex-col items-center justify-center gap-[4px] py-[8px] px-[8px] rounded-[20px] w-[56px] ${isItemDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={\`flex flex-col items-center justify-center gap-[2px] py-[10px] px-[16px] rounded-full w-full \${isItemDisabled ? 'opacity-50 cursor-not-allowed' : ''}\`}
                   style={{
                     backgroundColor: bgColor,
                     transition: "background-color 300ms cubic-bezier(0.4,0,0.2,1)",
@@ -70,10 +72,11 @@ export function BottomNav() {
                       transition: "color 300ms cubic-bezier(0.4,0,0.2,1), stroke-width 300ms ease"
                     }}
                   />
+                  {/*
                   <span 
-                    className="tracking-tight"
+                    className="tracking-wide"
                     style={{
-                      fontSize: "9px",
+                      fontSize: "10px",
                       fontWeight: isActive && !isItemDisabled ? 700 : 500,
                       color: color,
                       transition: "color 300ms cubic-bezier(0.4,0,0.2,1)"
@@ -81,6 +84,7 @@ export function BottomNav() {
                   >
                     {item.label}
                   </span>
+                  */}
                 </motion.div>
               );
             }}
@@ -90,3 +94,5 @@ export function BottomNav() {
     </div>
   );
 }
+`
+fs.writeFileSync('src/shared/components/BottomNav.tsx', content);
