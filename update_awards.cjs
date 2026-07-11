@@ -1,4 +1,6 @@
-import { useNavigate } from "react-router-dom";
+const fs = require('fs');
+
+const content = `import { useNavigate } from "react-router-dom";
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { reportService } from "@/features/reports/services/reportService";
@@ -41,7 +43,7 @@ export function AwardsPage() {
 
   const itemVariants = {
     hidden: { opacity: 0, scale: 0.95 },
-    show: { opacity: 1, scale: 1, transition: { type: 'spring' as const, stiffness: 300, damping: 24 } }
+    show: { opacity: 1, scale: 1, transition: { type: 'spring', stiffness: 300, damping: 24 } }
   };
 
   return (
@@ -96,13 +98,13 @@ export function AwardsPage() {
               !award.earned && "opacity-40 grayscale-[60%]"
             )}
             style={{
-              borderColor: award.earned ? `${award.primaryColor}66` : undefined,
-              boxShadow: award.earned ? `0 0 20px ${award.primaryColor}20` : undefined,
+              borderColor: award.earned ? \`\${award.primaryColor}66\` : undefined,
+              boxShadow: award.earned ? \`0 0 20px \${award.primaryColor}20\` : undefined,
             }}
           >
             <div 
               className="w-[56px] h-[56px] rounded-full flex items-center justify-center text-[24px] mb-3 relative"
-              style={{ backgroundColor: `${award.primaryColor}15` }}
+              style={{ backgroundColor: \`\${award.primaryColor}15\` }}
             >
               <span className="relative z-10" style={{ filter: award.earned ? 'none' : 'grayscale(100%) brightness(1.5)' }}>{award.symbol || award.symbolText || '🏆'}</span>
             </div>
@@ -135,7 +137,7 @@ export function AwardsPage() {
               className="bg-[#111113] border border-[rgba(255,255,255,0.1)] rounded-[32px] p-8 max-w-sm w-full flex flex-col items-center relative overflow-hidden"
               onClick={(e) => e.stopPropagation()}
               style={{
-                boxShadow: selectedAward.earned ? `0 20px 60px ${selectedAward.primaryColor}30` : '0 20px 60px rgba(0,0,0,0.5)',
+                boxShadow: selectedAward.earned ? \`0 20px 60px \${selectedAward.primaryColor}30\` : '0 20px 60px rgba(0,0,0,0.5)',
               }}
             >
               {/* Confetti effect if earned */}
@@ -148,8 +150,8 @@ export function AwardsPage() {
                       style={{ backgroundColor: selectedAward.primaryColor }}
                       initial={{ top: '30%', left: '50%', opacity: 1, scale: 0 }}
                       animate={{ 
-                        top: `${20 + Math.random() * 40}%`, 
-                        left: `${10 + Math.random() * 80}%`,
+                        top: \`\${20 + Math.random() * 40}%\`, 
+                        left: \`\${10 + Math.random() * 80}%\`,
                         opacity: 0,
                         scale: Math.random() * 1.5 + 0.5
                       }}
@@ -169,8 +171,8 @@ export function AwardsPage() {
               <div 
                 className="w-[100px] h-[100px] rounded-full flex items-center justify-center text-[48px] mb-6 relative"
                 style={{ 
-                  backgroundColor: `${selectedAward.primaryColor}15`,
-                  boxShadow: selectedAward.earned ? `0 0 30px ${selectedAward.primaryColor}40` : undefined 
+                  backgroundColor: \`\${selectedAward.primaryColor}15\`,
+                  boxShadow: selectedAward.earned ? \`0 0 30px \${selectedAward.primaryColor}40\` : undefined 
                 }}
               >
                 <span style={{ filter: selectedAward.earned ? 'none' : 'grayscale(100%) brightness(1.5)' }}>
@@ -198,7 +200,7 @@ export function AwardsPage() {
                     <div 
                       className="h-full rounded-full transition-all duration-1000"
                       style={{ 
-                        width: `${Math.min(100, (currentStreak / selectedAward.streakRequired) * 100)}%`,
+                        width: \`\${Math.min(100, (currentStreak / selectedAward.streakRequired) * 100)}%\`,
                         backgroundColor: selectedAward.primaryColor || '#D4FF00'
                       }}
                     />
@@ -212,3 +214,5 @@ export function AwardsPage() {
     </div>
   );
 }
+`
+fs.writeFileSync('src/features/awards/pages/AwardsPage.tsx', content);

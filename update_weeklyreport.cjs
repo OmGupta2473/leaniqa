@@ -1,4 +1,6 @@
-import { useReportStore } from "../store/reportStore";
+const fs = require('fs');
+
+const content = `import { useReportStore } from "../store/reportStore";
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { profileService } from '@/features/profile/services/profileService';
@@ -16,7 +18,7 @@ function getLocalDateString(d: Date) {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return \`\${year}-\${month}-\${day}\`;
 }
 
 export function WeeklyReportPage() {
@@ -80,7 +82,7 @@ export function WeeklyReportPage() {
 
   const itemVariants = {
     hidden: { opacity: 0, y: 15 },
-    show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 24 } }
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
   };
 
   return (
@@ -146,7 +148,7 @@ export function WeeklyReportPage() {
                      <div className="progress-track flex-1 h-2 rounded-full overflow-hidden bg-[rgba(255,255,255,0.06)]">
                        <motion.div 
                          initial={{ width: 0 }} 
-                         animate={{ width: `${pct}%` }} 
+                         animate={{ width: \`\${pct}%\` }} 
                          transition={{ duration: 0.8, delay: i * 0.08, ease: "easeOut" }}
                          className="h-full rounded-full"
                          style={{ backgroundColor: barColor }}
@@ -166,7 +168,7 @@ export function WeeklyReportPage() {
               {insights.map((insight, idx) => {
                 const color = insight.type === 'positive' ? '#D4FF00' : (insight.type === 'warning' ? '#fbbf24' : '#FF4D1C');
                 return (
-                  <motion.div key={idx} variants={itemVariants} className="card-base p-[14px]" style={{ borderLeft: `3px solid ${color}` }}>
+                  <motion.div key={idx} variants={itemVariants} className="card-base p-[14px]" style={{ borderLeft: \`3px solid \${color}\` }}>
                     <div className="text-[13px] font-semibold text-white">{insight.title}</div>
                     <div className="text-[13px] text-[rgba(255,255,255,0.6)] leading-relaxed mt-1">{insight.body}</div>
                   </motion.div>
@@ -190,3 +192,5 @@ export function WeeklyReportPage() {
     </div>
   );
 }
+`
+fs.writeFileSync('src/features/reports/pages/WeeklyReportPage.tsx', content);

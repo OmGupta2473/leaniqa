@@ -1,4 +1,6 @@
-import { useState } from 'react';
+const fs = require('fs');
+
+const content = `import { useState } from 'react';
 import { useDashboardStore } from '@/features/dashboard/store/dashboardStore';
 import { Target, Scale, TrendingDown, TrendingUp } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
@@ -14,7 +16,7 @@ function getLocalDateString(d: Date) {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}T00:00:00.000Z`;
+  return \`\${year}-\${month}-\${day}T00:00:00.000Z\`;
 }
 
 export function ProgressPage() {
@@ -137,7 +139,7 @@ export function ProgressPage() {
       const lastWeight = previousLogs[previousLogs.length - 1].weight;
       const diff = Math.abs(val - lastWeight);
       if (diff > 5) {
-        setErrorMsg(`A weight change of ${diff.toFixed(1)} kg since your last logged weight is not realistically possible. Please check your entry.`);
+        setErrorMsg(\`A weight change of \${diff.toFixed(1)} kg since your last logged weight is not realistically possible. Please check your entry.\`);
         return;
       }
     }
@@ -190,7 +192,7 @@ export function ProgressPage() {
               setWeight(e.target.value);
               setErrorMsg('');
             }} 
-            placeholder={`e.g. ${currentWeight} kg`} 
+            placeholder={\`e.g. \${currentWeight} kg\`} 
             className="input-apple flex-1"
             disabled={addWeightMutation.isPending}
           />
@@ -217,7 +219,7 @@ export function ProgressPage() {
                 type="number" 
                 value={waist} 
                 onChange={(e) => setWaist(e.target.value)} 
-                placeholder={`Waist (cm)`} 
+                placeholder={\`Waist (cm)\`} 
                 className="input-apple disabled:opacity-50"
                 disabled={addWeightMutation.isPending}
               />
@@ -225,7 +227,7 @@ export function ProgressPage() {
                 type="number" 
                 value={neck} 
                 onChange={(e) => setNeck(e.target.value)} 
-                placeholder={`Neck (cm)`} 
+                placeholder={\`Neck (cm)\`} 
                 className="input-apple disabled:opacity-50"
                 disabled={addWeightMutation.isPending}
               />
@@ -234,7 +236,7 @@ export function ProgressPage() {
                   type="number" 
                   value={hip} 
                   onChange={(e) => setHip(e.target.value)} 
-                  placeholder={`Hip (cm)`} 
+                  placeholder={\`Hip (cm)\`} 
                   className="col-span-2 input-apple disabled:opacity-50"
                   disabled={addWeightMutation.isPending}
                 />
@@ -331,8 +333,8 @@ export function ProgressPage() {
           </div>
           <div className="mt-4 pt-4 border-t border-[rgba(255,255,255,0.06)] text-[11px] text-[rgba(255,255,255,0.35)] text-center leading-relaxed">
             {actualPace > 0 
-              ? `Projections based on your actual pace of ${actualPace.toFixed(2)} kg/wk lost.`
-              : `Based on current ${complianceScore.toFixed(0)}% compliance and ${(goal?.deficit_kcal || 500) * 7} kcal weekly deficit.`
+              ? \`Projections based on your actual pace of \${actualPace.toFixed(2)} kg/wk lost.\`
+              : \`Based on current \${complianceScore.toFixed(0)}% compliance and \${(goal?.deficit_kcal || 500) * 7} kcal weekly deficit.\`
             }
           </div>
         </div>
@@ -340,3 +342,5 @@ export function ProgressPage() {
     </div>
   );
 }
+`
+fs.writeFileSync('src/features/progress/pages/ProgressPage.tsx', content);
