@@ -1,4 +1,5 @@
-import { useNavigate } from "react-router-dom";
+const fs = require('fs');
+const content = `import { useNavigate } from "react-router-dom";
 import React, { useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { profileService } from "@/features/profile/services/profileService";
@@ -16,10 +17,10 @@ function getLocalDateString() {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return \`\${year}-\${month}-\${day}\`;
 }
 
-export function ProteinDetailPage() {
+export function CalorieDetailPage() {
   const navigate = useNavigate();
   const { profileData: onboardingData } = useCalculatedProfile();
   const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
@@ -27,34 +28,41 @@ export function ProteinDetailPage() {
     queryKey: ["profile"],
     queryFn: () => profileService.getProfile(),
   });
+  const { data: goal } = useQuery({
+    queryKey: ["goal"],
+    queryFn: () => profileService.getGoal(),
+  });
   const { data: meals = [] } = useQuery({
     queryKey: ["meals", "today"],
     queryFn: () => mealService.getTodaysMeals(),
   });
 
-  const target_protein = profile?.protein_target ?? onboardingData?.proteinMid ?? 150;
+  const dailyCalorieGoal =
+    profile?.maintenance_kcal && goal?.deficit_kcal !== undefined
+      ? profile.maintenance_kcal - goal.deficit_kcal
+      : (onboardingData?.dailyCalorieGoal ?? 2000);
 
   const todayStr = getLocalDateString();
-  const proteinConsumed = meals ? meals.reduce((acc, m) => acc + m.protein, 0) : 0;
+  const caloriesConsumed = meals ? meals.reduce((acc, m) => acc + m.calories, 0) : 0;
   
   const chartLogs = useMemo(() => {
     const logs = [...metrics];
     const todayIdx = logs.findIndex(l => l.date === todayStr);
     if (todayIdx >= 0) {
-      logs[todayIdx] = { ...logs[todayIdx], actual_protein: proteinConsumed, target_protein };
+      logs[todayIdx] = { ...logs[todayIdx], actual_calories: caloriesConsumed, target_calories: dailyCalorieGoal };
     } else {
       logs.push({
         date: todayStr,
-        actual_calories: 0, user_id: "", water: 0, score: 0,
-        actual_protein: proteinConsumed,
-        target_calories: 0,
-        target_protein,
+        actual_calories: caloriesConsumed,
+        actual_protein: 0, user_id: "", water: 0, score: 0,
+        target_calories: dailyCalorieGoal,
+        target_protein: 0,
       });
     }
     // Take last 7 days
     const recentLogs = logs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).slice(-7);
     return recentLogs;
-  }, [metrics, todayStr, proteinConsumed, target_protein]);
+  }, [metrics, todayStr, caloriesConsumed, dailyCalorieGoal]);
 
   const chartData = useMemo(() => {
     return chartLogs.map(l => {
@@ -63,16 +71,16 @@ export function ProteinDetailPage() {
       return {
         date: l.date,
         dayLabel: isToday ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' }),
-        actual: l.actual_protein,
+        actual: l.actual_calories,
         isToday
       };
     });
   }, [chartLogs, todayStr]);
 
-  const breakfastPro = meals.filter(m => m.meal_slot === 'breakfast').reduce((a, b) => a + b.protein, 0);
-  const lunchPro = meals.filter(m => m.meal_slot === 'lunch').reduce((a, b) => a + b.protein, 0);
-  const dinnerPro = meals.filter(m => m.meal_slot === 'dinner').reduce((a, b) => a + b.protein, 0);
-  const otherPro = meals.filter(m => !['breakfast', 'lunch', 'dinner'].includes(m.meal_slot || '')).reduce((a, b) => a + b.protein, 0);
+  const breakfastKcal = meals.filter(m => m.meal_slot === 'breakfast').reduce((a, b) => a + b.calories, 0);
+  const lunchKcal = meals.filter(m => m.meal_slot === 'lunch').reduce((a, b) => a + b.calories, 0);
+  const dinnerKcal = meals.filter(m => m.meal_slot === 'dinner').reduce((a, b) => a + b.calories, 0);
+  const otherKcal = meals.filter(m => !['breakfast', 'lunch', 'dinner'].includes(m.meal_slot || '')).reduce((a, b) => a + b.calories, 0);
 
   return (
     <div className="page-enter pt-[calc(env(safe-area-inset-top)+20px)] pb-[calc(100px+env(safe-area-inset-bottom))] min-h-[100dvh] bg-[#0A0A0A] px-5">
@@ -81,7 +89,7 @@ export function ProteinDetailPage() {
         <button onClick={() => navigate("/dashboard")} className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.05)] flex items-center justify-center">
           <ChevronLeft size={20} className="text-white" />
         </button>
-        <h1 className="text-[17px] font-semibold text-white tracking-tight">Protein</h1>
+        <h1 className="text-[17px] font-semibold text-white tracking-tight">Calories</h1>
         <div className="w-8" />
       </div>
 
@@ -89,10 +97,10 @@ export function ProteinDetailPage() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center justify-center text-center mb-10 mt-4">
         <div className="text-[12px] uppercase tracking-widest font-semibold text-[rgba(255,255,255,0.4)] mb-2">Total consumed</div>
         <div className="flex items-baseline gap-1.5 mb-1">
-          <span className="text-[54px] font-bold text-[#378ADD] tracking-[-1.5px] leading-none">{proteinConsumed}</span>
-          <span className="text-[18px] text-[rgba(255,255,255,0.6)] font-medium">g</span>
+          <span className="text-[54px] font-bold text-[#D4FF00] tracking-[-1.5px] leading-none">{caloriesConsumed}</span>
+          <span className="text-[18px] text-[rgba(255,255,255,0.6)] font-medium">kcal</span>
         </div>
-        <div className="text-[14px] text-white font-medium mt-1">/ {target_protein}g daily target</div>
+        <div className="text-[14px] text-white font-medium mt-1">/ {dailyCalorieGoal} daily target</div>
       </motion.div>
 
       {/* 7-Day History Chart */}
@@ -110,7 +118,7 @@ export function ProteinDetailPage() {
               />
               <Bar dataKey="actual" radius={[4, 4, 4, 4]} maxBarSize={32}>
                 {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.isToday ? '#378ADD' : 'rgba(255,255,255,0.15)'} />
+                  <Cell key={\`cell-\${index}\`} fill={entry.isToday ? '#D4FF00' : 'rgba(255,255,255,0.15)'} />
                 ))}
               </Bar>
             </BarChart>
@@ -128,20 +136,20 @@ export function ProteinDetailPage() {
           <div className="card-base p-4">
             <div className="flex items-center justify-between py-3 border-b border-[rgba(255,255,255,0.06)]">
               <span className="text-[15px] font-medium text-white">Breakfast</span>
-              <span className="text-[15px] font-bold text-white">{breakfastPro} <span className="text-[12px] font-normal text-[rgba(255,255,255,0.4)]">g</span></span>
+              <span className="text-[15px] font-bold text-white">{breakfastKcal} <span className="text-[12px] font-normal text-[rgba(255,255,255,0.4)]">kcal</span></span>
             </div>
             <div className="flex items-center justify-between py-3 border-b border-[rgba(255,255,255,0.06)]">
               <span className="text-[15px] font-medium text-white">Lunch</span>
-              <span className="text-[15px] font-bold text-white">{lunchPro} <span className="text-[12px] font-normal text-[rgba(255,255,255,0.4)]">g</span></span>
+              <span className="text-[15px] font-bold text-white">{lunchKcal} <span className="text-[12px] font-normal text-[rgba(255,255,255,0.4)]">kcal</span></span>
             </div>
             <div className="flex items-center justify-between py-3 border-b border-[rgba(255,255,255,0.06)]">
               <span className="text-[15px] font-medium text-white">Dinner</span>
-              <span className="text-[15px] font-bold text-white">{dinnerPro} <span className="text-[12px] font-normal text-[rgba(255,255,255,0.4)]">g</span></span>
+              <span className="text-[15px] font-bold text-white">{dinnerKcal} <span className="text-[12px] font-normal text-[rgba(255,255,255,0.4)]">kcal</span></span>
             </div>
-            {otherPro > 0 && (
+            {otherKcal > 0 && (
               <div className="flex items-center justify-between py-3">
                 <span className="text-[15px] font-medium text-white">Snacks / Other</span>
-                <span className="text-[15px] font-bold text-white">{otherPro} <span className="text-[12px] font-normal text-[rgba(255,255,255,0.4)]">g</span></span>
+                <span className="text-[15px] font-bold text-white">{otherKcal} <span className="text-[12px] font-normal text-[rgba(255,255,255,0.4)]">kcal</span></span>
               </div>
             )}
           </div>
@@ -150,3 +158,5 @@ export function ProteinDetailPage() {
     </div>
   );
 }
+`
+fs.writeFileSync('src/features/nutrition/pages/CalorieDetailPage.tsx', content);

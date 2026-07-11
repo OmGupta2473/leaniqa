@@ -1,4 +1,6 @@
-import { useUserStore } from "@/features/profile/store/userStore";
+const fs = require('fs');
+
+const content = `import { useUserStore } from "@/features/profile/store/userStore";
 import { useAppStore } from "@/app/store";
 import { reportService } from "@/features/reports/services/reportService";
 import { calculateCurrentDailyStreak, isDailyGoalMet, toUtcDay } from "@/shared/utils/streaks";
@@ -206,7 +208,7 @@ export function DashboardPage() {
                 Protein
               </div>
               <div className="progress-track w-12 h-1.5 rounded-full overflow-hidden bg-[rgba(255,255,255,0.1)]">
-                <div className="h-full bg-[#378ADD] rounded-full" style={{ width: mounted ? `${proPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.3s" }} />
+                <div className="h-full bg-[#378ADD] rounded-full" style={{ width: mounted ? \`\${proPct * 100}%\` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.3s" }} />
               </div>
             </motion.div>
 
@@ -219,7 +221,7 @@ export function DashboardPage() {
                 Fat
               </div>
               <div className="progress-track w-12 h-1.5 rounded-full overflow-hidden bg-[rgba(255,255,255,0.1)]">
-                <div className="h-full bg-[#FF4D1C] rounded-full" style={{ width: mounted ? `${fatPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.4s" }} />
+                <div className="h-full bg-[#FF4D1C] rounded-full" style={{ width: mounted ? \`\${fatPct * 100}%\` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.4s" }} />
               </div>
             </motion.div>
 
@@ -232,7 +234,7 @@ export function DashboardPage() {
                 Carbs
               </div>
               <div className="progress-track w-12 h-1.5 rounded-full overflow-hidden bg-[rgba(255,255,255,0.1)]">
-                <div className="h-full bg-[#D4FF00] rounded-full" style={{ width: mounted ? `${carbPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.5s" }} />
+                <div className="h-full bg-[#D4FF00] rounded-full" style={{ width: mounted ? \`\${carbPct * 100}%\` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.5s" }} />
               </div>
             </motion.div>
           </div>
@@ -307,3 +309,6 @@ export function DashboardPage() {
     </div>
   );
 }
+`;
+
+fs.writeFileSync('src/features/dashboard/pages/DashboardPage.tsx', content);

@@ -1,4 +1,6 @@
-import { useNavigate } from "react-router-dom";
+const fs = require('fs');
+
+const content = `import { useNavigate } from "react-router-dom";
 import React, { useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { profileService } from "@/features/profile/services/profileService";
@@ -16,7 +18,7 @@ function getLocalDateString() {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return \`\${year}-\${month}-\${day}\`;
 }
 
 export function ProteinDetailPage() {
@@ -110,7 +112,7 @@ export function ProteinDetailPage() {
               />
               <Bar dataKey="actual" radius={[4, 4, 4, 4]} maxBarSize={32}>
                 {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.isToday ? '#378ADD' : 'rgba(255,255,255,0.15)'} />
+                  <Cell key={\`cell-\${index}\`} fill={entry.isToday ? '#378ADD' : 'rgba(255,255,255,0.15)'} />
                 ))}
               </Bar>
             </BarChart>
@@ -150,3 +152,5 @@ export function ProteinDetailPage() {
     </div>
   );
 }
+`
+fs.writeFileSync('src/features/nutrition/pages/ProteinDetailPage.tsx', content);
