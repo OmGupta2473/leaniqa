@@ -39,17 +39,17 @@ export function BottomNav() {
               const isItemDisabled = !hasCompletedOnboarding;
               const color = isItemDisabled 
                 ? "rgba(255,255,255,0.2)" 
-                : (isActive || item.primary ? "#1a1a1c" : "rgba(255,255,255,0.6)");
+                : (isActive ? "#1a1a1c" : "rgba(255,255,255,0.6)");
               
               const bgColor = isItemDisabled
                 ? "transparent"
-                : (isActive || item.primary ? "#D4FF00" : "transparent");
+                : (isActive ? "#D4FF00" : "transparent");
 
               return (
                 <div 
                   className={cn(
                     "flex items-center justify-center transition-all duration-300",
-                    isActive || item.primary ? "w-[56px] h-[40px] rounded-full" : "w-[40px] h-[40px] rounded-full"
+                    isActive ? "w-[56px] h-[40px] rounded-full" : "w-[40px] h-[40px] rounded-full"
                   )}
                   style={{ 
                     backgroundColor: bgColor,
@@ -57,7 +57,7 @@ export function BottomNav() {
                     opacity: isItemDisabled ? 0.5 : 1
                   }}
                 >
-                  <item.icon size={20} strokeWidth={isActive || item.primary ? 2.5 : 2} />
+                  <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
                 </div>
               );
             }}
