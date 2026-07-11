@@ -102,18 +102,39 @@ function GridCard({ feature, delay }: { feature: any; delay: number; key?: React
 ───────────────────────────────────────────── */
 function PhoneFrame({
   children,
-  widthClass = "w-[clamp(120px,15vw,220px)]",
+  // 1. Mobile width is now based on screen height (28dvh) so it never overflows vertically
+  widthClass = "w-[clamp(160px,28dvh,180px)] md:w-[clamp(180px,16vw,260px)] lg:w-[clamp(200px,15vw,280px)]",
 }: {
   children: React.ReactNode;
   widthClass?: string;
 }) {
   return (
-    <div className={`relative ${widthClass} aspect-[9/19] mx-auto`}>
+    <div className={`relative ${widthClass} aspect-[9/19.5] mx-auto`}>
       <div className="absolute inset-x-6 bottom-0 h-6 bg-[#0C0C0D]/80 blur-xl -z-10" />
-      <div className="absolute inset-0 rounded-[2.2rem] border-[6px] border-zinc-800 shadow-2xl bg-[#0C0C0D] overflow-hidden ring-1 ring-white/5">
-        <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-transparent pointer-events-none z-30" />
-        <div className="absolute top-[5%] left-1/2 -translate-x-1/2 w-[30%] h-[3.5%] bg-black rounded-full z-40 border border-zinc-800" />
-        <div className="absolute inset-0 font-sans">{children}</div>
+      <div className="absolute inset-0 rounded-[2.5rem] border-[6px] border-[#1C1C1E] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] bg-[#0C0C0D] overflow-hidden ring-1 ring-white/10">
+        <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-black/40 pointer-events-none z-30" />
+        
+        {/* Dynamic Island / Notch */}
+        <div className="absolute top-[2.5%] left-1/2 -translate-x-1/2 w-[35%] h-[4.2%] min-h-[16px] bg-black rounded-full z-50 border border-zinc-900 shadow-inner flex items-center justify-end px-1.5">
+            <div className="w-[35%] max-w-[12px] aspect-square rounded-full bg-[#111112] border border-[#222] mr-1 flex items-center justify-center">
+                <div className="w-[40%] aspect-square rounded-full bg-[#142036]" />
+            </div>
+        </div>
+        
+        {/* Status Bar: Time & Icons (Responsive using Container Queries 'cqw') */}
+        <div className="absolute top-[3%] left-[7%] z-50 text-white font-semibold tracking-tight" style={{ fontSize: "clamp(10px, 4.5cqw, 15px)" }}>
+            9:41
+        </div>
+        <div className="absolute top-[3%] right-[7%] flex items-center gap-1 z-50 w-[17%] justify-end">
+           <svg className="w-[40%] h-auto text-white" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 21L23.6 7.6C23.1 7.2 18.6 4 12 4C5.4 4 0.9 7.2 0.4 7.6L12 21Z" />
+           </svg>
+           <svg className="w-[55%] h-auto text-white" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM20 18H4V6H20V18ZM24 9H22V15H24V9Z" />
+           </svg>
+        </div>
+
+        <div className="absolute inset-0 font-sans z-0" style={{ containerType: 'inline-size' }}>{children}</div>
       </div>
     </div>
   );
@@ -125,7 +146,7 @@ function PhoneFrame({
 
 function AICoachScreen() {
   return (
-    <div className="w-full h-full bg-[#0A0A0A] flex flex-col overflow-hidden relative">
+    <div className="w-full h-full bg-[#0A0A0A] flex flex-col overflow-hidden relative pt-[16%]">
       <div className="flex-1 p-[5%] flex flex-col justify-end gap-[4%] pb-[20%]">
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
@@ -180,7 +201,7 @@ function AICoachScreen() {
 
 function DashboardScreen() {
   return (
-    <div className="w-full h-full bg-[#0A0A0A] flex flex-col overflow-hidden">
+    <div className="w-full h-full bg-[#0A0A0A] flex flex-col overflow-hidden pt-[16%]">
       <div className="flex items-center justify-between px-[6%] py-[6%] border-b border-white/5 bg-white/[0.01]">
         <div className="flex items-center gap-[4%] w-full">
            <div style={{ width: "12%", aspectRatio: "1", borderRadius: "50%", background: "#D4FF00", display: "flex", alignItems: "center", justifyContent: "center", color: "black", fontWeight: "bold", fontSize: "clamp(8px, 3.5%, 14px)" }}>L</div>
@@ -247,7 +268,7 @@ function DashboardScreen() {
 
 function TimelineScreen() {
   return (
-    <div className="w-full h-full bg-[#0A0A0A] flex flex-col p-[6%]">
+    <div className="w-full h-full bg-[#0A0A0A] flex flex-col p-[6%] pt-[16%]">
        <div className="flex items-center gap-2 mb-[8%] mt-[4%]">
          <LineChart className="text-[#D4FF00] w-[1em] h-[1em]" style={{ fontSize: "clamp(12px, 5%, 20px)" }} />
          <p className="text-white/80 font-semibold" style={{ fontSize: "clamp(10px, 4%, 16px)" }}>
@@ -344,55 +365,50 @@ function PremiumPhone({ scrollYProgress }: { scrollYProgress: any }) {
   );
 }
 
-function getScrollRanges(index: number, total: number) {
-  const peak = index / (total - 1);
-  const start = peak - 0.25;
-  const end = peak + 0.25;
+function getScrollRanges(index, total) {
+  // We divide the scroll space into equal segments based on the number of items.
+  // For 3 items, the segments are 0.5 long (0 to 0.5, and 0.5 to 1.0).
+  const segment = 1 / (total - 1);
+  
+  // Calculate the exact center points where the crossfades should happen
+  const transitionCenter = (index + 0.5) * segment; 
+  const prevTransitionCenter = (index - 0.5) * segment; 
+  
+  // Define how wide the crossfade should be (25% of a segment gives a buttery smooth overlap)
+  const fadeWidth = segment * 0.25; 
 
-  const input = [];
-  const opacity = [];
-  const y = [];
-  const blur = [];
-  const scale = [];
+  let input = [];
+  let opacity = [];
+  let y = [];
+  let blur = [];
+  let scale = [];
 
-  if (start >= 0) {
-    input.push(start);
-    opacity.push(0);
-    y.push(40);
-    blur.push(8);
-    scale.push(0.95);
+  if (index === 0) {
+    // 1st Item: Starts fully visible, then fades out during its transition center
+    input = [0, transitionCenter - fadeWidth, transitionCenter + fadeWidth];
+    opacity = [1, 1, 0];
+    y = [0, 0, -40];
+    blur = [0, 0, 8];
+    scale = [1, 1, 1.05];
+  } else if (index === total - 1) {
+    // Last Item: Fades in during the previous transition center, stays fully visible to the end
+    input = [prevTransitionCenter - fadeWidth, prevTransitionCenter + fadeWidth, 1];
+    opacity = [0, 1, 1];
+    y = [40, 0, 0];
+    blur = [8, 0, 0];
+    scale = [0.95, 1, 1];
   } else {
-    // If start is negative, insert a 0 point to keep interpolation correct for WAAPI
-    input.push(0);
-    opacity.push(1);
-    y.push(0);
-    blur.push(0);
-    scale.push(1);
-  }
-
-  if (peak > 0 && peak < 1) {
-    input.push(peak);
-    opacity.push(1);
-    y.push(0);
-    blur.push(0);
-    scale.push(1);
-  }
-
-  if (end <= 1) {
-    input.push(end);
-    opacity.push(0);
-    y.push(-40);
-    blur.push(8);
-    scale.push(1.05);
-  } else {
-    // If end is > 1, insert a 1 point
-    if (input[input.length - 1] !== 1) {
-      input.push(1);
-      opacity.push(1);
-      y.push(0);
-      blur.push(0);
-      scale.push(1);
-    }
+    // Middle Items: Fades in, stays fully visible for a bit, then fades out
+    input = [
+      prevTransitionCenter - fadeWidth, // Start fade in
+      prevTransitionCenter + fadeWidth, // Fully visible
+      transitionCenter - fadeWidth,     // Start fade out
+      transitionCenter + fadeWidth      // Fully hidden
+    ];
+    opacity = [0, 1, 1, 0];
+    y = [40, 0, 0, -40];
+    blur = [8, 0, 0, 8];
+    scale = [0.95, 1, 1, 1.05];
   }
 
   return { input, opacity, y, blur, scale };
@@ -464,16 +480,23 @@ function MobilePhoneReveal({ step }: { step: number }) {
   );
 }
 
+/* ─────────────────────────────────────────────
+   MOBILE STORY (Updated for Single-Screen View)
+───────────────────────────────────────────── */
 function MobileStory() {
   return (
-    <div className="lg:hidden flex flex-col gap-24 py-16 px-6">
+    <div className="lg:hidden flex flex-col">
       {STORY.map((step, i) => (
-        <div key={i} className="flex flex-col gap-10">
+        // Each block now takes up exactly one screen height minimum
+        <div key={i} className="min-h-[100dvh] flex flex-col px-6 pt-24 pb-12">
+          
+          {/* Top Text Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-50px" }}
             transition={{ duration: 0.5 }}
+            className="mb-8"
           >
             <h3 className="text-3xl sm:text-4xl font-semibold leading-[1.1] text-zinc-50 tracking-tight">
               {step.title}
@@ -482,13 +505,17 @@ function MobileStory() {
               {step.subtitle}
             </p>
           </motion.div>
-          <MobilePhoneReveal step={i} />
+          
+          {/* Bottom Phone Section - Centered in remaining space */}
+          <div className="flex-1 flex items-center justify-center">
+            <MobilePhoneReveal step={i} />
+          </div>
+
         </div>
       ))}
     </div>
   );
 }
-
 function StoryTextItem({ step, index, scrollYProgress }: { step: any, index: number, scrollYProgress: any }) {
   const { input, opacity: opacityOut, y: yOut, blur: blurOut } = getScrollRanges(index, STORY.length);
 
