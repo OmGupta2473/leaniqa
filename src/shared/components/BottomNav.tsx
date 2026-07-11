@@ -1,3 +1,5 @@
+import React, { Profiler } from 'react';
+import { onRenderCallback, useRenderTracker } from '@/shared/utils/perfDebug';
 import {
   LayoutDashboard,
   MessageSquare,
@@ -18,10 +20,12 @@ const navItems = [
 ];
 
 export function BottomNav() {
+  useRenderTracker('BottomNav');
   const { hasCompletedOnboarding } = useHasCompletedOnboarding();
 
   return (
-    <div className="w-full flex justify-center pb-[calc(16px+env(safe-area-inset-bottom))] px-4 pointer-events-none">
+    <Profiler id="BottomNav" onRender={onRenderCallback}>
+      <div className="w-full flex justify-center pb-[calc(16px+env(safe-area-inset-bottom))] px-4 pointer-events-none">
       <div 
         className="flex items-center justify-between px-1.5 py-1.5 rounded-full w-full max-w-[420px] pointer-events-auto"
         style={{
@@ -96,5 +100,6 @@ export function BottomNav() {
         ))}
       </div>
     </div>
+    </Profiler>
   );
 }

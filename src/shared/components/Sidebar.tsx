@@ -1,3 +1,5 @@
+import React, { Profiler } from 'react';
+import { onRenderCallback, useRenderTracker } from '@/shared/utils/perfDebug';
 import { authService } from '@/features/auth/services/authService';
 import { useCallback } from 'react';
 import { useUserStore } from "@/features/profile/store/userStore";
@@ -41,7 +43,8 @@ export function Sidebar({ className }: { className?: string }) {
   const { hasCompletedOnboarding } = useHasCompletedOnboarding();
 
   return (
-    <div 
+    <Profiler id="Sidebar" onRender={onRenderCallback}>
+      <div 
       className={cn("flex flex-col h-full w-full overflow-hidden", className)}
       style={{
         background: 'var(--color-bg-raised)',
@@ -267,5 +270,6 @@ export function Sidebar({ className }: { className?: string }) {
         </button>
       </div>
     </div>
+    </Profiler>
   );
 }

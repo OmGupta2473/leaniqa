@@ -1,4 +1,5 @@
 export function calculateMacros(weightKg: number, heightCm: number, age: number, gender: string, activityLevel: string) {
+  if (import.meta.env.DEV) console.time('[PERF] calculateMacros');
   const maintBase = (weightKg * 10) + (heightCm * 6.25) - (age * 5) + (gender === 'Male' ? 5 : -161);
   const multipliers: Record<string, number> = { 
     'Sedentary': 1.2, 
@@ -68,6 +69,7 @@ export function calculateMacros(weightKg: number, heightCm: number, age: number,
     water += 0.5;
   }
 
+  if (import.meta.env.DEV) console.timeEnd('[PERF] calculateMacros');
   return {
     tdee,
     proteinMin, proteinMid, proteinMax,
@@ -79,6 +81,7 @@ export function calculateMacros(weightKg: number, heightCm: number, age: number,
 }
 
 export function calculateGoalStats(tdee: number, weightKg: number, currentBf: number, targetBf: number, deficitKcal: number) {
+  if (import.meta.env.DEV) console.time('[PERF] calculateGoalStats');
   const fatMass = weightKg * (currentBf / 100);
   const leanMass = weightKg - fatMass;
   
@@ -94,6 +97,7 @@ export function calculateGoalStats(tdee: number, weightKg: number, currentBf: nu
   const targetDate = new Date();
   targetDate.setDate(targetDate.getDate() + weeks * 7);
   
+  if (import.meta.env.DEV) console.timeEnd('[PERF] calculateGoalStats');
   return {
     fatToLoseKg: fatToLoseKg.toFixed(1),
     targetWeightKg: targetWeightKg.toFixed(1),

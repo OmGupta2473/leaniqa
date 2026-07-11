@@ -1,3 +1,5 @@
+import React, { Profiler } from 'react';
+import { onRenderCallback, useRenderTracker, useHeavyEffectTracker } from '@/shared/utils/perfDebug';
 import { useUserStore } from "@/features/profile/store/userStore";
 import { useAppStore } from "@/app/store";
 import { reportService } from "@/features/reports/services/reportService";
@@ -76,6 +78,7 @@ const AnimatedNumber = memo(function AnimatedNumber({
 });
 
 export function DashboardPage() {
+  useRenderTracker('DashboardPage');
   const dismissedBanners = useAppStore(s => s.dismissedBanners);
   const dismissBanner = useAppStore(s => s.dismissBanner);
   const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
@@ -107,6 +110,7 @@ export function DashboardPage() {
   const currentBf = goal?.current_bf ?? onboardingData?.currentBodyFatPct;
   const proteinTarget = profile?.protein_target ?? onboardingData?.proteinMid;
   
+  if (import.meta.env.DEV) console.time('[PERF] Dashboard Calculations');
   const dailyTargetKcal =
     profile?.maintenance_kcal && goal?.deficit_kcal !== undefined
       ? profile.maintenance_kcal - goal.deficit_kcal
@@ -144,7 +148,8 @@ export function DashboardPage() {
   const strokeDashoffset = circumference - calPct * circumference;
 
   return (
-    <div className="page-enter px-4 pb-[calc(80px+env(safe-area-inset-bottom))] pt-4">
+    <Profiler id="DashboardPage" onRender={onRenderCallback}>
+      <div className="page-enter px-4 pb-[calc(80px+env(safe-area-inset-bottom))] pt-4">
       {/* 2. Greeting section */}
       <div className="flex justify-between items-start mb-6">
         <div>
@@ -305,5 +310,6 @@ export function DashboardPage() {
         <Plus size={24} strokeWidth={2.5} color="#000" />
       </motion.button>
     </div>
+    </Profiler>
   );
 }
