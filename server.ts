@@ -1,7 +1,7 @@
 import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
-import { GoogleGenAI, Type, Schema } from '@google/genai';
+
 
 async function startServer() {
   const app = express();
