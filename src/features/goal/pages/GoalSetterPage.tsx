@@ -513,7 +513,7 @@ export function GoalSetterPage() {
             )}
 
             {selectedStrategy && (
-              <div className="fixed bottom-0 left-0 right-0 p-4 z-50 bg-gradient-to-t from-[#080809] via-[#080809] to-transparent pb-[calc(1rem+env(safe-area-inset-bottom))] pt-8">
+              <div className="mt-6 pt-4 border-t border-[rgba(255,255,255,0.06)]">
                 <motion.button 
                   whileHover={hover.glow}
                   whileTap={tap.scale}
