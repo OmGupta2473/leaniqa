@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useHasCompletedOnboarding } from '@/shared/hooks/useHasCompletedOnboarding';
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 
 const navItems = [
   { id: "/goal", icon: Target, label: "Goal" },
@@ -23,13 +23,12 @@ export function BottomNav() {
   return (
     <div className="w-full flex justify-center pb-[calc(16px+env(safe-area-inset-bottom))] px-4 pointer-events-none">
       <div 
-        className="flex items-center justify-between px-2 py-2 rounded-[32px] w-full max-w-[400px] pointer-events-auto"
+        className="flex items-center justify-between px-1.5 py-1.5 rounded-full w-full max-w-[400px] pointer-events-auto shadow-2xl"
         style={{
-          background: "rgba(28,28,30,0.85)",
-          backdropFilter: "blur(32px) saturate(180%)",
-          WebkitBackdropFilter: "blur(32px) saturate(180%)",
-          border: "0.5px solid rgba(255,255,255,0.15)",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+          background: "rgba(22, 22, 24, 0.65)",
+          backdropFilter: "blur(40px) saturate(200%)",
+          WebkitBackdropFilter: "blur(40px) saturate(200%)",
+          border: "0.5px solid rgba(255,255,255,0.1)",
         }}
       >
         {navItems.map((item) => (
@@ -49,25 +48,33 @@ export function BottomNav() {
               
               const color = isItemDisabled 
                 ? "rgba(255,255,255,0.2)" 
-                : (isActive ? "#000000" : "rgba(255,255,255,0.45)");
-                
-              const bgColor = isActive && !isItemDisabled ? "#D4FF00" : "transparent";
+                : (isActive ? "#000000" : "rgba(255,255,255,0.5)");
 
               return (
                 <motion.div 
-                  whileTap={{ scale: 0.9 }}
-                  className={`flex flex-col items-center justify-center gap-[4px] py-[8px] px-[8px] rounded-[20px] w-[56px] ${isItemDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  style={{
-                    backgroundColor: bgColor,
-                    transition: "background-color 300ms cubic-bezier(0.4,0,0.2,1)",
-                  }}
+                  whileTap={{ scale: 0.92 }}
+                  className={`flex flex-col items-center justify-center gap-[3px] py-[8px] w-full rounded-full relative z-10 ${isItemDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
+                  {isActive && !isItemDisabled && (
+                    <motion.div
+                      layoutId="bottomNavActiveIndicator"
+                      className="absolute inset-0 bg-[#D4FF00] rounded-full z-[-1]"
+                      initial={false}
+                      transition={{ 
+                        type: "spring", 
+                        stiffness: 400, 
+                        damping: 30,
+                        mass: 0.8
+                      }}
+                    />
+                  )}
+                  
                   <item.icon 
                     size={22} 
-                    strokeWidth={isActive && !isItemDisabled ? 2.5 : 2}
+                    strokeWidth={isActive && !isItemDisabled ? 2.5 : 2.2}
                     style={{
                       color: color,
-                      transition: "color 300ms cubic-bezier(0.4,0,0.2,1), stroke-width 300ms ease"
+                      transition: "color 200ms ease-out, stroke-width 200ms ease-out"
                     }}
                   />
                   <span 
@@ -76,7 +83,7 @@ export function BottomNav() {
                       fontSize: "9px",
                       fontWeight: isActive && !isItemDisabled ? 700 : 500,
                       color: color,
-                      transition: "color 300ms cubic-bezier(0.4,0,0.2,1)"
+                      transition: "color 200ms ease-out"
                     }}
                   >
                     {item.label}
