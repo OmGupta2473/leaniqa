@@ -31,7 +31,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             className="flex-1 overflow-y-auto scroll-smooth" 
             style={{ 
               overscrollBehaviorY: 'contain',
-              paddingBottom: isKeyboardOpen ? `${Math.max(keyboardOffset, 100)}px` : 'calc(56px + env(safe-area-inset-bottom))' 
+              paddingBottom: isKeyboardOpen ? `${Math.max(keyboardOffset, 100)}px` : 'calc(100px + env(safe-area-inset-bottom))' 
             }}
           >
             <AnimatePresence mode="wait">
