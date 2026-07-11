@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
+import { createPortal } from "react-dom";
 import { useAppStore } from "@/app/store";
 import { useChatStore } from "@/app/store";
 import { useNutritionStore } from "../store/nutritionStore";
@@ -615,9 +616,10 @@ export function MealLoggerPage() {
       </div>
 
       {/* ── LOG MEAL MODAL ── */}
-      <AnimatePresence>
-        {modalOpen && (
-          <motion.div
+      {createPortal(
+        <AnimatePresence>
+          {modalOpen && (
+            <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -649,72 +651,84 @@ export function MealLoggerPage() {
               {/* Modal header */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px 12px', borderBottom: '0.5px solid rgba(255,255,255,0.08)' }}>
                 <div style={{ minWidth: 0, paddingRight: '12px' }}>
-                  <h3 className="text-[18px] font-bold text-white tracking-[-0.3px]">Log a Meal</h3>
-                  <p className="text-[13px] text-[rgba(235,235,245,0.5)] truncate mt-[2px]">
-                    Describe your meal, AI will calculate macros
-                  </p>
+                  <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Log a meal</div>
+                  <div style={{ fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.45)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Type naturally, I handle the rest</div>
                 </div>
-                <button
-                  onClick={() => setModalOpen(false)}
-                  className="w-[32px] h-[32px] shrink-0 rounded-full bg-[rgba(255,255,255,0.08)] flex items-center justify-center text-[rgba(235,235,245,0.6)] hover:bg-[rgba(255,255,255,0.15)] hover:text-white transition-colors"
-                >
-                  <X size={18} />
+                <button onClick={() => setModalOpen(false)} style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0 }}>
+                  <X size={16} />
                 </button>
               </div>
 
-              {/* Modal Slot Selector */}
-              <div className="flex gap-[8px] p-[16px_20px_8px] overflow-x-auto shrink-0 hide-scrollbar border-b border-[rgba(255,255,255,0.04)]">
-                {['breakfast', 'lunch', 'dinner'].map((slot) => (
+              {/* Meal slot selector */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', padding: '12px 20px 0' }}>
+                {([['breakfast', Sunrise, 'Breakfast'], ['lunch', Sun, 'Lunch'], ['dinner', Moon, 'Dinner']] as const).map(([slot, Icon, label]) => (
                   <button
                     key={slot}
                     onClick={() => setSelectedMealSlot(slot as any)}
-                    className={cn(
-                      "px-[16px] py-[8px] rounded-full text-[13px] font-semibold transition-colors capitalize whitespace-nowrap",
-                      selectedMealSlot === slot
-                        ? "bg-[#D4FF00] text-[#0A0A0A]"
-                        : "bg-[rgba(255,255,255,0.05)] text-[rgba(235,235,245,0.6)] hover:bg-[rgba(255,255,255,0.1)] hover:text-white"
-                    )}
+                    style={{
+                      minWidth: 0,
+                      padding: '8px 4px',
+                      borderRadius: '10px',
+                      border: `1px solid ${selectedMealSlot === slot ? '#D4FF00' : 'rgba(255,255,255,0.1)'}`,
+                      background: selectedMealSlot === slot ? 'rgba(212,255,0,0.1)' : 'rgba(255,255,255,0.04)',
+                      color: selectedMealSlot === slot ? '#D4FF00' : 'rgba(235,235,245,0.6)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '4px',
+                      fontSize: 'var(--font-xs)',
+                      fontWeight: 600,
+                      transition: 'background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease',
+                    }}
                   >
-                    {slot}
+                    <Icon size={13} /> {label}
                   </button>
                 ))}
               </div>
 
-              {/* Chat Interface */}
-              <div 
-                ref={chatRef}
-                className="flex-1 overflow-y-auto p-[16px_20px] space-y-[16px] scroll-smooth"
-              >
-                {chat.map((msg, idx) => (
-                  <div key={idx} className={cn("flex w-full", msg.role === 'user' ? "justify-end" : "justify-start")}>
-                    <div className={cn(
-                      "max-w-[85%] p-[12px_16px] rounded-[16px] text-[14px] leading-[1.4]",
-                      msg.role === 'user'
-                        ? "bg-[#D4FF00] text-[#0A0A0A] rounded-br-[4px]"
-                        : "bg-[rgba(255,255,255,0.08)] text-[rgba(235,235,245,0.9)] rounded-bl-[4px]"
-                    )}>
-                      <div>{msg.text}</div>
-                      {msg.data?.coaching_tip && (
-                        <div className="mt-[8px] pt-[8px] border-t border-[rgba(0,0,0,0.1)] text-[12px] opacity-80 flex items-start gap-[6px]">
-                          <Lightbulb size={14} className="mt-[2px] shrink-0" />
-                          <span>{msg.data.coaching_tip}</span>
-                        </div>
-                      )}
-                    </div>
+              {/* AI status indicator */}
+              <div style={{ padding: '8px 20px 0' }}>
+                {aiStatus === 'offline' && (
+                  <div style={{ background: 'rgba(255,77,28,0.08)', border: '0.5px solid rgba(255,77,28,0.2)', borderRadius: '8px', padding: '6px 10px', fontSize: 'var(--font-xs)', color: 'rgba(255,77,28,0.8)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>⚡</span> Using database estimates · AI offline
                   </div>
-                ))}
-                
-                {loading && (
-                  <div className="flex w-full justify-start">
-                    <div className="max-w-[85%] p-[12px_16px] rounded-[16px] rounded-bl-[4px] bg-[rgba(255,255,255,0.08)] text-[rgba(235,235,245,0.9)] flex items-center gap-[8px]">
-                      <Loader2 size={16} className="animate-spin text-[#D4FF00]" />
-                      <span className="text-[13px] font-medium">Analyzing meal...</span>
-                    </div>
+                )}
+                {aiStatus === 'online' && (
+                  <div style={{ background: 'rgba(212,255,0,0.06)', border: '0.5px solid rgba(212,255,0,0.2)', borderRadius: '8px', padding: '6px 10px', fontSize: 'var(--font-xs)', color: 'rgba(212,255,0,0.8)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#D4FF00', display: 'inline-block' }}></span> Gemini AI active
                   </div>
                 )}
               </div>
 
-<<<<<<< HEAD
+              {/* Chat messages */}
+              <div ref={chatRef} style={{ flex: 1, overflowY: 'auto', padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '120px' }}>
+                {chat.map((msg, i) => (
+                  <div key={i} className={cn("max-w-[88%] p-[10px_14px] text-[14px] leading-relaxed", msg.role === "user" ? "bg-[#D4FF00] text-[#0A0A0A] rounded-[14px] rounded-br-[4px] self-end" : "glass-card text-white rounded-[14px] rounded-bl-[4px] self-start")}>
+                    <div className="whitespace-pre-wrap">{msg.text}</div>
+                    {msg.data && (
+                      <div className="flex gap-[6px] flex-wrap mt-[8px]">
+                        <span className="text-[10px] px-[7px] py-[2px] rounded-full font-semibold bg-[rgba(255,77,28,0.15)] text-[#FF4D1C]">~{msg.data.calories} kcal</span>
+                        <span className="text-[10px] px-[7px] py-[2px] rounded-full font-semibold bg-[rgba(55,138,221,0.15)] text-[#378ADD]">{msg.data.protein}g pro</span>
+                        <span className="text-[10px] px-[7px] py-[2px] rounded-full font-semibold bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.7)]">{msg.data.fat}g fat</span>
+                        <span className="text-[10px] px-[7px] py-[2px] rounded-full font-semibold bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.7)]">{msg.data.carbs}g carb</span>
+                      </div>
+                    )}
+                    {msg.data?.coaching_tip && (
+                      <div className="mt-[10px] pt-[8px] border-t border-[rgba(255,255,255,0.06)] flex gap-[6px]">
+                        <Lightbulb size={13} className="text-[#D4FF00] mt-[2px] shrink-0" />
+                        <div className="text-[12px] text-[rgba(235,235,245,0.65)] italic">{msg.data.coaching_tip}</div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {loading && (
+                  <div className="glass-card text-white rounded-[14px] rounded-bl-[4px] self-start p-[10px_14px] max-w-[88%] flex items-center gap-[6px] text-[13px]">
+                    <Loader2 size={14} className="animate-spin text-[#D4FF00]" /> Analyzing meal...
+                  </div>
+                )}
+              </div>
+
               {/* Input row */}
               <div style={{ display: 'flex', gap: '10px', padding: '12px 20px 0', alignItems: 'center' }}>
                 <input
@@ -739,50 +753,13 @@ export function MealLoggerPage() {
                 >
                   <Send size={18} color="#0A0A0A" />
                 </button>
-=======
-              {/* Input Area */}
-              <div className="p-[12px_20px] bg-[rgba(22,22,24,0.95)] border-t border-[rgba(255,255,255,0.06)] shrink-0">
-                <div className="relative flex items-center bg-[rgba(255,255,255,0.05)] rounded-[24px] border border-[rgba(255,255,255,0.1)] focus-within:border-[rgba(212,255,0,0.5)] transition-colors">
-                  <SmoothInput
-                    value={input}
-                    onChange={(e: any) => setInput(typeof e === 'string' ? e : e.target.value)}
-                    onKeyDown={(e: any) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleSend();
-                      }
-                    }}
-                    placeholder="e.g. 2 boiled eggs and a banana"
-                    disabled={loading}
-                    className="w-full bg-transparent border-none text-[15px] text-white p-[14px_48px_14px_16px] placeholder-[rgba(235,235,245,0.4)] focus:outline-none focus:ring-0"
-                  />
-                  <button
-                    onClick={handleSend}
-                    disabled={!input.trim() || loading}
-                    className={cn(
-                      "absolute right-[6px] w-[36px] h-[36px] rounded-full flex items-center justify-center transition-colors",
-                      input.trim() && !loading
-                        ? "bg-[#D4FF00] text-[#0A0A0A] hover:bg-[#bce600]"
-                        : "bg-[rgba(255,255,255,0.05)] text-[rgba(235,235,245,0.3)]"
-                    )}
-                  >
-                    <Send size={16} className={input.trim() && !loading ? "translate-x-[-1px] translate-y-[1px]" : ""} />
-                  </button>
-                </div>
-                
-                {aiStatus === 'offline' && (
-                  <div className="text-center mt-[8px] flex items-center justify-center gap-1 text-[11px] font-medium text-[rgba(255,77,28,0.8)]">
-                    <div className="w-[6px] h-[6px] rounded-full bg-[#FF4D1C] animate-pulse" />
-                    Offline Mode — Local estimation active
-                  </div>
-                )}
->>>>>>> 4d430fa (MEAL LOGGER)
               </div>
             </motion.div>
           </motion.div>
         )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
     </>
   );
 }
-

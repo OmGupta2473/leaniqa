@@ -9,19 +9,13 @@ export function useVisualViewport() {
     const visualViewport = window.visualViewport;
 
     const handleResize = () => {
-      // Calculate how much the visual viewport has shrunk from the window inner height
-      // This happens when the virtual keyboard is shown
       const offset = window.innerHeight - visualViewport.height;
-      
-      // On some devices, offset might be a bit off due to safe areas, 
-      // but it's generally close to the keyboard height.
       setViewportOffset(Math.max(0, offset));
     };
 
     visualViewport.addEventListener('resize', handleResize);
     visualViewport.addEventListener('scroll', handleResize);
     
-    // Initial calculation
     handleResize();
 
     return () => {
@@ -31,4 +25,31 @@ export function useVisualViewport() {
   }, []);
 
   return viewportOffset;
+}
+
+export function useKeyboardOpen() {
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const viewportOffset = useVisualViewport();
+
+  useEffect(() => {
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        setIsKeyboardOpen(true);
+      }
+    };
+    const handleFocusOut = () => {
+      setIsKeyboardOpen(false);
+    };
+
+    document.addEventListener('focusin', handleFocusIn);
+    document.addEventListener('focusout', handleFocusOut);
+
+    return () => {
+      document.removeEventListener('focusin', handleFocusIn);
+      document.removeEventListener('focusout', handleFocusOut);
+    };
+  }, []);
+
+  return isKeyboardOpen || viewportOffset > 50;
 }
