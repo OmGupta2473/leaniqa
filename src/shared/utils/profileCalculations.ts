@@ -80,8 +80,7 @@ export function calculateMacros(weightKg: number, heightCm: number, age: number,
   };
 }
 
-export function calculateGoalStats(tdee: number, weightKg: number, currentBf: number, targetBf: number, deficitKcal: number) {
-  if (import.meta.env.DEV) console.time('[PERF] calculateGoalStats');
+export function calculateBodyComposition(weightKg: number, currentBf: number, targetBf: number) {
   const fatMass = weightKg * (currentBf / 100);
   const leanMass = weightKg - fatMass;
   
@@ -89,18 +88,32 @@ export function calculateGoalStats(tdee: number, weightKg: number, currentBf: nu
   const targetWeightKg = leanMass + targetFatMass;
   
   const fatToLoseKg = Math.max(0, weightKg - targetWeightKg);
+
+  return {
+    fatMass,
+    leanMass,
+    targetFatMass,
+    targetWeightKg,
+    fatToLoseKg
+  };
+}
+
+export function calculateGoalStats(tdee: number, weightKg: number, currentBf: number, targetBf: number, deficitKcal: number) {
+  if (import.meta.env.DEV) console.time('[PERF] calculateGoalStats');
+  
+  const comp = calculateBodyComposition(weightKg, currentBf, targetBf);
   
   const dailyTarget = Math.round((tdee - deficitKcal) / 10) * 10;
   const weeklyRate = deficitKcal > 0 ? (deficitKcal * 7) / 7700 : 0;
-  const weeks = deficitKcal > 0 && weeklyRate > 0 ? Math.round(fatToLoseKg / weeklyRate) : 0;
+  const weeks = deficitKcal > 0 && weeklyRate > 0 ? Math.round(comp.fatToLoseKg / weeklyRate) : 0;
   
   const targetDate = new Date();
   targetDate.setDate(targetDate.getDate() + weeks * 7);
   
   if (import.meta.env.DEV) console.timeEnd('[PERF] calculateGoalStats');
   return {
-    fatToLoseKg: fatToLoseKg.toFixed(1),
-    targetWeightKg: targetWeightKg.toFixed(1),
+    fatToLoseKg: comp.fatToLoseKg.toFixed(1),
+    targetWeightKg: comp.targetWeightKg.toFixed(1),
     dailyCalorieGoal: dailyTarget,
     estimatedWeeks: weeks,
     targetDateIso: targetDate.toISOString().split('T')[0],

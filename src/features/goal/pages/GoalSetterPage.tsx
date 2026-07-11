@@ -12,6 +12,7 @@ import { complianceService } from '@/features/reports/services/complianceService
 import { CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { pageVariants, itemVariants, hover, tap } from '@/features/reports/components/motion';
+import { calculateBodyComposition, calculateGoalStats } from '@/shared/utils/profileCalculations';
 
 function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: number }) {
   const [displayValue, setDisplayValue] = useState(0);
@@ -87,14 +88,13 @@ export function GoalSetterPage() {
   let targetFatMass = 0;
 
   if (currentBfMid) {
-    currentFatMass = currentWeight * (currentBfMid / 100);
-  }
-
-  if (currentBfMid && targetBfMid) {
-    const leanMassKg = currentWeight * (1 - currentBfMid / 100);
-    targetWeightKg = Math.round((leanMassKg / (1 - targetBfMid / 100)) * 10) / 10;
-    targetFatMass = Math.round((targetWeightKg * (targetBfMid / 100)) * 10) / 10;
-    fatToLoseKg = Math.round((currentWeight - targetWeightKg) * 10) / 10;
+    const comp = calculateBodyComposition(currentWeight, currentBfMid, targetBfMid || currentBfMid);
+    currentFatMass = comp.fatMass;
+    if (targetBfMid) {
+      targetWeightKg = comp.targetWeightKg;
+      targetFatMass = comp.targetFatMass;
+      fatToLoseKg = comp.fatToLoseKg;
+    }
   }
 
   const saveMutation = useMutation({
@@ -214,16 +214,14 @@ export function GoalSetterPage() {
   ] : [];
 
   const calculatedStrategies = strategies.map(s => {
-    const dailyTarget = Math.round((tdee - s.deficit) / 10) * 10;
-    const weeklyRate = s.deficit > 0 ? (s.deficit * 7) / 7700 : 0;
-    const weeks = s.deficit > 0 ? Math.round(fatToLoseKg / weeklyRate) : 0;
-    
-    const targetDate = new Date();
-    targetDate.setDate(targetDate.getDate() + weeks * 7);
-    const dateStr = s.deficit > 0 ? targetDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Ongoing';
-    const targetDateIso = targetDate.toISOString().split('T')[0];
-
-    return { ...s, dailyTarget, weeks, dateStr, targetDateIso };
+    const stats = calculateGoalStats(tdee, currentWeight, currentBfMid || 0, targetBfMid || 0, s.deficit);
+    return { 
+      ...s, 
+      dailyTarget: stats.dailyCalorieGoal, 
+      weeks: stats.estimatedWeeks, 
+      dateStr: stats.targetDateStr, 
+      targetDateIso: stats.targetDateIso 
+    };
   });
 
   const [selectedStrategy, setSelectedStrategy] = useState<any>(null);

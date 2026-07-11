@@ -10,6 +10,7 @@ import { profileService } from '@/features/profile/services/profileService';
 import { complianceService } from '@/features/reports/services/complianceService';
 import { motion, AnimatePresence } from 'motion/react';
 import { hover, tap } from '@/features/reports/components/motion';
+import { calculateMacros } from '@/shared/utils/profileCalculations';
 
 function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: number }) {
   const [displayValue, setDisplayValue] = useState(0);
@@ -119,54 +120,6 @@ export function OnboardingPage() {
     mutationFn: async (profile: any) => {
       return await profileService.upsertProfile(profile);
     },
-    onSuccess: async (data) => {
-      console.log('Navigating to Screen 2');
-      if (data) {
-        queryClient.setQueryData(['profile'], data);
-      }
-      
-      // Build the COMPLETE onboardingData with ALL calculated fields
-      setOnboardingData({
-        ...onboardingData,
-        // Basic info
-        name: name.trim() || 'User',
-        weightKg: parseFloat(weight) || 80,
-        heightCm: getComputedHeight(),
-        age: parseFloat(age) || 30,
-        gender,
-        activityLevel: activity,
-        // Full macro breakdown
-        tdee: results?.tdee,
-        proteinMin: results?.proteinMin,
-        proteinMax: results?.proteinMax,
-        proteinMid: results?.proteinMid,
-        fatMin: results?.fatMin,
-        fatMax: results?.fatMax,
-        fatMid: results?.fatMid,
-        carbMin: results?.carbMin,
-        carbMax: results?.carbMax,
-        carbMid: results?.carbMid,
-        fiberMin: results?.fiberMin,
-        fiberMax: results?.fiberMax,
-        waterLitres: results?.waterLitres,
-      });
-
-      // Ensure profile is fully fetched and synced before navigating
-      await queryClient.invalidateQueries({ queryKey: ['profile'] });
-
-      complianceService.updateTodayScore().then(() => {
-        queryClient.invalidateQueries({ queryKey: ['complianceScore'] });
-      }).catch(console.error);
-
-      if (editProfileMode) {
-        // Returning from profile edit — go back to profile screen
-        setEditProfileMode(false);
-        navigate('/profile');
-      } else {
-        // Normal onboarding flow — go to goal setter
-        navigate('/goal');
-      }
-    },
     onError: (error: any) => {
       console.error("Save mutation failed:", error);
       alert("Failed to save profile: " + (error.message || "Unknown error"));
@@ -237,113 +190,93 @@ export function OnboardingPage() {
     const h = getComputedHeight();
     const a = parseFloat(age) || 30;
 
-    // Maintenance Mifflin-St Jeor
-    const maintBase = (w * 10) + (h * 6.25) - (a * 5) + (gender === 'Male' ? 5 : -161);
-    const activityLevel = activity || 'Lightly Active';
-    const multipliers: Record<string, number> = { 
-      'Sedentary': 1.2, 
-      'Lightly Active': 1.375, 
-      'Moderately Active': 1.55, 
-      'Very Active': 1.725, 
-      'Athlete': 1.9 
-    };
-    const tdee = Math.round((maintBase * multipliers[activityLevel]) / 10) * 10;
-    
-    // Protein and Fat by activity level
-    let proteinFactor = 1.8;
-    let fatPercentageMid = 0.265;
-    let fatPercentageMin = 0.25;
-    let fatPercentageMax = 0.28;
-
-    if (activityLevel === 'Sedentary') {
-      proteinFactor = 1.6;
-      fatPercentageMid = 0.25;
-      fatPercentageMin = 0.22;
-      fatPercentageMax = 0.28;
-    } else if (activityLevel === 'Lightly Active') {
-      proteinFactor = 1.8;
-      fatPercentageMid = 0.265;
-      fatPercentageMin = 0.25;
-      fatPercentageMax = 0.28;
-    } else if (activityLevel === 'Moderately Active') {
-      proteinFactor = 2.0;
-      fatPercentageMid = 0.275;
-      fatPercentageMin = 0.26;
-      fatPercentageMax = 0.29;
-    } else if (activityLevel === 'Very Active') {
-      proteinFactor = 2.2;
-      fatPercentageMid = 0.285;
-      fatPercentageMin = 0.27;
-      fatPercentageMax = 0.30;
-    } else if (activityLevel === 'Athlete') {
-      proteinFactor = 2.4;
-      fatPercentageMid = 0.30;
-      fatPercentageMin = 0.28;
-      fatPercentageMax = 0.32;
-    }
-
-    const proteinMid = Math.round(w * proteinFactor);
-    const proteinMin = Math.round(w * (proteinFactor - 0.1));
-    const proteinMax = Math.round(w * (proteinFactor + 0.1));
-
-    const fatMid = Math.round((tdee * fatPercentageMid) / 9);
-    const fatMin = Math.round((tdee * fatPercentageMin) / 9);
-    const fatMax = Math.round((tdee * fatPercentageMax) / 9);
-
-    // Carbs: Remainder
-    let carbKcal = tdee - (proteinMid * 4) - (fatMid * 9);
-    if (isNaN(carbKcal) || !isFinite(carbKcal) || carbKcal < 0) {
-      carbKcal = 0;
-    }
-    const carbMid = Math.max(0, Math.round(carbKcal / 4));
-    const carbMin = Math.max(0, carbMid - 20);
-    const carbMax = carbMid + 20;
-
-    // Fiber
-    const fiberMin = gender === 'Female' ? 25 : 35;
-    const fiberMax = gender === 'Female' ? 28 : 38;
-
-    // Water
-    let water = (w * 35) / 1000;
-    if (activity === 'Very Active' || activity === 'Athlete') {
-      water += 0.5;
-    }
+    const macros = calculateMacros(w, h, a, gender || 'Male', activity || 'Lightly Active');
 
     setResults({
-      tdee,
-      proteinMin,
-      proteinMax,
-      proteinMid,
-      fatMin,
-      fatMax,
-      fatMid,
-      carbMin,
-      carbMax,
-      carbMid,
-      fiberMin,
-      fiberMax,
-      waterLitres: water.toFixed(1)
+      tdee: macros.tdee,
+      proteinMin: macros.proteinMin,
+      proteinMax: macros.proteinMax,
+      proteinMid: macros.proteinMid,
+      fatMin: macros.fatMin,
+      fatMax: macros.fatMax,
+      fatMid: macros.fatMid,
+      carbMin: macros.carbMin,
+      carbMax: macros.carbMax,
+      carbMid: macros.carbMid,
+      fiberMin: macros.fiberMin,
+      fiberMax: macros.fiberMax,
+      waterLitres: macros.waterLitres
     });
     setShowResults(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validateStep1() || !results) return;
 
     const w = parseFloat(weight) || 80;
     const h = getComputedHeight();
     const a = parseFloat(age) || 30;
 
-    saveMutation.mutate({
-      name: name.trim() || 'User', 
-      age: a, 
-      height: h, 
-      weight: w, 
-      gender: gender || 'Male', 
-      activity_level: activity || 'Lightly Active',
-      maintenance_kcal: results.tdee, 
-      protein_target: results.proteinMid
-    });
+    try {
+      // 1. Await the profile save operation
+      const data = await saveMutation.mutateAsync({
+        name: name.trim() || 'User', 
+        age: a, 
+        height: h, 
+        weight: w, 
+        gender: gender || 'Male', 
+        activity_level: activity || 'Lightly Active',
+        maintenance_kcal: results.tdee, 
+        protein_target: results.proteinMid
+      });
+
+      console.log('Profile saved, updating cache and store');
+
+      // 2. Synchronously update the React Query Cache
+      if (data) {
+        queryClient.setQueryData(['profile'], data);
+      }
+
+      // 3. Synchronously update the Zustand Store with full calculated fields
+      setOnboardingData({
+        ...onboardingData,
+        name: name.trim() || 'User',
+        weightKg: w,
+        heightCm: h,
+        age: a,
+        gender,
+        activityLevel: activity,
+        tdee: results.tdee,
+        proteinMin: results.proteinMin,
+        proteinMax: results.proteinMax,
+        proteinMid: results.proteinMid,
+        fatMin: results.fatMin,
+        fatMax: results.fatMax,
+        fatMid: results.fatMid,
+        carbMin: results.carbMin,
+        carbMax: results.carbMax,
+        carbMid: results.carbMid,
+        fiberMin: results.fiberMin,
+        fiberMax: results.fiberMax,
+        waterLitres: results.waterLitres,
+      });
+
+      // Execute background task cleanly
+      complianceService.updateTodayScore().then(() => {
+        queryClient.invalidateQueries({ queryKey: ['complianceScore'] });
+      }).catch(console.error);
+
+      // 4. Navigate only after all state has been deterministically seeded
+      if (editProfileMode) {
+        setEditProfileMode(false);
+        navigate('/profile');
+      } else {
+        navigate('/goal');
+      }
+    } catch (e) {
+      console.error(e);
+      // Handled in onError of mutation as well, but catch here prevents unhandled promise rejection
+    }
   };
 
   const inputClass = (hasError: boolean) => cn(
