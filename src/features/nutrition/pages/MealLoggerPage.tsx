@@ -739,7 +739,10 @@ export function MealLoggerPage() {
                   disabled={loading || !selectedMealSlot}
                 />
                 <button
-                  onClick={handleSend}
+                  onPointerDown={(e) => {
+                    e.preventDefault(); // Prevent input from losing focus immediately
+                    handleSend();
+                  }}
                   disabled={loading || !selectedMealSlot || !input.trim()}
                   style={{ width: '44px', height: '44px', borderRadius: '50%', background: loading || !selectedMealSlot || !input.trim() ? 'rgba(212,255,0,0.3)' : '#D4FF00', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'background 0.15s' }}
                 >
