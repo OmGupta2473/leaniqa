@@ -119,17 +119,12 @@ export function OnboardingPage() {
     mutationFn: async (profile: any) => {
       return await profileService.upsertProfile(profile);
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       console.log('Navigating to Screen 2');
       if (data) {
         queryClient.setQueryData(['profile'], data);
-      } else {
-        queryClient.invalidateQueries({ queryKey: ['profile'] });
       }
-      complianceService.updateTodayScore().then(() => {
-        queryClient.invalidateQueries({ queryKey: ['complianceScore'] });
-      }).catch(console.error);
-
+      
       // Build the COMPLETE onboardingData with ALL calculated fields
       setOnboardingData({
         ...onboardingData,
@@ -140,7 +135,7 @@ export function OnboardingPage() {
         age: parseFloat(age) || 30,
         gender,
         activityLevel: activity,
-        // Full macro breakdown (ALL fields — this is what was missing)
+        // Full macro breakdown
         tdee: results?.tdee,
         proteinMin: results?.proteinMin,
         proteinMax: results?.proteinMax,
@@ -155,6 +150,13 @@ export function OnboardingPage() {
         fiberMax: results?.fiberMax,
         waterLitres: results?.waterLitres,
       });
+
+      // Ensure profile is fully fetched and synced before navigating
+      await queryClient.invalidateQueries({ queryKey: ['profile'] });
+
+      complianceService.updateTodayScore().then(() => {
+        queryClient.invalidateQueries({ queryKey: ['complianceScore'] });
+      }).catch(console.error);
 
       if (editProfileMode) {
         // Returning from profile edit — go back to profile screen
