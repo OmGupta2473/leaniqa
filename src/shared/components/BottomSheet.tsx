@@ -1,6 +1,7 @@
 import { ReactNode, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useScrollLock } from '@/shared/hooks/useScrollLock';
+import { slideUpVariants } from '@/features/reports/components/motion';
 
 interface BottomSheetProps {
   isOpen: boolean;
@@ -28,11 +29,11 @@ export function BottomSheet({ isOpen, onClose, children, maxHeight = '90dvh' }: 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: 0.25 }}
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.7)',
+            background: 'rgba(0,0,0,0.72)',
             zIndex: 100,
             display: 'flex',
             alignItems: 'flex-end',
@@ -40,26 +41,39 @@ export function BottomSheet({ isOpen, onClose, children, maxHeight = '90dvh' }: 
           onClick={onClose}
         >
           <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+            variants={slideUpVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
             onClick={(e) => e.stopPropagation()}
             style={{
               width: '100%',
               maxWidth: '480px',
               margin: '0 auto',
-              background: 'rgba(22,22,24,0.99)',
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-              borderRadius: '20px 20px 0 0',
-              borderTop: '0.5px solid rgba(255,255,255,0.12)',
+              background: 'rgba(16,16,18,0.98)',
+              backdropFilter: 'blur(48px)',
+              WebkitBackdropFilter: 'blur(48px)',
+              borderRadius: '24px 24px 0 0',
+              borderTop: '0.5px solid rgba(255,255,255,0.1)',
               maxHeight,
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
             }}
           >
+            {/* Drag Handle */}
+            <div 
+              style={{
+                width: '36px',
+                height: '4px',
+                background: 'rgba(255,255,255,0.2)',
+                borderRadius: '99px',
+                margin: '10px auto 0',
+                display: 'block',
+                flexShrink: 0
+              }}
+            />
+
             <div
               ref={sheetContentRef}
               style={{
