@@ -134,13 +134,12 @@ body {
 /* ── Bottom nav: visible only on mobile ── */
 .app-bottom-nav {
   display: flex; /* visible on mobile */
-  flex-shrink: 0;
-  border-top: 0.5px solid rgba(255,255,255,0.08);
-  background: rgba(14,14,16,0.97);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  z-index: 20;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+  z-index: 40;
 }
 
 @media (min-width: 768px) {
@@ -153,7 +152,7 @@ body {
 .screen-container {
   width: 100%;
   padding: clamp(16px, 4vw, 28px) clamp(16px, 4vw, 28px) 
-           calc(clamp(24px, 6vw, 40px) + env(safe-area-inset-bottom, 0px));
+           calc(110px + env(safe-area-inset-bottom, 0px));
 }
 
 @media (min-width: 768px) {
@@ -1252,8 +1251,8 @@ input[type='number'] {
 /* ── Meal Logger FAB ── */
 .meal-fab-positioner {
   position: fixed;
-  /* 60px bottom nav + 20px spacing */
-  bottom: calc(env(safe-area-inset-bottom) + 80px);
+  /* 72px bottom nav + 16px nav spacing + 20px FAB spacing = 108px */
+  bottom: calc(env(safe-area-inset-bottom) + 108px);
   left: 0;
   width: 100vw;
   z-index: 50;
