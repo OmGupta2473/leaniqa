@@ -1,9 +1,11 @@
-import { useNavigate } from 'react-router-dom';
+const fs = require('fs');
+
+const content = `import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileService } from '../services/profileService';
 import { useState } from 'react';
 import { ChevronLeft, LogOut, Trash2, AlertTriangle, User, Flame, Droplet, CheckCircle2 } from 'lucide-react';
-import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
+import { useCalculatedProfile } from '../hooks/useCalculatedProfile';
 import { motion, AnimatePresence } from 'motion/react';
 import { authService } from '@/features/auth/services/authService';
 
@@ -19,13 +21,10 @@ export function ProfilePage() {
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
 
-  const { profileData: calculated } = useCalculatedProfile();
+  const calculated = useCalculatedProfile(profile, goal);
 
   const resetMutation = useMutation({
-    mutationFn: async () => {
-      await profileService.deleteGoal();
-      await profileService.deleteProfile();
-    },
+    mutationFn: () => profileService.resetProfile(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       queryClient.invalidateQueries({ queryKey: ['goal'] });
@@ -34,7 +33,7 @@ export function ProfilePage() {
   });
 
   const handleLogout = async () => {
-    await authService.logout();
+    await authService.signOut();
     queryClient.clear();
     navigate('/auth');
   };
@@ -52,7 +51,7 @@ export function ProfilePage() {
     heightStr = String(heightCm);
     const feet = Math.floor(heightCm / 30.48);
     const inches = Math.round((heightCm / 2.54) % 12);
-    heightSub = `${feet}'${inches}"`;
+    heightSub = \`\${feet}'\${inches}"\`;
   }
 
   let dateStr = '—';
@@ -281,3 +280,5 @@ export function ProfilePage() {
     </div>
   );
 }
+`
+fs.writeFileSync('src/features/profile/pages/ProfilePage.tsx', content);

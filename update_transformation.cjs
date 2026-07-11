@@ -1,8 +1,10 @@
-import { useNavigate } from "react-router-dom";
+const fs = require('fs');
+
+const content = `import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { profileService } from "@/features/profile/services/profileService";
 import { ChevronLeft, TrendingDown, TrendingUp, Target, Bolt, Flame, Minus, Calendar, Flag } from "lucide-react";
-import { useCalculatedProfile } from "@/shared/hooks/useCalculatedProfile";
+import { useCalculatedProfile } from "@/features/profile/hooks/useCalculatedProfile";
 
 function displayVal(val: any) {
   return val === undefined || val === null || isNaN(val) ? '—' : val;
@@ -14,7 +16,7 @@ export function TransformationPage() {
   const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => profileService.getProfile() });
   const { data: goal } = useQuery({ queryKey: ["goal"], queryFn: () => profileService.getGoal() });
 
-  const { profileData: calculated } = useCalculatedProfile();
+  const calculated = useCalculatedProfile(profile, goal);
 
   const {
     weightKg, currentBodyFatPct, targetBodyFatPct,
@@ -175,3 +177,5 @@ export function TransformationPage() {
     </div>
   );
 }
+`
+fs.writeFileSync('src/features/transformation/pages/TransformationPage.tsx', content);

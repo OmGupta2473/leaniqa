@@ -1,4 +1,6 @@
-import { CheckCircle2, Shield, Clock, CreditCard } from 'lucide-react';
+const fs = require('fs');
+
+const content = `import { CheckCircle2, Shield, Clock, CreditCard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 
@@ -122,3 +124,5 @@ export function PricingPage() {
     </div>
   );
 }
+`
+fs.writeFileSync('src/features/pricing/pages/PricingPage.tsx', content);
