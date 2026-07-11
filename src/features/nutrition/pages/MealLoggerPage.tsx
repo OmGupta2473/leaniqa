@@ -1,11 +1,11 @@
-import { useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
+import {  useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
 import { createPortal } from "react-dom";
 import { useAppStore } from "@/app/store";
 import { useChatStore } from "@/app/store";
 import { useNutritionStore } from "../store/nutritionStore";
 import {
-  Send, Loader2, Dumbbell, Lightbulb, Sun, Sunrise, Moon, Plus, X, ChevronLeft, ChevronRight,
-} from "lucide-react";
+  Send, Loader2, Dumbbell, Lightbulb, Sun, Sunrise, Moon,  Plus, X, ChevronLeft, ChevronRight, ArrowRight, ChevronDown, 
+ } from "lucide-react";
 import { cn } from "@/shared/utils/utils";
 import { SmoothInput } from "@/shared/components/SmoothInput";
 
@@ -49,52 +49,65 @@ const getDeterministicFallback = (text: string) => {
 
 // ── SLOT ROW — used in the persistent summary ─────────────────────────────
 function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: string; icon: React.ReactNode; label: string; timeRange: string; meals: any[], onDelete: (id: string) => void }) {
+  const [expanded, setExpanded] = useState(false);
   const kcal = meals.reduce((s, m) => s + m.calories, 0);
   const pro = meals.reduce((s, m) => s + m.protein, 0);
   return (
-    <div className="glass-card p-[14px_16px] mb-[8px]">
-      <div className="flex items-center justify-between mb-[10px]">
-        <div className="flex items-center gap-[10px]">
-          <div className="w-[28px] h-[28px] rounded-full bg-[rgba(212,255,0,0.12)] flex items-center justify-center text-[#D4FF00]">
-            {icon}
-          </div>
+    <div className="card-base mb-3 overflow-hidden">
+      <div className="p-4 flex items-center justify-between select-none cursor-pointer" onClick={() => setExpanded(!expanded)}>
+        <div className="flex items-center gap-3">
+          <div className="text-[rgba(255,255,255,0.7)]">{icon}</div>
           <div>
-            <div className="text-[13px] font-semibold text-white">{label}</div>
-            <div className="text-[11px] text-[rgba(235,235,245,0.45)]">{timeRange}</div>
+            <div className="text-[14px] font-semibold text-white leading-none">{label}</div>
+            <div className="text-[11px] text-[rgba(255,255,255,0.4)] mt-1">{timeRange}</div>
           </div>
         </div>
-        <div className="text-right">
-          <div className="text-[14px] font-bold text-white">{kcal} <span className="text-[10px] font-normal text-[rgba(235,235,245,0.45)]">kcal</span></div>
-          <div className="text-[11px] text-[rgba(55,138,221,0.9)] font-semibold">{pro}g protein</div>
+        <div className="flex items-center gap-4 text-right">
+          <div>
+            <div className="text-[14px] font-bold text-white leading-none">{kcal} kcal</div>
+            <div className="text-[11px] font-semibold text-[#378ADD] mt-1">{pro}g protein</div>
+          </div>
+          <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
+            <ChevronDown size={16} className="text-[rgba(255,255,255,0.4)]" />
+          </motion.div>
         </div>
       </div>
-      {meals.length > 0 && (
-        <div className="space-y-[6px] pt-[8px] border-t border-[rgba(255,255,255,0.06)]">
-          {meals.map((m, i) => (
-            <div key={m.id || i} className="flex items-center justify-between group">
-              <div className="flex-1 min-w-0 pr-2">
-                <div className="text-[12px] text-[rgba(235,235,245,0.7)] capitalize truncate">{m.meal_text}</div>
-              </div>
-              <div className="flex items-center gap-[4px] shrink-0">
-                <span className="text-[10px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-[6px] py-[2px] rounded-full font-semibold">{m.calories} kcal</span>
-                <span className="text-[10px] bg-[rgba(55,138,221,0.12)] text-[#378ADD] px-[6px] py-[2px] rounded-full font-semibold">{m.protein}g</span>
-                {m.id && !m.id.toString().startsWith('opt-') && (
-                   <button onClick={() => {
-                      if (window.confirm("Delete Meal? This action cannot be undone.")) {
-                         onDelete(m.id);
-                      }
-                   }} className="w-[20px] h-[20px] rounded-full bg-[rgba(255,255,255,0.08)] flex items-center justify-center text-[rgba(235,235,245,0.6)] hover:bg-[rgba(255,77,28,0.2)] hover:text-[#FF4D1C] transition-colors ml-1">
-                     <X size={10} />
-                   </button>
-                )}
-              </div>
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0 }}
+            animate={{ height: "auto" }}
+            exit={{ height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-4 space-y-2 border-t border-[rgba(255,255,255,0.06)] pt-3">
+              {meals.length > 0 ? meals.map((m, i) => (
+                <div key={m.id || i} className="flex items-center justify-between group">
+                  <div className="flex-1 min-w-0 pr-2">
+                    <div className="text-[13px] text-[rgba(255,255,255,0.8)] capitalize truncate">{m.meal_text}</div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[10px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-2 py-0.5 rounded-full font-bold">{m.calories} KCAL</span>
+                    <span className="text-[10px] badge-lime px-2 py-0.5 font-bold rounded-full">{m.protein}G PRO</span>
+                    {m.id && !m.id.toString().startsWith('opt-') && (
+                      <button onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm("Delete Meal? This action cannot be undone.")) {
+                            onDelete(m.id);
+                          }
+                      }} className="w-6 h-6 rounded-full flex items-center justify-center text-[rgba(255,255,255,0.4)] hover:bg-[rgba(255,77,28,0.2)] hover:text-[#FF4D1C] transition-colors ml-1">
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )) : (
+                <div className="text-[12px] text-[rgba(255,255,255,0.25)] italic">Nothing logged yet</div>
+              )}
             </div>
-          ))}
-        </div>
-      )}
-      {meals.length === 0 && (
-        <div className="text-[11px] text-[rgba(235,235,245,0.3)] italic pt-[4px]">Nothing logged yet</div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -640,6 +653,7 @@ export function MealLoggerPage() {
                 paddingBottom: isKeyboardOpen ? '16px' : undefined
               }}
             >
+              
               {/* Modal header */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px 12px', borderBottom: '0.5px solid rgba(255,255,255,0.08)' }}>
                 <div style={{ minWidth: 0, paddingRight: '12px' }}>
@@ -652,79 +666,105 @@ export function MealLoggerPage() {
               </div>
 
               {/* Meal slot selector */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', padding: '12px 20px 0' }}>
-                {([['breakfast', Sunrise, 'Breakfast'], ['lunch', Sun, 'Lunch'], ['dinner', Moon, 'Dinner']] as const).map(([slot, Icon, label]) => (
-                  <button
-                    key={slot}
-                    onClick={() => setSelectedMealSlot(slot as any)}
-                    style={{
-                      minWidth: 0,
-                      padding: '8px 4px',
-                      borderRadius: '10px',
-                      border: `1px solid ${selectedMealSlot === slot ? '#D4FF00' : 'rgba(255,255,255,0.1)'}`,
-                      background: selectedMealSlot === slot ? 'rgba(212,255,0,0.1)' : 'rgba(255,255,255,0.04)',
-                      color: selectedMealSlot === slot ? '#D4FF00' : 'rgba(235,235,245,0.6)',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '4px',
-                      fontSize: 'var(--font-xs)',
-                      fontWeight: 600,
-                      transition: 'background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease',
-                    }}
-                  >
-                    <Icon size={13} /> {label}
-                  </button>
-                ))}
+              <div className="px-5 pt-3">
+                <div className="bg-[rgba(255,255,255,0.04)] rounded-2xl p-1.5 flex gap-1 relative">
+                  {([['breakfast', Sunrise, 'Breakfast', '6 AM - 12 PM'], ['lunch', Sun, 'Lunch', '12 PM - 6 PM'], ['dinner', Moon, 'Dinner', '6 PM - 10 PM']] as const).map(([slot, Icon, label, time]) => {
+                    const isActive = selectedMealSlot === slot;
+                    return (
+                      <div
+                        key={slot}
+                        onClick={() => setSelectedMealSlot(slot as any)}
+                        className={cn(
+                          "flex-1 flex flex-col items-center py-2.5 rounded-xl cursor-pointer transition-colors duration-200 relative z-10",
+                          isActive ? "text-white font-medium" : "text-[rgba(255,255,255,0.4)] bg-transparent"
+                        )}
+                      >
+                        {isActive && (
+                          <motion.div
+                            layoutId="slotActive"
+                            className="absolute inset-0 bg-[rgba(255,255,255,0.1)] rounded-xl -z-10"
+                            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                          />
+                        )}
+                        <Icon size={14} className="mb-1" />
+                        <div className="text-[13px]">{label}</div>
+                        <div className="text-[9px] text-[rgba(255,255,255,0.32)] font-normal">{time}</div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* AI status indicator */}
-              <div style={{ padding: '8px 20px 0' }}>
+              <div className="px-5 pt-3 flex items-center justify-center">
                 {aiStatus === 'offline' && (
-                  <div style={{ background: 'rgba(255,77,28,0.08)', border: '0.5px solid rgba(255,77,28,0.2)', borderRadius: '8px', padding: '6px 10px', fontSize: 'var(--font-xs)', color: 'rgba(255,77,28,0.8)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span>⚡</span> Using database estimates · AI offline
+                  <div className="flex items-center gap-2 text-[12px] text-[rgba(255,255,255,0.4)]">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[rgba(255,255,255,0.25)]" />
+                    <span>AI Offline — Using Database</span>
                   </div>
                 )}
                 {aiStatus === 'online' && (
-                  <div style={{ background: 'rgba(212,255,0,0.06)', border: '0.5px solid rgba(212,255,0,0.2)', borderRadius: '8px', padding: '6px 10px', fontSize: 'var(--font-xs)', color: 'rgba(212,255,0,0.8)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#D4FF00', display: 'inline-block' }}></span> Gemini AI active
+                  <div className="flex items-center gap-2 text-[12px] text-[rgba(255,255,255,0.4)]">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#D4FF00] shadow-[0_0_6px_#D4FF00] animate-pulse-glow" style={{ animation: 'pulseGlow 2s infinite ease-in-out' }} />
+                    <style>{'@keyframes pulseGlow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }'}</style>
+                    <span>Gemini AI Active</span>
                   </div>
                 )}
               </div>
 
               {/* Chat messages */}
               <div ref={chatRef} style={{ flex: 1, overflowY: 'auto', padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '120px' }}>
-                {chat.map((msg, i) => (
-                  <div key={i} className={cn("max-w-[88%] p-[10px_14px] text-[14px] leading-relaxed", msg.role === "user" ? "bg-[#D4FF00] text-[#0A0A0A] rounded-[14px] rounded-br-[4px] self-end" : "glass-card text-white rounded-[14px] rounded-bl-[4px] self-start")}>
-                    <div className="whitespace-pre-wrap">{msg.text}</div>
-                    {msg.data && (
-                      <div className="flex gap-[6px] flex-wrap mt-[8px]">
-                        <span className="text-[10px] px-[7px] py-[2px] rounded-full font-semibold bg-[rgba(255,77,28,0.15)] text-[#FF4D1C]">~{msg.data.calories} kcal</span>
-                        <span className="text-[10px] px-[7px] py-[2px] rounded-full font-semibold bg-[rgba(55,138,221,0.15)] text-[#378ADD]">{msg.data.protein}g pro</span>
-                        <span className="text-[10px] px-[7px] py-[2px] rounded-full font-semibold bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.7)]">{msg.data.fat}g fat</span>
-                        <span className="text-[10px] px-[7px] py-[2px] rounded-full font-semibold bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.7)]">{msg.data.carbs}g carb</span>
-                      </div>
-                    )}
-                    {msg.data?.coaching_tip && (
-                      <div className="mt-[10px] pt-[8px] border-t border-[rgba(255,255,255,0.06)] flex gap-[6px]">
-                        <Lightbulb size={13} className="text-[#D4FF00] mt-[2px] shrink-0" />
-                        <div className="text-[12px] text-[rgba(235,235,245,0.65)] italic">{msg.data.coaching_tip}</div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-                {loading && (
-                  <div className="glass-card text-white rounded-[14px] rounded-bl-[4px] self-start p-[10px_14px] max-w-[88%] flex items-center gap-[6px] text-[13px]">
-                    <Loader2 size={14} className="animate-spin text-[#D4FF00]" /> Analyzing meal...
-                  </div>
-                )}
+                <AnimatePresence>
+                  {chat.map((msg, i) => {
+                    const isUser = msg.role === "user";
+                    return (
+                      <motion.div 
+                        key={i}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, ease: [0.16,1,0.3,1] }}
+                        className={cn(
+                          "p-[12px_16px] text-[14px] leading-relaxed relative",
+                          isUser 
+                            ? "bg-[rgba(212,255,0,0.12)] border-[0.5px] border-[rgba(212,255,0,0.2)] text-white rounded-2xl rounded-tr-sm max-w-[85%] self-end" 
+                            : "bg-[rgba(255,255,255,0.04)] border-[0.5px] border-[rgba(255,255,255,0.08)] text-[rgba(255,255,255,0.85)] rounded-2xl rounded-tl-sm max-w-[90%] self-start"
+                        )}
+                      >
+                        <div className="whitespace-pre-wrap">{msg.text}</div>
+                        {msg.data && (
+                          <div className="flex gap-[6px] flex-wrap mt-[8px]">
+                            <span className="text-[10px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">~{msg.data.calories} kcal</span>
+                            <span className="text-[10px] badge-lime px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{msg.data.protein}g pro</span>
+                            <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.7)] px-2 py-0.5 rounded-full font-semibold">{msg.data.fat}g fat</span>
+                            <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.7)] px-2 py-0.5 rounded-full font-semibold">{msg.data.carbs}g carb</span>
+                          </div>
+                        )}
+                        {msg.data?.coaching_tip && (
+                          <div className="mt-[12px] border-l-[3px] border-[#D4FF00]/40 bg-[rgba(212,255,0,0.05)] p-3 rounded-r-xl italic text-[13px] flex gap-[8px] items-start">
+                            <Lightbulb size={16} className="text-[#D4FF00] mt-0.5 shrink-0" />
+                            <div className="text-[rgba(235,235,245,0.75)]">{msg.data.coaching_tip}</div>
+                          </div>
+                        )}
+                      </motion.div>
+                    );
+                  })}
+                  {loading && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-[rgba(255,255,255,0.04)] border-[0.5px] border-[rgba(255,255,255,0.08)] text-[rgba(255,255,255,0.85)] rounded-2xl rounded-tl-sm max-w-[85%] self-start p-[10px_14px] flex items-center gap-[8px] text-[13px]"
+                    >
+                      <Loader2 size={16} className="animate-spin text-[#D4FF00]" /> Analyzing meal...
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Input row */}
-              <div style={{ display: 'flex', gap: '10px', padding: '12px 20px 0', alignItems: 'center' }}>
+              <div className="glass-strong border-t border-[rgba(255,255,255,0.06)] px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex gap-3 items-center">
                 <input
-                  style={{ flex: 1, background: 'rgba(255,255,255,0.07)', border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: '100px', padding: '12px 16px', color: 'white', fontSize: '16px', outline: 'none' }}
+                  className="input-apple flex-1 text-[16px] placeholder:text-[rgba(255,255,255,0.3)] bg-[rgba(255,255,255,0.05)]"
+                  style={{ borderRadius: '14px', border: '0.5px solid rgba(255,255,255,0.15)', padding: '12px 16px' }}
                   type="text"
                   placeholder={selectedMealSlot ? "e.g. 2 boiled eggs and chai" : "Select breakfast / lunch / dinner"}
                   value={input}
@@ -738,16 +778,19 @@ export function MealLoggerPage() {
                   }}
                   disabled={loading || !selectedMealSlot}
                 />
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.08 }}
+                  whileTap={{ scale: 0.92 }}
                   onPointerDown={(e) => {
-                    e.preventDefault(); // Prevent input from losing focus immediately
+                    e.preventDefault();
                     handleSend();
                   }}
                   disabled={loading || !selectedMealSlot || !input.trim()}
-                  style={{ width: '44px', height: '44px', borderRadius: '50%', background: loading || !selectedMealSlot || !input.trim() ? 'rgba(212,255,0,0.3)' : '#D4FF00', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'background 0.15s' }}
+                  className="w-[40px] h-[40px] rounded-full flex items-center justify-center shrink-0"
+                  style={{ background: loading || !selectedMealSlot || !input.trim() ? 'rgba(212,255,0,0.3)' : '#D4FF00' }}
                 >
-                  <Send size={18} color="#0A0A0A" />
-                </button>
+                  <ArrowRight size={18} strokeWidth={2} color="#0A0A0A" />
+                </motion.button>
               </div>
             </motion.div>
           </motion.div>
