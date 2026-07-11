@@ -20,7 +20,12 @@ import {
   Trophy,
   ArrowRight,
   TrendingDown,
-  Sparkles
+  Sparkles,
+  Home,
+  Search,
+  Plus,
+  Play,
+  User
 } from "lucide-react";
 
 // Leaniqa Colors
@@ -134,7 +139,26 @@ function PhoneFrame({
            </svg>
         </div>
 
-        <div className="absolute inset-0 font-sans z-0" style={{ containerType: 'inline-size' }}>{children}</div>
+        <div className="absolute inset-0 font-sans z-0 pb-[22%]" style={{ containerType: 'inline-size' }}>{children}</div>
+
+        {/* Floating Bottom Nav (iOS Instagram style) */}
+        <div className="absolute bottom-[4.5%] left-1/2 -translate-x-1/2 w-[88%] bg-[#f9f9f9]/95 backdrop-blur-xl rounded-full py-[3.5%] px-[5%] flex items-center justify-between z-40 shadow-[0_10px_30px_rgba(0,0,0,0.8)] border border-white/20">
+          {/* Home Active */}
+          <div className="flex items-center justify-center w-[16%] aspect-square bg-black/10 rounded-full">
+             <Home className="w-[50%] h-auto text-black" strokeWidth={2.5} />
+          </div>
+          <Search className="w-[9%] h-auto text-black/70" strokeWidth={2.5} />
+          <div className="flex items-center justify-center w-[8%] aspect-square border-[2px] border-black/70 rounded-[30%]">
+             <Plus className="w-[70%] h-auto text-black/70" strokeWidth={3} />
+          </div>
+          <Play className="w-[9%] h-auto text-black/70" strokeWidth={2.5} />
+          <div className="w-[10%] aspect-square rounded-full bg-zinc-300 border border-black/10 overflow-hidden flex items-center justify-center relative">
+            <User className="absolute -bottom-[15%] w-[85%] h-auto text-black/40" strokeWidth={2} />
+          </div>
+        </div>
+
+        {/* iOS Home Indicator */}
+        <div className="absolute bottom-[1.2%] left-1/2 -translate-x-1/2 w-[35%] h-[4px] bg-white rounded-full z-50 opacity-90" />
       </div>
     </div>
   );
