@@ -5,10 +5,8 @@ import {
   useTransform,
   useMotionValue,
   useSpring,
-  useMotionValueEvent,
   AnimatePresence,
   useInView,
-  useMotionTemplate,
 } from "motion/react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -332,16 +330,13 @@ function TimelineScreen() {
 /* ─────────────────────────────────────────────
    ANIMATED PHONE
 ───────────────────────────────────────────── */
-function PremiumPhone({ scrollYProgress }: { scrollYProgress: any }) {
+function PremiumPhone({ scrollYProgress: _ }: { scrollYProgress: any }) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
-  const mouseXSpring = useSpring(x, { stiffness: 150, damping: 25 });
-  const mouseYSpring = useSpring(y, { stiffness: 150, damping: 25 });
-
-  const scrollFloatY = useTransform(scrollYProgress, [0, 1], [40, -40]);
-
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["10deg", "-10deg"]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-10deg", "10deg"]);
+  const mouseXSpring = useSpring(x, { stiffness: 160, damping: 28 });
+  const mouseYSpring = useSpring(y, { stiffness: 160, damping: 28 });
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["6deg", "-6deg"]);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-6deg", "6deg"]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
@@ -353,16 +348,16 @@ function PremiumPhone({ scrollYProgress }: { scrollYProgress: any }) {
     <motion.div
       onMouseMove={handleMouseMove}
       onMouseLeave={() => { x.set(0); y.set(0); }}
-      style={{ y: scrollFloatY, rotateX, rotateY, transformStyle: "preserve-3d" }}
+      style={{ rotateX, rotateY, transformStyle: "preserve-3d", willChange: "transform" }}
     >
       <PhoneFrame>
-        <PhoneScreen layerIndex={0} scrollYProgress={scrollYProgress}>
+        <PhoneScreen layerIndex={0} scrollYProgress={_}>
           <AICoachScreen />
         </PhoneScreen>
-        <PhoneScreen layerIndex={1} scrollYProgress={scrollYProgress}>
+        <PhoneScreen layerIndex={1} scrollYProgress={_}>
           <DashboardScreen />
         </PhoneScreen>
-        <PhoneScreen layerIndex={2} scrollYProgress={scrollYProgress}>
+        <PhoneScreen layerIndex={2} scrollYProgress={_}>
           <TimelineScreen />
         </PhoneScreen>
       </PhoneFrame>
@@ -370,69 +365,42 @@ function PremiumPhone({ scrollYProgress }: { scrollYProgress: any }) {
   );
 }
 
-function getScrollRanges(index, total) {
-  // We divide the scroll space into equal segments based on the number of items.
-  // For 3 items, the segments are 0.5 long (0 to 0.5, and 0.5 to 1.0).
-  const segment = 1 / (total - 1);
-  
-  // Calculate the exact center points where the crossfades should happen
-  const transitionCenter = (index + 0.5) * segment; 
-  const prevTransitionCenter = (index - 0.5) * segment; 
-  
-  // Define how wide the crossfade should be (25% of a segment gives a buttery smooth overlap)
-  const fadeWidth = segment * 0.25; 
+function getScrollRanges(index: number, total: number) {
+  // Peaks are inset from 0 and 1 so every item gets a full symmetric fade window.
+  // With total=3: peaks = [0.15, 0.50, 0.85]
+  // Each item is fully visible at its peak and fully invisible 0.18 either side.
+  const FADE = 0.17; // half-width of the crossfade window
+  const peak = total === 1 ? 0.5 : 0.15 + (index / (total - 1)) * 0.70;
 
-  let input = [];
-  let opacity = [];
-  let y = [];
-  let blur = [];
-  let scale = [];
+  const inputPoints  = [Math.max(0, peak - FADE), peak, Math.min(1, peak + FADE)];
+  const opacityOut   = [0, 1, 0];
+  const yOut         = [28, 0, -28];
 
-  if (index === 0) {
-    // 1st Item: Starts fully visible, then fades out during its transition center
-    input = [0, transitionCenter - fadeWidth, transitionCenter + fadeWidth];
-    opacity = [1, 1, 0];
-    y = [0, 0, -40];
-    blur = [0, 0, 8];
-    scale = [1, 1, 1.05];
-  } else if (index === total - 1) {
-    // Last Item: Fades in during the previous transition center, stays fully visible to the end
-    input = [prevTransitionCenter - fadeWidth, prevTransitionCenter + fadeWidth, 1];
-    opacity = [0, 1, 1];
-    y = [40, 0, 0];
-    blur = [8, 0, 0];
-    scale = [0.95, 1, 1];
-  } else {
-    // Middle Items: Fades in, stays fully visible for a bit, then fades out
-    input = [
-      prevTransitionCenter - fadeWidth, // Start fade in
-      prevTransitionCenter + fadeWidth, // Fully visible
-      transitionCenter - fadeWidth,     // Start fade out
-      transitionCenter + fadeWidth      // Fully hidden
-    ];
-    opacity = [0, 1, 1, 0];
-    y = [40, 0, 0, -40];
-    blur = [8, 0, 0, 8];
-    scale = [0.95, 1, 1, 1.05];
-  }
-
-  return { input, opacity, y, blur, scale };
+  return { input: inputPoints, opacity: opacityOut, y: yOut };
 }
 
-function PhoneScreen({ children, layerIndex, scrollYProgress }: { children: React.ReactNode, layerIndex: number, scrollYProgress: any }) {
-  const { input, opacity: opacityOut, blur: blurOut, scale: scaleOut } = getScrollRanges(layerIndex, STORY.length);
+function PhoneScreen({
+  children,
+  layerIndex,
+  scrollYProgress,
+}: {
+  children: React.ReactNode;
+  layerIndex: number;
+  scrollYProgress: any;
+}) {
+  const { input, opacity: opacityOut } = getScrollRanges(layerIndex, STORY.length);
 
   const opacity = useTransform(scrollYProgress, input, opacityOut);
-  const scale = useTransform(scrollYProgress, input, scaleOut);
-  const blurVal = useTransform(scrollYProgress, input, blurOut);
-  const filter = useMotionTemplate`blur(${blurVal}px)`;
-  
-  const peak = layerIndex / (STORY.length - 1);
-  const pointerEvents = useTransform(scrollYProgress, (v: number) => Math.abs(v - peak) < 0.15 ? "auto" : "none");
+
+  const peak = 0.15 + (layerIndex / (STORY.length - 1)) * 0.70;
+  const pointerEvents = useTransform(
+    scrollYProgress,
+    (v: number) => Math.abs(v - peak) < 0.15 ? "auto" : "none"
+  );
 
   return (
     <motion.div
-      style={{ opacity, filter, scale, pointerEvents, transformOrigin: "center" }}
+      style={{ opacity, pointerEvents }}
       className="absolute inset-0 w-full h-full bg-[#0C0C0D] overflow-hidden rounded-[1.8rem] z-10"
     >
       {children}
@@ -521,20 +489,29 @@ function MobileStory() {
     </div>
   );
 }
-function StoryTextItem({ step, index, scrollYProgress }: { step: any, index: number, scrollYProgress: any }) {
-  const { input, opacity: opacityOut, y: yOut, blur: blurOut } = getScrollRanges(index, STORY.length);
+function StoryTextItem({
+  step,
+  index,
+  scrollYProgress,
+}: {
+  step: any;
+  index: number;
+  scrollYProgress: any;
+}) {
+  const { input, opacity: opacityOut, y: yOut } = getScrollRanges(index, STORY.length);
 
   const opacity = useTransform(scrollYProgress, input, opacityOut);
   const y = useTransform(scrollYProgress, input, yOut);
-  const blurVal = useTransform(scrollYProgress, input, blurOut);
-  const filter = useMotionTemplate`blur(${blurVal}px)`;
-  
-  const peak = index / (STORY.length - 1);
-  const pointerEvents = useTransform(scrollYProgress, (v: number) => Math.abs(v - peak) < 0.1 ? "auto" : "none");
+
+  const peak = 0.15 + (index / (STORY.length - 1)) * 0.70;
+  const pointerEvents = useTransform(
+    scrollYProgress,
+    (v: number) => Math.abs(v - peak) < 0.1 ? "auto" : "none"
+  );
 
   return (
     <motion.div
-      style={{ opacity, y, filter, pointerEvents }}
+      style={{ opacity, y, pointerEvents }}
       className="absolute inset-x-0 top-1/2 -translate-y-1/2 pr-8"
     >
       <h3 className="text-4xl lg:text-5xl xl:text-6xl font-semibold leading-[1.1] text-zinc-50 tracking-tight">
@@ -549,14 +526,26 @@ function StoryTextItem({ step, index, scrollYProgress }: { step: any, index: num
 
 function DesktopStory() {
   const containerRef = useRef<HTMLDivElement>(null);
-  
-  const { scrollYProgress } = useScroll({
+
+  const { scrollYProgress: rawProgress } = useScroll({
     target: containerRef,
-    offset: ["start start", "end end"]
+    offset: ["start start", "end end"],
+  });
+
+  // Spring smoothing makes crossfades buttery on fast scroll and trackpad.
+  // stiffness:80 / damping:20 = responsive but not snappy.
+  const scrollYProgress = useSpring(rawProgress, {
+    stiffness: 80,
+    damping: 20,
+    restDelta: 0.0001,
   });
 
   return (
-    <div ref={containerRef} className="hidden lg:block relative w-full h-[400vh]">
+    <div
+      ref={containerRef}
+      className="hidden lg:block relative w-full h-[400vh]"
+      style={{ willChange: "transform" }}
+    >
       <div className="sticky top-0 h-screen w-full flex items-center overflow-hidden">
         <div className="max-w-7xl mx-auto w-full px-6 lg:px-16 flex items-center justify-between">
           
@@ -571,7 +560,10 @@ function DesktopStory() {
             ))}
           </div>
 
-          <div className="w-1/2 flex items-center justify-center" style={{ perspective: "1200px" }}>
+          <div
+            className="w-1/2 flex items-center justify-center"
+            style={{ perspective: "1200px" }}
+          >
             <PremiumPhone scrollYProgress={scrollYProgress} />
           </div>
           
