@@ -8,6 +8,8 @@ import { CheckCircle2, ArrowRight } from 'lucide-react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { profileService } from '@/features/profile/services/profileService';
 import { complianceService } from '@/features/reports/services/complianceService';
+import { motion, AnimatePresence } from 'motion/react';
+import { hover, tap } from '@/features/reports/components/motion';
 
 function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: number }) {
   const [displayValue, setDisplayValue] = useState(0);
@@ -343,12 +345,13 @@ export function OnboardingPage() {
   };
 
   const inputClass = (hasError: boolean) => cn(
-    "w-full bg-[rgba(255,255,255,0.07)] border-[0.5px] border-[rgba(255,255,255,0.12)] rounded-xl text-[17px] p-[14px_16px] text-white",
-    "focus:bg-[rgba(255,255,255,0.1)] focus:border-[rgba(212,255,0,0.6)] focus:outline-none focus:shadow-[0_0_0_3px_rgba(212,255,0,0.12)] transition-all",
+    "input-apple",
     hasError && "border-[rgba(255,59,48,0.6)] bg-[rgba(255,59,48,0.05)] focus:border-[rgba(255,59,48,0.6)] focus:shadow-[0_0_0_3px_rgba(255,59,48,0.12)]"
   );
 
   const isEditMode = editProfileMode;
+  const currentStep = showResults ? 2 : 1;
+  const totalSteps = 2;
 
   if (profile && !isEditMode) {
     return (
@@ -456,11 +459,42 @@ export function OnboardingPage() {
   }
 
   return (
-    <div className="screen-container screen-enter">
+    <div className="screen-container pb-24">
+      {/* Progress Bar */}
+      {!isEditMode && (
+        <div className="w-full bg-[rgba(255,255,255,0.08)] h-[2px] absolute top-0 left-0">
+          <div 
+            className="h-full bg-[#D4FF00] rounded-r-full"
+            style={{ 
+              width: `${(currentStep / totalSteps) * 100}%`,
+              transition: 'width 400ms cubic-bezier(0.16,1,0.3,1)'
+            }}
+          />
+        </div>
+      )}
+
       <div className="py-[28px] mb-[12px]">
-        <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599] mb-[8px]">{isEditMode ? 'Editing Personal Info' : 'Step 1 of 2'}</div>
-        <h2 className="text-[34px] font-bold text-white tracking-[-0.5px] leading-tight mb-[8px]">{isEditMode ? 'Update your stats' : 'Personal Information'}</h2>
-        <p className="text-[15px] font-normal text-[#EBEBF5CC] tracking-[-0.1px]">{isEditMode ? 'Change any field below and recalculate.' : 'We use the US Navy method for precision body fat targeting.'}</p>
+        {!isEditMode && (
+          <div className="text-[11px] uppercase tracking-wide text-[rgba(255,255,255,0.32)] mb-[8px]">
+            Step {currentStep} of {totalSteps}
+          </div>
+        )}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentStep}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <h2 className="text-[26px] font-semibold text-white tracking-tight -tracking-[0.4px] leading-tight mb-[8px]">
+              {isEditMode ? 'Update your stats' : (showResults ? `Good work, ${name.trim() || 'there'}` : 'Personal Information')}
+            </h2>
+            <p className="text-[15px] font-normal text-[rgba(255,255,255,0.8)] tracking-[-0.1px]">
+              {isEditMode ? 'Change any field below and recalculate.' : (showResults ? "Here's what your body needs daily" : 'We use the US Navy method for precision body fat targeting.')}
+            </p>
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       {Object.keys(errors).length > 0 && (
@@ -469,251 +503,271 @@ export function OnboardingPage() {
         </div>
       )}
       
-      <div className="flex flex-col gap-[20px] mb-[28px]">
-        {/* Gender */}
-        <div className="flex flex-col gap-[8px]">
-          <span className="text-[15px] font-medium text-white">Gender</span>
-          <div className="flex gap-[12px]">
-            {['Male', 'Female'].map(g => (
-              <button 
-                key={g} 
-                onClick={() => setGender(g as any)} 
-                className={cn(
-                  "flex-1 py-[14px] px-[16px] rounded-xl text-[17px] font-medium transition-all",
-                  gender === g 
-                    ? "bg-[rgba(212,255,0,0.1)] border border-[rgba(212,255,0,0.5)] text-white" 
-                    : "bg-[rgba(255,255,255,0.07)] border border-[rgba(255,255,255,0.12)] text-[#EBEBF5CC] hover:bg-[rgba(255,255,255,0.1)]",
-                  errors.gender && "border-[rgba(255,59,48,0.6)] bg-[rgba(255,59,48,0.05)]"
-                )}
-              >
-                {g}
-              </button>
-            ))}
-          </div>
-          {errors.gender && <span className="text-[13px] text-[#FF3B30] mt-[6px]">{errors.gender}</span>}
-        </div>
-
-        {/* Name */}
-        <div className="flex flex-col gap-[8px]">
-          <span className="text-[15px] font-medium text-white">Your name</span>
-          <input 
-            className={inputClass(!!errors.name)} 
-            type="text" 
-            value={name} 
-            onChange={e => setName(e.target.value)} 
-            placeholder="First name" 
-          />
-          {errors.name && <span className="text-[13px] text-[#FF3B30] mt-[6px]">{errors.name}</span>}
-        </div>
-
-        {/* Age */}
-        <div className="flex flex-col gap-[8px]">
-          <span className="text-[15px] font-medium text-white">Age</span>
-          <input 
-            className={inputClass(!!errors.age)} 
-            type="number" 
-            value={age} 
-            onChange={e => setAge(e.target.value)} 
-            placeholder="Age" 
-          />
-          {errors.age && <span className="text-[13px] text-[#FF3B30] mt-[6px]">{errors.age}</span>}
-        </div>
-
-        {/* Height */}
-        <div className="flex flex-col gap-[8px]">
-          <div className="flex justify-between items-center mb-[4px]">
-            <span className="text-[15px] font-medium text-white">Height</span>
-            <div className="bg-[rgba(255,255,255,0.08)] rounded-[100px] p-[3px] inline-flex">
-              <button 
-                onClick={() => toggleHeightUnit('cm')} 
-                className={cn("px-[16px] py-[6px] rounded-[100px] text-[14px] font-medium transition-all", heightUnit === 'cm' ? "bg-[#D4FF00] text-[#0A0A0A] font-bold" : "text-[#EBEBF599]")}
-              >cm</button>
-              <button 
-                onClick={() => toggleHeightUnit('ft')} 
-                className={cn("px-[16px] py-[6px] rounded-[100px] text-[14px] font-medium transition-all", heightUnit === 'ft' ? "bg-[#D4FF00] text-[#0A0A0A] font-bold" : "text-[#EBEBF599]")}
-              >ft / in</button>
-            </div>
-          </div>
-          {heightUnit === 'cm' ? (
-            <input 
-              className={inputClass(!!errors.height)} 
-              type="number" 
-              value={height} 
-              onChange={e => setHeight(e.target.value)} 
-              placeholder="e.g. 172" 
-            />
-          ) : (
-            <div className="flex gap-[12px]">
-              <div className="flex-1 relative">
-                <input 
-                  className={inputClass(!!errors.height)} 
-                  type="number" 
-                  value={heightFt} 
-                  onChange={e => setHeightFt(e.target.value)} 
-                  placeholder="5" 
-                />
-                <span className="absolute right-[16px] top-[14px] text-[#EBEBF599] text-[17px]">ft</span>
-              </div>
-              <div className="flex-1 relative">
-                <input 
-                  className={inputClass(!!errors.height)} 
-                  type="number" 
-                  value={heightIn} 
-                  onChange={e => setHeightIn(e.target.value)} 
-                  placeholder="10" 
-                />
-                <span className="absolute right-[16px] top-[14px] text-[#EBEBF599] text-[17px]">in</span>
-              </div>
-            </div>
-          )}
-          {errors.height && <span className="text-[13px] text-[#FF3B30] mt-[6px]">{errors.height}</span>}
-        </div>
-
-        {/* Weight */}
-        <div className="flex flex-col gap-[8px]">
-          <span className="text-[15px] font-medium text-white">Weight (kg)</span>
-          <input 
-            className={inputClass(!!errors.weight)} 
-            type="number" 
-            value={weight} 
-            onChange={e => setWeight(e.target.value)} 
-            placeholder="e.g. 80" 
-          />
-          {errors.weight && <span className="text-[13px] text-[#FF3B30] mt-[6px]">{errors.weight}</span>}
-        </div>
-
-        {/* Activity level */}
-        <div className="flex flex-col gap-[8px] mt-[8px]">
-          <span className="text-[15px] font-medium text-white">Activity level</span>
-          <div className="flex flex-col gap-[12px]">
-            {[
-              { label: 'Sedentary', desc: 'Desk job, little or no exercise, mostly sitting through the day' },
-              { label: 'Lightly Active', desc: 'Daily walks, light home workouts, occasional stretching or yoga' },
-              { label: 'Moderately Active', desc: 'Gym or sports 3–4 times a week with moderate effort' },
-              { label: 'Very Active', desc: 'Intense gym sessions 5–6 times a week or a physically demanding job' },
-              { label: 'Athlete', desc: 'Twice-a-day training, competitive sports, or heavy manual labour every day' }
-            ].map(a => (
-              <button 
-                key={a.label} 
-                onClick={() => setActivity(a.label as any)} 
-                className={cn(
-                  "bg-[rgba(44,44,46,0.6)] border-[0.5px] border-[rgba(255,255,255,0.1)] rounded-[14px] p-[14px_16px] cursor-pointer transition-all text-left flex flex-col gap-[4px]",
-                  activity === a.label && "bg-[rgba(212,255,0,0.1)] border-[rgba(212,255,0,0.5)]",
-                  errors.activity && activity !== a.label && "border-[rgba(255,59,48,0.6)] bg-[rgba(255,59,48,0.05)]"
-                )}
-              >
-                <div className="text-[15px] font-semibold text-white">
-                  {a.label}
-                </div>
-                <div className="text-[13px] font-normal text-[#EBEBF599]">
-                  {a.desc}
-                </div>
-              </button>
-            ))}
-          </div>
-          {errors.activity && <span className="text-[13px] text-[#FF3B30] mt-[6px]">{errors.activity}</span>}
-        </div>
-      </div>
-      
       {!showResults && (
-        <button 
-          onClick={calculateResults} 
-          disabled={saveMutation.isPending} 
-          className="w-full bg-[#D4FF00] text-[#0A0A0A] font-bold text-[17px] rounded-[100px] p-[16px_32px] border-none tracking-[-0.2px] transition-all hover:scale-[1.02] hover:opacity-[0.95] active:scale-[0.97] disabled:opacity-50"
-        >
-          {isEditMode ? 'Recalculate targets' : 'Calculate targets'}
-        </button>
+        <div className="flex flex-col gap-[20px] mb-[28px]">
+          {/* Gender */}
+          <div className="flex flex-col gap-[8px]">
+            <span className="text-[12px] text-[rgba(255,255,255,0.5)] font-medium mb-[6px] block">Gender</span>
+            <div className="bg-[rgba(255,255,255,0.06)] rounded-xl p-1 flex relative">
+              {['Male', 'Female'].map(g => {
+                const isActive = gender === g;
+                return (
+                  <button 
+                    key={g} 
+                    onClick={() => setGender(g as any)} 
+                    className={cn(
+                      "flex-1 py-2.5 text-center text-sm rounded-lg cursor-pointer transition-all duration-200 relative z-10",
+                      isActive ? "text-white font-medium" : "text-[rgba(255,255,255,0.45)] bg-transparent hover:text-white"
+                    )}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="segmentActiveGender"
+                        className="absolute inset-0 bg-[rgba(255,255,255,0.12)] rounded-[10px] -z-10"
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+                    {g}
+                  </button>
+                )
+              })}
+            </div>
+            {errors.gender && <span className="text-[13px] text-[#FF3B30] mt-[6px]">{errors.gender}</span>}
+          </div>
+
+          {/* Name */}
+          <div className="flex flex-col gap-[8px]">
+            <span className="text-[12px] text-[rgba(255,255,255,0.5)] font-medium mb-[6px] block">Your name</span>
+            <input 
+              className={inputClass(!!errors.name)} 
+              type="text" 
+              value={name} 
+              onChange={e => setName(e.target.value)} 
+              placeholder="First name" 
+            />
+            {errors.name && <span className="text-[13px] text-[#FF3B30] mt-[6px]">{errors.name}</span>}
+          </div>
+
+          {/* Age */}
+          <div className="flex flex-col gap-[8px]">
+            <span className="text-[12px] text-[rgba(255,255,255,0.5)] font-medium mb-[6px] block">Age</span>
+            <input 
+              className={inputClass(!!errors.age)} 
+              type="number" 
+              value={age} 
+              onChange={e => setAge(e.target.value)} 
+              placeholder="Age" 
+            />
+            {errors.age && <span className="text-[13px] text-[#FF3B30] mt-[6px]">{errors.age}</span>}
+          </div>
+
+          {/* Height */}
+          <div className="flex flex-col gap-[8px]">
+            <div className="flex justify-between items-center mb-[6px]">
+              <span className="text-[12px] text-[rgba(255,255,255,0.5)] font-medium block">Height</span>
+              <div className="bg-[rgba(255,255,255,0.06)] rounded-xl p-1 flex">
+                <button 
+                  onClick={() => toggleHeightUnit('cm')} 
+                  className={cn("px-[12px] py-[4px] rounded-lg text-[12px] transition-all", heightUnit === 'cm' ? "bg-[rgba(255,255,255,0.12)] text-white font-medium" : "text-[rgba(255,255,255,0.45)]")}
+                >cm</button>
+                <button 
+                  onClick={() => toggleHeightUnit('ft')} 
+                  className={cn("px-[12px] py-[4px] rounded-lg text-[12px] transition-all", heightUnit === 'ft' ? "bg-[rgba(255,255,255,0.12)] text-white font-medium" : "text-[rgba(255,255,255,0.45)]")}
+                >ft / in</button>
+              </div>
+            </div>
+            {heightUnit === 'cm' ? (
+              <input 
+                className={inputClass(!!errors.height)} 
+                type="number" 
+                value={height} 
+                onChange={e => setHeight(e.target.value)} 
+                placeholder="e.g. 172" 
+              />
+            ) : (
+              <div className="flex gap-[12px]">
+                <div className="flex-1 relative">
+                  <input 
+                    className={inputClass(!!errors.height)} 
+                    type="number" 
+                    value={heightFt} 
+                    onChange={e => setHeightFt(e.target.value)} 
+                    placeholder="5" 
+                  />
+                  <span className="absolute right-[16px] top-[14px] text-[#EBEBF599] text-[17px]">ft</span>
+                </div>
+                <div className="flex-1 relative">
+                  <input 
+                    className={inputClass(!!errors.height)} 
+                    type="number" 
+                    value={heightIn} 
+                    onChange={e => setHeightIn(e.target.value)} 
+                    placeholder="10" 
+                  />
+                  <span className="absolute right-[16px] top-[14px] text-[#EBEBF599] text-[17px]">in</span>
+                </div>
+              </div>
+            )}
+            {errors.height && <span className="text-[13px] text-[#FF3B30] mt-[6px]">{errors.height}</span>}
+          </div>
+
+          {/* Weight */}
+          <div className="flex flex-col gap-[8px]">
+            <span className="text-[12px] text-[rgba(255,255,255,0.5)] font-medium mb-[6px] block">Weight (kg)</span>
+            <input 
+              className={inputClass(!!errors.weight)} 
+              type="number" 
+              value={weight} 
+              onChange={e => setWeight(e.target.value)} 
+              placeholder="e.g. 80" 
+            />
+            {errors.weight && <span className="text-[13px] text-[#FF3B30] mt-[6px]">{errors.weight}</span>}
+          </div>
+
+          {/* Activity level */}
+          <div className="flex flex-col gap-[8px] mt-[8px]">
+            <span className="text-[12px] text-[rgba(255,255,255,0.5)] font-medium mb-[6px] block">Activity level</span>
+            <div className="bg-[rgba(255,255,255,0.06)] rounded-xl p-1 flex flex-col gap-[4px] relative">
+              {[
+                { label: 'Sedentary', desc: 'Desk job, little or no exercise' },
+                { label: 'Lightly Active', desc: 'Daily walks, occasional yoga' },
+                { label: 'Moderately Active', desc: 'Gym 3–4 times a week' },
+                { label: 'Very Active', desc: 'Intense gym 5–6 times a week' },
+                { label: 'Athlete', desc: 'Competitive sports, daily training' }
+              ].map(a => {
+                const isActive = activity === a.label;
+                return (
+                  <button 
+                    key={a.label} 
+                    onClick={() => setActivity(a.label as any)} 
+                    className={cn(
+                      "py-2.5 px-3 text-left rounded-lg cursor-pointer transition-all duration-200 relative z-10",
+                      isActive ? "text-white font-medium" : "text-[rgba(255,255,255,0.45)] bg-transparent hover:text-white"
+                    )}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="segmentActiveActivity"
+                        className="absolute inset-0 bg-[rgba(255,255,255,0.12)] rounded-[10px] -z-10"
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+                    <div className="text-sm font-semibold">{a.label}</div>
+                    <div className="text-[11px] opacity-70 mt-0.5">{a.desc}</div>
+                  </button>
+                )
+              })}
+            </div>
+            {errors.activity && <span className="text-[13px] text-[#FF3B30] mt-[6px]">{errors.activity}</span>}
+          </div>
+        </div>
       )}
       
+      <div className="fixed bottom-0 left-0 right-0 p-4 lg:relative lg:p-0 z-50 bg-[#080809] lg:bg-transparent pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        {!showResults && (
+          <motion.button 
+            whileHover={hover.glow}
+            whileTap={tap.scale}
+            onClick={calculateResults} 
+            disabled={saveMutation.isPending} 
+            className="btn-primary w-full max-w-[400px] mx-auto lg:max-w-full block"
+          >
+            {isEditMode ? 'Recalculate targets' : 'Calculate targets'}
+          </motion.button>
+        )}
+        
+        {showResults && results && (
+          <motion.button 
+            whileHover={hover.glow}
+            whileTap={tap.scale}
+            onClick={handleSave} 
+            disabled={saveMutation.isPending} 
+            className="btn-primary w-full max-w-[400px] mx-auto lg:max-w-full flex items-center justify-center gap-2 group"
+          >
+            {saveMutation.isPending ? 'Saving...' : (isEditMode ? 'Save changes' : 'Set my physique goal')}
+            {!isEditMode && <ArrowRight size={20} className="transition-transform duration-200 group-hover:translate-x-[3px]" />}
+          </motion.button>
+        )}
+      </div>
+      
       {showResults && results && (
-        <div className="mb-[28px] card-reveal">
-          {/* Header */}
-          <div className="mb-[20px]">
-            <h2 className="text-[22px] font-semibold text-white tracking-[-0.3px]">Good work, {name.trim() || 'there'}</h2>
-            <p className="text-[15px] font-normal text-[#EBEBF5CC] tracking-[-0.1px]">Here's what your body needs daily</p>
-          </div>
-          
-          <div className="glass-card mb-[28px] overflow-hidden">
-            <div className="p-[16px_20px]">
-              <div className="flex justify-between items-center py-[12px] border-b border-[rgba(255,255,255,0.06)]">
-                <span className="text-[15px] font-normal text-[#EBEBF5CC]">Calories</span>
-                <span className="text-[17px] font-semibold text-[#D4FF00]">
-                  <AnimatedNumber value={results.tdee} /> <span className="text-[13px] font-normal text-[#EBEBF599]">kcal</span>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="mb-[28px]"
+        >
+          <div className="card-lime mb-[28px] overflow-hidden">
+            <div className="p-[20px]">
+              <div className="flex justify-between items-center py-[12px] border-b border-[rgba(212,255,0,0.1)]">
+                <span className="text-[11px] uppercase tracking-wide text-[rgba(212,255,0,0.6)]">Calories</span>
+                <span className="text-[28px] font-bold text-[#D4FF00]">
+                  <AnimatedNumber value={results.tdee} /> <span className="text-[13px] font-medium text-[rgba(212,255,0,0.5)]">kcal</span>
                 </span>
               </div>
-              <div className="flex justify-between items-center py-[12px] border-b border-[rgba(255,255,255,0.06)]">
-                <span className="text-[15px] font-normal text-[#EBEBF5CC]">Protein</span>
-                <span className="text-[17px] font-semibold text-white">
-                  <AnimatedNumber value={results.proteinMin} />–<AnimatedNumber value={results.proteinMax} /> <span className="text-[13px] font-normal text-[#EBEBF599]">g/day</span>
+              <div className="flex justify-between items-center py-[12px] border-b border-[rgba(212,255,0,0.1)]">
+                <span className="text-[11px] uppercase tracking-wide text-[rgba(212,255,0,0.6)]">Protein</span>
+                <span className="text-[28px] font-bold text-[#D4FF00]">
+                  <AnimatedNumber value={results.proteinMin} />–<AnimatedNumber value={results.proteinMax} /> <span className="text-[13px] font-medium text-[rgba(212,255,0,0.5)]">g/day</span>
                 </span>
               </div>
-              <div className="flex justify-between items-center py-[12px] border-b border-[rgba(255,255,255,0.06)]">
-                <span className="text-[15px] font-normal text-[#EBEBF5CC]">Fat</span>
-                <span className="text-[17px] font-semibold text-white">
-                  <AnimatedNumber value={results.fatMin} />–<AnimatedNumber value={results.fatMax} /> <span className="text-[13px] font-normal text-[#EBEBF599]">g/day</span>
+              <div className="flex justify-between items-center py-[12px] border-b border-[rgba(212,255,0,0.1)]">
+                <span className="text-[11px] uppercase tracking-wide text-[rgba(212,255,0,0.6)]">Fat</span>
+                <span className="text-[28px] font-bold text-[#D4FF00]">
+                  <AnimatedNumber value={results.fatMin} />–<AnimatedNumber value={results.fatMax} /> <span className="text-[13px] font-medium text-[rgba(212,255,0,0.5)]">g/day</span>
                 </span>
               </div>
-              <div className="flex justify-between items-center py-[12px] border-b border-[rgba(255,255,255,0.06)]">
-                <span className="text-[15px] font-normal text-[#EBEBF5CC]">Carbohydrates</span>
-                <span className="text-[17px] font-semibold text-white">
-                  <AnimatedNumber value={results.carbMin} />–<AnimatedNumber value={results.carbMax} /> <span className="text-[13px] font-normal text-[#EBEBF599]">g/day</span>
+              <div className="flex justify-between items-center py-[12px] border-b border-[rgba(212,255,0,0.1)]">
+                <span className="text-[11px] uppercase tracking-wide text-[rgba(212,255,0,0.6)]">Carbohydrates</span>
+                <span className="text-[28px] font-bold text-[#D4FF00]">
+                  <AnimatedNumber value={results.carbMin} />–<AnimatedNumber value={results.carbMax} /> <span className="text-[13px] font-medium text-[rgba(212,255,0,0.5)]">g/day</span>
                 </span>
               </div>
-              <div className="flex justify-between items-center py-[12px] border-b border-[rgba(255,255,255,0.06)]">
-                <span className="text-[15px] font-normal text-[#EBEBF5CC]">Fiber</span>
-                <span className="text-[17px] font-semibold text-white">
-                  <AnimatedNumber value={results.fiberMin} />–<AnimatedNumber value={results.fiberMax} /> <span className="text-[13px] font-normal text-[#EBEBF599]">g/day</span>
+              <div className="flex justify-between items-center py-[12px] border-b border-[rgba(212,255,0,0.1)]">
+                <span className="text-[11px] uppercase tracking-wide text-[rgba(212,255,0,0.6)]">Fiber</span>
+                <span className="text-[28px] font-bold text-[#D4FF00]">
+                  <AnimatedNumber value={results.fiberMin} />–<AnimatedNumber value={results.fiberMax} /> <span className="text-[13px] font-medium text-[rgba(212,255,0,0.5)]">g/day</span>
                 </span>
               </div>
               <div className="flex justify-between items-center py-[12px]">
-                <span className="text-[15px] font-normal text-[#EBEBF5CC]">Water</span>
-                <span className="text-[17px] font-semibold text-white">
-                  <AnimatedNumber value={parseFloat(results.waterLitres)} /> <span className="text-[13px] font-normal text-[#EBEBF599]">L/day</span>
+                <span className="text-[11px] uppercase tracking-wide text-[rgba(212,255,0,0.6)]">Water</span>
+                <span className="text-[28px] font-bold text-[#D4FF00]">
+                  <AnimatedNumber value={parseFloat(results.waterLitres)} /> <span className="text-[13px] font-medium text-[rgba(212,255,0,0.5)]">L/day</span>
                 </span>
               </div>
             </div>
           </div>
 
           <div className="mb-[28px]">
-            <h3 className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#EBEBF599] mb-[12px]">Your Stats</h3>
+            <h3 className="text-[11px] uppercase tracking-wide text-[rgba(255,255,255,0.4)] mb-[12px]">Your Stats</h3>
             <div className="grid grid-cols-3 gap-[12px]">
-              <div className="bg-[rgba(255,255,255,0.05)] rounded-[12px] p-[12px] flex flex-col items-center text-center">
-                <span className="text-[24px] font-semibold tracking-[-0.5px] text-white leading-none mb-[4px]">{weight || '—'}</span>
-                <span className="text-[13px] font-normal text-[#EBEBF599] uppercase">Current<br/>Weight</span>
+              <div className="bg-[rgba(255,255,255,0.05)] rounded-[16px] p-[16px] flex flex-col items-center text-center border border-[rgba(255,255,255,0.05)]">
+                <span className="text-[24px] font-bold text-white mb-[4px]">{weight || '—'}</span>
+                <span className="text-[11px] font-semibold text-[rgba(255,255,255,0.4)] uppercase">Current<br/>Weight</span>
               </div>
               
-              <div className="bg-[rgba(212,255,0,0.12)] border-[0.5px] border-[rgba(212,255,0,0.3)] rounded-[12px] p-[12px] flex flex-col items-center text-center">
-                <span className="text-[24px] font-bold tracking-[-0.5px] text-[#D4FF00] leading-none mb-[4px]"><AnimatedNumber value={results.tdee} /></span>
-                <span className="text-[13px] font-normal text-[#D4FF00]/70 uppercase">Maint.<br/>Calories</span>
+              <div className="bg-[rgba(212,255,0,0.1)] border-[0.5px] border-[rgba(212,255,0,0.3)] rounded-[16px] p-[16px] flex flex-col items-center text-center">
+                <span className="text-[24px] font-bold text-[#D4FF00] mb-[4px]"><AnimatedNumber value={results.tdee} /></span>
+                <span className="text-[11px] font-semibold text-[rgba(212,255,0,0.6)] uppercase">Maint.<br/>Calories</span>
               </div>
 
-              <div className="bg-[rgba(255,255,255,0.05)] rounded-[12px] p-[12px] flex flex-col items-center text-center">
-                <span className="text-[24px] font-semibold tracking-[-0.5px] text-white leading-none mb-[4px]">
+              <div className="bg-[rgba(255,255,255,0.05)] rounded-[16px] p-[16px] flex flex-col items-center text-center border border-[rgba(255,255,255,0.05)]">
+                <span className="text-[24px] font-bold text-white mb-[4px]">
                   {heightUnit === 'cm' ? height : `${heightFt}'${heightIn}"`}
                 </span>
-                <span className="text-[13px] font-normal text-[#EBEBF599] uppercase">Current<br/>Height</span>
+                <span className="text-[11px] font-semibold text-[rgba(255,255,255,0.4)] uppercase">Current<br/>Height</span>
               </div>
             </div>
           </div>
-
-          <button 
-            onClick={handleSave} 
-            disabled={saveMutation.isPending} 
-            className="w-full bg-[#D4FF00] text-[#0A0A0A] font-bold text-[17px] rounded-[100px] p-[16px_32px] border-none tracking-[-0.2px] transition-all hover:scale-[1.02] hover:opacity-[0.95] active:scale-[0.97] disabled:opacity-50 flex items-center justify-center gap-[8px] group"
-          >
-            {saveMutation.isPending ? 'Saving...' : (isEditMode ? 'Save changes' : 'Set my physique goal')}
-            {!isEditMode && <ArrowRight size={20} className="transition-transform duration-200 group-hover:translate-x-[3px]" />}
-          </button>
           
           {isEditMode && (
             <button
               onClick={() => { setEditProfileMode(false); navigate('/profile'); }}
-              style={{ width:'100%', background:'none', border:'none', color:'rgba(235,235,245,0.45)', fontSize:'var(--font-sm)', cursor:'pointer', marginTop:'10px', padding:'8px' }}
+              className="w-full text-[13px] text-[rgba(255,255,255,0.45)] hover:text-white transition-colors py-3 mt-2"
             >
               Cancel — go back
             </button>
           )}
-        </div>
+        </motion.div>
       )}
     </div>
   );
