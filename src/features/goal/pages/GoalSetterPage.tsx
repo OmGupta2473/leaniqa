@@ -12,6 +12,7 @@ import { complianceService } from '@/features/reports/services/complianceService
 import { CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { pageVariants, itemVariants, hover, tap } from '@/features/reports/components/motion';
+import { ScreenSkeleton } from '@/shared/components/ScreenSkeleton';
 import { calculateBodyComposition, calculateGoalStats } from '@/shared/utils/profileCalculations';
 
 function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: number }) {
@@ -57,18 +58,22 @@ export function GoalSetterPage() {
   const { profileData: onboardingData } = useCalculatedProfile();
   const setOnboardingData = useUserStore(s => s.setOnboardingData);
   const queryClient = useQueryClient();
-  const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
-  const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
-  
+  const { data: profile, isLoading: isProfileLoading } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
+  const { data: goal, isLoading: isGoalLoading } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
+
   const activeModal = useAppStore(s => s.activeModal);
   const setActiveModal = useAppStore(s => s.setActiveModal);
   const resetGoalConfirm = activeModal === 'reset_goal_confirm';
   const setResetGoalConfirm = (isOpen: boolean) => setActiveModal(isOpen ? 'reset_goal_confirm' : null);
-  
+
   const currentBfMid = useUserStore(s => s.goalWizardCurrentBfMid);
   const setCurrentBfMid = useUserStore(s => s.setGoalWizardCurrentBfMid);
   const targetBfMid = useUserStore(s => s.goalWizardTargetBfMid);
   const setTargetBfMid = useUserStore(s => s.setGoalWizardTargetBfMid);
+
+  if (isProfileLoading || isGoalLoading) {
+    return <ScreenSkeleton />;
+  }
 
   const tdee = onboardingData?.tdee || profile?.maintenance_kcal || 2500;
   const currentWeight = onboardingData?.weightKg || profile?.weight || 80;
