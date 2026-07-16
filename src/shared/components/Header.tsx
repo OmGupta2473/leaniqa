@@ -1,3 +1,4 @@
+import { Logo } from "@/shared/components/Logo";
 import React, { Profiler } from 'react';
 import { onRenderCallback, useRenderTracker } from '@/shared/utils/perfDebug';
 import { authService } from '@/features/auth/services/authService';
@@ -76,18 +77,7 @@ export function Header() {
         )}
         
         <div className="flex items-center gap-2">
-          <div 
-            className="flex items-center justify-center font-bold text-black"
-            style={{
-              width: '24px',
-              height: '24px',
-              borderRadius: '6px',
-              background: '#D4FF00',
-              fontSize: '14px'
-            }}
-          >
-            L
-          </div>
+          <Logo className="w-8 h-8 drop-shadow-md" />
           <span 
             className="font-semibold"
             style={{
@@ -96,7 +86,7 @@ export function Header() {
               color: 'rgba(255,255,255,0.92)'
             }}
           >
-            LeanIQa
+            LeanIQA
           </span>
         </div>
 

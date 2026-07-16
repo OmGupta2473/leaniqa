@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<body>
+<svg width="400" height="400" viewBox="0 0 400 400" style="background: black;">
+  <defs>
+    <linearGradient id="lGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#a0a0a0"/>
+    </linearGradient>
+    <linearGradient id="qGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#b4f400"/>
+      <stop offset="100%" stop-color="#228b22"/>
+    </linearGradient>
+  </defs>
+  
+  <path d="M 120 130
+           A 20 20 0 0 1 160 130
+           L 160 230
+           Q 160 250 180 250
+           L 260 250
+           L 220 290
+           L 180 290
+           Q 120 290 120 230
+           Z" 
+        fill="url(#lGrad)" />
+        
+  <path d="M 230 270 
+           A 75 75 0 1 1 230 120 
+           A 75 75 0 1 1 230 270 
+           M 230 235 
+           A 40 40 0 1 0 230 155 
+           A 40 40 0 1 0 230 235" 
+        fill="url(#qGrad)" fill-rule="evenodd" />
+
+  <path d="M 210 220 
+           L 300 310 
+           L 255 310 
+           L 185 240 
+           Z" 
+        fill="url(#qGrad)" />
+</svg>
+</body>
+</html>

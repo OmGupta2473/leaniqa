@@ -1,3 +1,4 @@
+import { Logo } from "@/shared/components/Logo";
 // OAUTH SETUP REQUIRED:
 // 1. Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client ID
 // 2. Authorized JavaScript origins: http://localhost:3000 (dev) + https://leaniqa.com (prod)
@@ -91,10 +92,8 @@ export function AuthPage() {
         >
           {/* Logo / Brand Section */}
           <div className="flex flex-col items-center justify-center mb-8 text-center">
-            <div className="w-12 h-12 rounded-xl bg-[#D4FF00] flex items-center justify-center mb-4">
-              <span className="text-[#080809] text-[22px] font-bold">L</span>
-            </div>
-            <h1 className="text-[28px] font-semibold tracking-tight">LeanIQa</h1>
+            <Logo className="w-16 h-16 mb-4 drop-shadow-md" />
+            <h1 className="text-[28px] font-semibold tracking-tight">LeanIQA</h1>
             <p className="text-[14px] text-[rgba(255,255,255,0.5)] mt-2">Your AI Body Transformation Coach</p>
           </div>
 

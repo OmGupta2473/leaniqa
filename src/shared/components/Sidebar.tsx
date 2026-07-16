@@ -1,3 +1,4 @@
+import { Logo } from "@/shared/components/Logo";
 import React, { Profiler } from 'react';
 import { onRenderCallback, useRenderTracker } from '@/shared/utils/perfDebug';
 import { authService } from '@/features/auth/services/authService';
@@ -58,18 +59,7 @@ export function Sidebar({ className }: { className?: string }) {
           borderBottom: '0.5px solid rgba(255,255,255,0.06)'
         }}
       >
-        <div 
-          className="flex items-center justify-center font-bold text-black"
-          style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: '6px',
-            background: '#D4FF00',
-            fontSize: '16px'
-          }}
-        >
-          L
-        </div>
+        <Logo className="w-8 h-8 drop-shadow-md" />
         <span 
           className="font-semibold"
           style={{
@@ -78,7 +68,7 @@ export function Sidebar({ className }: { className?: string }) {
             color: 'rgba(255,255,255,0.92)'
           }}
         >
-          LeanIQa
+          LeanIQA
         </span>
       </div>
 
