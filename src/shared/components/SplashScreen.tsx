@@ -30,7 +30,7 @@ export function SplashScreen({ isLoading }: SplashScreenProps) {
             }}
             className="flex flex-col items-center"
           >
-            <img src="/logo.png" alt="LeanIQA Logo" className="w-24 h-24 sm:w-32 sm:h-32 object-contain" />
+            <img src="/logo.png" alt="LeanIQA Logo" className="w-48 h-48 sm:w-64 sm:h-64 lg:w-80 lg:h-80 object-contain" />
           </motion.div>
         </motion.div>
       )}
