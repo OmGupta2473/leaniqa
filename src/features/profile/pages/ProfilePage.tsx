@@ -39,7 +39,7 @@ export function ProfilePage() {
     try {
       await authService.logout();
       queryClient.clear();
-      navigate('/auth');
+      navigate('/login');
     } catch (error) {
       console.error('Logout failed:', error);
       setIsLoggingOut(false);
