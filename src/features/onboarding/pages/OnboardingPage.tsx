@@ -598,33 +598,6 @@ export function OnboardingPage() {
         </div>
       )}
       
-      <div className="fixed bottom-0 left-0 right-0 p-4 lg:relative lg:p-0 z-50 bg-[#080809] lg:bg-transparent pb-[calc(1rem+env(safe-area-inset-bottom))]">
-        {!showResults && (
-          <motion.button 
-            whileHover={hover.glow}
-            whileTap={tap.scale}
-            onClick={calculateResults} 
-            disabled={saveMutation.isPending} 
-            className="btn-primary w-full max-w-[400px] mx-auto lg:max-w-full block"
-          >
-            {isEditMode ? 'Recalculate targets' : 'Calculate targets'}
-          </motion.button>
-        )}
-        
-        {showResults && results && (
-          <motion.button 
-            whileHover={hover.glow}
-            whileTap={tap.scale}
-            onClick={handleSave} 
-            disabled={saveMutation.isPending} 
-            className="btn-primary w-full max-w-[400px] mx-auto lg:max-w-full flex items-center justify-center gap-2 group"
-          >
-            {saveMutation.isPending ? 'Saving...' : (isEditMode ? 'Save changes' : 'Set my physique goal')}
-            {!isEditMode && <ArrowRight size={20} className="transition-transform duration-200 group-hover:translate-x-[3px]" />}
-          </motion.button>
-        )}
-      </div>
-      
       {showResults && results && (
         <motion.div 
           initial={{ opacity: 0, scale: 0.96 }}
@@ -704,6 +677,33 @@ export function OnboardingPage() {
           )}
         </motion.div>
       )}
+
+      <div className="mt-6 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        {!showResults && (
+          <motion.button 
+            whileHover={hover.glow}
+            whileTap={tap.scale}
+            onClick={calculateResults} 
+            disabled={saveMutation.isPending} 
+            className="btn-primary w-full max-w-[400px] mx-auto lg:max-w-full block"
+          >
+            {isEditMode ? 'Recalculate targets' : 'Calculate targets'}
+          </motion.button>
+        )}
+        
+        {showResults && results && (
+          <motion.button 
+            whileHover={hover.glow}
+            whileTap={tap.scale}
+            onClick={handleSave} 
+            disabled={saveMutation.isPending} 
+            className="btn-primary w-full max-w-[400px] mx-auto lg:max-w-full flex items-center justify-center gap-2 group"
+          >
+            {saveMutation.isPending ? 'Saving...' : (isEditMode ? 'Save changes' : 'Set my physique goal')}
+            {!isEditMode && <ArrowRight size={20} className="transition-transform duration-200 group-hover:translate-x-[3px]" />}
+          </motion.button>
+        )}
+      </div>
     </div>
   );
 }

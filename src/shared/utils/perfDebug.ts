@@ -7,8 +7,7 @@ export const onRenderCallback: ProfilerOnRenderCallback = (
   actualDuration,
   baseDuration,
   startTime,
-  commitTime,
-  interactions
+  commitTime
 ) => {
   if (import.meta.env.DEV) {
     if (actualDuration > 5) {

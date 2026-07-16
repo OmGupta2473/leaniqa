@@ -7,7 +7,7 @@ interface AuthLayoutProps {
 
 export function AuthLayout({ children }: AuthLayoutProps) {
   return (
-    <div className="min-h-[100dvh] w-full flex-1 bg-background-primary flex flex-col">
+    <div className="app-scroll min-h-[100dvh] overflow-y-auto w-full flex-1 bg-background-primary flex flex-col">
       {children || <Outlet />}
     </div>
   );

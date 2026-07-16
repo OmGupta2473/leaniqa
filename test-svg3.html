@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head><style>body{background:#0a0a0a; display:flex; justify-content:center; align-items:center; height:100vh; margin:0;}</style></head>
+<body>
+<svg width="200" height="200" viewBox="0 0 400 400">
+  <defs>
+    <linearGradient id="lGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#b0b0b0"/>
+    </linearGradient>
+    <linearGradient id="qGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a3e635"/>
+      <stop offset="100%" stop-color="#22c55e"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+  
+  <!-- L -->
+  <path d="M 120 130
+           A 20 20 0 0 1 160 130
+           L 160 250
+           L 210 250
+           L 250 290
+           L 160 290
+           A 40 40 0 0 1 120 250
+           Z" 
+        fill="url(#lGrad)" filter="url(#shadow)" />
+        
+  <!-- Q Circle -->
+  <path d="M 240 270 
+           A 70 70 0 1 1 240 130 
+           A 70 70 0 1 1 240 270 
+           M 240 245 
+           A 45 45 0 1 0 240 155 
+           A 45 45 0 1 0 240 245" 
+        fill="url(#qGrad)" fill-rule="evenodd" filter="url(#shadow)" />
+
+  <!-- Q Tail -->
+  <path d="M 200 225 
+           L 265 290 
+           L 310 290 
+           L 245 225 
+           Z" 
+        fill="url(#qGrad)" filter="url(#shadow)" />
+</svg>
+</body>
+</html>

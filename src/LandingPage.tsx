@@ -1,3 +1,4 @@
+import { Logo } from "@/shared/components/Logo";
 import React, { useRef, useState, useEffect } from "react";
 import {
   motion,
@@ -653,9 +654,7 @@ export function LandingPage() {
       >
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-6 h-6 bg-[#D4FF00] rounded-sm flex items-center justify-center">
-              <span className="text-black text-xs font-bold">L</span>
-            </div>
+            <Logo className="w-8 h-8" />
             <span className="font-semibold tracking-tight text-lg">LeanIQA</span>
           </div>
           <motion.button
@@ -869,9 +868,7 @@ export function LandingPage() {
       {/* ── Footer ── */}
       <footer className="border-t border-zinc-900 py-8 px-6 text-zinc-500 text-xs flex flex-col md:flex-row justify-between items-center gap-4 max-w-7xl mx-auto text-center md:text-left">
         <div className="flex items-center gap-2">
-           <div className="w-5 h-5 bg-[#D4FF00] rounded-sm flex items-center justify-center">
-             <span className="text-black text-[10px] font-bold">L</span>
-           </div>
+           <Logo className="w-6 h-6" />
            <span className="font-semibold text-zinc-400 text-sm">LeanIQA</span>
         </div>
         <p className="text-sm">© 2026 LeanIQA · Transforming bodies with AI</p>

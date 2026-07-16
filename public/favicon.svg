@@ -1,0 +1,17 @@
+<svg viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="lGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#b0b0b0"/>
+    </linearGradient>
+    <linearGradient id="qGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a3e635"/>
+      <stop offset="100%" stop-color="#16a34a"/>
+    </linearGradient>
+  </defs>
+  <path d="M 120 130 A 20 20 0 0 1 160 130 L 160 250 L 210 250 L 250 290 L 160 290 A 40 40 0 0 1 120 250 Z" fill="url(#lGrad)" />
+  <g>
+    <path d="M 240 270 A 70 70 0 1 1 240 130 A 70 70 0 1 1 240 270 M 240 245 A 45 45 0 1 0 240 155 A 45 45 0 1 0 240 245" fill="url(#qGrad)" fill-rule="evenodd" />
+    <path d="M 220 245 L 265 290 L 310 290 L 265 245 Z" fill="url(#qGrad)" />
+  </g>
+</svg>

@@ -31,7 +31,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         
         {children || (
           <div 
-            className="flex-1 overflow-y-auto scroll-smooth" 
+            className="app-scroll flex-1 overflow-y-auto scroll-smooth" 
             style={{ 
               overscrollBehaviorY: 'contain',
               paddingBottom: isKeyboardOpen ? `${Math.max(keyboardOffset, 100)}px` : 'calc(100px + env(safe-area-inset-bottom))' 
