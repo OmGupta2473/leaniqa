@@ -94,7 +94,6 @@ export function AuthPage() {
           <div className="flex flex-col items-center justify-center mb-8 text-center">
             <Logo className="w-16 h-16 mb-4 drop-shadow-md" />
             <h1 className="text-[28px] font-semibold tracking-tight">LeanIQA</h1>
-            <p className="text-[14px] text-[rgba(255,255,255,0.5)] mt-2">Your AI Body Transformation Coach</p>
           </div>
 
           <div className="space-y-4">

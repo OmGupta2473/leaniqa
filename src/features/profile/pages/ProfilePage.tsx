@@ -15,6 +15,7 @@ export function ProfilePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showResetModal, setShowResetModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
@@ -34,9 +35,15 @@ export function ProfilePage() {
   });
 
   const handleLogout = async () => {
-    await authService.logout();
-    queryClient.clear();
-    navigate('/auth');
+    setIsLoggingOut(true);
+    try {
+      await authService.logout();
+      queryClient.clear();
+      navigate('/auth');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      setIsLoggingOut(false);
+    }
   };
 
   const {
@@ -217,11 +224,21 @@ export function ProfilePage() {
       {/* Danger Zone */}
       <div className="flex flex-col gap-4">
         <button 
-          onClick={handleLogout} 
-          className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.7)] font-medium text-[15px] transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.7)] font-medium text-[15px] transition-colors hover:bg-[rgba(255,255,255,0.06)] disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <LogOut size={18} />
-          Sign Out
+          {isLoggingOut ? (
+            <>
+              <div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full animate-spin" />
+              Signing out...
+            </>
+          ) : (
+            <>
+              <LogOut size={18} />
+              Sign Out
+            </>
+          )}
         </button>
         <button 
           onClick={() => setShowResetModal(true)} 

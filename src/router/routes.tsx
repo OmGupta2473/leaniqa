@@ -51,7 +51,7 @@ export const routes: RouteObject[] = [
           {
             index: true,
             element: <Suspense fallback={<ScreenSkeleton />}><LandingPage /></Suspense>,
-            handle: { title: 'LeanIQA - AI Body Transformation Coach' }
+            handle: { title: 'LeanIQA' }
           }
         ]
       },
