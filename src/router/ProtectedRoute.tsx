@@ -9,7 +9,7 @@ export function ProtectedRoute() {
   const { hasCompletedOnboarding, isLoading: onboardingLoading } = useHasCompletedOnboarding();
 
   if (authLoading || (session && onboardingLoading)) {
-    return <ScreenSkeleton />;
+    return null;
   }
 
   if (!session) {

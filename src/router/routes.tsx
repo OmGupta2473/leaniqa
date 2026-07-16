@@ -27,9 +27,12 @@ const GoalSetterPage = lazy(() => import('@/features/goal/pages/GoalSetterPage')
 const LandingPage = lazy(() => import('@/LandingPage').then(module => ({ default: module.LandingPage })));
 const NotFoundPage = lazy(() => import('@/shared/components/NotFoundPage').then(module => ({ default: module.NotFoundPage })));
 
+import { AppLoadingScreen } from '@/shared/components/AppLoadingScreen';
+
 function RootLayout() {
   return (
     <>
+      <AppLoadingScreen />
       <AnalyticsObserver />
       <RouteMetadata />
       <ScrollHandler />
