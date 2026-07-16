@@ -1,4 +1,5 @@
 import { useChatStore } from '@/app/store/chatStore';
+import { useAuthStore } from '@/app/store/authStore';
 import { supabase } from '@/shared/utils/supabase';
 import { AppError, ErrorCodes } from '@/shared/utils/errors';
 
@@ -48,6 +49,7 @@ export const authService = {
   async logout(): Promise<void> {
     await supabase.auth.signOut();
     useChatStore.getState().clearChatStore();
+    useAuthStore.getState().setSession(null);
   }
 };
 
