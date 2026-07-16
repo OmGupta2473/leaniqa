@@ -5,11 +5,7 @@ export function GuestRoute() {
   const { session, loading } = useAuthSession();
 
   if (loading) {
-    return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-background-primary text-text-secondary text-[14px]">
-        Loading...
-      </div>
-    );
+    return null;
   }
 
   if (session) {
