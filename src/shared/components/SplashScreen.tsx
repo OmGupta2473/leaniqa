@@ -1,5 +1,7 @@
 import { motion, AnimatePresence } from 'motion/react';
 
+import { Logo } from '@/shared/components/Logo';
+
 interface SplashScreenProps {
   isLoading: boolean;
 }
@@ -30,7 +32,20 @@ export function SplashScreen({ isLoading }: SplashScreenProps) {
             }}
             className="flex flex-col items-center"
           >
-            <img src="/logo.png" alt="LeanIQA Logo" className="w-48 h-48 sm:w-64 sm:h-64 lg:w-80 lg:h-80 object-contain" />
+            <img 
+              src="/logo.png" 
+              alt="LeanIQA Logo" 
+              className="w-48 h-48 sm:w-64 sm:h-64 lg:w-80 lg:h-80 object-contain"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const nextSibling = target.nextElementSibling as HTMLElement;
+                if (nextSibling) nextSibling.style.display = 'block';
+              }}
+            />
+            <div style={{ display: 'none' }} className="w-48 h-48 sm:w-64 sm:h-64 lg:w-80 lg:h-80">
+               <Logo className="w-full h-full drop-shadow-2xl" />
+            </div>
           </motion.div>
         </motion.div>
       )}

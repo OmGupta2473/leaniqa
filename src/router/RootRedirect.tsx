@@ -19,11 +19,7 @@ export function RootRedirect() {
   });
 
   if (loadingSession) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background-primary text-text-secondary text-[14px]">
-        Loading...
-      </div>
-    );
+    return null;
   }
 
   if (!session) {
@@ -31,11 +27,7 @@ export function RootRedirect() {
   }
 
   if (loadingProfile || (profile && loadingGoal)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background-primary text-text-secondary text-[14px]">
-        Loading...
-      </div>
-    );
+    return null;
   }
 
   if (!profile) {
