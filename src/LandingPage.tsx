@@ -672,14 +672,6 @@ export function LandingPage() {
       <section className="pt-28 sm:pt-32 lg:pt-40 pb-16 sm:pb-24 px-6 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="max-w-2xl relative z-10">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="inline-flex items-center gap-2 px-3 py-1 bg-[#D4FF00]/10 border border-[#D4FF00]/20 text-[#D4FF00] text-xs font-mono mb-6 rounded-full uppercase tracking-wider"
-            >
-              <Sparkles size={14} /> AI Body Transformation Coach
-            </motion.div>
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

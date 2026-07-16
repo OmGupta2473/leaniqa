@@ -15,7 +15,7 @@ export default defineConfig(() => {
         manifest: {
           name: 'LeanIQA',
           short_name: 'LeanIQA',
-          description: 'AI Body Transformation Coach',
+          description: 'Your Smart Fitness Companion',
           theme_color: '#080809',
           background_color: '#080809',
           display: 'standalone',
