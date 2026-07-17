@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/shared/utils/supabase";
 import { useQueryClient } from "@tanstack/react-query";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useHasCompletedOnboarding } from '@/shared/hooks/useHasCompletedOnboarding';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -31,6 +31,7 @@ const navItems = [
 ];
 
 export function Sidebar({ className }: { className?: string }) {
+  const navigate = useNavigate();
   const clearUserStore = useUserStore(s => s.clearUserStore);
   
   const queryClient = useQueryClient();
@@ -53,7 +54,8 @@ export function Sidebar({ className }: { className?: string }) {
       }}
     >
       <div 
-        className="flex items-center gap-3"
+        className="flex items-center gap-3 cursor-pointer transition-opacity hover:opacity-80"
+        onClick={() => navigate('/')}
         style={{
           padding: '20px',
           borderBottom: '0.5px solid rgba(255,255,255,0.06)'

@@ -49,14 +49,8 @@ export const routes: RouteObject[] = [
     children: [
       {
         path: '/',
-        element: <GuestRoute />,
-        children: [
-          {
-            index: true,
-            element: <Suspense fallback={<ScreenSkeleton />}><LandingPage /></Suspense>,
-            handle: { title: 'LeanIQA' }
-          }
-        ]
+        element: <Suspense fallback={<ScreenSkeleton />}><LandingPage /></Suspense>,
+        handle: { title: 'LeanIQA' }
       },
       {
         path: '/login',
