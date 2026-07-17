@@ -1,20 +1,28 @@
 import re
 
-with open('src/router/routes.tsx', 'r') as f:
-    content = f.read()
+with open("src/router/routes.tsx", "r") as f:
+    c = f.read()
 
-# Replace the GuestRoute wrapping the LandingPage
-pattern = r"\{\s*path:\s*'/',\s*element:\s*<GuestRoute\s*/>,\s*children:\s*\[\s*\{\s*index:\s*true,\s*element:\s*<Suspense fallback=\{<ScreenSkeleton />\}><LandingPage /></Suspense>,\s*handle:\s*\{\s*title:\s*'LeanIQA'\s*\}\s*\}\s*\]\s*\}"
-
-replacement = """{
+old_route = """      {
         path: '/',
         element: <Suspense fallback={<ScreenSkeleton />}><LandingPage /></Suspense>,
         handle: { title: 'LeanIQA' }
-      }"""
+      },"""
 
-new_content = re.sub(pattern, replacement, content)
+new_route = """      {
+        path: '/',
+        element: <GuestRoute />,
+        children: [
+          {
+            index: true,
+            element: <Suspense fallback={<ScreenSkeleton />}><LandingPage /></Suspense>,
+            handle: { title: 'LeanIQA' }
+          }
+        ]
+      },"""
 
-with open('src/router/routes.tsx', 'w') as f:
-    f.write(new_content)
+c = c.replace(old_route, new_route)
 
-print("Replaced successfully" if new_content != content else "Regex failed")
+with open("src/router/routes.tsx", "w") as f:
+    f.write(c)
+
