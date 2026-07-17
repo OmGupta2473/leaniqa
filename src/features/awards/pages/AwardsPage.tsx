@@ -12,6 +12,7 @@ import {
 import { Flame, ChevronLeft, X, Trophy } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/shared/utils/utils";
+import { haptics } from '@/shared/utils/haptics';
 
 const SPRING_TRANSITION: any = { type: 'spring' as const, stiffness: 400, damping: 30 };
 const SMOOTH_TRANSITION: any = { duration: 0.4, ease: [0.16, 1, 0.3, 1] };
@@ -177,7 +178,11 @@ export function AwardsPage() {
           <motion.div 
             key={award.id} 
             variants={itemVariants}
-            onClick={() => setSelectedAward(award)}
+            onClick={() => {
+              if (award.earned) haptics.success();
+              else haptics.tap();
+              setSelectedAward(award);
+            }}
             className={cn(
               "relative rounded-[24px] p-5 flex flex-col items-center text-center cursor-pointer transition-all duration-300",
               "hover:scale-[1.03] active:scale-[0.97]",
@@ -233,7 +238,10 @@ export function AwardsPage() {
             exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
             transition={{ duration: 0.4 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-5 bg-black/60"
-            onClick={() => setSelectedAward(null)}
+            onClick={() => {
+              haptics.tap();
+              setSelectedAward(null);
+            }}
           >
             <motion.div 
               initial={{ opacity: 0, scale: 0.9, y: 30 }}
@@ -276,7 +284,10 @@ export function AwardsPage() {
               )}
 
               <button 
-                onClick={() => setSelectedAward(null)}
+                onClick={() => {
+              haptics.tap();
+              setSelectedAward(null);
+            }}
                 className="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-full bg-[rgba(255,255,255,0.08)] text-[rgba(255,255,255,0.7)] hover:text-white hover:bg-[rgba(255,255,255,0.15)] transition-all active:scale-90 z-20"
               >
                 <X size={16} strokeWidth={2.5} />

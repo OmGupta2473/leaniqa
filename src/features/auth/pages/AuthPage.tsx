@@ -14,6 +14,7 @@ import { supabase } from '@/shared/utils/supabase';
 import { Mail, Apple } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { pageVariants, hover, tap } from '@/features/reports/components/motion';
+import { haptics } from '@/shared/utils/haptics';
 
 // SVG Icons
 const GoogleIcon = ({ className }: { className?: string }) => (
@@ -54,6 +55,7 @@ export function AuthPage() {
       }
     } else {
       setIsOtpSent(true);
+      haptics.success();
       setMessage('');
     }
     

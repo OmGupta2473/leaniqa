@@ -6,6 +6,7 @@ import { ChevronLeft, LogOut, Trash2, AlertTriangle, User, Flame, Droplet, Check
 import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
 import { motion, AnimatePresence } from 'motion/react';
 import { authService } from '@/features/auth/services/authService';
+import { haptics } from '@/shared/utils/haptics';
 
 function displayVal(val: any) {
   return val === undefined || val === null || isNaN(val) ? '—' : val;
@@ -30,6 +31,7 @@ export function ProfilePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       queryClient.invalidateQueries({ queryKey: ['goal'] });
+      haptics.success();
       navigate('/onboarding/1');
     },
   });
@@ -39,6 +41,7 @@ export function ProfilePage() {
     try {
       await authService.logout();
       queryClient.clear();
+      haptics.success();
       navigate('/login');
     } catch (error) {
       console.error('Logout failed:', error);
