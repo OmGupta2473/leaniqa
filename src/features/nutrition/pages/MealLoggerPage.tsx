@@ -20,6 +20,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { useVisualViewport, useKeyboardOpen } from "@/shared/hooks/useVisualViewport";
 import { lookupCachedMeal } from '../constants/data';
 import { haptics } from '@/shared/utils/haptics';
+import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
 
 const getDeterministicFallback = (text: string) => {
   const normalizedText = text.toLowerCase();
@@ -211,6 +212,7 @@ export function MealLoggerPage() {
 
 
   const { data: goal } = useQuery({ queryKey: ["goal"], queryFn: () => profileService.getGoal() });
+  const { profileData: onboardingData } = useCalculatedProfile();
   const { data: meals = [] } = useQuery({ queryKey: ["meals", "date", dateKeyStr], queryFn: () => mealService.getMealsForDate(selectedDate) });
 
   const eatenKcal = meals.reduce((acc, m) => acc + m.calories, 0);
@@ -221,9 +223,10 @@ export function MealLoggerPage() {
   const lunchMeals = meals.filter(m => m.meal_slot === "lunch");
   const dinnerMeals = meals.filter(m => m.meal_slot === "dinner");
 
-  const maintKcal = profile?.maintenance_kcal || 2200;
-  const dailyTargetKcal = maintKcal - (goal?.deficit_kcal ?? 400);
-  const proteinTarget = profile?.protein_target || 150;
+  const dailyTargetKcal = (profile?.maintenance_kcal && goal?.deficit_kcal !== undefined ? profile.maintenance_kcal - goal.deficit_kcal : onboardingData?.dailyCalorieGoal) || 0;
+  const proteinTarget = (profile?.protein_target ?? onboardingData?.proteinMid) || 0;
+  const fatTarget = onboardingData?.fatMid || 0;
+  const carbsTarget = onboardingData?.carbMid || 0;
   const remainingCalories = dailyTargetKcal - eatenKcal;
   const remainingProtein = proteinTarget - eatenProtein;
   const caloriePercent = Math.min(100, (eatenKcal / dailyTargetKcal) * 100);
@@ -586,10 +589,13 @@ export function MealLoggerPage() {
         </div>
         {/* Macros row */}
         <div className="grid grid-cols-4 gap-[8px] mt-[14px] pt-[12px] border-t border-[rgba(255,255,255,0.06)]">
-          {[{ label: 'Kcal', val: eatenKcal, color: '#FF4D1C' }, { label: 'Protein', val: `${eatenProtein}g`, color: '#378ADD' }, { label: 'Fat', val: `${eatenFat}g`, color: 'white' }, { label: 'Carbs', val: `${eatenCarbs}g`, color: 'white' }].map(item => (
-            <div key={item.label} className="text-center">
-              <div className="text-[14px] font-bold" style={{ color: item.color }}>{item.val}</div>
-              <div className="text-[10px] text-[rgba(235,235,245,0.4)] mt-[1px]">{item.label}</div>
+          {[{ label: 'Kcal', val: eatenKcal, target: dailyTargetKcal, unit: 'kcal', color: '#FF4D1C' }, { label: 'Protein', val: eatenProtein, target: proteinTarget, unit: 'g', color: '#378ADD' }, { label: 'Fat', val: eatenFat, target: fatTarget, unit: 'g', color: 'white' }, { label: 'Carbs', val: eatenCarbs, target: carbsTarget, unit: 'g', color: 'white' }].map(item => (
+            <div key={item.label} className="text-center flex flex-col items-center">
+              <div className="text-[14px] font-bold flex items-baseline gap-[1px]" style={{ color: item.color }}>
+                {item.val}
+                <span className="text-[10px] font-medium opacity-60">/ {item.target}{item.unit}</span>
+              </div>
+              <div className="text-[10px] text-[rgba(235,235,245,0.5)] uppercase tracking-wide mt-[1px]">{item.label}</div>
             </div>
           ))}
         </div>
