@@ -20,20 +20,17 @@ export const complianceService = {
   
   async recalculateDayScore(dateStr: string): Promise<DbDailyMetric | null> {
     try {
-      const [userId, profile, goal, meals, weightLogs, waterServiceRef] = await Promise.all([
+      const [userId, profile, goal, meals, weightLogs] = await Promise.all([
         authService.getUserId(),
         queryClient.getQueryData<any>(['profile']) || queryClient.fetchQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() }),
         queryClient.getQueryData<any>(['goal']) || queryClient.fetchQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() }),
         mealService.getMealsByDate(dateStr),
-        queryClient.getQueryData<any[]>(['weightLogs']) || queryClient.fetchQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() }),
-        import('@/shared/services/waterService').then(m => m.waterService)
+        queryClient.getQueryData<any[]>(['weightLogs']) || queryClient.fetchQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() })
       ]);
       
       if (!profile) return null;
       
-      // Calculate water manually if we need to? Assuming it has getWaterByDate or similar. We'll just use 0 if not implemented.
-      const waterLiters = 0; // TODO: properly fetch water for dateStr if needed
-      
+                  
       const hasWeightLogged = weightLogs.some((w: any) => w.date.startsWith(dateStr));
       let actualCalories = 0;
       meals.forEach((m: any) => actualCalories += m.calories);
@@ -49,7 +46,7 @@ export const complianceService = {
         targetProtein,
         actualProtein,
         hasWeightLogged,
-        waterLiters
+        
       });
       
       const metricPayload = {
@@ -58,7 +55,6 @@ export const complianceService = {
         actual_calories: actualCalories,
         target_protein: targetProtein,
         actual_protein: actualProtein,
-        water: waterLiters,
         score
       };
       
@@ -89,21 +85,18 @@ export const complianceService = {
   },
   async updateTodayScore(): Promise<DbDailyMetric | null> {
     try {
-      const [userId, profile, goal, meals, weightLogs, waterServiceRef] = await Promise.all([
+      const [userId, profile, goal, meals, weightLogs] = await Promise.all([
         authService.getUserId(),
         queryClient.getQueryData<any>(['profile']) || queryClient.fetchQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() }),
         queryClient.getQueryData<any>(['goal']) || queryClient.fetchQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() }),
         queryClient.getQueryData<any[]>(['meals', 'today']) || queryClient.fetchQuery({ queryKey: ['meals', 'today'], queryFn: () => mealService.getTodaysMeals() }),
-        queryClient.getQueryData<any[]>(['weightLogs']) || queryClient.fetchQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() }),
-        import('@/shared/services/waterService').then(m => m.waterService)
+        queryClient.getQueryData<any[]>(['weightLogs']) || queryClient.fetchQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() })
       ]);
       
       if (!profile) return null;
       
       const today = getLocalDateString();
-      const waterTotalMl = await waterServiceRef.getTodaysWaterTotal();
-      const waterLiters = waterTotalMl / 1000;
-      
+                  
       const hasWeightLogged = weightLogs.some(w => w.date.startsWith(today));
       let actualCalories = 0;
       meals.forEach((m: any) => actualCalories += m.calories);
@@ -119,7 +112,7 @@ export const complianceService = {
         targetProtein,
         actualProtein,
         hasWeightLogged,
-        waterLiters
+        
       });
       
       const metricPayload = {
@@ -128,7 +121,6 @@ export const complianceService = {
         actual_calories: actualCalories,
         target_protein: targetProtein,
         actual_protein: actualProtein,
-        water: waterLiters,
         score
       };
       
