@@ -120,3 +120,11 @@ export function calculateGoalStats(tdee: number, weightKg: number, currentBf: nu
     targetDateStr: deficitKcal > 0 ? targetDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Ongoing'
   };
 }
+
+export function estimateBodyFatPercentage(weightKg: number, heightCm: number, age: number, gender: string): number {
+  const heightM = heightCm / 100;
+  const bmi = weightKg / (heightM * heightM);
+  const genderFactor = (gender.toLowerCase() === 'male' || gender.toLowerCase() === 'm') ? 1 : 0;
+  let estimatedBf = (1.20 * bmi) + (0.23 * age) - (10.8 * genderFactor) - 5.4;
+  return Math.max(5, Math.min(estimatedBf, 50));
+}

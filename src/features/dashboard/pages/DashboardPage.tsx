@@ -108,16 +108,16 @@ export function DashboardPage() {
   const name = profile?.name ?? onboardingData?.name ?? "User";
   const targetBf = goal?.target_bf ?? onboardingData?.targetBodyFatPct;
   const currentBf = goal?.current_bf ?? onboardingData?.currentBodyFatPct;
-  const proteinTarget = (profile?.protein_target ?? onboardingData?.proteinMid) || 0;
+  const proteinTarget = Math.round((profile?.protein_target ?? onboardingData?.proteinMid) || 0);
   
   if (import.meta.env.DEV) console.time('[PERF] Dashboard Calculations');
-  const dailyTargetKcal = (profile?.maintenance_kcal && goal?.deficit_kcal !== undefined ? profile.maintenance_kcal - goal.deficit_kcal : onboardingData?.dailyCalorieGoal) || 0;
+  const dailyTargetKcal = Math.round((profile?.maintenance_kcal && goal?.deficit_kcal !== undefined ? profile.maintenance_kcal - goal.deficit_kcal : onboardingData?.dailyCalorieGoal) || 0);
 
   const todaysMeals = meals || [];
-  const eatenKcal = todaysMeals.reduce((acc, m) => acc + m.calories, 0);
-  const eatenProtein = todaysMeals.reduce((acc, m) => acc + m.protein, 0);
-  const eatenFat = todaysMeals.reduce((acc, m) => acc + m.fat, 0);
-  const eatenCarbs = todaysMeals.reduce((acc, m) => acc + m.carbs, 0);
+  const eatenKcal = Math.round(todaysMeals.reduce((acc, m) => acc + m.calories, 0));
+  const eatenProtein = Math.round(todaysMeals.reduce((acc, m) => acc + m.protein, 0));
+  const eatenFat = Math.round(todaysMeals.reduce((acc, m) => acc + m.fat, 0));
+  const eatenCarbs = Math.round(todaysMeals.reduce((acc, m) => acc + m.carbs, 0));
 
   const remainingKcal = dailyTargetKcal !== undefined ? Math.max(0, dailyTargetKcal - eatenKcal) : undefined;
   const remainingProtein = proteinTarget !== undefined ? Math.max(0, proteinTarget - eatenProtein) : undefined;
@@ -133,14 +133,14 @@ export function DashboardPage() {
       ? Math.min(100, Math.max(5, 100 - (currentBf - targetBf) * 5))
       : 0;
 
-  const fatTarget = onboardingData?.fatMid || 0;
-  const carbsTarget = onboardingData?.carbMid || 0;
+  const fatTarget = Math.round(onboardingData?.fatMid || 0);
+  const carbsTarget = Math.round(onboardingData?.carbMid || 0);
 
   
   const getRemainingText = (eaten: number, target: number, unit: string = '') => {
     if (!target) return 'No target set';
     const diff = target - eaten;
-    if (diff > 0) return `${Math.round(diff)}${unit} left`;
+    if (diff > 0) return `${Math.round(diff)}${unit} remaining`;
     if (diff < 0) return `${Math.round(Math.abs(diff))}${unit} over`;
     return 'Goal met';
   };
@@ -204,7 +204,7 @@ export function DashboardPage() {
                 / {dailyTargetKcal || 0} kcal
               </div>
               <div className={`text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${eatenKcal > dailyTargetKcal && dailyTargetKcal > 0 ? 'bg-[rgba(255,77,28,0.15)] text-[#FF4D1C]' : 'bg-[rgba(212,255,0,0.1)] text-[#D4FF00]'}`}>
-                {getRemainingText(eatenKcal, dailyTargetKcal, '')}
+                {getRemainingText(eatenKcal, dailyTargetKcal, ' kcal')}
               </div>
             </div>
           </motion.div>
@@ -213,11 +213,17 @@ export function DashboardPage() {
           <div className="flex gap-3 mb-6 stagger-children">
             {/* Protein */}
             <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} onClick={() => navigate('/protein')} className="card-base flex-1 flex flex-col items-center py-4 cursor-pointer">
-              <div className="text-[18px] font-semibold text-[#378ADD] leading-none mb-1">
-                <AnimatedNumber value={eatenProtein} duration={800} />g
+              <div className="text-[16px] font-semibold text-[#378ADD] leading-none mb-1 flex items-baseline gap-0.5">
+                <AnimatedNumber value={eatenProtein} duration={800} />
+                <span className="text-[11px] text-[rgba(255,255,255,0.4)] font-medium">/ {proteinTarget}g</span>
               </div>
-              <div className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.38)] mb-3">
-                Protein
+              <div className="flex flex-col items-center mb-3">
+                <div className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.38)]">
+                  Protein
+                </div>
+                <div className="text-[9px] font-medium text-[rgba(255,255,255,0.5)] mt-0.5">
+                  {getRemainingText(eatenProtein, proteinTarget, 'g')}
+                </div>
               </div>
               <div className="progress-track w-12 h-1.5 rounded-full overflow-hidden bg-[rgba(255,255,255,0.1)]">
                 <div className="h-full bg-[#378ADD] rounded-full" style={{ width: mounted ? `${proPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.3s" }} />
@@ -226,11 +232,17 @@ export function DashboardPage() {
 
             {/* Fat */}
             <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} className="card-base flex-1 flex flex-col items-center py-4 cursor-pointer">
-              <div className="text-[18px] font-semibold text-[#FF4D1C] leading-none mb-1">
-                <AnimatedNumber value={eatenFat} duration={800} />g
+              <div className="text-[16px] font-semibold text-[#FF4D1C] leading-none mb-1 flex items-baseline gap-0.5">
+                <AnimatedNumber value={eatenFat} duration={800} />
+                <span className="text-[11px] text-[rgba(255,255,255,0.4)] font-medium">/ {fatTarget}g</span>
               </div>
-              <div className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.38)] mb-3">
-                Fat
+              <div className="flex flex-col items-center mb-3">
+                <div className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.38)]">
+                  Fat
+                </div>
+                <div className="text-[9px] font-medium text-[rgba(255,255,255,0.5)] mt-0.5">
+                  {getRemainingText(eatenFat, fatTarget, 'g')}
+                </div>
               </div>
               <div className="progress-track w-12 h-1.5 rounded-full overflow-hidden bg-[rgba(255,255,255,0.1)]">
                 <div className="h-full bg-[#FF4D1C] rounded-full" style={{ width: mounted ? `${fatPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.4s" }} />
@@ -239,11 +251,17 @@ export function DashboardPage() {
 
             {/* Carbs */}
             <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} className="card-base flex-1 flex flex-col items-center py-4 cursor-pointer">
-              <div className="text-[18px] font-semibold text-[#D4FF00] leading-none mb-1">
-                <AnimatedNumber value={eatenCarbs} duration={800} />g
+              <div className="text-[16px] font-semibold text-[#D4FF00] leading-none mb-1 flex items-baseline gap-0.5">
+                <AnimatedNumber value={eatenCarbs} duration={800} />
+                <span className="text-[11px] text-[rgba(255,255,255,0.4)] font-medium">/ {carbsTarget}g</span>
               </div>
-              <div className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.38)] mb-3">
-                Carbs
+              <div className="flex flex-col items-center mb-3">
+                <div className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.38)]">
+                  Carbs
+                </div>
+                <div className="text-[9px] font-medium text-[rgba(255,255,255,0.5)] mt-0.5">
+                  {getRemainingText(eatenCarbs, carbsTarget, 'g')}
+                </div>
               </div>
               <div className="progress-track w-12 h-1.5 rounded-full overflow-hidden bg-[rgba(255,255,255,0.1)]">
                 <div className="h-full bg-[#D4FF00] rounded-full" style={{ width: mounted ? `${carbPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.5s" }} />
