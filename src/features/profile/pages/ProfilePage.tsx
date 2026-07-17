@@ -1,3 +1,5 @@
+import { useChatStore } from '@/app/store';
+import { useUserStore } from '@/features/profile/store/userStore';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileService } from '../services/profileService';
@@ -35,10 +37,14 @@ export function ProfilePage() {
       await profileService.deleteProfile();
     },
     onSuccess: () => {
+      useUserStore.getState().clearUserStore();
+      useChatStore.getState().clearChatStore();
+      queryClient.setQueryData(['profile'], null);
+      queryClient.setQueryData(['goal'], null);
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       queryClient.invalidateQueries({ queryKey: ['goal'] });
       haptics.success();
-      navigate('/onboarding/1');
+      navigate('/onboarding');
     },
   });
 
