@@ -41,7 +41,7 @@ export function AuthPage() {
       email,
       options: {
         shouldCreateUser: true,
-        emailRedirectTo: `${window.location.origin}/redirect`,
+        emailRedirectTo: `${window.location.origin}/dashboard`,
       }
     });
     
@@ -68,7 +68,7 @@ export function AuthPage() {
     const { error } = await supabase.auth.signInWithOAuth({ 
       provider,
       options: {
-        redirectTo: `${window.location.origin}/redirect`
+        redirectTo: `${window.location.origin}/dashboard`
       }
     });
     if (error) {

@@ -9,7 +9,7 @@ export function GuestRoute() {
   }
 
   if (session) {
-    return <Navigate to="/redirect" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <Outlet />;
