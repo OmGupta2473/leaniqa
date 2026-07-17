@@ -108,13 +108,10 @@ export function DashboardPage() {
   const name = profile?.name ?? onboardingData?.name ?? "User";
   const targetBf = goal?.target_bf ?? onboardingData?.targetBodyFatPct;
   const currentBf = goal?.current_bf ?? onboardingData?.currentBodyFatPct;
-  const proteinTarget = profile?.protein_target ?? onboardingData?.proteinMid;
+  const proteinTarget = (profile?.protein_target ?? onboardingData?.proteinMid) || 0;
   
   if (import.meta.env.DEV) console.time('[PERF] Dashboard Calculations');
-  const dailyTargetKcal =
-    profile?.maintenance_kcal && goal?.deficit_kcal !== undefined
-      ? profile.maintenance_kcal - goal.deficit_kcal
-      : onboardingData?.dailyCalorieGoal;
+  const dailyTargetKcal = (profile?.maintenance_kcal && goal?.deficit_kcal !== undefined ? profile.maintenance_kcal - goal.deficit_kcal : onboardingData?.dailyCalorieGoal) || 0;
 
   const todaysMeals = meals || [];
   const eatenKcal = todaysMeals.reduce((acc, m) => acc + m.calories, 0);
@@ -136,8 +133,17 @@ export function DashboardPage() {
       ? Math.min(100, Math.max(5, 100 - (currentBf - targetBf) * 5))
       : 0;
 
-  const fatTarget = 60; // fallback target
-  const carbsTarget = 200; // fallback target
+  const fatTarget = onboardingData?.fatMid || 0;
+  const carbsTarget = onboardingData?.carbMid || 0;
+
+  
+  const getRemainingText = (eaten: number, target: number, unit: string = '') => {
+    if (!target) return 'No target set';
+    const diff = target - eaten;
+    if (diff > 0) return `${Math.round(diff)}${unit} left`;
+    if (diff < 0) return `${Math.round(Math.abs(diff))}${unit} over`;
+    return 'Goal met';
+  };
 
   const calPct = dailyTargetKcal ? Math.min(eatenKcal / dailyTargetKcal, 1) : 0;
   const proPct = proteinTarget ? Math.min(eatenProtein / proteinTarget, 1) : 0;
@@ -194,8 +200,11 @@ export function DashboardPage() {
               <div className="text-[32px] font-bold tracking-tight text-white leading-none mb-1">
                 <AnimatedNumber value={eatenKcal} duration={1000} />
               </div>
-              <div className="text-[13px] text-[rgba(255,255,255,0.4)]">
+              <div className="text-[13px] text-[rgba(255,255,255,0.4)] mb-2">
                 / {dailyTargetKcal || 0} kcal
+              </div>
+              <div className={`text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${eatenKcal > dailyTargetKcal && dailyTargetKcal > 0 ? 'bg-[rgba(255,77,28,0.15)] text-[#FF4D1C]' : 'bg-[rgba(212,255,0,0.1)] text-[#D4FF00]'}`}>
+                {getRemainingText(eatenKcal, dailyTargetKcal, '')}
               </div>
             </div>
           </motion.div>

@@ -1,39 +1,155 @@
 import re
 
 with open("src/features/dashboard/pages/DashboardPage.tsx", "r") as f:
-    content = f.read()
+    c = f.read()
 
-import_old = """import { calculateCurrentDailyStreak } from "@/shared/utils/streaks";"""
-import_new = """import { calculateCurrentDailyStreak, isDailyGoalMet, toUtcDay } from "@/shared/utils/streaks";"""
+# Replace hardcoded targets
+c = re.sub(
+    r'(const fatTarget = 60;\s*// fallback target\s*const carbsTarget = 200;\s*// fallback target)',
+    r'const fatTarget = onboardingData?.fatMid || 0;\n  const carbsTarget = onboardingData?.carbMid || 0;',
+    c
+)
 
-content = content.replace(import_old, import_new)
+c = re.sub(
+    r'(const proteinTarget = profile\?\.protein_target \?\? onboardingData\?\.proteinMid;)',
+    r'\1 || 0;',
+    c
+)
 
-old_streak_vars = """  const currentStreak = calculateCurrentDailyStreak(metrics);
-  const queryClient = useQueryClient();"""
+c = re.sub(
+    r'(const dailyTargetKcal =.*?\n.*?\n.*?\n.*?;)',
+    r'const dailyTargetKcal = (profile?.maintenance_kcal && goal?.deficit_kcal !== undefined ? profile.maintenance_kcal - goal.deficit_kcal : onboardingData?.dailyCalorieGoal) || 0;',
+    c
+)
 
-new_streak_vars = """  const currentStreak = calculateCurrentDailyStreak(metrics);
-  const todayMetric = metrics.find(m => toUtcDay(m.date) === toUtcDay(new Date()));
-  const todayMet = todayMetric ? isDailyGoalMet(todayMetric) : false;
-  const queryClient = useQueryClient();"""
+# Add remaining text helper
+helper = """
+  const getRemainingText = (eaten: number, target: number, unit: string = '') => {
+    if (!target) return 'No target set';
+    const diff = target - eaten;
+    if (diff > 0) return `${Math.round(diff)}${unit} left`;
+    if (diff < 0) return `${Math.round(Math.abs(diff))}${unit} over`;
+    return 'Goal met';
+  };
+"""
+if "getRemainingText" not in c:
+    c = c.replace("const calPct =", helper + "\n  const calPct =")
 
-content = content.replace(old_streak_vars, new_streak_vars)
+# Update Calorie Ring text
+ring_old = """
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <div className="text-[32px] font-bold tracking-tight text-white leading-none mb-1">
+                <AnimatedNumber value={eatenKcal} duration={1000} />
+              </div>
+              <div className="text-[13px] text-[rgba(255,255,255,0.4)]">
+                / {dailyTargetKcal || 0} kcal
+              </div>
+            </div>"""
 
-old_streak_html = """          <div className="flex items-center gap-[6px]">
-            <span className="text-[18px]">🔥</span>
-            <span className="text-[17px] text-white font-bold tracking-[-0.2px]">{currentStreak}</span>
+ring_new = """
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <div className="text-[32px] font-bold tracking-tight text-white leading-none mb-1">
+                <AnimatedNumber value={eatenKcal} duration={1000} />
+              </div>
+              <div className="text-[13px] text-[rgba(255,255,255,0.4)] mb-2">
+                / {dailyTargetKcal || 0} kcal
+              </div>
+              <div className={`text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${eatenKcal > dailyTargetKcal && dailyTargetKcal > 0 ? 'bg-[rgba(255,77,28,0.15)] text-[#FF4D1C]' : 'bg-[rgba(212,255,0,0.1)] text-[#D4FF00]'}`}>
+                {getRemainingText(eatenKcal, dailyTargetKcal, '')}
+              </div>
+            </div>"""
+c = c.replace(ring_old, ring_new)
+
+# Update Macro row
+macro_old = """
+          {/* 4. Macro row */}
+          <div className="flex gap-3 mb-6 stagger-children">
+            {/* Protein */}
+            <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} onClick={() => navigate('/protein')} className="card-base flex-1 flex flex-col items-center py-4 cursor-pointer">
+              <div className="text-[18px] font-semibold text-[#378ADD] leading-none mb-1">
+                <AnimatedNumber value={eatenProtein} duration={800} />g
+              </div>
+              <div className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.38)] mb-3">
+                Protein
+              </div>
+              <div className="progress-track w-12 h-1.5 rounded-full overflow-hidden bg-[rgba(255,255,255,0.1)]">
+                <div className="h-full bg-[#378ADD] rounded-full" style={{ width: mounted ? `${proPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.3s" }} />
+              </div>
+            </motion.div>
+            {/* Fat */}
+            <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} className="card-base flex-1 flex flex-col items-center py-4 cursor-pointer">
+              <div className="text-[18px] font-semibold text-[#FF4D1C] leading-none mb-1">
+                <AnimatedNumber value={eatenFat} duration={800} />g
+              </div>
+              <div className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.38)] mb-3">
+                Fat
+              </div>
+              <div className="progress-track w-12 h-1.5 rounded-full overflow-hidden bg-[rgba(255,255,255,0.1)]">
+                <div className="h-full bg-[#FF4D1C] rounded-full" style={{ width: mounted ? `${fatPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.4s" }} />
+              </div>
+            </motion.div>
+            {/* Carbs */}
+            <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} className="card-base flex-1 flex flex-col items-center py-4 cursor-pointer">
+              <div className="text-[18px] font-semibold text-[#D4FF00] leading-none mb-1">
+                <AnimatedNumber value={eatenCarbs} duration={800} />g
+              </div>
+              <div className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.38)] mb-3">
+                Carbs
+              </div>
+              <div className="progress-track w-12 h-1.5 rounded-full overflow-hidden bg-[rgba(255,255,255,0.1)]">
+                <div className="h-full bg-[#D4FF00] rounded-full" style={{ width: mounted ? `${carbPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.5s" }} />
+              </div>
+            </motion.div>
           </div>"""
 
-new_streak_html = """          <div className="flex items-center gap-[6px]">
-            <span className="text-[18px]">🔥</span>
-            <span className="text-[17px] text-white font-bold tracking-[-0.2px]">{currentStreak}</span>
-            {todayMet && (
-               <span style={{ fontSize: '12px', background: 'rgba(212,255,0,0.1)', color: '#D4FF00', padding: '2px 8px', borderRadius: '100px', fontWeight: 600, marginLeft: '4px' }}>
-                 ⏳ In Progress
-               </span>
-            )}
+macro_new = """
+          {/* 4. Macro row */}
+          <div className="flex gap-2 mb-6 stagger-children">
+            {/* Protein */}
+            <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} onClick={() => navigate('/protein')} className="card-base flex-1 flex flex-col items-center py-3 px-1 cursor-pointer">
+              <div className="text-[16px] font-semibold text-[#378ADD] leading-none mb-0.5 flex items-baseline gap-[1px]">
+                <AnimatedNumber value={eatenProtein} duration={800} />
+                <span className="text-[10px] text-[rgba(255,255,255,0.4)]">/ {proteinTarget || 0}g</span>
+              </div>
+              <div className={`text-[9px] uppercase tracking-wider mb-2 ${eatenProtein > proteinTarget && proteinTarget > 0 ? 'text-[#FF4D1C]' : 'text-[rgba(255,255,255,0.38)]'}`}>
+                {eatenProtein > proteinTarget && proteinTarget > 0 ? 'Over' : 'Protein'}
+              </div>
+              <div className="progress-track w-full max-w-[48px] h-1.5 rounded-full overflow-hidden bg-[rgba(255,255,255,0.1)]">
+                <div className={`h-full rounded-full ${eatenProtein > proteinTarget && proteinTarget > 0 ? 'bg-[#FF4D1C]' : 'bg-[#378ADD]'}`} style={{ width: mounted ? `${proPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.3s" }} />
+              </div>
+            </motion.div>
+            
+            {/* Fat */}
+            <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} className="card-base flex-1 flex flex-col items-center py-3 px-1 cursor-pointer">
+              <div className="text-[16px] font-semibold text-[#FF4D1C] leading-none mb-0.5 flex items-baseline gap-[1px]">
+                <AnimatedNumber value={eatenFat} duration={800} />
+                <span className="text-[10px] text-[rgba(255,255,255,0.4)]">/ {fatTarget || 0}g</span>
+              </div>
+              <div className={`text-[9px] uppercase tracking-wider mb-2 ${eatenFat > fatTarget && fatTarget > 0 ? 'text-[#FF4D1C]' : 'text-[rgba(255,255,255,0.38)]'}`}>
+                {eatenFat > fatTarget && fatTarget > 0 ? 'Over' : 'Fat'}
+              </div>
+              <div className="progress-track w-full max-w-[48px] h-1.5 rounded-full overflow-hidden bg-[rgba(255,255,255,0.1)]">
+                <div className={`h-full rounded-full ${eatenFat > fatTarget && fatTarget > 0 ? 'bg-red-600' : 'bg-[#FF4D1C]'}`} style={{ width: mounted ? `${fatPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.4s" }} />
+              </div>
+            </motion.div>
+            
+            {/* Carbs */}
+            <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} className="card-base flex-1 flex flex-col items-center py-3 px-1 cursor-pointer">
+              <div className="text-[16px] font-semibold text-[#D4FF00] leading-none mb-0.5 flex items-baseline gap-[1px]">
+                <AnimatedNumber value={eatenCarbs} duration={800} />
+                <span className="text-[10px] text-[rgba(255,255,255,0.4)]">/ {carbsTarget || 0}g</span>
+              </div>
+              <div className={`text-[9px] uppercase tracking-wider mb-2 ${eatenCarbs > carbsTarget && carbsTarget > 0 ? 'text-[#FF4D1C]' : 'text-[rgba(255,255,255,0.38)]'}`}>
+                {eatenCarbs > carbsTarget && carbsTarget > 0 ? 'Over' : 'Carbs'}
+              </div>
+              <div className="progress-track w-full max-w-[48px] h-1.5 rounded-full overflow-hidden bg-[rgba(255,255,255,0.1)]">
+                <div className={`h-full rounded-full ${eatenCarbs > carbsTarget && carbsTarget > 0 ? 'bg-[#FF4D1C]' : 'bg-[#D4FF00]'}`} style={{ width: mounted ? `${carbPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.5s" }} />
+              </div>
+            </motion.div>
           </div>"""
 
-content = content.replace(old_streak_html, new_streak_html)
+c = c.replace(macro_old, macro_new)
 
 with open("src/features/dashboard/pages/DashboardPage.tsx", "w") as f:
-    f.write(content)
+    f.write(c)
+
