@@ -1,4 +1,6 @@
-import { useNavigate } from "react-router-dom";
+import re
+
+content = """import { useNavigate } from "react-router-dom";
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { reportService } from "@/features/reports/services/reportService";
@@ -13,8 +15,8 @@ import { Flame, ChevronLeft, X, Trophy } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/shared/utils/utils";
 
-const SPRING_TRANSITION: any = { type: 'spring' as const, stiffness: 400, damping: 30 };
-const SMOOTH_TRANSITION: any = { duration: 0.4, ease: [0.16, 1, 0.3, 1] };
+const SPRING_TRANSITION = { type: 'spring', stiffness: 400, damping: 30 };
+const SMOOTH_TRANSITION = { duration: 0.4, ease: [0.16, 1, 0.3, 1] };
 
 export function AwardsPage() {
   const navigate = useNavigate();
@@ -61,12 +63,12 @@ export function AwardsPage() {
   const circumference = 2 * Math.PI * 45;
   const strokeDashoffset = circumference - (progressPercent / 100) * circumference;
 
-  const containerVariants: any = {
+  const containerVariants = {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { staggerChildren: 0.05, delayChildren: 0.1 } }
   };
 
-  const itemVariants: any = {
+  const itemVariants = {
     hidden: { opacity: 0, scale: 0.9, y: 15 },
     show: { opacity: 1, scale: 1, y: 0, transition: SPRING_TRANSITION }
   };
@@ -345,3 +347,7 @@ export function AwardsPage() {
     </div>
   );
 }
+"""
+
+with open("src/features/awards/pages/AwardsPage.tsx", "w") as f:
+    f.write(content)
