@@ -373,8 +373,20 @@ export function OnboardingPage() {
                   Keep my profile
                 </button>
                 <button 
-                  onClick={() => {
-                    setOnboardingData(undefined);
+                                    onClick={async () => {
+                    if (profile) {
+                      try {
+                        await profileService.deleteGoal();
+                        await profileService.deleteProfile();
+                        queryClient.setQueryData(['profile'], null);
+                        queryClient.setQueryData(['goal'], null);
+                        queryClient.invalidateQueries({ queryKey: ['profile'] });
+                        queryClient.invalidateQueries({ queryKey: ['goal'] });
+                      } catch (e) {
+                        console.error('Failed to delete profile from db', e);
+                      }
+                    }
+                    useUserStore.getState().clearUserStore();
                     clearChatStore();
                     window.location.reload();
                   }}

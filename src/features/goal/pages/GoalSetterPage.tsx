@@ -321,6 +321,8 @@ export function GoalSetterPage() {
                         await profileService.deleteGoal();
                         setResetGoalConfirm(false);
                         queryClient.setQueryData(['goal'], null);
+                        useUserStore.getState().setGoalWizardCurrentBfMid(null);
+                        useUserStore.getState().setGoalWizardTargetBfMid(null);
                         navigate('/goal');
                       } catch { alert('Failed to reset goal. Try again.'); }
                     }} 
