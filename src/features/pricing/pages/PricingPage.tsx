@@ -1,6 +1,7 @@
 import { CheckCircle2, Shield, Clock, CreditCard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
+import { haptics } from '@/shared/utils/haptics';
 
 export function PricingPage() {
   const navigate = useNavigate();

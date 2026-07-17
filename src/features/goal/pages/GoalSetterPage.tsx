@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { pageVariants, itemVariants, hover, tap } from '@/features/reports/components/motion';
 import { ScreenSkeleton } from '@/shared/components/ScreenSkeleton';
 import { calculateBodyComposition, calculateGoalStats } from '@/shared/utils/profileCalculations';
+import { haptics } from '@/shared/utils/haptics';
 
 function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: number }) {
   const [displayValue, setDisplayValue] = useState(0);
@@ -150,6 +151,7 @@ export function GoalSetterPage() {
         estimatedCompletionDate: data.strategyData.estimatedCompletionDate
       });
       
+      haptics.success();
       navigate('/dashboard');
     },
     onSettled: () => {

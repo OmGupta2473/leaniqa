@@ -19,6 +19,7 @@ import { supabase } from "@/shared/utils/supabase";
 import { motion, AnimatePresence } from "motion/react";
 import { useVisualViewport, useKeyboardOpen } from "@/shared/hooks/useVisualViewport";
 import { lookupCachedMeal } from '../constants/data';
+import { haptics } from '@/shared/utils/haptics';
 
 const getDeterministicFallback = (text: string) => {
   const normalizedText = text.toLowerCase();
@@ -432,6 +433,8 @@ export function MealLoggerPage() {
       return { previousMeals };
     },
     onSuccess: (data, text) => {
+      haptics.success();
+      haptics.success();
       const foodsDetected = Array.isArray(data?.foods_detected) && data?.foods_detected.length > 0 ? data.foods_detected.join(', ') : text;
       
       const newEatenKcal = eatenKcal + Math.round(data.calories);

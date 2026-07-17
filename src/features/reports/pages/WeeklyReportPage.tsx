@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { DailyActivityData } from '@/shared/types/activity';
 import { cn } from "@/shared/utils/utils";
 import { useNavigate } from 'react-router-dom';
+import { haptics } from '@/shared/utils/haptics';
 
 function getLocalDateString(d: Date) {
   const year = d.getFullYear();
@@ -139,8 +140,14 @@ export function WeeklyReportPage() {
   };
 
   const handleGenerate = () => {
+    haptics.tap();
+    haptics.tap();
+    haptics.tap();
     setIsGenerating(true);
     setTimeout(() => {
+      haptics.success();
+      haptics.success();
+      haptics.success();
       setInsights(generateDynamicInsights());
       setIsGenerating(false);
     }, 1200);

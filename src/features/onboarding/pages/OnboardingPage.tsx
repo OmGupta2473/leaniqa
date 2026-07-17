@@ -11,6 +11,7 @@ import { complianceService } from '@/features/reports/services/complianceService
 import { motion, AnimatePresence } from 'motion/react';
 import { hover, tap } from '@/features/reports/components/motion';
 import { calculateMacros } from '@/shared/utils/profileCalculations';
+import { haptics } from '@/shared/utils/haptics';
 
 function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: number }) {
   const [displayValue, setDisplayValue] = useState(0);
