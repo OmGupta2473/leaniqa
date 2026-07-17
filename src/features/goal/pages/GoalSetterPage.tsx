@@ -13,7 +13,8 @@ import { CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { pageVariants, itemVariants, hover, tap } from '@/features/reports/components/motion';
 import { ScreenSkeleton } from '@/shared/components/ScreenSkeleton';
-import { calculateBodyComposition, calculateGoalStats } from '@/shared/utils/profileCalculations';
+import { calculateBodyComposition, calculateGoalStats, estimateBodyFatPercentage } from '@/shared/utils/profileCalculations';
+import { BodyFatSelector } from '@/features/goal/components/BodyFatSelector';
 import { haptics } from '@/shared/utils/haptics';
 
 function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: number }) {
@@ -43,15 +44,6 @@ function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: n
   return <span ref={elementRef}>{displayValue}</span>;
 }
 
-const bodyFatOptions = [
-  { range: 'Under 5%', label: 'Essential fat', desc: 'Extremely lean, visible striations, competition level', mid: 2.5 },
-  { range: '5–10%', label: 'Athletic', desc: 'Visible abs, very defined, typical fitness model', mid: 7.5 },
-  { range: '10–15%', label: 'Fit', desc: 'Some ab definition, lean look, low belly fat', mid: 12.5 },
-  { range: '15–20%', label: 'Average fit', desc: 'Slight belly, face looks lean, no visible abs', mid: 17.5 },
-  { range: '20–30%', label: 'Average', desc: 'Soft belly, fuller face, no muscle definition', mid: 25 },
-  { range: '30–40%', label: 'Above average', desc: 'Noticeable belly, rounder build, low energy common', mid: 35 },
-  { range: 'Above 40%', label: 'High body fat', desc: 'Significant fat storage across the whole body', mid: 45 }
-];
 
 export function GoalSetterPage() {
   useRenderTracker('GoalSetterPage');
@@ -78,6 +70,13 @@ export function GoalSetterPage() {
 
   const tdee = onboardingData?.tdee || profile?.maintenance_kcal || 2500;
   const currentWeight = onboardingData?.weightKg || profile?.weight || 80;
+
+  const age = onboardingData?.age || profile?.age || 30;
+  const gender = onboardingData?.gender || profile?.gender || 'Male';
+  const heightCm = onboardingData?.heightCm || profile?.height || 175;
+
+  const estimatedBf = estimateBodyFatPercentage(currentWeight, heightCm, age, gender);
+
   const proteinMax = onboardingData?.proteinMax || 160;
   const proteinMid = onboardingData?.proteinMid || 150;
   const proteinMin = onboardingData?.proteinMin || 140;
@@ -357,27 +356,12 @@ export function GoalSetterPage() {
           {currentBfMid && <div className="text-[#D4FF00]"><CheckCircle2 size={20} /></div>}
         </div>
         
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {bodyFatOptions.map((opt) => {
-            const isSelected = currentBfMid === opt.mid;
-            return (
-              <motion.button
-                key={opt.range}
-                onClick={() => setCurrentBfMid(opt.mid)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className={cn(
-                  "bg-[#111113] border-[0.5px] border-[rgba(255,255,255,0.06)] rounded-2xl p-4 cursor-pointer transition-all duration-200 text-left flex flex-col hover:border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.04)]",
-                  isSelected && "border-[#D4FF00] bg-[rgba(212,255,0,0.06)] shadow-[0_0_20px_rgba(212,255,0,0.15)] hover:border-[#D4FF00]"
-                )}
-              >
-                <div className={cn("text-[20px] font-bold tracking-tight mb-1", isSelected ? "text-[#D4FF00]" : "text-white")}>{opt.range}</div>
-                <div className="text-[13px] font-medium text-[rgba(255,255,255,0.8)] mb-1">{opt.label}</div>
-                <div className="text-[11px] text-[rgba(255,255,255,0.45)] leading-relaxed">{opt.desc}</div>
-              </motion.button>
-            )
-          })}
-        </div>
+        <BodyFatSelector 
+          gender={gender} 
+          estimatedBf={estimatedBf} 
+          value={currentBfMid} 
+          onChange={setCurrentBfMid} 
+        />
       </motion.div>
 
       {/* SECTION B */}
@@ -396,26 +380,15 @@ export function GoalSetterPage() {
           </div>
         )}
 
+        <div className="mb-4">
+          <BodyFatSelector 
+            gender={gender} 
+            value={targetBfMid} 
+            onChange={setTargetBfMid} 
+            maxBf={currentBfMid}
+          />
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {bodyFatOptions.filter(opt => !currentBfMid || opt.mid < currentBfMid).map((opt) => {
-            const isSelected = targetBfMid === opt.mid;
-            return (
-              <motion.button
-                key={opt.range}
-                onClick={() => setTargetBfMid(opt.mid)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className={cn(
-                  "bg-[#111113] border-[0.5px] border-[rgba(255,255,255,0.06)] rounded-2xl p-4 cursor-pointer transition-all duration-200 text-left flex flex-col hover:border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.04)]",
-                  isSelected && "border-[#D4FF00] bg-[rgba(212,255,0,0.06)] shadow-[0_0_20px_rgba(212,255,0,0.15)] hover:border-[#D4FF00]"
-                )}
-              >
-                <div className={cn("text-[20px] font-bold tracking-tight mb-1", isSelected ? "text-[#D4FF00]" : "text-white")}>{opt.range}</div>
-                <div className="text-[13px] font-medium text-[rgba(255,255,255,0.8)] mb-1">{opt.label}</div>
-                <div className="text-[11px] text-[rgba(255,255,255,0.45)] leading-relaxed">{opt.desc}</div>
-              </motion.button>
-            )
-          })}
           {currentBfMid && (
             <motion.button
               key="maintain"
