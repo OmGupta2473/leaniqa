@@ -91,7 +91,10 @@ export function AuthPage() {
           className="w-full max-w-[400px] mx-auto"
         >
           {/* Logo / Brand Section */}
-          <div className="flex flex-col items-center justify-center mb-8 text-center">
+          <div 
+            className="flex flex-col items-center justify-center mb-8 text-center cursor-pointer transition-opacity hover:opacity-80"
+            onClick={() => window.location.href = '/'}
+          >
             <Logo className="w-16 h-16 mb-4 drop-shadow-md" />
             <h1 className="text-[28px] font-semibold tracking-tight">LeanIQA</h1>
           </div>

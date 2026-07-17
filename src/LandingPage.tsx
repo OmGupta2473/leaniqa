@@ -653,7 +653,10 @@ export function LandingPage() {
         transition={{ duration: 0.25, ease: "easeOut" }}
       >
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div 
+            className="flex items-center gap-3 cursor-pointer transition-opacity hover:opacity-80"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          >
             <Logo className="w-8 h-8" />
             <span className="font-semibold tracking-tight text-lg">LeanIQA</span>
           </div>
@@ -859,7 +862,10 @@ export function LandingPage() {
 
       {/* ── Footer ── */}
       <footer className="border-t border-zinc-900 py-8 px-6 text-zinc-500 text-xs flex flex-col md:flex-row justify-between items-center gap-4 max-w-7xl mx-auto text-center md:text-left">
-        <div className="flex items-center gap-2">
+        <div 
+          className="flex items-center gap-2 cursor-pointer transition-opacity hover:opacity-80"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        >
            <Logo className="w-6 h-6" />
            <span className="font-semibold text-zinc-400 text-sm">LeanIQA</span>
         </div>
