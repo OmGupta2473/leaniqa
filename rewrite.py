@@ -1,4 +1,11 @@
-import { onRenderCallback, useRenderTracker } from '@/shared/utils/perfDebug';
+import re
+
+with open("src/features/reports/pages/WeeklyReportPage.tsx", "r") as f:
+    content = f.read()
+
+# I will completely rewrite the file to include the new sections and keep the old ones.
+
+new_content = """import { onRenderCallback, useRenderTracker } from '@/shared/utils/perfDebug';
 import React, { useState, useMemo, Profiler } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { profileService } from '@/features/profile/services/profileService';
@@ -568,3 +575,7 @@ export function WeeklyReportPage() {
     </Profiler>
   );
 }
+"""
+
+with open("src/features/reports/pages/WeeklyReportPage.tsx", "w") as f:
+    f.write(new_content)
