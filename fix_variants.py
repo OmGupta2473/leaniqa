@@ -1,9 +1,8 @@
-import re
-
 with open("src/features/reports/pages/WeeklyReportPage.tsx", "r") as f:
-    content = f.read()
+    c = f.read()
 
-content = content.replace("type: 'spring',", "type: 'spring' as const,")
+c = c.replace("type: 'spring', stiffness: 250, damping: 25", "type: 'spring' as const, stiffness: 250, damping: 25")
 
 with open("src/features/reports/pages/WeeklyReportPage.tsx", "w") as f:
-    f.write(content)
+    f.write(c)
+
