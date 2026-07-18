@@ -163,14 +163,6 @@ export function WeeklyReportPage() {
   const { data: dailyMetrics = [], isLoading: metricsLoading } = useQuery({ queryKey: ['dailyMetrics'], queryFn: () => reportService.getDailyMetrics() });
 
   const isLoading = profileLoading || goalLoading || mealsLoading || metricsLoading;
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#0A0A0A] pb-[100px] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-[#D4FF00] animate-spin" />
-      </div>
-    );
-  }
   
   const calorieGoal = profile?.maintenance_kcal && goal?.deficit_kcal !== undefined ? profile.maintenance_kcal - goal.deficit_kcal : 2000;
   const proteinGoal = profile?.protein_target || 150;
@@ -310,6 +302,14 @@ export function WeeklyReportPage() {
     hidden: { opacity: 0, y: 15 },
     show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 24 } }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0A] pb-[100px] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-[#D4FF00] animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <Profiler id="WeeklyReportPage" onRender={onRenderCallback}>
