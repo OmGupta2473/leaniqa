@@ -1,3 +1,6 @@
+import re
+
+code = """
 import React, { Profiler } from 'react';
 import { onRenderCallback, useRenderTracker } from '@/shared/utils/perfDebug';
 import {
@@ -10,7 +13,6 @@ import {
 import { NavLink, useLocation } from "react-router-dom";
 import { useHasCompletedOnboarding } from '@/shared/hooks/useHasCompletedOnboarding';
 import { motion, AnimatePresence } from "motion/react";
-import { haptics } from "@/shared/utils/haptics";
 
 const navItems = [
   { id: "/goal", icon: Target, label: "Goal" },
@@ -44,8 +46,6 @@ export function BottomNav() {
               onClick={(e) => {
                 if (!hasCompletedOnboarding) {
                   e.preventDefault();
-                } else {
-                  haptics.tap();
                 }
               }}
               className="relative flex items-center justify-center h-[46px] rounded-full outline-none"
@@ -124,3 +124,7 @@ export function BottomNav() {
     </Profiler>
   );
 }
+"""
+
+with open("src/shared/components/BottomNav.tsx", "w") as f:
+    f.write(code.strip() + "\\n")
