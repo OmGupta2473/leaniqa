@@ -1,9 +1,12 @@
+import re
+
+code = """
 import React, { Profiler, useEffect, useState, useRef, memo } from 'react';
 import { onRenderCallback, useRenderTracker } from '@/shared/utils/perfDebug';
 import { useAppStore } from "@/app/store";
 import { reportService } from "@/features/reports/services/reportService";
 import { calculateCurrentDailyStreak, isDailyGoalMet, toUtcDay } from "@/shared/utils/streaks";
-import { Target, Footprints, Flame, Sparkles, ChevronRight, Activity, TrendingDown, TrendingUp, Plus, Utensils } from "lucide-react";
+import { Target, Footprints, Flame, Sparkles, ChevronRight, Activity, TrendingDown, TrendingUp, Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useCalculatedProfile } from "@/shared/hooks/useCalculatedProfile";
 import { mealService } from "@/features/nutrition/services/mealService";
@@ -250,11 +253,6 @@ export function DashboardPage() {
 
                 {/* Macro Bars */}
                 <div className="flex-1 flex flex-col gap-3">
-                  {/* Calories */}
-                  <div className="flex justify-between items-end text-[11px] leading-none">
-                      <span className="font-semibold text-[#D4FF00] uppercase tracking-wider">Calories</span>
-                      <span className="font-medium text-white/40">{eatenKcal} / {dailyTargetKcal}</span>
-                  </div>
                   {/* Protein */}
                   <div className="flex flex-col gap-1.5">
                     <div className="flex justify-between items-end text-[11px] leading-none">
@@ -353,3 +351,8 @@ export function DashboardPage() {
     </Profiler>
   );
 }
+"""
+
+with open("src/features/dashboard/pages/DashboardPage.tsx", "w") as f:
+    f.write(code.strip())
+
