@@ -209,7 +209,7 @@ export function DashboardPage() {
                     />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <div className="text-[32px] font-bold text-white tracking-tight leading-none">
+                    <div className="text-[22px] font-bold text-white tracking-tighter leading-none">
                       {Math.round((calPct) * 100)}%
                     </div>
                   </div>
