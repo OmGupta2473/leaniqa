@@ -71,8 +71,8 @@ function BodyFatCard({ option, isSelected, isRecommended, gender, onSelect, onPr
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       className={cn(
-        "relative rounded-2xl cursor-pointer transition-all duration-300 flex flex-col overflow-hidden text-left",
-        "bg-[#111113] border-[0.5px] border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.04)]",
+        "relative rounded-[24px] cursor-pointer transition-all duration-300 flex flex-col overflow-hidden text-left",
+        "bg-[#111113] border-[0.5px] border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.02)]",
         isSelected && "border-[#D4FF00] bg-[rgba(212,255,0,0.06)] shadow-[0_0_20px_rgba(212,255,0,0.15)] hover:border-[#D4FF00]"
       )}
     >
@@ -83,7 +83,7 @@ function BodyFatCard({ option, isSelected, isRecommended, gender, onSelect, onPr
           {/* Expand icon for preview */}
           <button 
             onClick={(e) => { e.stopPropagation(); haptics.tap(); onPreview(); }}
-            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-[rgba(0,0,0,0.5)] backdrop-blur-md flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity border border-[rgba(255,255,255,0.1)]"
+            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-[rgba(0,0,0,0.5)] backdrop-blur-md flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity border border-[rgba(255,255,255,0.06)]"
           >
             <Info size={16} />
           </button>
@@ -140,9 +140,9 @@ function BodyFatPreviewModal({ option, gender, onClose, onSelect }: BodyFatPrevi
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 100 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="relative w-full max-w-md bg-[#161618] border-t sm:border border-[rgba(255,255,255,0.1)] rounded-t-3xl sm:rounded-3xl p-6 overflow-hidden max-h-[90vh] overflow-y-auto"
+          className="relative w-full max-w-md bg-[#161618] border-t sm:border border-[rgba(255,255,255,0.06)] rounded-t-3xl sm:rounded-3xl p-6 overflow-hidden max-h-[90vh] overflow-y-auto"
         >
-          <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] transition-colors">
+          <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full bg-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,255,255,0.1)] transition-colors">
             <X size={20} className="text-white" />
           </button>
           
@@ -153,15 +153,15 @@ function BodyFatPreviewModal({ option, gender, onClose, onSelect }: BodyFatPrevi
             <p className="text-[15px] font-medium text-[#D4FF00]">{option.label}</p>
           </div>
           
-          <div className="w-full max-w-[240px] mx-auto aspect-[3/4] mb-8 relative">
-            <BodyFatImagePlaceholder gender={gender} categoryRange={option.range} className="rounded-xl border-[rgba(255,255,255,0.1)]" />
+          <div className="w-full max-w-[240px] mx-auto aspect-[3/4] mb-10 relative">
+            <BodyFatImagePlaceholder gender={gender} categoryRange={option.range} className="rounded-[20px] border-[rgba(255,255,255,0.06)]" />
           </div>
           
-          <div className="bg-[rgba(255,255,255,0.03)] rounded-2xl p-5 mb-8 border border-[rgba(255,255,255,0.05)]">
+          <div className="bg-[rgba(255,255,255,0.03)] rounded-[24px] p-5 mb-10 border border-[rgba(255,255,255,0.05)]">
             <h3 className="text-[13px] uppercase tracking-wider text-[rgba(255,255,255,0.4)] font-bold mb-4">Characteristics</h3>
             <ul className="space-y-3">
               {option.characteristics.map((char, i) => (
-                <li key={i} className="flex items-start text-[14px] text-[rgba(255,255,255,0.8)]">
+                <li key={i} className="flex items-start text-[15px] text-white leading-relaxed">
                   <div className="w-1.5 h-1.5 rounded-full bg-[#D4FF00] mt-1.5 mr-3 shrink-0" />
                   {char}
                 </li>
@@ -188,7 +188,7 @@ function EstimatedBodyFatBanner({ estimatedBf, recommendedOption }: { estimatedB
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-[rgba(212,255,0,0.08)] border border-[rgba(212,255,0,0.2)] rounded-2xl p-5 mb-6 relative overflow-hidden"
+      className="bg-[rgba(212,255,0,0.08)] border border-[rgba(212,255,0,0.2)] rounded-[24px] p-5 mb-6 relative overflow-hidden"
     >
       <div className="absolute top-0 right-0 w-32 h-32 bg-[rgba(212,255,0,0.1)] rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
       
@@ -197,7 +197,7 @@ function EstimatedBodyFatBanner({ estimatedBf, recommendedOption }: { estimatedB
           <span className="text-[18px]">✨</span>
         </div>
         <div>
-          <h3 className="text-[16px] font-semibold text-white tracking-tight mb-1">
+          <h3 className="text-[22px] font-semibold tracking-tight text-white tracking-tight mb-1">
             We estimate your current body fat is approximately <span className="text-[#D4FF00]">{Math.round(estimatedBf)}%</span>
           </h3>
           <p className="text-[13px] text-[rgba(255,255,255,0.6)] leading-relaxed mb-3">

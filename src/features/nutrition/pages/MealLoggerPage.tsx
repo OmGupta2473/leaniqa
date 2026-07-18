@@ -63,7 +63,7 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
         <div className="flex items-center gap-3">
           <div className="text-[rgba(255,255,255,0.7)]">{icon}</div>
           <div>
-            <div className="text-[14px] font-semibold text-white leading-none">{label}</div>
+            <div className="text-[16px] font-medium text-white leading-none">{label}</div>
             <div className="text-[11px] text-[rgba(255,255,255,0.4)] mt-1">{timeRange}</div>
           </div>
         </div>
@@ -532,13 +532,13 @@ export function MealLoggerPage() {
             disabled={isAtOrBeforeCreatedAt(selectedDate)}
             className={cn(
               "w-8 h-8 flex items-center justify-center rounded-full transition-colors",
-              isAtOrBeforeCreatedAt(selectedDate) ? "opacity-30 cursor-not-allowed" : "bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] cursor-pointer"
+              isAtOrBeforeCreatedAt(selectedDate) ? "opacity-30 cursor-not-allowed" : "bg-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,255,255,0.1)] cursor-pointer"
             )}
             title={isAtOrBeforeCreatedAt(selectedDate) ? "This is your first day on LeanIQA. No meal history exists before this date." : "Previous Day"}
           >
             <ChevronLeft size={16} className="text-white" />
           </button>
-          <span className="text-[14px] font-medium text-white min-w-[80px] text-center">
+          <span className="text-[15px] font-medium text-white min-w-[80px] text-center">
             {formatDateLabel(selectedDate)}
           </span>
           <button 
@@ -551,7 +551,7 @@ export function MealLoggerPage() {
             disabled={isToday(selectedDate)}
             className={cn(
               "w-8 h-8 flex items-center justify-center rounded-full transition-colors",
-              isToday(selectedDate) ? "opacity-30 cursor-not-allowed" : "bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] cursor-pointer"
+              isToday(selectedDate) ? "opacity-30 cursor-not-allowed" : "bg-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,255,255,0.1)] cursor-pointer"
             )}
           >
             <ChevronRight size={16} className="text-white" />
@@ -682,7 +682,7 @@ export function MealLoggerPage() {
 
               {/* Meal slot selector */}
               <div className="px-5 pt-3">
-                <div className="bg-[rgba(255,255,255,0.04)] rounded-2xl p-1.5 flex gap-1 relative">
+                <div className="bg-[rgba(255,255,255,0.02)] rounded-[24px] p-1.5 flex gap-1 relative">
                   {([['breakfast', Sunrise, 'Breakfast', '6 AM - 12 PM'], ['lunch', Sun, 'Lunch', '12 PM - 6 PM'], ['dinner', Moon, 'Dinner', '6 PM - 10 PM']] as const).map(([slot, Icon, label, time]) => {
                     const isActive = selectedMealSlot === slot;
                     return (
@@ -690,14 +690,14 @@ export function MealLoggerPage() {
                         key={slot}
                         onClick={() => setSelectedMealSlot(slot as any)}
                         className={cn(
-                          "flex-1 flex flex-col items-center py-2.5 rounded-xl cursor-pointer transition-colors duration-200 relative z-10",
+                          "flex-1 flex flex-col items-center py-2.5 rounded-[24px] cursor-pointer transition-colors duration-200 relative z-10",
                           isActive ? "text-white font-medium" : "text-[rgba(255,255,255,0.4)] bg-transparent"
                         )}
                       >
                         {isActive && (
                           <motion.div
                             layoutId="slotActive"
-                            className="absolute inset-0 bg-[rgba(255,255,255,0.1)] rounded-xl -z-10"
+                            className="absolute inset-0 bg-[rgba(255,255,255,0.1)] rounded-[24px] -z-10"
                             transition={{ type: "spring", stiffness: 400, damping: 30 }}
                           />
                         )}
@@ -713,13 +713,13 @@ export function MealLoggerPage() {
               {/* AI status indicator */}
               <div className="px-5 pt-3 flex items-center justify-center">
                 {aiStatus === 'offline' && (
-                  <div className="flex items-center gap-2 text-[12px] text-[rgba(255,255,255,0.4)]">
+                  <div className="flex items-center gap-2 text-[13px] text-[rgba(235,235,245,0.5)]">
                     <div className="w-1.5 h-1.5 rounded-full bg-[rgba(255,255,255,0.25)]" />
                     <span>AI Offline — Using Database</span>
                   </div>
                 )}
                 {aiStatus === 'online' && (
-                  <div className="flex items-center gap-2 text-[12px] text-[rgba(255,255,255,0.4)]">
+                  <div className="flex items-center gap-2 text-[13px] text-[rgba(235,235,245,0.5)]">
                     <div className="w-1.5 h-1.5 rounded-full bg-[#D4FF00] shadow-[0_0_6px_#D4FF00] animate-pulse-glow" style={{ animation: 'pulseGlow 2s infinite ease-in-out' }} />
                     <style>{'@keyframes pulseGlow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }'}</style>
                     <span>Gemini AI Active</span>
@@ -741,8 +741,8 @@ export function MealLoggerPage() {
                         className={cn(
                           "p-[12px_16px] text-[14px] leading-relaxed relative",
                           isUser 
-                            ? "bg-[rgba(212,255,0,0.12)] border-[0.5px] border-[rgba(212,255,0,0.2)] text-white rounded-2xl rounded-tr-sm max-w-[85%] self-end" 
-                            : "bg-[rgba(255,255,255,0.04)] border-[0.5px] border-[rgba(255,255,255,0.08)] text-[rgba(255,255,255,0.85)] rounded-2xl rounded-tl-sm max-w-[90%] self-start"
+                            ? "bg-[rgba(212,255,0,0.12)] border-[0.5px] border-[rgba(212,255,0,0.2)] text-white rounded-[24px] rounded-tr-sm max-w-[85%] self-end" 
+                            : "bg-[rgba(255,255,255,0.02)] border-[0.5px] border-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.85)] rounded-[24px] rounded-tl-sm max-w-[90%] self-start"
                         )}
                       >
                         <div className="whitespace-pre-wrap">{msg.text}</div>
@@ -750,8 +750,8 @@ export function MealLoggerPage() {
                           <div className="flex gap-[6px] flex-wrap mt-[8px]">
                             <span className="text-[10px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">~{msg.data.calories} kcal</span>
                             <span className="text-[10px] badge-lime px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{msg.data.protein}g pro</span>
-                            <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.7)] px-2 py-0.5 rounded-full font-semibold">{msg.data.fat}g fat</span>
-                            <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.7)] px-2 py-0.5 rounded-full font-semibold">{msg.data.carbs}g carb</span>
+                            <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.6)] px-2 py-0.5 rounded-full font-semibold">{msg.data.fat}g fat</span>
+                            <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.6)] px-2 py-0.5 rounded-full font-semibold">{msg.data.carbs}g carb</span>
                           </div>
                         )}
                         {msg.data?.coaching_tip && (
@@ -767,7 +767,7 @@ export function MealLoggerPage() {
                     <motion.div 
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="bg-[rgba(255,255,255,0.04)] border-[0.5px] border-[rgba(255,255,255,0.08)] text-[rgba(255,255,255,0.85)] rounded-2xl rounded-tl-sm max-w-[85%] self-start p-[10px_14px] flex items-center gap-[8px] text-[13px]"
+                      className="bg-[rgba(255,255,255,0.02)] border-[0.5px] border-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.85)] rounded-[24px] rounded-tl-sm max-w-[85%] self-start p-[10px_14px] flex items-center gap-[8px] text-[13px]"
                     >
                       <Loader2 size={16} className="animate-spin text-[#D4FF00]" /> Analyzing meal...
                     </motion.div>
@@ -778,7 +778,7 @@ export function MealLoggerPage() {
               {/* Input row */}
               <div className="glass-strong border-t border-[rgba(255,255,255,0.06)] px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex gap-3 items-center">
                 <input
-                  className="input-apple flex-1 text-[16px] placeholder:text-[rgba(255,255,255,0.3)] bg-[rgba(255,255,255,0.05)]"
+                  className="input-apple flex-1 text-[16px] placeholder:text-[rgba(255,255,255,0.3)] bg-[rgba(255,255,255,0.03)]"
                   style={{ borderRadius: '14px', border: '0.5px solid rgba(255,255,255,0.15)', padding: '12px 16px' }}
                   type="text"
                   placeholder={selectedMealSlot ? "e.g. 2 boiled eggs and chai" : "Select breakfast / lunch / dinner"}

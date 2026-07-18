@@ -21,7 +21,7 @@ export function RouteErrorBoundary() {
         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#FF4D1C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       </div>
       <h1 className="text-2xl font-bold mb-2">Something went wrong</h1>
-      <p className="text-[rgba(255,255,255,0.6)] text-center mb-8 max-w-[280px]">
+      <p className="text-[rgba(255,255,255,0.6)] text-center mb-10 max-w-[280px]">
         {error?.message || "An unexpected error occurred while loading this page."}
       </p>
       <div className="flex gap-4">

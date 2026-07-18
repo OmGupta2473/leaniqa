@@ -446,7 +446,7 @@ export function OnboardingPage() {
       </div>
 
       {Object.keys(errors).length > 0 && (
-        <div className="mb-[20px] p-[12px] rounded-xl bg-[rgba(255,59,48,0.05)] border-[0.5px] border-[rgba(255,59,48,0.6)] text-[#FF3B30] text-[13px] text-center font-normal">
+        <div className="mb-[20px] p-[12px] rounded-[20px] bg-[rgba(255,59,48,0.05)] border-[0.5px] border-[rgba(255,59,48,0.6)] text-[#FF3B30] text-[13px] text-center font-normal">
           Please fill in all fields to get your plan
         </div>
       )}
@@ -455,8 +455,8 @@ export function OnboardingPage() {
         <div className="flex flex-col gap-[20px] mb-[28px]">
           {/* Gender */}
           <div className="flex flex-col gap-[8px]">
-            <span className="text-[12px] text-[rgba(255,255,255,0.5)] font-medium mb-[6px] block">Gender</span>
-            <div className="bg-[rgba(255,255,255,0.06)] rounded-xl p-1 flex relative">
+            <span className="text-[13px] text-[rgba(235,235,245,0.5)] font-medium mb-[6px] block">Gender</span>
+            <div className="bg-[rgba(255,255,255,0.06)] rounded-[20px] p-1 flex relative">
               {['Male', 'Female'].map(g => {
                 const isActive = gender === g;
                 return (
@@ -485,7 +485,7 @@ export function OnboardingPage() {
 
           {/* Name */}
           <div className="flex flex-col gap-[8px]">
-            <span className="text-[12px] text-[rgba(255,255,255,0.5)] font-medium mb-[6px] block">Your name</span>
+            <span className="text-[13px] text-[rgba(235,235,245,0.5)] font-medium mb-[6px] block">Your name</span>
             <input 
               className={inputClass(!!errors.name)} 
               type="text" 
@@ -498,7 +498,7 @@ export function OnboardingPage() {
 
           {/* Age */}
           <div className="flex flex-col gap-[8px]">
-            <span className="text-[12px] text-[rgba(255,255,255,0.5)] font-medium mb-[6px] block">Age</span>
+            <span className="text-[13px] text-[rgba(235,235,245,0.5)] font-medium mb-[6px] block">Age</span>
             <input 
               className={inputClass(!!errors.age)} 
               type="number" 
@@ -512,8 +512,8 @@ export function OnboardingPage() {
           {/* Height */}
           <div className="flex flex-col gap-[8px]">
             <div className="flex justify-between items-center mb-[6px]">
-              <span className="text-[12px] text-[rgba(255,255,255,0.5)] font-medium block">Height</span>
-              <div className="bg-[rgba(255,255,255,0.06)] rounded-xl p-1 flex">
+              <span className="text-[13px] text-[rgba(235,235,245,0.5)] font-medium block">Height</span>
+              <div className="bg-[rgba(255,255,255,0.06)] rounded-[20px] p-1 flex">
                 <button 
                   onClick={() => toggleHeightUnit('cm')} 
                   className={cn("px-[12px] py-[4px] rounded-lg text-[12px] transition-all", heightUnit === 'cm' ? "bg-[rgba(255,255,255,0.12)] text-white font-medium" : "text-[rgba(255,255,255,0.45)]")}
@@ -561,7 +561,7 @@ export function OnboardingPage() {
 
           {/* Weight */}
           <div className="flex flex-col gap-[8px]">
-            <span className="text-[12px] text-[rgba(255,255,255,0.5)] font-medium mb-[6px] block">Weight (kg)</span>
+            <span className="text-[13px] text-[rgba(235,235,245,0.5)] font-medium mb-[6px] block">Weight (kg)</span>
             <input 
               className={inputClass(!!errors.weight)} 
               type="number" 
@@ -574,8 +574,8 @@ export function OnboardingPage() {
 
           {/* Activity level */}
           <div className="flex flex-col gap-[8px] mt-[8px]">
-            <span className="text-[12px] text-[rgba(255,255,255,0.5)] font-medium mb-[6px] block">Activity level</span>
-            <div className="bg-[rgba(255,255,255,0.06)] rounded-xl p-1 flex flex-col gap-[4px] relative">
+            <span className="text-[13px] text-[rgba(235,235,245,0.5)] font-medium mb-[6px] block">Activity level</span>
+            <div className="bg-[rgba(255,255,255,0.06)] rounded-[20px] p-1 flex flex-col gap-[4px] relative">
               {[
                 { label: 'Sedentary', desc: 'Desk job, little or no exercise' },
                 { label: 'Lightly Active', desc: 'Daily walks, occasional yoga' },
@@ -661,17 +661,17 @@ export function OnboardingPage() {
           <div className="mb-[28px]">
             <h3 className="text-[11px] uppercase tracking-wide text-[rgba(255,255,255,0.4)] mb-[12px]">Your Stats</h3>
             <div className="grid grid-cols-3 gap-[12px]">
-              <div className="bg-[rgba(255,255,255,0.05)] rounded-[16px] p-[16px] flex flex-col items-center text-center border border-[rgba(255,255,255,0.05)]">
+              <div className="bg-[rgba(255,255,255,0.03)] rounded-[20px] p-[16px] flex flex-col items-center text-center border border-[rgba(255,255,255,0.05)]">
                 <span className="text-[24px] font-bold text-white mb-[4px]">{weight || '—'}</span>
                 <span className="text-[11px] font-semibold text-[rgba(255,255,255,0.4)] uppercase">Current<br/>Weight</span>
               </div>
               
-              <div className="bg-[rgba(212,255,0,0.1)] border-[0.5px] border-[rgba(212,255,0,0.3)] rounded-[16px] p-[16px] flex flex-col items-center text-center">
+              <div className="bg-[rgba(212,255,0,0.1)] border-[0.5px] border-[rgba(212,255,0,0.3)] rounded-[20px] p-[16px] flex flex-col items-center text-center">
                 <span className="text-[24px] font-bold text-[#D4FF00] mb-[4px]"><AnimatedNumber value={results.tdee} /></span>
                 <span className="text-[11px] font-semibold text-[rgba(212,255,0,0.6)] uppercase">Maint.<br/>Calories</span>
               </div>
 
-              <div className="bg-[rgba(255,255,255,0.05)] rounded-[16px] p-[16px] flex flex-col items-center text-center border border-[rgba(255,255,255,0.05)]">
+              <div className="bg-[rgba(255,255,255,0.03)] rounded-[20px] p-[16px] flex flex-col items-center text-center border border-[rgba(255,255,255,0.05)]">
                 <span className="text-[24px] font-bold text-white mb-[4px]">
                   {heightUnit === 'cm' ? height : `${heightFt}'${heightIn}"`}
                 </span>

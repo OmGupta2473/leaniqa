@@ -79,7 +79,7 @@ export function AwardsPage() {
         initial={{ opacity: 0, y: -10 }} 
         animate={{ opacity: 1, y: 0 }} 
         transition={SMOOTH_TRANSITION}
-        className="flex items-center justify-between mb-8 sticky top-[env(safe-area-inset-top)] z-30"
+        className="flex items-center justify-between mb-10 sticky top-[env(safe-area-inset-top)] z-30"
       >
         <button 
           onClick={() => navigate("/dashboard")} 
@@ -98,7 +98,7 @@ export function AwardsPage() {
         initial={{ opacity: 0, y: 20, scale: 0.95 }} 
         animate={{ opacity: 1, y: 0, scale: 1 }} 
         transition={{ type: 'spring', stiffness: 300, damping: 25, delay: 0.05 }}
-        className="relative rounded-[32px] p-8 flex flex-col items-center justify-center mb-10 text-center overflow-hidden border border-[rgba(255,255,255,0.08)]"
+        className="relative rounded-[32px] p-8 flex flex-col items-center justify-center mb-10 text-center overflow-hidden border border-[rgba(255,255,255,0.05)]"
         style={{
           background: 'linear-gradient(180deg, rgba(20,20,22,1) 0%, rgba(10,10,12,1) 100%)',
           boxShadow: '0 20px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)'
@@ -153,13 +153,13 @@ export function AwardsPage() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.3, type: 'spring' }}
-          className="text-[64px] font-bold text-white tracking-tighter leading-none mb-1 drop-shadow-md"
+          className="text-[64px] font-bold text-white tracking-tighter leading-none mb-1 drop-shadow-[0_8px_32px_rgba(0,0,0,0.15)]"
         >
           {currentStreak}
         </motion.div>
         <div className="text-[15px] text-[rgba(255,255,255,0.5)] font-medium tracking-wide uppercase">Day Streak</div>
         
-        <div className="mt-8 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] rounded-2xl px-5 py-3 flex items-center gap-3">
+        <div className="mt-8 bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.06)] rounded-[24px] px-5 py-3 flex items-center gap-3">
           <Trophy size={16} className="text-[#D4FF00] opacity-80" />
           <div className="text-[13px] text-[rgba(255,255,255,0.6)]">
             Personal best: <span className="text-white font-bold ml-1">{bestStreak} days</span>
@@ -187,7 +187,7 @@ export function AwardsPage() {
               "relative rounded-[24px] p-5 flex flex-col items-center text-center cursor-pointer transition-all duration-300",
               "hover:scale-[1.03] active:scale-[0.97]",
               award.earned 
-                ? "bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.1)] shadow-lg" 
+                ? "bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] shadow-lg" 
                 : "bg-[rgba(255,255,255,0.01)] border border-[rgba(255,255,255,0.03)] opacity-60 grayscale-[80%]"
             )}
             style={award.earned ? {
@@ -204,7 +204,7 @@ export function AwardsPage() {
             )}
             
             <div 
-              className="w-16 h-16 rounded-[18px] flex items-center justify-center text-[32px] mb-4 relative z-10 transition-transform duration-500"
+              className="w-16 h-16 rounded-[18px] flex items-center justify-center text-[34px] mb-4 relative z-10 transition-transform duration-500"
               style={{ 
                 background: award.earned 
                   ? `linear-gradient(135deg, ${award.primaryColor}20, ${award.primaryColor}05)` 
@@ -217,7 +217,7 @@ export function AwardsPage() {
             </div>
             
             <div className="text-[14px] font-bold text-white leading-tight mb-1 tracking-tight relative z-10">{award.name}</div>
-            <div className="text-[11px] uppercase tracking-widest text-[rgba(255,255,255,0.5)] font-medium mb-3 relative z-10">{award.streakRequired} Days</div>
+            <div className="text-[12px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.5)] font-medium mb-3 relative z-10">{award.streakRequired} Days</div>
             
             {award.earned && (
               <div 
@@ -297,7 +297,7 @@ export function AwardsPage() {
                 initial={{ scale: 0.8, rotate: -10 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.1 }}
-                className="w-32 h-32 rounded-[32px] flex items-center justify-center text-[64px] mb-8 relative z-10"
+                className="w-32 h-32 rounded-[32px] flex items-center justify-center text-[64px] mb-10 relative z-10"
                 style={{ 
                   background: `linear-gradient(135deg, ${selectedAward.primaryColor}25, ${selectedAward.primaryColor}05)`,
                   border: `1px solid ${selectedAward.primaryColor}40`,
@@ -320,7 +320,7 @@ export function AwardsPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="w-full bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-[20px] py-4 flex flex-col items-center shadow-inner relative z-10"
+                  className="w-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[20px] py-4 flex flex-col items-center shadow-inner relative z-10"
                 >
                   <div className="text-[11px] uppercase tracking-[0.2em] font-bold text-[rgba(255,255,255,0.5)] mb-1">Status</div>
                   <div 
@@ -331,10 +331,10 @@ export function AwardsPage() {
                   </div>
                 </motion.div>
               ) : (
-                <div className="w-full bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] rounded-[24px] p-5 relative z-10">
+                <div className="w-full bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-[24px] p-5 relative z-10">
                   <div className="flex justify-between items-end mb-3">
                     <div className="text-[12px] font-semibold uppercase tracking-wider text-[rgba(255,255,255,0.5)]">Progress</div>
-                    <div className="text-[15px] font-bold text-white">
+                    <div className="text-[18px] font-semibold tracking-tight text-white">
                       {currentStreak} <span className="text-[13px] font-medium text-[rgba(255,255,255,0.4)]">/ {selectedAward.streakRequired}</span>
                     </div>
                   </div>

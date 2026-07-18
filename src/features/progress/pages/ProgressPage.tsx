@@ -178,7 +178,7 @@ export function ProgressPage() {
       <div className="card-base p-4 mb-6">
         <div className="text-[13px] font-semibold text-white mb-3">Morning Weight</div>
         {errorMsg && (
-          <div className="p-3 bg-[rgba(255,45,85,0.1)] text-[#FF2D55] text-[12px] rounded-xl border border-[rgba(255,45,85,0.2)] mb-3">
+          <div className="p-3 bg-[rgba(255,45,85,0.1)] text-[#FF2D55] text-[12px] rounded-[20px] border border-[rgba(255,45,85,0.2)] mb-3">
             {errorMsg}
           </div>
         )}
@@ -248,7 +248,7 @@ export function ProgressPage() {
         <div className="flex justify-between items-center mb-4">
           <div className="text-[13px] font-semibold text-white">Weight Trend</div>
           {actualPace !== 0 && (
-            <div className="flex items-center gap-1 bg-[rgba(255,255,255,0.05)] px-2.5 py-1 rounded-full">
+            <div className="flex items-center gap-1 bg-[rgba(255,255,255,0.03)] px-2.5 py-1 rounded-full">
               {actualPace > 0 ? <TrendingDown size={12} className="text-[#D4FF00]" /> : <TrendingUp size={12} className="text-[#FF4D1C]" />}
               <div className="text-[11px] font-semibold" style={{ color: actualPace > 0 ? '#D4FF00' : '#FF4D1C' }}>
                 {Math.abs(actualPace).toFixed(2)} kg/wk
@@ -301,7 +301,7 @@ export function ProgressPage() {
       </div>
 
       {projections.length > 0 && (
-        <div className="card-base p-5 mb-8">
+        <div className="card-base p-5 mb-10">
           <div className="text-[13px] font-semibold text-white mb-6">Milestone Roadmap</div>
           <div className="flex flex-col relative pb-2">
             <div className="absolute left-[18px] top-[8px] bottom-[24px] w-[1px] bg-[rgba(255,255,255,0.1)]"></div>
@@ -313,7 +313,7 @@ export function ProgressPage() {
                   
                   <div className="flex flex-col">
                     <span className="text-[14px] font-medium text-white tracking-tight">{p.bfTarget}% BF</span>
-                    <span className="text-[12px] text-[rgba(255,255,255,0.4)] mt-0.5">~{p.estWeight.toFixed(1)} kg</span>
+                    <span className="text-[13px] text-[rgba(235,235,245,0.5)] mt-0.5">~{p.estWeight.toFixed(1)} kg</span>
                   </div>
                   <div className="flex flex-col items-end">
                     {isCompleted ? (

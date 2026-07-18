@@ -1,88 +1,32 @@
 import re
 
-with open("src/features/reports/pages/WeeklyReportPage.tsx", "r") as f:
-    text = f.read()
+with open('src/features/reports/pages/WeeklyReportPage.tsx', 'r') as f:
+    content = f.read()
 
-# Replace the specific closing divs for the items
-text = text.replace("""              <div style={{ display: 'flex', gap: '20px', marginTop: '8px' }}>
-                {['Protein', 'Fat', 'Carbs'].map(l => (
-                  <div key={l} style={{ width: 64, textAlign: 'center', fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.5)' }}>{l}</div>
-                ))}
-              </div>
-            </div>""", """              <div style={{ display: 'flex', gap: '20px', marginTop: '8px' }}>
-                {['Protein', 'Fat', 'Carbs'].map(l => (
-                  <div key={l} style={{ width: 64, textAlign: 'center', fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.5)' }}>{l}</div>
-                ))}
-              </div>
-            </motion.div>""")
+# Make Hero Score bigger (it is currently text-[36px] font-bold ... avgCompliance%)
+content = re.sub(r'text-\[40px\] font-bold text-\[\#D4FF00\] tracking-tighter leading-none mb-1', 'text-[56px] font-bold text-white tracking-[-0.04em] leading-none mb-2', content)
 
-text = text.replace("""              <HourlyBarChart hourlyValues={todayActivity.hourlyCalories || Array(24).fill(0)} color={NEON_PINK} height={70} />
-            </div>""", """              <HourlyBarChart hourlyValues={todayActivity.hourlyCalories || Array(24).fill(0)} color={NEON_PINK} height={70} />
-            </motion.div>""")
+# Change "Avg Compliance" label in hero
+content = re.sub(r'text-\[11px\] uppercase tracking-\[0\.05em\] font-medium text-\[rgba\(255,255,255,0\.5\)\] mb-2', 'text-[13px] font-semibold tracking-widest text-[rgba(235,235,245,0.6)] uppercase mb-3', content)
 
-text = text.replace("""              <div style={{ fontSize: 'var(--font-sm)', color: 'rgba(235,235,245,0.7)', lineHeight: 1.5 }}>
-                {currentStreak > 0 ? `You're on a ${currentStreak}-day daily streak. ` : 'Log today to start a new streak. '}
-              </div>
-            </div>""", """              <div style={{ fontSize: 'var(--font-sm)', color: 'rgba(235,235,245,0.7)', lineHeight: 1.5 }}>
-                {currentStreak > 0 ? `You're on a ${currentStreak}-day daily streak. ` : 'Log today to start a new streak. '}
-              </div>
-            </motion.div>""")
+# "Avg Calories" / "Avg Protein" values
+content = re.sub(r'text-\[20px\] font-bold text-white tracking-tight', 'text-[24px] font-bold text-white tracking-tight', content)
 
-text = text.replace("""                  <div key={a.id} style={{ aspectRatio: '1', borderRadius: '10px', border: `1.5px solid ${a.primaryColor}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', background: `${a.primaryColor}1A` }}>
-                    {a.symbol}
-                  </div>
-                ))}
-              </div>
-            </div>""", """                  <div key={a.id} style={{ aspectRatio: '1', borderRadius: '10px', border: `1.5px solid ${a.primaryColor}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', background: `${a.primaryColor}1A` }}>
-                    {a.symbol}
-                  </div>
-                ))}
-              </div>
-            </motion.div>""")
+# Section Titles
+content = re.sub(r'text-\[12px\] font-bold text-white tracking-widest uppercase', 'text-[15px] font-semibold text-white tracking-widest uppercase', content)
+content = re.sub(r'text-\[15px\] font-semibold text-white tracking-tight', 'text-[20px] font-semibold text-white tracking-tight', content)
 
-text = text.replace("""                    <div style={{ fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.5)' }}>
-                      {new Date(day.date).toLocaleDateString('en-US', { weekday: 'narrow' })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>""", """                    <div style={{ fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.5)' }}>
-                      {new Date(day.date).toLocaleDateString('en-US', { weekday: 'narrow' })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>""")
+# Coach Summary Body (aiCoachData.summaryShort and summaryLong)
+# Wrap them in a better text class
+content = content.replace('text-[14px] text-[rgba(255,255,255,0.8)] leading-relaxed', 'text-[16px] text-white leading-[1.6] font-medium tracking-tight')
+content = content.replace('text-[14px] text-[rgba(255,255,255,0.7)] leading-relaxed', 'text-[15px] text-[rgba(235,235,245,0.8)] leading-[1.6]')
 
-text = text.replace("""                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 'var(--font-sm)', fontWeight: 600 }}>{new Date(day.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</div>
-                  <div style={{ fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.5)' }}>{day.caloriesConsumed} kcal · {day.proteinConsumed}g protein</div>
-                </div>
-                <div style={{ fontSize: 'var(--font-sm)', fontWeight: 700, color: day.complianceScore >= 70 ? ELECTRIC_LIME : 'rgba(235,235,245,0.5)' }}>{day.complianceScore}</div>
-              </div>""", """                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 'var(--font-sm)', fontWeight: 600 }}>{new Date(day.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</div>
-                  <div style={{ fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.5)' }}>{day.caloriesConsumed} kcal · {day.proteinConsumed}g protein</div>
-                </div>
-                <div style={{ fontSize: 'var(--font-sm)', fontWeight: 700, color: day.complianceScore >= 70 ? ELECTRIC_LIME : 'rgba(235,235,245,0.5)' }}>{day.complianceScore}</div>
-              </motion.div>""")
+# Recommendation titles
+content = re.sub(r'text-\[15px\] font-semibold text-white tracking-tight', 'text-[18px] font-semibold text-white tracking-tight', content)
 
-text = text.replace("""                </div>
-              ))}
-            </div>
-          </div>""", """                </div>
-              ))}
-            </div>
-          </motion.div>""")
+# Make badges in recommendations better
+content = re.sub(r'text-\[11px\] font-semibold tracking-wide', 'text-[12px] font-semibold tracking-wide', content)
 
-text = text.replace("<>            <motion.div", "<>            <motion.div") # Fix fragment error by removing it, but wait, it's wrapped in motion.div already
-# Let's remove the <> and </> for detail view since we wrapped it in motion.div
-text = text.replace("""          >          <>            <motion.div""", """          >            <motion.div""")
-text = text.replace("""              </motion.div>            ))}          </>        )}""", """              </motion.div>            ))}          </motion.div>        )}""")
+with open('src/features/reports/pages/WeeklyReportPage.tsx', 'w') as f:
+    f.write(content)
 
-# Same for dashboard view:
-# wait, dashboard has <> and </>?
-text = text.replace("""          >          <>            {/* Ring summary card */}""", """          >            {/* Ring summary card */}""")
-text = text.replace("""            </motion.div>          </>        )}""", """            </motion.div>          </motion.div>        )}""")
-
-with open("src/features/reports/pages/WeeklyReportPage.tsx", "w") as f:
-    f.write(text)

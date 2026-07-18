@@ -115,8 +115,8 @@ export function ProteinDetailPage() {
   return (
     <div className="page-enter pt-[calc(env(safe-area-inset-top)+20px)] pb-[calc(100px+env(safe-area-inset-bottom))] min-h-[100dvh] bg-[#0A0A0A] px-5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <button onClick={() => navigate("/dashboard")} className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.05)] flex items-center justify-center transition-colors hover:bg-[rgba(255,255,255,0.1)]">
+      <div className="flex items-center justify-between mb-10">
+        <button onClick={() => navigate("/dashboard")} className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.03)] flex items-center justify-center transition-colors hover:bg-[rgba(255,255,255,0.1)]">
           <ChevronLeft size={20} className="text-white" />
         </button>
         <h1 className="text-[17px] font-semibold text-white tracking-tight">Protein</h1>
@@ -124,7 +124,7 @@ export function ProteinDetailPage() {
       </div>
 
       {/* Hero Number Section */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center justify-center text-center mb-8 mt-4">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center justify-center text-center mb-10 mt-4">
         <div className="flex items-baseline gap-1.5 mb-2">
           <span className="text-[52px] font-bold text-white tracking-tighter leading-none"><AnimatedNumber value={proteinConsumed} /></span>
         </div>
@@ -140,8 +140,8 @@ export function ProteinDetailPage() {
       </motion.div>
 
       {/* 7-Day History Chart */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card-base p-4 mb-8">
-        <div className="text-[14px] font-semibold text-white mb-6">Daily protein history</div>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card-base p-4 mb-10">
+        <div className="text-[16px] font-medium text-white mb-6">Daily protein history</div>
         <DailyHistoryChart logs={chartData} todayStr={todayStr} unit="g" type="protein" />
       </motion.div>
 
@@ -164,13 +164,13 @@ export function ProteinDetailPage() {
               return (
                 <div key={slot.id} className="card-base mb-3 overflow-hidden">
                   <div className="flex items-center justify-between p-4 bg-[rgba(255,255,255,0.02)] border-b border-[rgba(255,255,255,0.06)]">
-                    <span className="text-[14px] font-semibold text-white">{slot.label}</span>
+                    <span className="text-[16px] font-medium text-white">{slot.label}</span>
                     <span className="text-[14px] font-bold text-white">{slotPro} g</span>
                   </div>
                   <div className="px-4">
                     {slot.items.map((item, i) => (
                       <div key={item.id || i} className={cn("flex items-center justify-between py-3", i < slot.items.length - 1 && "border-b border-[rgba(255,255,255,0.06)]")}>
-                        <span className="text-[14px] text-[rgba(255,255,255,0.8)] capitalize pr-4">{item.meal_text}</span>
+                        <span className="text-[15px] text-white leading-relaxed capitalize pr-4">{item.meal_text}</span>
                         <span className="text-[14px] font-medium text-[#378ADD] shrink-0">{item.protein} g</span>
                       </div>
                     ))}

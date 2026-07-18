@@ -183,7 +183,7 @@ function AICoachScreen() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="self-end bg-white/10 rounded-2xl rounded-tr-sm px-[5%] py-[4%] max-w-[85%]"
+          className="self-end bg-white/10 rounded-[24px] rounded-tr-sm px-[5%] py-[4%] max-w-[85%]"
         >
            <p className="text-white" style={{ fontSize: "clamp(9px, 3.5%, 14px)" }}>2 roti + 1 bowl dal + 100g paneer</p>
         </motion.div>
@@ -192,7 +192,7 @@ function AICoachScreen() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8 }}
-          className="self-start bg-[#1C1C1E] border border-white/10 rounded-2xl rounded-tl-sm px-[5%] py-[5%] max-w-[90%]"
+          className="self-start bg-[#1C1C1E] border border-white/10 rounded-[24px] rounded-tl-sm px-[5%] py-[5%] max-w-[90%]"
         >
            <div className="flex items-center gap-[3%] mb-[6%]">
              <div className="w-[12%] aspect-square rounded-full bg-[#378ADD]/20 flex items-center justify-center">
@@ -289,7 +289,7 @@ function DashboardScreen() {
       </div>
       
       <div className="flex-1 px-[6%] pt-[2%]">
-         <div className="bg-white/5 border border-white/5 rounded-xl p-[6%]">
+         <div className="bg-white/5 border border-white/5 rounded-[20px] p-[6%]">
             <div className="font-semibold text-white/50 uppercase tracking-wider mb-3" style={{ fontSize: "clamp(7px, 2.8%, 11px)" }}>Adjusted Target</div>
             <div className="text-[#D4FF00] font-semibold mb-1" style={{ fontSize: "clamp(10px, 4%, 16px)" }}>Dinner: 450 kcal</div>
             <div className="text-white/70" style={{ fontSize: "clamp(8px, 3.2%, 13px)" }}>Must include 45g Protein</div>
@@ -309,7 +309,7 @@ function TimelineScreen() {
          </p>
        </div>
        
-       <div className="bg-[#1C1C1E] border border-white/5 rounded-2xl p-[6%] mb-[6%] shadow-lg">
+       <div className="bg-[#1C1C1E] border border-white/5 rounded-[24px] p-[6%] mb-[6%] shadow-lg">
           <div className="text-white/50 uppercase tracking-wider mb-[2%]" style={{ fontSize: "clamp(7px, 2.8%, 11px)" }}>Projected Weight</div>
           <div className="flex items-end gap-[4%]">
             <span className="text-white font-bold tracking-tight" style={{ fontSize: "clamp(28px, 12%, 48px)" }}>72.5<span className="text-white/40 font-normal ml-1" style={{ fontSize: "0.5em" }}>kg</span></span>
@@ -321,7 +321,7 @@ function TimelineScreen() {
           <div className="text-white/40 mt-[4%]" style={{ fontSize: "clamp(7px, 2.8%, 11px)" }}>In 12 Weeks (Based on 85% compliance)</div>
        </div>
        
-       <div className="flex-1 bg-white/[0.02] border border-white/5 rounded-2xl relative overflow-hidden flex flex-col justify-end p-[5%] mt-[2%]">
+       <div className="flex-1 bg-white/[0.02] border border-white/5 rounded-[24px] relative overflow-hidden flex flex-col justify-end p-[5%] mt-[2%]">
           {/* Grid lines */}
           <div className="absolute inset-0 flex flex-col justify-between py-[10%] opacity-20">
             {[1,2,3,4].map(i => <div key={i} className="w-full h-[1px] bg-white/20" />)}
@@ -501,7 +501,7 @@ function MobileStory() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-50px" }}
             transition={{ duration: 0.5 }}
-            className="mb-8"
+            className="mb-10"
           >
             <h3 className="text-3xl sm:text-4xl font-semibold leading-[1.1] text-zinc-50 tracking-tight">
               {step.title}
@@ -687,7 +687,7 @@ export function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-base sm:text-lg lg:text-xl text-zinc-400 mb-8 sm:mb-10 leading-relaxed max-w-lg"
+              className="text-base sm:text-lg lg:text-xl text-zinc-400 mb-10 sm:mb-10 leading-relaxed max-w-lg"
             >
               Eat smarter. Stay consistent. Transform with confidence. The only system that uses AI to adapt to your life, not the other way around.
             </motion.p>
