@@ -4,7 +4,7 @@ import {
   LayoutDashboard,
   TrendingUp,
   Target,
-  User,
+  FileBarChart,
   Plus
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
@@ -17,7 +17,7 @@ const navItems = [
   { id: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { id: "/meals", icon: Plus, label: "Log" },
   { id: "/progress", icon: TrendingUp, label: "Progress" },
-  { id: "/profile", icon: User, label: "Profile" },
+  { id: "/activity", icon: FileBarChart, label: "Activity" },
 ];
 
 export function BottomNav() {
