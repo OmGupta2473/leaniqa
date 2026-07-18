@@ -94,10 +94,10 @@ export function AuthPage() {
         >
           {/* Logo / Brand Section */}
           <div 
-            className="flex flex-col items-center justify-center mb-8 text-center cursor-pointer transition-opacity hover:opacity-80"
+            className="flex flex-col items-center justify-center mb-10 text-center cursor-pointer transition-opacity hover:opacity-80"
             onClick={() => window.location.href = '/'}
           >
-            <Logo className="w-16 h-16 mb-4 drop-shadow-md" />
+            <Logo className="w-16 h-16 mb-4 drop-shadow-[0_8px_32px_rgba(0,0,0,0.15)]" />
             <h1 className="text-[28px] font-semibold tracking-tight">LeanIQA</h1>
           </div>
 
@@ -127,7 +127,7 @@ export function AuthPage() {
             <motion.div 
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
-              className="mt-5 border border-[rgba(212,255,0,0.25)] bg-[rgba(212,255,0,0.1)] text-[#D4FF00] p-3 rounded-xl text-[14px] text-center font-medium"
+              className="mt-5 border border-[rgba(212,255,0,0.25)] bg-[rgba(212,255,0,0.1)] text-[#D4FF00] p-3 rounded-[20px] text-[14px] text-center font-medium"
             >
               Having trouble with Google? Try email sign-in below.
             </motion.div>
@@ -194,7 +194,7 @@ export function AuthPage() {
             <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`text-center text-sm font-medium mt-6 p-3 rounded-xl fade-in ${message.includes('could not') || message.includes('No internet') || message.includes('Too many') || message.includes('failed') ? 'bg-[rgba(255,77,28,0.1)] text-[#FF4D1C] border border-[rgba(255,77,28,0.25)]' : 'bg-[rgba(212,255,0,0.1)] text-[#D4FF00] border border-[rgba(212,255,0,0.25)]'}`}
+                className={`text-center text-sm font-medium mt-6 p-3 rounded-[20px] fade-in ${message.includes('could not') || message.includes('No internet') || message.includes('Too many') || message.includes('failed') ? 'bg-[rgba(255,77,28,0.1)] text-[#FF4D1C] border border-[rgba(255,77,28,0.25)]' : 'bg-[rgba(212,255,0,0.1)] text-[#D4FF00] border border-[rgba(212,255,0,0.25)]'}`}
             >
                 {message}
             </motion.div>

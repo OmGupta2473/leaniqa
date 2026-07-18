@@ -90,8 +90,8 @@ export function ProfilePage() {
   return (
     <div className="page-enter pt-[calc(env(safe-area-inset-top)+20px)] pb-[calc(100px+env(safe-area-inset-bottom))] min-h-[100dvh] bg-[#0A0A0A] px-5">
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <button onClick={() => navigate('/dashboard')} className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.05)] flex items-center justify-center transition-colors hover:bg-[rgba(255,255,255,0.1)]">
+      <div className="flex justify-between items-center mb-10">
+        <button onClick={() => navigate('/dashboard')} className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.03)] flex items-center justify-center transition-colors hover:bg-[rgba(255,255,255,0.1)]">
           <ChevronLeft size={20} className="text-white" />
         </button>
         <div className="text-[17px] font-semibold text-white tracking-tight">Profile</div>
@@ -105,13 +105,13 @@ export function ProfilePage() {
         </div>
         <div className="text-[24px] font-bold text-white tracking-tight mb-2">{name || 'User'}</div>
         <div className="flex gap-2">
-          <div className="bg-[rgba(255,255,255,0.06)] border-[0.5px] border-[rgba(255,255,255,0.1)] px-3 py-1 rounded-full text-[12px] font-medium text-[rgba(255,255,255,0.6)]">
+          <div className="bg-[rgba(255,255,255,0.06)] border-[0.5px] border-[rgba(255,255,255,0.06)] px-3 py-1 rounded-full text-[12px] font-medium text-[rgba(255,255,255,0.6)]">
             {gender ? gender.charAt(0).toUpperCase() + gender.slice(1) : '—'}
           </div>
-          <div className="bg-[rgba(255,255,255,0.06)] border-[0.5px] border-[rgba(255,255,255,0.1)] px-3 py-1 rounded-full text-[12px] font-medium text-[rgba(255,255,255,0.6)]">
+          <div className="bg-[rgba(255,255,255,0.06)] border-[0.5px] border-[rgba(255,255,255,0.06)] px-3 py-1 rounded-full text-[12px] font-medium text-[rgba(255,255,255,0.6)]">
             {displayVal(age)} yrs
           </div>
-          <div className="bg-[rgba(255,255,255,0.06)] border-[0.5px] border-[rgba(255,255,255,0.1)] px-3 py-1 rounded-full text-[12px] font-medium text-[rgba(255,255,255,0.6)]">
+          <div className="bg-[rgba(255,255,255,0.06)] border-[0.5px] border-[rgba(255,255,255,0.06)] px-3 py-1 rounded-full text-[12px] font-medium text-[rgba(255,255,255,0.6)]">
             {displayVal(activityLevel)}
           </div>
         </div>
@@ -125,8 +125,8 @@ export function ProfilePage() {
               <span className="text-[#D4FF00] font-extrabold text-[16px]">1</span>
             </div>
             <div>
-              <div className="text-[16px] font-semibold text-white tracking-tight leading-tight">Personal Info</div>
-              <div className="text-[12px] text-[rgba(255,255,255,0.4)]">Body stats & activity</div>
+              <div className="text-[22px] font-semibold tracking-tight text-white tracking-tight leading-tight">Personal Info</div>
+              <div className="text-[13px] text-[rgba(235,235,245,0.5)]">Body stats & activity</div>
             </div>
           </div>
           <button 
@@ -140,15 +140,15 @@ export function ProfilePage() {
 
         <div className="card-base p-0 overflow-hidden">
           <div className="flex justify-between items-center py-3.5 px-4 border-b border-[rgba(255,255,255,0.06)]">
-            <span className="text-[14px] text-[rgba(255,255,255,0.5)]">Weight</span>
+            <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Weight</span>
             <span className="text-[14px] font-medium text-white">{displayVal(weightKg)} kg</span>
           </div>
           <div className="flex justify-between items-center py-3.5 px-4 border-b border-[rgba(255,255,255,0.06)]">
-            <span className="text-[14px] text-[rgba(255,255,255,0.5)]">Height</span>
+            <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Height</span>
             <span className="text-[14px] font-medium text-white">{heightStr} cm <span className="text-[12px] text-[rgba(255,255,255,0.3)] ml-1">({heightSub})</span></span>
           </div>
           <div className="flex justify-between items-center py-3.5 px-4 border-b border-[rgba(255,255,255,0.06)]">
-            <span className="text-[14px] text-[rgba(255,255,255,0.5)]">Current BF</span>
+            <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Current BF</span>
             <span className="text-[14px] font-medium text-white">{displayVal(currentBodyFatPct)}%</span>
           </div>
           <div className="flex justify-between items-center py-3.5 px-4 bg-[rgba(212,255,0,0.02)]">
@@ -166,8 +166,8 @@ export function ProfilePage() {
               <span className="text-[#378ADD] font-extrabold text-[16px]">2</span>
             </div>
             <div>
-              <div className="text-[16px] font-semibold text-white tracking-tight leading-tight">Body Goal</div>
-              <div className="text-[12px] text-[rgba(255,255,255,0.4)]">Target physique & strategy</div>
+              <div className="text-[22px] font-semibold tracking-tight text-white tracking-tight leading-tight">Body Goal</div>
+              <div className="text-[13px] text-[rgba(235,235,245,0.5)]">Target physique & strategy</div>
             </div>
           </div>
           <button 
@@ -181,27 +181,27 @@ export function ProfilePage() {
 
         <div className="card-base p-0 overflow-hidden mb-4">
           <div className="flex justify-between items-center py-3.5 px-4 border-b border-[rgba(255,255,255,0.06)]">
-            <span className="text-[14px] text-[rgba(255,255,255,0.5)]">Fat to lose</span>
+            <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Fat to lose</span>
             <span className="text-[14px] font-medium text-white">{displayVal(fatToLoseKg)} kg</span>
           </div>
           <div className="flex justify-between items-center py-3.5 px-4 border-b border-[rgba(255,255,255,0.06)]">
-            <span className="text-[14px] text-[rgba(255,255,255,0.5)]">Target weight</span>
+            <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Target weight</span>
             <span className="text-[14px] font-medium text-white">{displayVal(targetWeightKg)} kg</span>
           </div>
           <div className="flex justify-between items-center py-3.5 px-4 border-b border-[rgba(255,255,255,0.06)]">
-            <span className="text-[14px] text-[rgba(255,255,255,0.5)]">Strategy</span>
+            <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Strategy</span>
             <span className="text-[14px] font-medium text-[#D4FF00]">{displayVal(chosenStrategyName)}</span>
           </div>
           <div className="flex justify-between items-center py-3.5 px-4 border-b border-[rgba(255,255,255,0.06)]">
-            <span className="text-[14px] text-[rgba(255,255,255,0.5)]">Daily deficit</span>
+            <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Daily deficit</span>
             <span className="text-[14px] font-medium text-white">{displayVal(dailyDeficit)} kcal</span>
           </div>
           <div className="flex justify-between items-center py-3.5 px-4 border-b border-[rgba(255,255,255,0.06)]">
-            <span className="text-[14px] text-[rgba(255,255,255,0.5)]">Estimated time</span>
+            <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Estimated time</span>
             <span className="text-[14px] font-medium text-white">{displayVal(estimatedWeeks)} weeks</span>
           </div>
           <div className="flex justify-between items-center py-3.5 px-4">
-            <span className="text-[14px] text-[rgba(255,255,255,0.5)]">Target date</span>
+            <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Target date</span>
             <span className="text-[14px] font-medium text-white">{dateStr}</span>
           </div>
         </div>
@@ -209,28 +209,28 @@ export function ProfilePage() {
 
       {/* Macros Section */}
       <div className="mb-12">
-        <div className="text-[16px] font-semibold text-white tracking-tight mb-3">Daily Nutrition Targets</div>
+        <div className="text-[22px] font-semibold tracking-tight text-white tracking-tight mb-3">Daily Nutrition Targets</div>
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div className="card-base p-4 flex flex-col items-center justify-center text-center">
-            <div className="text-[10px] uppercase tracking-widest text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Calories</div>
+            <div className="text-[11px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Calories</div>
             <div className="text-[20px] font-bold text-[#D4FF00]">{displayVal(dailyCalorieGoal)}<span className="text-[12px] font-medium text-[rgba(212,255,0,0.5)] ml-1">kcal</span></div>
           </div>
           <div className="card-base p-4 flex flex-col items-center justify-center text-center">
-            <div className="text-[10px] uppercase tracking-widest text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Protein</div>
+            <div className="text-[11px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Protein</div>
             <div className="text-[20px] font-bold text-[#FF4D1C]">{displayVal(proteinMin)}–{displayVal(proteinMax)}<span className="text-[12px] font-medium text-[rgba(255,77,28,0.5)] ml-1">g</span></div>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-3">
           <div className="card-base p-4 flex flex-col items-center justify-center text-center">
-            <div className="text-[10px] uppercase tracking-widest text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Carbs</div>
+            <div className="text-[11px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Carbs</div>
             <div className="text-[16px] font-bold text-white">{displayVal(carbMin)}–{displayVal(carbMax)}</div>
           </div>
           <div className="card-base p-4 flex flex-col items-center justify-center text-center">
-            <div className="text-[10px] uppercase tracking-widest text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Fat</div>
+            <div className="text-[11px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Fat</div>
             <div className="text-[16px] font-bold text-white">{displayVal(fatMin)}–{displayVal(fatMax)}</div>
           </div>
           <div className="card-base p-4 flex flex-col items-center justify-center text-center">
-            <div className="text-[10px] uppercase tracking-widest text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Water</div>
+            <div className="text-[11px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Water</div>
             <div className="text-[16px] font-bold text-[#378ADD]">{displayVal(waterLitres)} L</div>
           </div>
         </div>
@@ -240,7 +240,7 @@ export function ProfilePage() {
       {/* Subscription & Plans */}
       <div className="mb-10">
         <div className="flex items-center justify-between mb-4">
-          <div className="text-[16px] font-semibold text-white tracking-tight leading-tight">Plan & Billing</div>
+          <div className="text-[22px] font-semibold tracking-tight text-white tracking-tight leading-tight">Plan & Billing</div>
         </div>
         
         {isSubLoading ? (
@@ -273,15 +273,15 @@ export function ProfilePage() {
                 haptics.tap();
                 navigate('/pricing');
               }}
-              className="flex items-center justify-between w-full p-4 rounded-2xl bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.05)] hover:border-[rgba(212,255,0,0.3)] transition-all duration-300 group relative z-10 backdrop-blur-md"
+              className="flex items-center justify-between w-full p-4 rounded-[24px] bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.03)] hover:border-[rgba(212,255,0,0.3)] transition-all duration-300 group relative z-10 backdrop-blur-md"
             >
               <div className="flex items-center gap-3.5">
                 <div className="w-10 h-10 rounded-full bg-[rgba(212,255,0,0.1)] flex items-center justify-center border border-[rgba(212,255,0,0.2)]">
                   <CreditCardIcon size={18} className="text-[#D4FF00]" />
                 </div>
                 <div className="flex flex-col text-left">
-                  <span className="text-[15px] font-semibold text-white leading-tight">Manage Subscription</span>
-                  <span className="text-[12px] text-[rgba(255,255,255,0.5)] mt-0.5">View plan, billing, restore</span>
+                  <span className="text-[18px] font-semibold tracking-tight text-white leading-tight">Manage Subscription</span>
+                  <span className="text-[13px] text-[rgba(235,235,245,0.5)] mt-0.5">View plan, billing, restore</span>
                 </div>
               </div>
               <ArrowRight size={18} className="text-[rgba(255,255,255,0.4)] group-hover:text-white group-hover:translate-x-1 transition-all" />
@@ -294,7 +294,7 @@ export function ProfilePage() {
               haptics.tap();
               navigate('/pricing');
             }}
-            className="cursor-pointer bg-gradient-to-b from-[rgba(255,255,255,0.06)] to-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.1)] hover:border-[rgba(212,255,0,0.4)] rounded-3xl p-6 flex flex-col relative overflow-hidden backdrop-blur-xl transition-all duration-300 group shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
+            className="cursor-pointer bg-gradient-to-b from-[rgba(255,255,255,0.06)] to-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.06)] hover:border-[rgba(212,255,0,0.4)] rounded-3xl p-6 flex flex-col relative overflow-hidden backdrop-blur-xl transition-all duration-300 group shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
           >
             <div className="absolute -right-4 -top-4 w-32 h-32 bg-white opacity-[0.03] group-hover:bg-[#D4FF00] group-hover:opacity-[0.05] transition-colors duration-500 blur-3xl rounded-full" />
             <div className="absolute top-4 right-4 text-[rgba(255,255,255,0.1)] group-hover:text-[rgba(212,255,0,0.2)] transition-colors duration-500">
@@ -302,7 +302,7 @@ export function ProfilePage() {
             </div>
             
             <div className="flex items-center gap-2 mb-3 relative z-10">
-              <div className="bg-[rgba(255,255,255,0.15)] text-white px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 backdrop-blur-md border border-[rgba(255,255,255,0.1)]">
+              <div className="bg-[rgba(255,255,255,0.15)] text-white px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 backdrop-blur-md border border-[rgba(255,255,255,0.06)]">
                 FREE PLAN
               </div>
             </div>
@@ -312,18 +312,18 @@ export function ProfilePage() {
             </div>
             
             <ul className="flex flex-col gap-2.5 mb-6 relative z-10">
-              <li className="flex items-start gap-2.5 text-[14px] text-[rgba(255,255,255,0.7)]">
+              <li className="flex items-start gap-2.5 text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">
                 <Sparkles size={16} className="text-[#D4FF00] shrink-0 mt-[1px]" />
                 <span>Advanced AI Weekly Reports</span>
               </li>
-              <li className="flex items-start gap-2.5 text-[14px] text-[rgba(255,255,255,0.7)]">
+              <li className="flex items-start gap-2.5 text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">
                 <Sparkles size={16} className="text-[#D4FF00] shrink-0 mt-[1px]" />
                 <span>Physique timeline projections</span>
               </li>
             </ul>
 
             <button 
-              className="flex items-center justify-center gap-2 w-full py-4 rounded-xl bg-white text-black font-semibold text-[15px] group-hover:bg-[#D4FF00] transition-colors duration-300 relative z-10 shadow-[0_4px_12px_rgba(255,255,255,0.15)] group-hover:shadow-[0_4px_16px_rgba(212,255,0,0.3)]"
+              className="flex items-center justify-center gap-2 w-full py-4 rounded-[20px] bg-white text-black font-semibold text-[15px] group-hover:bg-[#D4FF00] transition-colors duration-300 relative z-10 shadow-[0_4px_12px_rgba(255,255,255,0.15)] group-hover:shadow-[0_4px_16px_rgba(212,255,0,0.3)]"
             >
               <Crown size={18} strokeWidth={2.5} />
               View Plans
@@ -337,7 +337,7 @@ export function ProfilePage() {
         <button 
           onClick={handleLogout}
           disabled={isLoggingOut}
-          className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.7)] font-medium text-[15px] transition-colors hover:bg-[rgba(255,255,255,0.06)] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center justify-center gap-2 w-full py-3.5 rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.7)] font-medium text-[15px] transition-colors hover:bg-[rgba(255,255,255,0.06)] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoggingOut ? (
             <>
@@ -353,7 +353,7 @@ export function ProfilePage() {
         </button>
         <button 
           onClick={() => setShowResetModal(true)} 
-          className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-[rgba(255,59,48,0.1)] border border-[rgba(255,59,48,0.2)] text-[#FF3B30] font-medium text-[15px] transition-colors hover:bg-[rgba(255,59,48,0.15)]"
+          className="flex items-center justify-center gap-2 w-full py-3.5 rounded-[24px] bg-[rgba(255,59,48,0.1)] border border-[rgba(255,59,48,0.2)] text-[#FF3B30] font-medium text-[15px] transition-colors hover:bg-[rgba(255,59,48,0.15)]"
         >
           <Trash2 size={18} />
           Reset Profile
@@ -376,13 +376,13 @@ export function ProfilePage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 10 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="bg-[#1A1A1C] border border-[rgba(255,255,255,0.1)] rounded-3xl p-6 w-full max-w-[340px] relative z-10 flex flex-col items-center text-center shadow-2xl"
+              className="bg-[#1A1A1C] border border-[rgba(255,255,255,0.06)] rounded-3xl p-6 w-full max-w-[340px] relative z-10 flex flex-col items-center text-center shadow-2xl"
             >
               <div className="w-14 h-14 rounded-full bg-[rgba(255,77,28,0.1)] flex items-center justify-center mb-4">
                 <AlertTriangle size={28} color="#FF4D1C" />
               </div>
-              <h3 className="text-[18px] font-bold text-white mb-2 tracking-tight">Reset Everything?</h3>
-              <p className="text-[14px] text-[rgba(255,255,255,0.5)] mb-6 leading-relaxed">
+              <h3 className="text-[24px] font-bold tracking-tight mb-2 text-white mb-2 tracking-tight">Reset Everything?</h3>
+              <p className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed mb-6 leading-relaxed">
                 This will delete your body stats and goals. Your logged meals and progress will remain, but you will need to complete onboarding again.
               </p>
               
@@ -390,7 +390,7 @@ export function ProfilePage() {
                 <button 
                   onClick={() => resetMutation.mutate()} 
                   disabled={resetMutation.isPending}
-                  className="btn-primary-style rounded-full w-full py-3.5 bg-[#FF3B30] text-white text-[15px] font-semibold disabled:opacity-50 transition-opacity hover:opacity-90"
+                  className="btn-primary-style rounded-full w-full py-3.5 bg-[#FF3B30] text-white text-[18px] font-semibold tracking-tight disabled:opacity-50 transition-opacity hover:opacity-90"
                 >
                   {resetMutation.isPending ? 'Resetting...' : 'Yes, reset profile'}
                 </button>

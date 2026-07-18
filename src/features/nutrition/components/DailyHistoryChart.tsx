@@ -75,17 +75,17 @@ export function DailyHistoryChart({ logs, todayStr, unit, type }: DailyHistoryCh
         <button 
           onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
           disabled={currentPage === 1}
-          className={`w-[32px] h-[32px] rounded-lg border border-[rgba(255,255,255,0.1)] flex items-center justify-center ${currentPage === 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-[rgba(255,255,255,0.05)] active:scale-95 transition-all'}`}
+          className={`w-[32px] h-[32px] rounded-lg border border-[rgba(255,255,255,0.06)] flex items-center justify-center ${currentPage === 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-[rgba(255,255,255,0.03)] active:scale-95 transition-all'}`}
         >
           <ChevronLeft size={18} color="white" />
         </button>
-        <div className="text-[15px] font-semibold text-white tracking-[-0.2px]">
+        <div className="text-[18px] font-semibold tracking-tight text-white tracking-[-0.2px]">
           Days {startIndex + 1} – {startIndex + 7}
         </div>
         <button 
           onClick={() => setCurrentPage(p => Math.min(maxPage, p + 1))}
           disabled={currentPage === maxPage}
-          className={`w-[32px] h-[32px] rounded-lg border border-[rgba(255,255,255,0.1)] flex items-center justify-center ${currentPage === maxPage ? 'opacity-30 cursor-not-allowed' : 'hover:bg-[rgba(255,255,255,0.05)] active:scale-95 transition-all'}`}
+          className={`w-[32px] h-[32px] rounded-lg border border-[rgba(255,255,255,0.06)] flex items-center justify-center ${currentPage === maxPage ? 'opacity-30 cursor-not-allowed' : 'hover:bg-[rgba(255,255,255,0.03)] active:scale-95 transition-all'}`}
         >
           <ChevronRight size={18} color="white" />
         </button>

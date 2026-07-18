@@ -31,7 +31,7 @@ export function PricingPage() {
             </div>
             <div className="text-[13px] text-[rgba(255,255,255,0.4)] mb-6">Forever free tier</div>
 
-            <ul className="flex flex-col gap-3 flex-1 mb-8">
+            <ul className="flex flex-col gap-3 flex-1 mb-10">
               <li className="flex items-start gap-2.5 text-[14px] text-white">
                 <CheckCircle2 size={18} className="text-[rgba(255,255,255,0.4)] shrink-0" />
                 <span>Basic macro tracking</span>
@@ -71,7 +71,7 @@ export function PricingPage() {
             </div>
             <div className="text-[13px] text-[rgba(255,255,255,0.4)] mb-6">Billed annually (₹83/mo)</div>
 
-            <ul className="flex flex-col gap-3 flex-1 mb-8">
+            <ul className="flex flex-col gap-3 flex-1 mb-10">
               <li className="flex items-start gap-2.5 text-[14px] text-white">
                 <CheckCircle2 size={18} className="text-[#D4FF00] shrink-0" />
                 <span>Everything in Free</span>
@@ -94,7 +94,7 @@ export function PricingPage() {
               whileHover={{ scale: 1.02, boxShadow: '0 0 20px rgba(212,255,0,0.3)' }}
               whileTap={{ scale: 0.98 }}
               onClick={activateBeta}
-              className="w-full py-3.5 rounded-full bg-[#D4FF00] text-black text-[15px] font-bold shadow-[0_4px_16px_rgba(212,255,0,0.2)]"
+              className="w-full py-3.5 rounded-full bg-[#D4FF00] text-black text-[18px] font-semibold tracking-tight shadow-[0_4px_16px_rgba(212,255,0,0.2)]"
             >
               Get Premium Access
             </motion.button>

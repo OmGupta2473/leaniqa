@@ -9,7 +9,7 @@ export function NotFoundPage() {
         <i className="ti ti-map-2 text-3xl text-text-secondary"></i>
       </div>
       <h1 className="text-2xl font-bold mb-2">Page Not Found</h1>
-      <p className="text-text-secondary text-center mb-8 max-w-[280px]">
+      <p className="text-text-secondary text-center mb-10 max-w-[280px]">
         We couldn't find the page you're looking for. It might have been moved or doesn't exist.
       </p>
       <button 

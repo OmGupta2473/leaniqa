@@ -61,7 +61,7 @@ export function Sidebar({ className }: { className?: string }) {
           borderBottom: '0.5px solid rgba(255,255,255,0.06)'
         }}
       >
-        <Logo className="w-8 h-8 drop-shadow-md" />
+        <Logo className="w-8 h-8 drop-shadow-[0_8px_32px_rgba(0,0,0,0.15)]" />
         <span 
           className="font-semibold"
           style={{

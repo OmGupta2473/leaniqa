@@ -171,13 +171,13 @@ export function DashboardPage() {
             {/* AI Insight Card */}
             <motion.div 
               whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}
-              className="rounded-[20px] p-4 bg-[#1C1C1E] border border-white/5 shadow-sm"
+              className="rounded-[20px] p-4 bg-[#1C1C1E] border border-white/5 shadow-[0_2px_12px_rgba(0,0,0,0.1)]"
             >
               <div className="flex justify-between items-center mb-2">
                 <span className="text-[11px] font-bold text-[#D4FF00] tracking-widest uppercase">Today's Mission</span>
                 <Target size={14} className="text-[#D4FF00]" />
               </div>
-              <p className="text-[14px] text-white/90 leading-snug">
+              <p className="text-[14px] text-white/90 leading-relaxed">
                 {getAiInsight()}
               </p>
             </motion.div>
@@ -186,7 +186,7 @@ export function DashboardPage() {
             <motion.div 
               whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}
               onClick={() => navigate('/calorie')}
-              className="rounded-[24px] p-6 bg-[#1C1C1E] border border-white/5 shadow-sm cursor-pointer"
+              className="rounded-[24px] p-6 bg-[#1C1C1E] border border-white/5 shadow-[0_2px_12px_rgba(0,0,0,0.1)] cursor-pointer"
             >
               <div className="flex justify-between items-center mb-4">
                 <div className="text-[12px] font-semibold text-white uppercase tracking-wider">Calories</div>
@@ -209,7 +209,7 @@ export function DashboardPage() {
                     />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <div className="text-[24px] font-bold text-white leading-none">
+                    <div className="text-[32px] font-bold text-white tracking-tight leading-none">
                       {Math.round((calPct) * 100)}%
                     </div>
                   </div>
@@ -217,7 +217,7 @@ export function DashboardPage() {
                 
                 <div className="flex flex-col">
                   <div className="flex items-baseline gap-1 mb-1">
-                    <span className="text-[24px] font-bold text-white leading-none"><AnimatedNumber value={remainingKcal > 0 ? remainingKcal : 0} duration={800} /></span>
+                    <span className="text-[32px] font-bold text-white tracking-tight leading-none"><AnimatedNumber value={remainingKcal > 0 ? remainingKcal : 0} duration={800} /></span>
                     <span className="text-[14px] font-medium text-white/60">kcal</span>
                   </div>
                   <div className="text-[14px] font-medium text-white/50 mb-3">Remaining</div>
@@ -232,7 +232,7 @@ export function DashboardPage() {
             {/* Macronutrients */}
             <motion.div 
               whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}
-              className="rounded-[24px] p-5 bg-[#1C1C1E] border border-white/5 shadow-sm"
+              className="rounded-[24px] p-5 bg-[#1C1C1E] border border-white/5 shadow-[0_2px_12px_rgba(0,0,0,0.1)]"
             >
               <div className="flex justify-between items-center mb-6">
                 <div className="text-[12px] font-semibold text-white uppercase tracking-wider">Macronutrients</div>
@@ -307,7 +307,7 @@ export function DashboardPage() {
               <motion.div 
                 whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}
                 onClick={() => navigate('/progress')}
-                className="rounded-[24px] p-5 bg-[#1C1C1E] border border-white/5 shadow-sm cursor-pointer flex flex-col justify-between h-[130px]"
+                className="rounded-[24px] p-5 bg-[#1C1C1E] border border-white/5 shadow-[0_2px_12px_rgba(0,0,0,0.1)] cursor-pointer flex flex-col justify-between h-[130px]"
               >
                 <div className="flex justify-between items-start">
                   <div className="text-[12px] font-semibold text-white/50 tracking-wide uppercase">Weight</div>
@@ -330,14 +330,14 @@ export function DashboardPage() {
               <motion.div 
                 whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}
                 onClick={() => navigate('/meals')}
-                className="rounded-[24px] p-5 bg-[#1C1C1E] border border-white/5 shadow-sm cursor-pointer flex flex-col justify-between h-[130px] relative"
+                className="rounded-[24px] p-5 bg-[#1C1C1E] border border-white/5 shadow-[0_2px_12px_rgba(0,0,0,0.1)] cursor-pointer flex flex-col justify-between h-[130px] relative"
               >
                 <div className="flex justify-between items-start">
                   <div className="text-[12px] font-semibold text-white/50 tracking-wide uppercase">Up Next</div>
                   <TrendingUp size={16} className="text-[#D4FF00]" />
                 </div>
                 <div>
-                  <div className="text-[14px] font-medium text-white leading-snug mb-2 pr-10">
+                  <div className="text-[14px] font-medium text-white leading-relaxed mb-2 pr-10">
                     {remainingProtein <= 0 ? "Goal met!" : (remainingProtein > 30 ? "Chicken Breast" : "Greek Yogurt")}
                   </div>
                   {remainingProtein > 0 && (
@@ -346,7 +346,7 @@ export function DashboardPage() {
                      </div>
                   )}
                 </div>
-                <div className="absolute bottom-4 right-4 w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-md">
+                <div className="absolute bottom-4 right-4 w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.15)]">
                   <Plus size={20} strokeWidth={2.5} color="#000" />
                 </div>
               </motion.div>
@@ -355,7 +355,7 @@ export function DashboardPage() {
             {/* Daily Score */}
             <motion.div 
               whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} 
-              className="rounded-[24px] p-5 bg-[#1C1C1E] border border-white/5 shadow-sm flex items-center justify-between"
+              className="rounded-[24px] p-5 bg-[#1C1C1E] border border-white/5 shadow-[0_2px_12px_rgba(0,0,0,0.1)] flex items-center justify-between"
             >
               <div className="flex flex-col">
                 <div className="flex items-center gap-1.5 mb-2">
@@ -363,7 +363,7 @@ export function DashboardPage() {
                    <span className="text-[12px] font-semibold text-white/50 tracking-wide uppercase">Daily Score</span>
                 </div>
                 <div className="flex items-baseline gap-1 mb-1">
-                  <span className="text-[32px] font-bold tracking-tighter text-white leading-none">
+                  <span className="text-[40px] tracking-tight font-bold font-bold tracking-tighter text-white leading-none">
                     <AnimatedNumber value={completionScore} duration={1000} />
                   </span>
                   <span className="text-[16px] font-medium text-white/40">/ 100</span>

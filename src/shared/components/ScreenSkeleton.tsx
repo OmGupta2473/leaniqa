@@ -6,20 +6,20 @@ export function ScreenSkeleton() {
         <div className="h-3 w-32 shimmer rounded-lg"></div>
       </div>
       
-      <div className="h-32 shimmer rounded-2xl w-full"></div>
+      <div className="h-32 shimmer rounded-[24px] w-full"></div>
       
       <div className="flex gap-4">
-        <div className="h-24 shimmer rounded-2xl flex-1 flex flex-col justify-between p-4">
+        <div className="h-24 shimmer rounded-[24px] flex-1 flex flex-col justify-between p-4">
           <div className="h-3 w-16 shimmer rounded-lg"></div>
           <div className="h-8 w-16 shimmer rounded-lg"></div>
         </div>
-        <div className="h-24 shimmer rounded-2xl flex-1 flex flex-col justify-between p-4">
+        <div className="h-24 shimmer rounded-[24px] flex-1 flex flex-col justify-between p-4">
           <div className="h-3 w-16 shimmer rounded-lg"></div>
           <div className="h-8 w-16 shimmer rounded-lg"></div>
         </div>
       </div>
       
-      <div className="h-64 shimmer rounded-2xl w-full mt-4"></div>
+      <div className="h-64 shimmer rounded-[24px] w-full mt-4"></div>
     </div>
   );
 }

@@ -8,7 +8,7 @@ interface QueryErrorProps {
 
 export function QueryError({ error, onRetry }: QueryErrorProps) {
   return (
-    <div className="bg-[#111111] border border-red-500/20 rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-lg">
+    <div className="bg-[#111111] border border-red-500/20 rounded-[24px] p-6 flex flex-col items-center justify-center text-center shadow-lg">
       <div className="bg-red-500/10 p-3 rounded-full mb-4 text-red-500">
         <AlertTriangle size={24} />
       </div>

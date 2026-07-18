@@ -77,7 +77,7 @@ export function Header() {
         )}
         
         <div className="flex items-center gap-2 cursor-pointer transition-opacity hover:opacity-80" onClick={() => navigate('/dashboard')}>
-          <Logo className="w-8 h-8 drop-shadow-md" />
+          <Logo className="w-8 h-8 drop-shadow-[0_8px_32px_rgba(0,0,0,0.15)]" />
           <span 
             className="font-semibold"
             style={{

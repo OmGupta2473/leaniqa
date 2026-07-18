@@ -251,34 +251,34 @@ export function GoalSetterPage() {
         variants={pageVariants} initial="hidden" animate="visible" exit="exit"
         className="screen-container pt-8 pb-24"
       >
-        <div className="flex flex-col items-center justify-center py-10 mb-8 text-center">
+        <div className="flex flex-col items-center justify-center py-10 mb-10 text-center">
           <CheckCircle2 className="w-12 h-12 text-[#D4FF00] mb-4" />
           <h2 className="text-[28px] font-bold text-white tracking-tight mb-2">Goal Set</h2>
-          <p className="text-[14px] text-[rgba(255,255,255,0.5)]">You have already set your physique goal.</p>
+          <p className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">You have already set your physique goal.</p>
         </div>
 
-        <div className="bg-[#111113] border border-[rgba(255,255,255,0.06)] rounded-2xl p-6 mb-8 shadow-sm">
+        <div className="bg-[#111113] border border-[rgba(255,255,255,0.06)] rounded-[24px] p-6 mb-10 shadow-[0_2px_12px_rgba(0,0,0,0.1)]">
           <h3 className="text-[11px] font-semibold uppercase tracking-widest text-[rgba(255,255,255,0.4)] mb-4">Current Goal Data</h3>
           
           <div className="space-y-4">
             <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-4">
-              <span className="text-[14px] text-[rgba(255,255,255,0.6)]">Current BF%</span>
+              <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Current BF%</span>
               <span className="text-[16px] font-medium text-white">{activeGoal?.current_bf || activeGoal?.currentBodyFatPct || '-'}%</span>
             </div>
             <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-4">
-              <span className="text-[14px] text-[rgba(255,255,255,0.6)]">Target BF%</span>
+              <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Target BF%</span>
               <span className="text-[16px] font-medium text-white">{activeGoal?.target_bf || activeGoal?.targetBodyFatPct || '-'}%</span>
             </div>
             <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-4">
-              <span className="text-[14px] text-[rgba(255,255,255,0.6)]">Strategy</span>
+              <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Strategy</span>
               <span className="text-[16px] font-medium text-white">{activeGoal?.strategy || activeGoal?.chosenStrategyName || '-'}</span>
             </div>
             <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-4">
-              <span className="text-[14px] text-[rgba(255,255,255,0.6)]">Daily Target</span>
-              <span className="text-[16px] font-medium text-white">{dailyKcal || '-'} <span className="text-[12px] text-[rgba(255,255,255,0.4)]">kcal</span></span>
+              <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Daily Target</span>
+              <span className="text-[16px] font-medium text-white">{dailyKcal || '-'} <span className="text-[13px] text-[rgba(235,235,245,0.5)]">kcal</span></span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-[14px] text-[rgba(255,255,255,0.6)]">Estimated Time</span>
+              <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Estimated Time</span>
               <span className="text-[16px] font-medium text-white">
                 {activeGoal?.deficit_kcal === 0 || activeGoal?.dailyDeficit === 0 ? 'Ongoing' : 
                  activeGoal?.target_date ? new Date(activeGoal.target_date).toLocaleDateString() : 
@@ -305,11 +305,11 @@ export function GoalSetterPage() {
             >
               <motion.div 
                 initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 10 }}
-                className="bg-[#1C1C1E] rounded-3xl p-8 w-full max-w-[360px] text-center border border-[rgba(255,255,255,0.1)] shadow-[0_24px_48px_rgba(0,0,0,0.4)]"
+                className="bg-[#1C1C1E] rounded-3xl p-8 w-full max-w-[360px] text-center border border-[rgba(255,255,255,0.06)] shadow-[0_24px_48px_rgba(0,0,0,0.4)]"
               >
                 <div className="text-4xl mb-4">⚠️</div>
                 <div className="text-[20px] font-bold text-white mb-3 tracking-tight">Reset body goal?</div>
-                <div className="text-[14px] text-[rgba(255,255,255,0.6)] leading-relaxed mb-8">
+                <div className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed leading-relaxed mb-10">
                   This will permanently erase your target body fat, strategy, and timeline. Your meal history and body stats will remain. This cannot be undone.
                 </div>
                 <div className="flex flex-col gap-3">
@@ -343,7 +343,7 @@ export function GoalSetterPage() {
     <Profiler id="GoalSetterPage" onRender={onRenderCallback}>
       <motion.div variants={pageVariants} initial="hidden" animate="visible" exit="exit" className="screen-container pb-28 pt-6">
       
-      <motion.div variants={itemVariants} className="mb-8">
+      <motion.div variants={itemVariants} className="mb-10">
         <h2 className="text-[26px] font-semibold text-white tracking-tight -tracking-[0.4px] leading-tight mb-2">Body Goals</h2>
         <p className="text-[15px] text-[rgba(255,255,255,0.8)] tracking-[-0.1px]">Set your target body fat and choose a timeline.</p>
       </motion.div>
@@ -377,7 +377,7 @@ export function GoalSetterPage() {
         </div>
 
         {currentBfMid === 2.5 && (
-          <div className="text-[14px] font-medium text-[#D4FF00] mb-4 p-4 bg-[rgba(212,255,0,0.08)] border border-[rgba(212,255,0,0.4)] rounded-xl">
+          <div className="text-[14px] font-medium text-[#D4FF00] mb-4 p-4 bg-[rgba(212,255,0,0.08)] border border-[rgba(212,255,0,0.4)] rounded-[20px]">
             You're already at elite level. Only maintenance is available.
           </div>
         )}
@@ -398,7 +398,7 @@ export function GoalSetterPage() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className={cn(
-                "bg-[#111113] border-[0.5px] border-[rgba(255,255,255,0.06)] rounded-2xl p-4 cursor-pointer transition-all duration-200 text-left flex flex-col hover:border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.04)]",
+                "bg-[#111113] border-[0.5px] border-[rgba(255,255,255,0.06)] rounded-[24px] p-4 cursor-pointer transition-all duration-200 text-left flex flex-col hover:border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.02)]",
                 targetBfMid === currentBfMid && "border-[#D4FF00] bg-[rgba(212,255,0,0.06)] shadow-[0_0_20px_rgba(212,255,0,0.15)] hover:border-[#D4FF00]"
               )}
             >
@@ -418,7 +418,7 @@ export function GoalSetterPage() {
         </div>
 
         {currentBfMid && targetBfMid && targetBfMid > currentBfMid && (
-          <div className="text-[14px] text-[#FF3B30] flex items-center gap-2 mb-4 p-4 bg-[rgba(255,59,48,0.05)] border border-[rgba(255,59,48,0.6)] rounded-xl">
+          <div className="text-[14px] text-[#FF3B30] flex items-center gap-2 mb-4 p-4 bg-[rgba(255,59,48,0.05)] border border-[rgba(255,59,48,0.6)] rounded-[20px]">
             <AlertTriangle size={16} /> Target body fat must be lower than current.
           </div>
         )}
@@ -437,7 +437,7 @@ export function GoalSetterPage() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       className={cn(
-                        "relative bg-[#111113] border-[0.5px] rounded-xl p-3 flex flex-col items-center text-center cursor-pointer transition-all duration-200 hover:border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.04)]",
+                        "relative bg-[#111113] border-[0.5px] rounded-[20px] p-3 flex flex-col items-center text-center cursor-pointer transition-all duration-200 hover:border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.02)]",
                         isSelected ? s.activeClass : "border-[rgba(255,255,255,0.06)]"
                       )}
                     >
@@ -462,12 +462,12 @@ export function GoalSetterPage() {
                 className="card-lime overflow-hidden"
               >
                 <div className="p-6 text-center border-b border-[rgba(212,255,0,0.1)]">
-                  <div className="text-[36px] font-bold text-[#D4FF00] tracking-[-1px] leading-none mb-1">
+                  <div className="text-[40px] font-bold text-[#D4FF00] tracking-[-1px] leading-none mb-1">
                     {selectedStrategy.deficit === 0 ? 'Maintenance' : (
                       <><AnimatedNumber value={selectedStrategy.weeks} /> weeks</>
                     )}
                   </div>
-                  <div className="text-[13px] text-[rgba(255,255,255,0.5)]">
+                  <div className="text-[14px] text-[rgba(235,235,245,0.6)]">
                     {selectedStrategy.deficit === 0 ? 'Keep your current physique' : `Estimated completion by ${selectedStrategy.dateStr}`}
                   </div>
                 </div>
