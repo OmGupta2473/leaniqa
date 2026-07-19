@@ -363,9 +363,9 @@ function DisciplineAdvantage() {
   return (
     <section className="py-10 sm:py-16 px-6 bg-[#0A0A0B] overflow-hidden" id="discipline">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-10 md:mb-16 max-w-3xl mx-auto text-center md:text-left">
+        <div className="mb-10 md:mb-16 max-w-3xl mx-auto text-center">
           <Reveal>
-            <div className="flex items-center justify-center md:justify-start gap-2 text-xs font-mono text-[#D4FF00] uppercase tracking-widest mb-4">
+            <div className="flex items-center justify-center gap-2 text-xs font-mono text-[#D4FF00] uppercase tracking-widest mb-4">
               <div className="w-1.5 h-1.5 rounded-full bg-[#D4FF00] shadow-[0_0_8px_#D4FF00]" />
               WHY LEANIQA
             </div>
@@ -373,7 +373,7 @@ function DisciplineAdvantage() {
               Most apps are food diaries.<br/>
               Leaniqa is a <span className="text-[#D4FF00]">discipline engine.</span>
             </h2>
-            <p className="text-zinc-400 text-base sm:text-lg lg:text-xl max-w-2xl leading-relaxed mx-auto md:mx-0">
+            <p className="text-zinc-400 text-base sm:text-lg lg:text-xl max-w-2xl leading-relaxed mx-auto">
               People don't fail transformations because they lack information.<br className="hidden sm:block"/>
               They fail because rigid plans break when real life happens.<br className="hidden sm:block"/>
               <span className="text-zinc-300 font-medium">Leaniqa is built around that reality.</span>
@@ -755,7 +755,7 @@ function TestimonialStrip() {
     <section className="py-16 sm:py-24 px-6 border-t border-zinc-900 bg-[#0A0A0B]">
       <div className="max-w-7xl mx-auto">
         <Reveal>
-          <div className="mb-12 sm:mb-16 max-w-2xl">
+          <div className="mb-12 sm:mb-16 max-w-3xl mx-auto text-center">
             <p className="text-xs font-mono text-[#D4FF00] uppercase tracking-widest mb-2">
               Real results
             </p>
@@ -1786,9 +1786,9 @@ export function LandingPage() {
       </motion.nav>
 
       {/* ── Hero ── */}
-      <section className="pt-20 sm:pt-24 lg:pt-20 pb-12 sm:pb-16 lg:pb-12 px-6 relative z-10 lg:min-h-[calc(100vh-80px)] flex items-center">
-        <div className="w-full max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-10 lg:gap-8">
-          <div className="max-w-2xl relative z-10 flex-1">
+      <section className="pt-20 sm:pt-24 lg:pt-32 pb-12 sm:pb-16 lg:pb-12 px-6 relative z-10 lg:min-h-[calc(100vh-80px)] flex lg:items-start items-center">
+        <div className="w-full max-w-7xl mx-auto flex flex-col lg:flex-row items-center lg:items-start gap-10 lg:gap-8">
+          <div className="max-w-2xl relative z-10 flex-1 lg:pt-8">
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1846,7 +1846,7 @@ export function LandingPage() {
       {/* ── Features grid ── */}
       <section className="py-16 sm:py-24 px-6 border-t border-zinc-900 bg-[#0C0C0D]">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-12 sm:mb-16 max-w-2xl">
+          <div className="mb-12 sm:mb-16 max-w-3xl mx-auto text-center">
             <h2 className="text-2xl sm:text-3xl font-semibold mb-4">Intelligence that drives consistency.</h2>
             <p className="text-zinc-400 text-sm sm:text-base">People don't fail because they lack motivation. They fail because rigid plans break when real life happens. LeanIQA fixes this.</p>
           </div>
