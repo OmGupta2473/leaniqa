@@ -86,22 +86,22 @@ function SocialProofBar() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-4 max-w-6xl mx-auto">
           {stats.map((s, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 16 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ delay: i * 0.1, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-              className="bg-[#111112] border border-zinc-800/60 rounded-2xl p-4 sm:p-6 lg:p-8 flex flex-col xl:flex-row items-center xl:items-start text-center xl:text-left gap-3 sm:gap-6"
+              className="bg-[#111112] border border-zinc-800/60 rounded-2xl p-4 sm:p-5 lg:p-6 flex flex-col xl:flex-row items-center xl:items-start text-center xl:text-left gap-3 sm:gap-4"
               style={{ background: "linear-gradient(145deg, rgba(17,17,18,1) 0%, rgba(212,255,0,0.03) 100%)" }}
             >
-              <div className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-[14px] sm:rounded-2xl flex items-center justify-center bg-[rgba(212,255,0,0.08)] border border-[rgba(212,255,0,0.15)] shadow-[0_0_20px_rgba(212,255,0,0.1)]">
-                <s.icon className="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-[#D4FF00]" />
+              <div className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 lg:w-16 lg:h-16 rounded-[14px] sm:rounded-2xl flex items-center justify-center bg-[rgba(212,255,0,0.08)] border border-[rgba(212,255,0,0.15)] shadow-[0_0_20px_rgba(212,255,0,0.1)]">
+                <s.icon className="w-7 h-7 sm:w-8 sm:h-8 lg:w-8 lg:h-8 text-[#D4FF00]" />
               </div>
               <div className="flex flex-col justify-center h-full pt-1 lg:pt-2">
                 <div
-                  className="text-xl sm:text-3xl lg:text-4xl font-bold tracking-tight mb-1 sm:mb-2"
+                  className="text-xl sm:text-3xl lg:text-3xl font-bold tracking-tight mb-1 sm:mb-2"
                   style={{ color: s.color, fontVariantNumeric: "tabular-nums" }}
                 >
                   {s.value}
