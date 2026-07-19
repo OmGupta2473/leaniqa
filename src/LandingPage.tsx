@@ -1453,7 +1453,7 @@ function InteractiveMealDemo() {
   const ySpring = useSpring(mouseY, { stiffness: 400, damping: 30 });
 
   return (
-    <div className="w-full max-w-[480px] mx-auto bg-[#0A0A0B] border border-zinc-800/50 rounded-[24px] sm:rounded-[32px] p-4 sm:p-6 shadow-2xl relative overflow-hidden group/demo">
+    <div className="w-full max-w-[480px] lg:max-w-[420px] xl:max-w-[480px] mx-auto bg-[#0A0A0B] border border-zinc-800/50 rounded-[24px] sm:rounded-[32px] p-4 sm:p-5 shadow-2xl relative overflow-hidden group/demo">
       {/* Background ambient glow */}
       <motion.div 
         animate={{
@@ -1480,13 +1480,13 @@ function InteractiveMealDemo() {
           className="text-lg"
         >👇</motion.span>
       </div>
-      <p className="text-zinc-400 text-xs sm:text-sm mb-4 sm:mb-6 relative z-10">Click Log This Meal to see how LeanIQA instantly analyzes real food.</p>
+      <p className="text-zinc-400 text-xs sm:text-sm mb-4 relative z-10">Click Log This Meal to see how LeanIQA instantly analyzes real food.</p>
       
       {/* Input Field */}
       <motion.div 
         animate={state !== 'idle' ? { opacity: 0.5, scale: 0.98, filter: 'blur(2px)' } : { opacity: 1, scale: 1, filter: 'blur(0px)' }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="bg-[#111112]/80 backdrop-blur-md border border-zinc-800/80 rounded-xl sm:rounded-2xl p-3 sm:p-4 flex items-center justify-between mb-4 sm:mb-6 relative z-10 shadow-inner group/input cursor-text transition-all duration-300 hover:border-zinc-700 hover:bg-[#111112] hover:shadow-[0_4px_20px_-10px_rgba(255,255,255,0.05)]"
+        className="bg-[#111112]/80 backdrop-blur-md border border-zinc-800/80 rounded-xl sm:rounded-2xl p-3 flex items-center justify-between mb-4 relative z-10 shadow-inner group/input cursor-text transition-all duration-300 hover:border-zinc-700 hover:bg-[#111112] hover:shadow-[0_4px_20px_-10px_rgba(255,255,255,0.05)]"
       >
         <span className="text-zinc-200 text-[13px] sm:text-[15px] selection:bg-[#D4FF00]/30 transition-colors duration-300">soya sabji + 3 roti</span>
         <X className="w-4 h-4 text-zinc-500 cursor-pointer transition-colors duration-300 group-hover/input:text-zinc-300" />
@@ -1626,13 +1626,13 @@ function InteractiveMealDemo() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="text-zinc-100 font-medium text-[13px] sm:text-[15px] mb-4 sm:mb-5 border-b border-zinc-800/50 pb-3 sm:pb-4"
+                className="text-zinc-100 font-medium text-[13px] sm:text-[14px] mb-3 sm:mb-4 border-b border-zinc-800/50 pb-3"
               >
                 soya sabji + 3 roti
               </motion.div>
 
               {/* Nutrition Chips */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 sm:mb-5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3 sm:mb-4">
                 {[
                   { label: "Calories", val: cal, unit: "kcal", icon: Flame, color: "#FF4D1C", delay: 0.12 },
                   { label: "Protein", val: pro, unit: "g", icon: Dumbbell, color: "#D4FF00", delay: 0.20 },
@@ -1786,14 +1786,14 @@ export function LandingPage() {
       </motion.nav>
 
       {/* ── Hero ── */}
-      <section className="pt-24 sm:pt-28 lg:pt-32 pb-16 sm:pb-24 px-6 relative z-10">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-12 lg:gap-8">
+      <section className="pt-20 sm:pt-24 lg:pt-20 pb-12 sm:pb-16 lg:pb-12 px-6 relative z-10 lg:min-h-[calc(100vh-80px)] flex items-center">
+        <div className="w-full max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-10 lg:gap-8">
           <div className="max-w-2xl relative z-10 flex-1">
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-4xl sm:text-5xl lg:text-7xl font-semibold tracking-tight leading-[1.1] lg:leading-[1.05] mb-4 sm:mb-6"
+              className="text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-[4rem] font-semibold tracking-tight leading-[1.1] lg:leading-[1.05] mb-4 sm:mb-6"
             >
               Your body adapts every day. Your nutrition coach should too.
             </motion.h1>
