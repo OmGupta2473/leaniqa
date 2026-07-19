@@ -99,11 +99,11 @@ export function DailyHistoryChart({ logs, todayStr, unit, type }: DailyHistoryCh
       </div>
 
       {/* Chart Area */}
-      <div className="relative flex items-end justify-between px-[10px] pb-[24px] mb-[16px]" style={{ height: `${chartAreaHeight + 24}px` }}>
+      <div className="relative flex items-end justify-between px-[10px] pb-[28px] mb-[16px]" style={{ height: `${chartAreaHeight + 28}px` }}>
         {/* Target dashed line */}
         <div 
           className="absolute left-0 right-0 border-t border-dashed border-[#D4FF00] opacity-50 z-0" 
-          style={{ bottom: `${targetLineBottom + 24}px` }}
+          style={{ bottom: `${targetLineBottom + 28}px` }}
         />
         
         {displayDays.map((day, i) => {
@@ -121,17 +121,21 @@ export function DailyHistoryChart({ logs, todayStr, unit, type }: DailyHistoryCh
           const barColor = isToday ? "#737373" : (isSuccess ? "#D4FF00" : "#FF4D1C");
           const heightPct = Math.min(100, (day.actual / maxVal) * 100);
           
+          const [y, m, d] = day.date.split("-");
+          const formattedDate = `${parseInt(d)}/${parseInt(m)}`;
+          
           return (
             <div key={day.date} className="relative z-10 flex flex-col items-center justify-end h-full w-[30px]">
               <div className="text-[10px] font-medium text-white mb-[4px] whitespace-nowrap">
                 {day.actual}{isToday ? '*' : ''}
               </div>
               <div 
-                style={{ height: `calc(${heightPct}% - 24px)`, backgroundColor: barColor }} 
+                style={{ height: `calc(${heightPct}% - 28px)`, backgroundColor: barColor }} 
                 className="w-[20px] rounded-t-[4px] min-h-[4px] transition-all duration-500 ease-out"
               />
-              <div className="absolute bottom-0 text-[11px] text-[#EBEBF599]">
-                D{day.dayNum}
+              <div className="absolute bottom-0 flex flex-col items-center justify-end h-[28px] pb-1">
+                <span className="text-[10px] text-[#EBEBF599] font-bold">D{day.dayNum}</span>
+                <span className="text-[8px] text-[rgba(235,235,245,0.4)]">{formattedDate}</span>
               </div>
             </div>
           );

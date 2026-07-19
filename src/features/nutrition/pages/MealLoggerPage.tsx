@@ -274,8 +274,7 @@ export function MealLoggerPage() {
     },
     onSettled: () => {
       Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["meals", "date", dateKeyStr] }),
-        ...(isToday(selectedDate) ? [queryClient.invalidateQueries({ queryKey: ["meals", "today"] })] : []),
+        queryClient.invalidateQueries({ queryKey: ["meals"] }),
         queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] }),
         complianceService.recalculateDayScore(selectedDate.getFullYear() + '-' + String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + String(selectedDate.getDate()).padStart(2, '0')).then(() => {
           console.log('Updated Dashboard & Progress Rings');
@@ -489,8 +488,7 @@ export function MealLoggerPage() {
     },
     onSettled: () => {
       Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["meals", "date", dateKeyStr] }),
-        ...(isToday(selectedDate) ? [queryClient.invalidateQueries({ queryKey: ["meals", "today"] })] : []),
+        queryClient.invalidateQueries({ queryKey: ["meals"] }),
         queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] }),
         complianceService.recalculateDayScore(selectedDate.getFullYear() + '-' + String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + String(selectedDate.getDate()).padStart(2, '0')).then(() => 
           Promise.all([
