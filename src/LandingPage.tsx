@@ -1335,50 +1335,42 @@ function StoryTextItem({
 }
 
 function DesktopStory() {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const { scrollYProgress: rawProgress } = useScroll({
-    target: containerRef,
-    offset: ["start start", "end end"],
-  });
-
-  // Spring smoothing makes crossfades buttery on fast scroll and trackpad.
-  // stiffness:80 / damping:20 = responsive but not snappy.
-  const scrollYProgress = useSpring(rawProgress, {
-    stiffness: 80,
-    damping: 20,
-    restDelta: 0.0001,
-  });
-
   return (
-    <div
-      ref={containerRef}
-      className="hidden lg:block relative w-full h-[400vh]"
-      style={{ willChange: "transform" }}
-    >
-      <div className="sticky top-0 h-screen w-full flex items-center overflow-hidden">
-        <div className="max-w-7xl mx-auto w-full px-6 lg:px-16 flex items-center justify-between">
-          
-          <div className="w-1/2 relative h-[300px]">
-            {STORY.map((step, i) => (
-              <StoryTextItem
-                key={i}
-                step={step}
-                index={i}
-                scrollYProgress={scrollYProgress}
-              />
-            ))}
-          </div>
+    <div className="hidden lg:flex flex-col py-24 gap-32">
+      {STORY.map((step, i) => (
+        <div key={i} className="min-h-screen flex items-center px-6 lg:px-16 max-w-7xl mx-auto w-full">
+          <div className={`flex w-full items-center justify-between gap-24 ${i % 2 === 1 ? 'flex-row-reverse' : 'flex-row'}`}>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-200px" }}
+              transition={{ duration: 0.6 }}
+              className="w-[45%]"
+            >
+              <h3 className="text-4xl lg:text-5xl font-semibold leading-[1.1] text-zinc-50 tracking-tight">
+                {step.title}
+              </h3>
+              <p className="mt-6 text-lg lg:text-xl text-zinc-400 leading-relaxed">
+                {step.subtitle}
+              </p>
+            </motion.div>
 
-          <div
-            className="w-1/2 flex items-center justify-center"
-            style={{ perspective: "1200px" }}
-          >
-            <PremiumPhone scrollYProgress={scrollYProgress} />
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-200px" }}
+              transition={{ duration: 0.8 }}
+              className="w-[45%] flex items-center justify-center"
+            >
+              <PhoneFrame>
+                 {i === 0 && <AICoachScreen />}
+                 {i === 1 && <DashboardScreen />}
+                 {i === 2 && <TimelineScreen />}
+              </PhoneFrame>
+            </motion.div>
           </div>
-          
         </div>
-      </div>
+      ))}
     </div>
   );
 }
