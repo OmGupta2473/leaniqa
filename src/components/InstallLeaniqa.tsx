@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Smartphone, Download, X, CheckCircle2, Monitor, ArrowRight, Share, MoreVertical, Compass, Home, PlusSquare, Lock, Apple, ArrowLeft } from 'lucide-react';
+import { Smartphone, Download, X, CheckCircle2, Monitor, ArrowRight, Share, MoreVertical, Compass, Home, PlusSquare, Lock, Apple, ArrowLeft, Loader2 } from 'lucide-react';
 import { usePwaInstall, Platform } from './usePwaInstall';
 
 export function InstallLeaniqa() {
@@ -8,6 +8,7 @@ export function InstallLeaniqa() {
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState(0);
   const [status, setStatus] = useState<'idle' | 'installing' | 'success'>('idle');
+  const [isButtonLoading, setIsButtonLoading] = useState(false);
 
   if (isInstalled || platform === 'installed') {
     return (
@@ -18,44 +19,50 @@ export function InstallLeaniqa() {
     );
   }
 
-const handleInstallClick = async () => {
-    // Check if user is on Desktop Web
+  const handleInstallClick = async () => {
+    // 1. Give instant feedback to the user to kill perceived lag
+    setIsButtonLoading(true);
+    setIsOpen(true);
+    
     const isDesktop = platform !== 'ios' && platform !== 'android';
 
     if (deferredPrompt && !isDesktop) {
-      // 1. MUST call prompt() immediately. Do NOT put this in a setTimeout
-      // otherwise the browser will block the native install popup.
+      // 2. Show the loading animation inside the popup instantly
+      setStatus('installing');
+      
       try {
+        // 3. Prompt synchronously (Browser requires this to not be inside a setTimeout)
         await deferredPrompt.prompt();
         const choiceResult = await deferredPrompt.userChoice;
         
         if (choiceResult.outcome === 'accepted') {
-          // If accepted, show the success modal briefly
-          setIsOpen(true);
           setStatus('success');
-          setTimeout(() => setIsOpen(false), 3000);
+          setTimeout(() => {
+            setIsOpen(false);
+            setIsButtonLoading(false);
+          }, 3000);
         } else {
-          // If dismissed, fallback to the manual instructions modal
-          setIsOpen(true);
+          // Dismissed native prompt, fallback to manual instructions
           setStatus('idle');
           setStep(1); 
+          setIsButtonLoading(false);
         }
       } catch (e) {
-        setIsOpen(true);
         setStatus('idle');
         setStep(1);
+        setIsButtonLoading(false);
       }
     } else {
-      // 2. No prompt available OR it's a desktop user
-      // Open the modal instantly for manual instructions / desktop choice
-      setIsOpen(true);
+      // No prompt available OR it's a desktop user
       setStatus('idle');
       setStep(isDesktop ? 0 : 1);
+      setIsButtonLoading(false);
     }
   };
 
   const close = () => {
     setIsOpen(false);
+    setIsButtonLoading(false);
     setTimeout(() => {
       setStep(0);
       setStatus('idle');
@@ -66,14 +73,19 @@ const handleInstallClick = async () => {
     <>
       <motion.button
         onClick={handleInstallClick}
+        disabled={isButtonLoading}
         whileHover={{ scale: 1.03, backgroundColor: "rgba(255,255,255,0.1)" }}
         whileTap={{ scale: 0.97 }}
         transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-        className="bg-zinc-900/80 text-white w-full sm:w-auto px-6 sm:px-8 py-4 font-semibold flex items-center justify-center gap-2 text-xs sm:text-sm uppercase tracking-wide rounded-full border border-zinc-800 shadow-xl backdrop-blur-md"
+        className="bg-zinc-900/80 text-white w-full sm:w-auto px-6 sm:px-8 py-4 font-semibold flex items-center justify-center gap-2 text-xs sm:text-sm uppercase tracking-wide rounded-full border border-zinc-800 shadow-xl backdrop-blur-md disabled:opacity-80 disabled:cursor-not-allowed"
         style={{ willChange: "transform" }}
       >
-        <Smartphone className="w-4 h-4 text-[#D4FF00]" />
-        Install LeaniQA
+        {isButtonLoading ? (
+          <Loader2 className="w-4 h-4 text-[#D4FF00] animate-spin" />
+        ) : (
+          <Smartphone className="w-4 h-4 text-[#D4FF00]" />
+        )}
+        {isButtonLoading ? "Preparing..." : "Install LeaniQA"}
       </motion.button>
 
       <AnimatePresence>
@@ -99,7 +111,7 @@ function InstallWizard({ platform, step, setStep, status, close }: any) {
     if (status === 'idle' && platform !== 'ios' && platform !== 'android') {
       setDesktopChoice(null);
     }
-  }, [platform]);
+  }, [platform, status]);
 
   const activePlatform = (platform === 'ios' || platform === 'android') ? platform : desktopChoice;
   const maxSteps = activePlatform === 'ios' ? 4 : 3;
@@ -117,12 +129,13 @@ function InstallWizard({ platform, step, setStep, status, close }: any) {
           <Smartphone className="w-10 h-10 text-[#D4FF00]" />
         </motion.div>
         <h3 className="text-xl font-semibold text-white mb-2">Preparing Installation...</h3>
+        <p className="text-zinc-400 text-sm mb-6 text-center">Please wait while we summon the installer.</p>
         <div className="w-48 h-1 bg-zinc-800 rounded-full overflow-hidden">
           <motion.div 
             className="h-full bg-[#D4FF00]"
             initial={{ width: "0%" }}
             animate={{ width: "100%" }}
-            transition={{ duration: 1.5 }}
+            transition={{ duration: 1.5, repeat: Infinity }}
           />
         </div>
       </div>
@@ -199,7 +212,6 @@ function InstallWizard({ platform, step, setStep, status, close }: any) {
       >
         <div className="p-6 pb-2 border-b border-zinc-900 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* Show Back Button if user is on Desktop and has picked a device choice */}
             {platform !== 'ios' && platform !== 'android' && desktopChoice && status === 'idle' ? (
               <button onClick={handleBackToChoices} className="p-2 -ml-2 bg-zinc-900/50 hover:bg-zinc-800 rounded-full text-zinc-400 hover:text-white transition-colors mr-1">
                 <ArrowLeft className="w-5 h-5" />
@@ -235,7 +247,6 @@ function InstallWizard({ platform, step, setStep, status, close }: any) {
           </AnimatePresence>
         </div>
 
-        {/* Footer Navigation - Only show if they have selected a platform */}
         {status === 'idle' && activePlatform && (
           <div className="p-6 pt-4 border-t border-zinc-900 bg-zinc-950/50 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -278,7 +289,6 @@ function IOSInstructions({ step }: { step: number }) {
       <div className="flex flex-col h-full">
         <h3 className="text-xl font-semibold text-white mb-2">1. Open Safari Menu</h3>
         <p className="text-zinc-400 text-sm mb-8">Tap the Share icon at the bottom of Safari.</p>
-        
         <div className="flex-1 bg-zinc-900/50 rounded-2xl border border-zinc-800 relative overflow-hidden flex flex-col justify-end">
            <div className="bg-zinc-800 h-16 w-full flex items-center justify-between px-6 border-t border-zinc-700/50">
              <Compass className="w-6 h-6 text-blue-500" />
@@ -301,7 +311,6 @@ function IOSInstructions({ step }: { step: number }) {
       <div className="flex flex-col h-full">
         <h3 className="text-xl font-semibold text-white mb-2">2. Add to Home Screen</h3>
         <p className="text-zinc-400 text-sm mb-8">Scroll down the menu and tap "Add to Home Screen".</p>
-        
         <div className="flex-1 relative bg-zinc-900/50 rounded-2xl border border-zinc-800 overflow-hidden flex items-end justify-center pb-4">
            <motion.div 
              initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: "spring" }}
@@ -324,7 +333,6 @@ function IOSInstructions({ step }: { step: number }) {
       <div className="flex flex-col h-full">
         <h3 className="text-xl font-semibold text-white mb-2">3. Confirm</h3>
         <p className="text-zinc-400 text-sm mb-8">Tap "Add" in the top right corner.</p>
-        
         <div className="flex-1 bg-zinc-900/50 rounded-2xl border border-zinc-800 relative overflow-hidden flex flex-col pt-4">
            <div className="bg-zinc-800 w-full p-4 rounded-xl shadow-lg border border-zinc-700/50 max-w-[280px] mx-auto">
              <div className="flex items-center justify-between mb-4">
@@ -368,7 +376,6 @@ function AndroidInstructions({ step }: { step: number }) {
       <div className="flex flex-col h-full">
         <h3 className="text-xl font-semibold text-white mb-2">1. Open Menu</h3>
         <p className="text-zinc-400 text-sm mb-8">Tap the three dots in Chrome's top right corner.</p>
-        
         <div className="flex-1 bg-zinc-900/50 rounded-2xl border border-zinc-800 relative overflow-hidden flex flex-col pt-4">
            <div className="bg-zinc-800 h-14 w-full flex items-center justify-between px-4 border-b border-zinc-700/50 shadow-md">
              <div className="flex items-center gap-2 bg-zinc-900/50 rounded-full px-4 py-1.5 flex-1 mx-4">
@@ -389,7 +396,6 @@ function AndroidInstructions({ step }: { step: number }) {
       <div className="flex flex-col h-full">
         <h3 className="text-xl font-semibold text-white mb-2">2. Install App</h3>
         <p className="text-zinc-400 text-sm mb-8">Tap "Install App" or "Add to Home Screen".</p>
-        
         <div className="flex-1 relative bg-zinc-900/50 rounded-2xl border border-zinc-800 overflow-hidden flex justify-end pr-4 pt-4">
            <motion.div 
              initial={{ opacity: 0, scale: 0.9, transformOrigin: 'top right' }} animate={{ opacity: 1, scale: 1 }}
@@ -412,7 +418,6 @@ function AndroidInstructions({ step }: { step: number }) {
       <div className="flex flex-col h-full">
         <h3 className="text-xl font-semibold text-white mb-2">3. Confirm</h3>
         <p className="text-zinc-400 text-sm mb-8">Tap "Install" on the popup that appears.</p>
-        
         <div className="flex flex-col items-center justify-center flex-1">
           <motion.div 
              initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
