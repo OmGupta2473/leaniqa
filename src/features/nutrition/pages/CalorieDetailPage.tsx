@@ -55,8 +55,7 @@ const AnimatedNumber = memo(function AnimatedNumber({ value, duration = 800 }: {
   return <span ref={elementRef}>{displayValue}</span>;
 });
 
-function getLocalDateString() {
-  const d = new Date();
+function getLocalDateString(d: Date = new Date()) {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
@@ -103,6 +102,20 @@ export function CalorieDetailPage() {
         l.actual_calories = mealsByDate[l.date];
       } else {
         l.actual_calories = 0;
+      }
+    });
+
+    const logDates = new Set(logs.map(l => l.date));
+    Object.keys(mealsByDate).forEach(dateStr => {
+      if (!logDates.has(dateStr)) {
+        logs.push({
+          date: dateStr,
+          actual_calories: mealsByDate[dateStr],
+          target_calories: dailyCalorieGoal,
+          actual_protein: 0,
+          target_protein: 0,
+          user_id: "", water: 0, score: 0
+        });
       }
     });
 
