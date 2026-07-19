@@ -167,14 +167,14 @@ export function CalorieDetailPage() {
       </div>
 
       {/* Hero Number Section */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center justify-center text-center mb-10 mt-4">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center justify-center text-center mb-12 mt-6">
         <div className="flex items-baseline gap-1.5 mb-2">
-          <span className="text-[52px] font-bold text-white tracking-tighter leading-none"><AnimatedNumber value={caloriesConsumed} /></span>
+          <span className="text-[64px] font-bold text-white tracking-tighter leading-none"><AnimatedNumber value={caloriesConsumed} /></span>
         </div>
-        <div className="text-[14px] text-[rgba(255,255,255,0.45)] mb-6">of {dailyCalorieGoal} kcal</div>
+        <div className="text-[16px] font-medium text-[rgba(235,235,245,0.45)] mb-8 tracking-wide">of {dailyCalorieGoal} kcal</div>
         
         {/* Progress bar */}
-        <div className="w-full max-w-[280px] progress-track h-2 rounded-full overflow-hidden bg-[rgba(255,255,255,0.1)]">
+        <div className="w-full max-w-[280px] progress-track h-2 rounded-full overflow-hidden bg-[rgba(255,255,255,0.1)] shadow-inner">
           <div 
             className="h-full rounded-full transition-all duration-1000 ease-out" 
             style={{ width: mounted ? `${Math.min(100, calPct * 100)}%` : '0%', backgroundColor: progressColor }} 
@@ -183,8 +183,8 @@ export function CalorieDetailPage() {
       </motion.div>
 
       {/* 7-Day History Chart */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card-base p-4 mb-10">
-        <div className="text-[16px] font-medium text-white mb-6">Daily calorie history</div>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] p-6 mb-10 shadow-sm backdrop-blur-xl">
+        <div className="text-[12px] font-semibold text-[rgba(235,235,245,0.5)] uppercase tracking-widest mb-6">Daily calorie history</div>
         <DailyHistoryChart 
           logs={chartData} 
           todayStr={todayStr} 
@@ -196,13 +196,13 @@ export function CalorieDetailPage() {
 
       {/* Meal Breakdown Section */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="stagger-children">
-        <div className="text-[18px] font-semibold text-white mb-4">Today's Meals</div>
+        <div className="text-[12px] font-semibold text-[rgba(235,235,245,0.5)] uppercase tracking-widest mb-4 px-1">Today's Meals</div>
         
         {meals.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12">
+          <div className="flex flex-col items-center justify-center py-12 rounded-[24px] border border-dashed border-[rgba(255,255,255,0.1)]">
             <Utensils size={32} className="text-[rgba(255,255,255,0.15)] mb-4" />
-            <div className="text-[13px] text-[rgba(255,255,255,0.35)] mb-4 text-center">No meals logged yet</div>
-            <button onClick={() => navigate('/meals')} className="btn-ghost text-[14px] text-[#D4FF00] border-[rgba(212,255,0,0.3)] hover:bg-[rgba(212,255,0,0.1)]">
+            <div className="text-[14px] font-medium text-[rgba(255,255,255,0.4)] mb-4 text-center">No meals logged yet</div>
+            <button onClick={() => navigate('/meals')} className="btn-ghost text-[14px] font-bold text-[#D4FF00] border-[rgba(212,255,0,0.3)] hover:bg-[rgba(212,255,0,0.1)] rounded-full px-5 py-2">
               Log your first meal →
             </button>
           </div>
@@ -211,16 +211,16 @@ export function CalorieDetailPage() {
             {slots.filter(s => s.items.length > 0).map(slot => {
               const slotKcal = slot.items.reduce((a, b) => a + b.calories, 0);
               return (
-                <div key={slot.id} className="card-base mb-3 overflow-hidden">
-                  <div className="flex items-center justify-between p-4 bg-[rgba(255,255,255,0.02)] border-b border-[rgba(255,255,255,0.06)]">
-                    <span className="text-[16px] font-medium text-white">{slot.label}</span>
-                    <span className="text-[14px] font-bold text-white">{slotKcal} kcal</span>
+                <div key={slot.id} className="rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] mb-4 overflow-hidden shadow-sm backdrop-blur-xl">
+                  <div className="flex items-center justify-between p-5 bg-[rgba(255,255,255,0.02)] border-b border-[rgba(255,255,255,0.06)]">
+                    <span className="text-[16px] font-bold text-white tracking-tight">{slot.label}</span>
+                    <span className="text-[15px] font-bold tracking-tight text-white">{slotKcal} kcal</span>
                   </div>
-                  <div className="px-4">
+                  <div className="px-5 py-2">
                     {slot.items.map((item, i) => (
-                      <div key={item.id || i} className={cn("flex items-center justify-between py-3", i < slot.items.length - 1 && "border-b border-[rgba(255,255,255,0.06)]")}>
-                        <span className="text-[15px] text-white leading-relaxed capitalize pr-4">{item.meal_text}</span>
-                        <span className="text-[14px] font-medium text-[rgba(255,255,255,0.6)] shrink-0">{item.calories} kcal</span>
+                      <div key={item.id || i} className={cn("flex items-center justify-between py-3.5", i < slot.items.length - 1 && "border-b border-[rgba(255,255,255,0.06)]")}>
+                        <span className="text-[15px] font-medium text-[rgba(255,255,255,0.85)] leading-relaxed capitalize pr-4">{item.meal_text}</span>
+                        <span className="text-[14px] font-bold tracking-tight text-[#FF4D1C] bg-[rgba(255,77,28,0.1)] px-2.5 py-1 rounded-full shrink-0">{item.calories} kcal</span>
                       </div>
                     ))}
                   </div>
