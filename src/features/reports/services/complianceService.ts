@@ -55,6 +55,7 @@ export const complianceService = {
         actual_calories: actualCalories,
         target_protein: targetProtein,
         actual_protein: actualProtein,
+        water: 0,
         score
       };
       
@@ -69,6 +70,10 @@ export const complianceService = {
         .select()
         .maybeSingle();
         
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error updating daily metric:', error);
+      }
+      
       try {
         const allMetrics = await reportService.getDailyMetrics();
         const { awardService } = await import('@/features/awards/services/awardService');
@@ -121,6 +126,7 @@ export const complianceService = {
         actual_calories: actualCalories,
         target_protein: targetProtein,
         actual_protein: actualProtein,
+        water: 0,
         score
       };
       

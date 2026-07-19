@@ -8,27 +8,44 @@ interface DailyHistoryChartProps {
     target: number;
   }[];
   todayStr: string;
+  startDateStr?: string;
   unit: string;
   type: "calorie" | "protein";
 }
 
-export function DailyHistoryChart({ logs, todayStr, unit, type }: DailyHistoryChartProps) {
+export function DailyHistoryChart({ logs, todayStr, startDateStr, unit, type }: DailyHistoryChartProps) {
   // 1. Sort logs and fill missing days
   const filledLogs = useMemo(() => {
-    const sorted = [...logs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    if (sorted.length === 0) return [];
-
-    const startDate = new Date(sorted[0].date);
-    const today = new Date(todayStr);
+    const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date));
+    
+    let startStr = startDateStr;
+    if (!startStr) {
+       startStr = sorted.length > 0 ? sorted[0].date : todayStr;
+    }
+    
+    // Parse dates by explicitly splitting to avoid timezone shifts
+    const [sY, sM, sD] = startStr.split('-').map(Number);
+    let current = new Date(sY, sM - 1, sD);
+    const [tY, tM, tD] = todayStr.split('-').map(Number);
+    const today = new Date(tY, tM - 1, tD);
     
     const result = [];
-    let current = new Date(startDate);
     let i = 0;
     let dayNum = 1;
-    let lastTarget = sorted[0].target;
-
+    let lastTarget = sorted.length > 0 ? sorted[0].target : 0;
+    
     while (current <= today) {
-      const currentStr = current.toISOString().split("T")[0];
+      const year = current.getFullYear();
+      const month = String(current.getMonth() + 1).padStart(2, '0');
+      const day = String(current.getDate()).padStart(2, '0');
+      const currentStr = `${year}-${month}-${day}`;
+      
+      // fast forward sorted index if it's behind currentStr
+      while (i < sorted.length && sorted[i].date < currentStr) {
+        lastTarget = sorted[i].target; // catch up target
+        i++;
+      }
+      
       if (i < sorted.length && sorted[i].date === currentStr) {
         lastTarget = sorted[i].target;
         result.push({ ...sorted[i], dayNum });
@@ -41,11 +58,12 @@ export function DailyHistoryChart({ logs, todayStr, unit, type }: DailyHistoryCh
           dayNum
         });
       }
-      current.setUTCDate(current.getUTCDate() + 1);
+      
+      current.setDate(current.getDate() + 1);
       dayNum++;
     }
     return result;
-  }, [logs, todayStr]);
+  }, [logs, todayStr, startDateStr]);
 
   const totalDays = filledLogs.length;
   const maxPage = Math.max(1, Math.ceil(totalDays / 7));
