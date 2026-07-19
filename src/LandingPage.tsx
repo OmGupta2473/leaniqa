@@ -1,4 +1,5 @@
 import { Logo } from "@/shared/components/Logo";
+import { InstallLeaniqa } from "@/components/InstallLeaniqa";
 import React, { useRef, useState, useEffect } from "react";
 import {
   motion,
