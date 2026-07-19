@@ -62,7 +62,7 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
         layout
         className="mb-4 overflow-hidden rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] shadow-sm backdrop-blur-xl transition-all duration-300 hover:bg-[rgba(255,255,255,0.05)]"
       >
-      <div className="p-5 flex items-center justify-between select-none cursor-pointer" onClick={() => { haptics.selection(); setExpanded(!expanded); }}>
+      <div className="p-5 flex items-center justify-between select-none cursor-pointer" onClick={() => { haptics.tap(); setExpanded(!expanded); }}>
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-[16px] bg-[rgba(255,255,255,0.05)] flex items-center justify-center text-[rgba(255,255,255,0.8)] shadow-inner">
             {icon}
