@@ -2,15 +2,15 @@ import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
 
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
   app.use(express.json());
 
-  // API routes can go here
 
-  // Vite middleware for development
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
