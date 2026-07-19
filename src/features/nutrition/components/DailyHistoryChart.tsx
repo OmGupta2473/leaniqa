@@ -117,11 +117,11 @@ export function DailyHistoryChart({ logs, todayStr, startDateStr, unit, type }: 
       </div>
 
       {/* Chart Area */}
-      <div className="relative flex items-end justify-between px-[10px] pb-[28px] mb-[16px]" style={{ height: `${chartAreaHeight + 28}px` }}>
+      <div className="relative flex items-end justify-between px-[10px] pb-[36px] mb-[16px]" style={{ height: `${chartAreaHeight + 36}px` }}>
         {/* Target dashed line */}
         <div 
           className="absolute left-0 right-0 border-t border-dashed border-[#D4FF00] opacity-50 z-0" 
-          style={{ bottom: `${targetLineBottom + 28}px` }}
+          style={{ bottom: `${targetLineBottom + 36}px` }}
         />
         
         {displayDays.map((day, i) => {
@@ -148,12 +148,12 @@ export function DailyHistoryChart({ logs, todayStr, startDateStr, unit, type }: 
                 {day.actual}{isToday ? '*' : ''}
               </div>
               <div 
-                style={{ height: `calc(${heightPct}% - 28px)`, backgroundColor: barColor }} 
+                style={{ height: `${heightPct}%`, backgroundColor: barColor }} 
                 className="w-[20px] rounded-t-[4px] min-h-[4px] transition-all duration-500 ease-out"
               />
-              <div className="absolute bottom-0 flex flex-col items-center justify-end h-[28px] pb-1">
-                <span className="text-[10px] text-[#EBEBF599] font-bold">D{day.dayNum}</span>
-                <span className="text-[8px] text-[rgba(235,235,245,0.4)]">{formattedDate}</span>
+              <div className="absolute -bottom-[36px] flex flex-col items-center justify-start pt-1 h-[36px] w-full">
+                <span className="text-[10px] text-[#EBEBF599] font-bold leading-tight">D{day.dayNum}</span>
+                <span className="text-[9px] text-[rgba(235,235,245,0.4)] leading-tight">{formattedDate}</span>
               </div>
             </div>
           );
