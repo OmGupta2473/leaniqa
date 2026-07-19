@@ -1,19 +1,12 @@
-import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { profileService } from "@/features/profile/services/profileService";
-import { ChevronLeft, TrendingDown, TrendingUp, Target, Bolt, Flame, Minus, Calendar, Flag } from "lucide-react";
+import React from 'react';
+import { TrendingDown, TrendingUp, Target, Bolt, Flame, Minus, Calendar, Flag } from "lucide-react";
 import { useCalculatedProfile } from "@/shared/hooks/useCalculatedProfile";
 
 function displayVal(val: any) {
   return val === undefined || val === null || isNaN(val) ? '—' : val;
 }
 
-export function TransformationPage() {
-  const navigate = useNavigate();
-
-  const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => profileService.getProfile() });
-  const { data: goal } = useQuery({ queryKey: ["goal"], queryFn: () => profileService.getGoal() });
-
+export function TransformationSection() {
   const { profileData: calculated } = useCalculatedProfile();
 
   const {
@@ -31,23 +24,34 @@ export function TransformationPage() {
     }
   }
 
-  // Determine change direction
   const isDecreasing = (fatToLoseKg && fatToLoseKg > 0) || (targetBodyFatPct && currentBodyFatPct && targetBodyFatPct < currentBodyFatPct);
 
+  // If there's no weightKg or targetWeightKg, it means no transformation has been created yet.
+  if (!weightKg || !targetWeightKg) {
+    return (
+      <div className="mb-10">
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-[22px] font-semibold tracking-tight text-white leading-tight">My Transformation</div>
+        </div>
+        <div className="card-base p-6 flex flex-col items-center text-center">
+          <div className="w-16 h-16 rounded-full bg-[rgba(212,255,0,0.1)] flex items-center justify-center mb-4">
+            <Target size={32} className="text-[#D4FF00]" />
+          </div>
+          <h3 className="text-[18px] font-semibold text-white mb-2">No Transformation Yet</h3>
+          <p className="text-[14px] text-[rgba(235,235,245,0.6)] mb-6">Set your body goals and create a plan to see your projected timeline.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="page-enter min-h-[100dvh] bg-[#0A0A0A] pt-[calc(env(safe-area-inset-top)+20px)] pb-[calc(100px+env(safe-area-inset-bottom))] px-5">
-      
-      {/* Header */}
-      <div className="flex justify-between items-center mb-10">
-        <button onClick={() => navigate('/dashboard')} className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.03)] flex items-center justify-center transition-colors hover:bg-[rgba(255,255,255,0.1)]">
-          <ChevronLeft size={20} className="text-white" />
-        </button>
-        <div className="text-[17px] font-semibold text-white tracking-tight">Transformation Plan</div>
-        <div className="w-8" />
+    <div className="mb-10">
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-[22px] font-semibold tracking-tight text-white leading-tight">My Transformation</div>
       </div>
 
       {/* Hero Projection Card */}
-      <div className="bg-[rgba(212,255,0,0.03)] border border-[rgba(212,255,0,0.15)] rounded-3xl p-6 flex flex-col items-center justify-center text-center mb-10">
+      <div className="bg-[rgba(212,255,0,0.03)] border border-[rgba(212,255,0,0.15)] rounded-3xl p-6 flex flex-col items-center justify-center text-center mb-6">
         <div className="text-[10px] font-bold uppercase tracking-widest text-[#D4FF00] mb-2 opacity-80">
           Projected weight
         </div>
@@ -74,7 +78,7 @@ export function TransformationPage() {
       </div>
 
       {/* BF% Progression / Milestone Pattern */}
-      <div className="card-base p-5 mb-10">
+      <div className="card-base p-5 mb-6">
         <div className="text-[13px] font-semibold text-white mb-6">Physique Timeline</div>
         
         <div className="flex flex-col relative pb-2">
@@ -106,10 +110,7 @@ export function TransformationPage() {
         </div>
       </div>
 
-      {/* Projection details cards */}
-      <div className="text-[22px] font-semibold tracking-tight text-white tracking-tight mb-4">Transformation Goals</div>
-      <div className="grid grid-cols-2 gap-3 mb-10">
-        
+      <div className="grid grid-cols-2 gap-3">
         <div className="card-base p-[14px] flex flex-col">
           <div className="w-10 h-10 rounded-[20px] bg-[rgba(212,255,0,0.08)] flex items-center justify-center mb-3">
             <Target size={20} className="text-[#D4FF00]" />
@@ -169,9 +170,7 @@ export function TransformationPage() {
             </div>
           </div>
         </div>
-
       </div>
-
     </div>
   );
 }
