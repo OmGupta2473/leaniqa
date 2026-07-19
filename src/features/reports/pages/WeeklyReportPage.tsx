@@ -173,7 +173,7 @@ export function WeeklyReportPage() {
       const d = new Date(today);
       d.setDate(d.getDate() - (6 - i));
       const dateStr = getLocalDateString(d);
-      const dayMeals = meals.filter(m => m.meal_time.startsWith(dateStr));
+      const dayMeals = meals.filter(m => getLocalDateString(new Date(m.meal_time)) === dateStr);
       const metric = dailyMetrics.find(m => m.date === dateStr);
       
       const caloriesConsumed = dayMeals.reduce((a, m) => a + m.calories, 0);

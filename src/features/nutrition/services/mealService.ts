@@ -133,8 +133,9 @@ export const mealService = {
   async getMealsByDate(dateStr: string): Promise<DbMealLog[]> {
     const userId = await authService.getUserId();
     // dateStr is 'YYYY-MM-DD'
-    const startOfDay = new Date(dateStr).toISOString();
-    const endOfDay = new Date(new Date(dateStr).getTime() + 24 * 60 * 60 * 1000).toISOString();
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const startOfDay = new Date(year, month - 1, day).toISOString();
+    const endOfDay = new Date(year, month - 1, day + 1).toISOString();
     
     const { data, error } = await supabase
       .from('meal_logs')

@@ -32,10 +32,19 @@ export const AWARDS_CATALOG: Award[] = [
 
 export function toUtcDay(dateStr: string | Date): number {
   if (!dateStr) return 0;
-  let iso = typeof dateStr === 'string' ? dateStr : dateStr.toISOString();
-  const match = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (!match) return 0;
-  const d = new Date(Date.UTC(+match[1], +match[2] - 1, +match[3]));
+  let year, month, day;
+  if (typeof dateStr === 'string') {
+    const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!match) return 0;
+    year = +match[1];
+    month = +match[2] - 1;
+    day = +match[3];
+  } else {
+    year = dateStr.getFullYear();
+    month = dateStr.getMonth();
+    day = dateStr.getDate();
+  }
+  const d = new Date(Date.UTC(year, month, day));
   return Math.floor(d.getTime() / 86400000);
 }
 
