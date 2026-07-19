@@ -106,7 +106,7 @@ function SocialProofBar() {
                 >
                   {s.value}
                 </div>
-                <div className="w-6 sm:w-8 h-[2px] bg-[#D4FF00] mb-1.5 sm:mb-3 mx-auto xl:mx-0 opacity-80" />
+                <div className="w-6 sm:w-8 h-[2px] bg-[#D4FF00] mb-1.5 sm:mb-2 mx-auto xl:mx-0 opacity-80" />
                 <div className="text-[10px] sm:text-xs lg:text-sm text-zinc-300 font-medium uppercase tracking-wider">
                   {s.label}
                 </div>
@@ -127,7 +127,7 @@ function DisciplineAdvantage() {
         title: "Passive food diary",
         desc: "You log, it stores.",
         demo: (
-          <div className="bg-[#18181A] rounded-xl border border-white/5 p-4 mt-4 shadow-inner">
+          <div className="bg-[#18181A] rounded-xl border border-white/5 p-3 mt-3 shadow-inner">
              <div className="flex items-center gap-2 text-zinc-500 mb-4 text-xs bg-zinc-900/50 p-2 rounded-lg border border-white/5">
                 <Search className="w-4 h-4" /> Search food
              </div>
@@ -154,13 +154,13 @@ function DisciplineAdvantage() {
         title: "Active AI coaching",
         desc: "It scores, adjusts, and coaches.",
         demo: (
-          <div className="bg-zinc-900/80 rounded-xl border border-white/5 p-4 mt-4 relative overflow-hidden shadow-xl shadow-[#D4FF00]/5">
-             <div className="text-xs text-zinc-400 mb-3 flex items-center gap-1.5 font-medium">
+          <div className="bg-zinc-900/80 rounded-xl border border-white/5 p-3 mt-3 relative overflow-hidden shadow-xl shadow-[#D4FF00]/5">
+             <div className="text-xs text-zinc-400 mb-2 flex items-center gap-1.5 font-medium">
                <Sparkles className="w-3.5 h-3.5 text-[#D4FF00]"/> AI Coach
              </div>
              <div className="flex items-start justify-between gap-4">
                <div className="flex-1">
-                 <div className="bg-[#18181A] p-3 rounded-lg border border-white/5 text-xs text-zinc-300 leading-relaxed mb-3 inline-block rounded-tl-sm">
+                 <div className="bg-[#18181A] p-3 rounded-lg border border-white/5 text-xs text-zinc-300 leading-relaxed mb-2 inline-block rounded-tl-sm">
                    Great choice! But you're<br/> 12g protein short.<br/> Add any one:
                  </div>
                  <div className="flex flex-wrap gap-2">
@@ -200,7 +200,7 @@ function DisciplineAdvantage() {
         title: "Shows calories",
         desc: "No context on whether it's enough.",
         demo: (
-          <div className="bg-[#18181A] rounded-xl border border-white/5 p-4 mt-4 shadow-inner">
+          <div className="bg-[#18181A] rounded-xl border border-white/5 p-3 mt-3 shadow-inner">
             <div className="text-xs font-medium text-zinc-500 mb-4 pb-3 border-b border-white/5">Nutrition Overview</div>
             <div className="grid grid-cols-3 gap-2">
                <div className="text-center bg-zinc-900/50 p-2 rounded-lg border border-white/5">
@@ -235,7 +235,7 @@ function DisciplineAdvantage() {
         title: "Daily Score that matters",
         desc: "Focus on compliance, not just calories.",
         demo: (
-          <div className="bg-zinc-900/80 rounded-xl border border-white/5 p-4 mt-4 shadow-xl shadow-[#D4FF00]/5">
+          <div className="bg-zinc-900/80 rounded-xl border border-white/5 p-3 mt-3 shadow-xl shadow-[#D4FF00]/5">
              <div className="flex items-center gap-6">
                <div className="relative w-20 h-20 flex-shrink-0 flex items-center justify-center bg-zinc-950 rounded-full border border-white/5">
                  <svg className="absolute inset-0 w-full h-full -rotate-90 drop-shadow-[0_0_10px_rgba(212,255,0,0.4)]" viewBox="0 0 36 36">
@@ -281,7 +281,7 @@ function DisciplineAdvantage() {
                </div>
              </div>
              
-             <div className="mt-5 pt-3 border-t border-white/5 flex items-start gap-2.5 bg-[#D4FF00]/5 -mx-4 -mb-4 p-4">
+             <div className="mt-3 pt-2 border-t border-white/5 flex items-start gap-2.5 bg-[#D4FF00]/5 -mx-4 -mb-4 p-4">
                <Star className="w-4 h-4 text-[#D4FF00] mt-0.5 flex-shrink-0" />
                <div>
                  <div className="text-xs text-[#D4FF00] font-medium mb-0.5">You're doing great!</div>
@@ -298,7 +298,7 @@ function DisciplineAdvantage() {
         title: "Generic goal",
         desc: "Vague goal of losing weight someday.",
         demo: (
-          <div className="bg-[#18181A] rounded-xl border border-white/5 p-5 mt-4 shadow-inner">
+          <div className="bg-[#18181A] rounded-xl border border-white/5 p-4 mt-3 shadow-inner">
              <div className="bg-zinc-900/50 p-4 rounded-lg border border-white/5">
                <div className="text-[10px] font-medium text-zinc-500 mb-1">Goal</div>
                <div className="text-sm font-semibold text-zinc-300 mb-5 flex items-center justify-between">
@@ -319,7 +319,7 @@ function DisciplineAdvantage() {
         title: "Exact goal. Real timeline.",
         desc: "Calculated from your real adherence.",
         demo: (
-          <div className="bg-zinc-900/80 rounded-xl border border-white/5 p-4 mt-4 shadow-xl shadow-[#D4FF00]/5">
+          <div className="bg-zinc-900/80 rounded-xl border border-white/5 p-3 mt-3 shadow-xl shadow-[#D4FF00]/5">
              <div className="flex items-center justify-between mb-4 px-2">
                <div>
                  <div className="text-[10px] text-zinc-500 font-medium mb-1">Starting</div>
@@ -337,7 +337,7 @@ function DisciplineAdvantage() {
                </div>
              </div>
              
-             <div className="relative mt-8 mb-6 px-4">
+             <div className="relative mt-5 mb-4 px-2">
                <div className="h-2 w-full bg-zinc-950 rounded-full border border-white/5 overflow-hidden">
                  <div className="h-full bg-gradient-to-r from-[#D4FF00]/80 to-[#D4FF00] w-[20%] rounded-full shadow-[0_0_10px_rgba(212,255,0,0.5)]" />
                </div>
@@ -347,7 +347,7 @@ function DisciplineAdvantage() {
                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-zinc-800 rounded-full" />
              </div>
              
-             <div className="mt-4 pt-4 border-t border-white/5 flex items-start gap-2.5 bg-[#D4FF00]/5 -mx-4 -mb-4 p-4">
+             <div className="mt-3 pt-3 border-t border-white/5 flex items-start gap-2.5 bg-[#D4FF00]/5 -mx-4 -mb-4 p-4">
                <Target className="w-4 h-4 text-[#D4FF00] mt-0.5 flex-shrink-0" />
                <div>
                  <div className="text-xs text-[#D4FF00] font-medium mb-0.5">You're on track!</div>
@@ -361,15 +361,15 @@ function DisciplineAdvantage() {
   ];
 
   return (
-    <section className="py-24 sm:py-32 px-6 bg-[#0A0A0B] overflow-hidden" id="discipline">
+    <section className="py-10 sm:py-16 px-6 bg-[#0A0A0B] overflow-hidden" id="discipline">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-16 md:mb-24 max-w-4xl mx-auto text-center md:text-left">
+        <div className="mb-10 md:mb-16 max-w-3xl mx-auto text-center md:text-left">
           <Reveal>
             <div className="flex items-center justify-center md:justify-start gap-2 text-xs font-mono text-[#D4FF00] uppercase tracking-widest mb-4">
               <div className="w-1.5 h-1.5 rounded-full bg-[#D4FF00] shadow-[0_0_8px_#D4FF00]" />
               WHY LEANIQA
             </div>
-            <h2 className="text-3xl sm:text-5xl lg:text-6xl font-semibold tracking-tight text-white mb-6 leading-tight">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white mb-6 leading-tight">
               Most apps are food diaries.<br/>
               Leaniqa is a <span className="text-[#D4FF00]">discipline engine.</span>
             </h2>
@@ -382,24 +382,24 @@ function DisciplineAdvantage() {
         </div>
 
         {/* Labels for Desktop */}
-        <div className="hidden md:flex justify-between max-w-5xl mx-auto mb-8 px-12 relative z-10">
-           <div className="w-[45%] flex justify-center">
+        <div className="hidden md:flex justify-between max-w-4xl mx-auto mb-6 px-8 relative z-10">
+           <div className="w-[47%] flex justify-center">
              <div className="px-5 py-2 rounded-full border border-zinc-800 bg-zinc-900/80 text-[10px] sm:text-xs font-semibold text-zinc-400 uppercase tracking-widest shadow-lg backdrop-blur-sm">
                OTHER APPS
              </div>
            </div>
-           <div className="w-[45%] flex justify-center">
+           <div className="w-[47%] flex justify-center">
              <div className="px-5 py-2 rounded-full border border-[#D4FF00]/30 bg-[#D4FF00]/10 text-[10px] sm:text-xs font-semibold text-[#D4FF00] uppercase tracking-widest shadow-[0_0_20px_rgba(212,255,0,0.1)] backdrop-blur-sm">
                LEANIQA
              </div>
            </div>
         </div>
 
-        <div className="relative max-w-5xl mx-auto">
+        <div className="relative max-w-4xl mx-auto">
           {/* Center vertical dashed line for desktop */}
           <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px border-l-2 border-dashed border-zinc-800 -translate-x-1/2 z-0" />
           
-          <div className="space-y-12 md:space-y-16 relative z-10">
+          <div className="space-y-4 md:space-y-6 relative z-10">
             {battles.map((b, i) => (
               <div key={i} className="relative flex flex-col md:flex-row items-stretch gap-8 md:gap-0">
                  
@@ -420,23 +420,23 @@ function DisciplineAdvantage() {
                  </div>
 
                  {/* Other Apps (Left) */}
-                 <div className="w-full md:w-[45%] flex flex-col">
+                 <div className="w-full md:w-[47%] flex flex-col">
                    <div className="md:hidden flex justify-center mb-4">
                      <div className="px-4 py-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 text-[10px] font-semibold text-zinc-400 uppercase tracking-widest inline-flex items-center gap-2">
                        <X className="w-3 h-3 text-red-500" /> OTHER APPS
                      </div>
                    </div>
                    <Reveal delay={i * 0.1} className="flex-1">
-                     <div className="bg-gradient-to-br from-[#111112] to-[#0A0A0B] rounded-[2rem] p-6 md:p-8 border border-zinc-800/80 h-full flex flex-col hover:border-zinc-700 transition-colors duration-300 shadow-xl shadow-black/50">
-                       <div className="flex items-center gap-3 mb-3">
-                         <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20 flex-shrink-0">
-                           <X className="w-4 h-4 text-red-500" />
+                     <div className="bg-gradient-to-br from-[#111112] to-[#0A0A0B] rounded-2xl p-4 md:p-5 border border-zinc-800/80 h-full flex flex-col hover:border-zinc-700 transition-colors duration-300 shadow-xl shadow-black/50">
+                       <div className="flex items-center gap-3 mb-2">
+                         <div className="w-6 h-6 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20 flex-shrink-0">
+                           <X className="w-3 h-3 text-red-500" />
                          </div>
-                         <h3 className="text-xl sm:text-2xl font-semibold text-white tracking-tight">{b.other.title}</h3>
+                         <h3 className="text-base sm:text-lg font-semibold text-white tracking-tight">{b.other.title}</h3>
                        </div>
-                       <p className="text-zinc-400 text-sm md:text-base ml-11">{b.other.desc}</p>
+                       <p className="text-zinc-400 text-[11px] md:text-xs ml-9">{b.other.desc}</p>
                        
-                       <div className="mt-auto pt-8">
+                       <div className="mt-auto pt-4">
                          {b.other.demo}
                        </div>
                      </div>
@@ -444,10 +444,10 @@ function DisciplineAdvantage() {
                  </div>
 
                  {/* Spacer for center icon */}
-                 <div className="hidden md:block w-[10%] relative z-10" />
+                 <div className="hidden md:block w-[8%] relative z-10" />
 
                  {/* Leaniqa (Right) */}
-                 <div className="w-full md:w-[45%] flex flex-col">
+                 <div className="w-full md:w-[47%] flex flex-col">
                    <div className="md:hidden flex justify-center mt-6 mb-4 relative z-10">
                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[200%] w-px h-8 bg-gradient-to-b from-transparent to-[#D4FF00]/50" />
                      <div className="px-4 py-1.5 rounded-full border border-[#D4FF00]/30 bg-[#D4FF00]/10 text-[10px] font-semibold text-[#D4FF00] uppercase tracking-widest inline-flex items-center gap-2">
@@ -455,22 +455,22 @@ function DisciplineAdvantage() {
                      </div>
                    </div>
                    <Reveal delay={i * 0.1 + 0.1} className="flex-1">
-                     <div className="bg-gradient-to-b from-[#111112] to-[#0A0A0B] rounded-[2rem] p-6 md:p-8 border border-[#D4FF00]/30 h-full relative group overflow-hidden flex flex-col hover:border-[#D4FF00]/60 transition-all duration-500 hover:shadow-[0_0_40px_rgba(212,255,0,0.1)]">
+                     <div className="bg-gradient-to-b from-[#111112] to-[#0A0A0B] rounded-2xl p-4 md:p-5 border border-[#D4FF00]/30 h-full relative group overflow-hidden flex flex-col hover:border-[#D4FF00]/60 transition-all duration-500 hover:shadow-[0_0_40px_rgba(212,255,0,0.1)]">
                        <div className="absolute inset-0 bg-gradient-to-br from-[#D4FF00]/5 via-transparent to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
                        
                        {/* Shimmer effect */}
                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#D4FF00]/5 to-transparent -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-1000 ease-in-out" />
                        
                        <div className="relative z-10 flex flex-col h-full">
-                         <div className="flex items-center gap-3 mb-3">
-                           <div className="w-8 h-8 rounded-full bg-[#D4FF00] flex items-center justify-center shadow-[0_0_15px_rgba(212,255,0,0.4)] flex-shrink-0">
-                             <Check className="w-4 h-4 text-black font-bold" />
+                         <div className="flex items-center gap-3 mb-2">
+                           <div className="w-6 h-6 rounded-full bg-[#D4FF00] flex items-center justify-center shadow-[0_0_15px_rgba(212,255,0,0.4)] flex-shrink-0">
+                             <Check className="w-3 h-3 text-black font-bold" />
                            </div>
-                           <h3 className="text-xl sm:text-2xl font-semibold text-white tracking-tight">{b.leaniqa.title}</h3>
+                           <h3 className="text-base sm:text-lg font-semibold text-white tracking-tight">{b.leaniqa.title}</h3>
                          </div>
-                         <p className="text-zinc-300 text-sm md:text-base ml-11">{b.leaniqa.desc}</p>
+                         <p className="text-zinc-300 text-[11px] md:text-xs ml-9">{b.leaniqa.desc}</p>
                          
-                         <div className="mt-auto pt-8">
+                         <div className="mt-auto pt-4">
                            {b.leaniqa.demo}
                          </div>
                        </div>
@@ -485,7 +485,7 @@ function DisciplineAdvantage() {
 
         {/* Bottom Feature Grid */}
         <Reveal>
-          <div className="mt-24 md:mt-32 max-w-5xl mx-auto border border-zinc-800/80 rounded-[2rem] bg-gradient-to-b from-[#111112] to-[#0A0A0B] p-8 md:p-10 shadow-2xl">
+          <div className="mt-10 md:mt-12 max-w-4xl mx-auto border border-zinc-800/80 rounded-2xl bg-gradient-to-b from-[#111112] to-[#0A0A0B] p-8 md:p-10 shadow-2xl">
              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
                <div className="flex items-start md:items-center gap-4">
                   <div className="bg-zinc-900 border border-zinc-800 p-3 rounded-xl">
@@ -638,11 +638,11 @@ function HowItWorks() {
   const lineHeight = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
 
   return (
-    <section className="py-24 sm:py-32 px-6 border-t border-zinc-900 bg-[#0A0A0B] overflow-hidden" id="how-it-works">
+    <section className="py-10 sm:py-16 px-6 border-t border-zinc-900 bg-[#0A0A0B] overflow-hidden" id="how-it-works">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-20 max-w-2xl mx-auto">
           <Reveal>
-            <p className="text-xs font-mono text-[#D4FF00] uppercase tracking-widest mb-3">
+            <p className="text-xs font-mono text-[#D4FF00] uppercase tracking-widest mb-2">
               HOW IT WORKS
             </p>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white mb-6">
@@ -677,7 +677,7 @@ function HowItWorks() {
                     <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-[#D4FF00]/10 group-hover:border-[#D4FF00]/30 transition-all duration-500">
                       <s.icon className="w-5 h-5 text-zinc-400 group-hover:text-[#D4FF00] transition-colors duration-500" />
                     </div>
-                    <h3 className="text-lg sm:text-xl font-semibold text-white mb-2 tracking-tight">
+                    <h3 className="text-base sm:text-lg font-semibold text-white mb-2 tracking-tight">
                       {s.title}
                     </h3>
                     <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed">
@@ -698,7 +698,7 @@ function HowItWorks() {
                   <div className="relative grid grid-cols-1 md:grid-cols-2 md:gap-16 items-center w-full md:py-12">
                     
                     {/* Center Node Desktop / Left Node Mobile */}
-                    <div className="flex absolute left-0 md:left-1/2 top-12 md:top-1/2 -translate-x-1/2 md:-translate-y-1/2 w-8 h-8 rounded-full bg-[#0A0A0B] border-2 border-zinc-800 items-center justify-center z-10 transition-colors duration-500 delay-300">
+                    <div className="flex absolute left-0 md:left-1/2 top-12 md:top-1/2 -translate-x-1/2 md:-translate-y-1/2 w-6 h-6 rounded-full bg-[#0A0A0B] border-2 border-zinc-800 items-center justify-center z-10 transition-colors duration-500 delay-300">
                        <div className="w-2.5 h-2.5 rounded-full bg-zinc-700 transition-colors duration-500 group-hover:bg-[#D4FF00]" />
                     </div>
 
@@ -756,7 +756,7 @@ function TestimonialStrip() {
       <div className="max-w-7xl mx-auto">
         <Reveal>
           <div className="mb-12 sm:mb-16 max-w-2xl">
-            <p className="text-xs font-mono text-[#D4FF00] uppercase tracking-widest mb-3">
+            <p className="text-xs font-mono text-[#D4FF00] uppercase tracking-widest mb-2">
               Real results
             </p>
             <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
@@ -784,7 +784,7 @@ function TestimonialStrip() {
                 {/* Author */}
                 <div className="flex items-center gap-3 pt-4 border-t border-zinc-800/50">
                   <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-black flex-shrink-0"
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-black flex-shrink-0"
                     style={{ background: "#D4FF00" }}
                   >
                     {t.initials}
@@ -891,7 +891,7 @@ function GridCard({
       <div className="mt-auto">
         <h3
           style={{ transform: "translateZ(30px)" }}
-          className="text-lg font-medium mb-3 text-zinc-100"
+          className="text-lg font-medium mb-2 text-zinc-100"
         >
           {feature.title}
         </h3>
@@ -1068,7 +1068,7 @@ function DashboardScreen() {
       
       <div className="flex-1 px-[6%] pt-[2%]">
          <div className="bg-white/5 border border-white/5 rounded-[20px] p-[6%]">
-            <div className="font-semibold text-white/50 uppercase tracking-wider mb-3" style={{ fontSize: "clamp(7px, 2.8%, 11px)" }}>Adjusted Target</div>
+            <div className="font-semibold text-white/50 uppercase tracking-wider mb-2" style={{ fontSize: "clamp(7px, 2.8%, 11px)" }}>Adjusted Target</div>
             <div className="text-[#D4FF00] font-semibold mb-1" style={{ fontSize: "clamp(10px, 4%, 16px)" }}>Dinner: 450 kcal</div>
             <div className="text-white/70" style={{ fontSize: "clamp(8px, 3.2%, 13px)" }}>Must include 45g Protein</div>
          </div>
@@ -1345,7 +1345,7 @@ function DesktopStory() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-200px" }}
               transition={{ duration: 0.6 }}
-              className="w-[45%]"
+              className="w-[47%]"
             >
               <h3 className="text-4xl lg:text-5xl font-semibold leading-[1.1] text-zinc-50 tracking-tight">
                 {step.title}
@@ -1360,7 +1360,7 @@ function DesktopStory() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-200px" }}
               transition={{ duration: 0.8 }}
-              className="w-[45%] flex items-center justify-center"
+              className="w-[47%] flex items-center justify-center"
             >
               <PhoneFrame>
                  {i === 0 && <AICoachScreen />}
@@ -1626,13 +1626,13 @@ function InteractiveMealDemo() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="text-zinc-100 font-medium text-[13px] sm:text-[14px] mb-3 sm:mb-4 border-b border-zinc-800/50 pb-3"
+                className="text-zinc-100 font-medium text-[13px] sm:text-[14px] mb-2 sm:mb-4 border-b border-zinc-800/50 pb-3"
               >
                 soya sabji + 3 roti
               </motion.div>
 
               {/* Nutrition Chips */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3 sm:mb-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2 sm:mb-4">
                 {[
                   { label: "Calories", val: cal, unit: "kcal", icon: Flame, color: "#FF4D1C", delay: 0.12 },
                   { label: "Protein", val: pro, unit: "g", icon: Dumbbell, color: "#D4FF00", delay: 0.20 },
