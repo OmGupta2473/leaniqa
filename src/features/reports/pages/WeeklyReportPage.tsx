@@ -10,6 +10,8 @@ import { DailyActivityData } from '@/shared/types/activity';
 import { cn } from "@/shared/utils/utils";
 import { useNavigate } from 'react-router-dom';
 import { haptics } from '@/shared/utils/haptics';
+import { calculateDailyScore } from '@/shared/utils/complianceEngine';
+import { weightService } from '@/features/progress/services/weightService';
 
 function getLocalDateString(d: Date) {
   const year = d.getFullYear();
@@ -36,7 +38,8 @@ function generateCoachData(days: DailyActivityData[], loggedCount: number) {
     if (d.caloriesConsumed <= d.calorieTarget * 1.1 && d.caloriesConsumed >= d.calorieTarget * 0.8) calorieHits++;
     totalDeficit += (d.calorieTarget - d.caloriesConsumed);
     
-    const date = new Date(d.date);
+    const [y, m, day] = d.date.split('-').map(Number);
+    const date = new Date(y, m - 1, day);
     if (date.getDay() === 0 || date.getDay() === 6) {
       weekendCals += d.caloriesConsumed;
     } else {
@@ -46,8 +49,14 @@ function generateCoachData(days: DailyActivityData[], loggedCount: number) {
 
   const avgProtein = activeDays.reduce((a, b) => a + b.proteinConsumed, 0) / loggedCount;
   const avgCompliance = activeDays.reduce((a, b) => a + b.complianceScore, 0) / loggedCount;
-  const weekendAvg = activeDays.filter(d => new Date(d.date).getDay() === 0 || new Date(d.date).getDay() === 6).length > 0 ? weekendCals / activeDays.filter(d => new Date(d.date).getDay() === 0 || new Date(d.date).getDay() === 6).length : 0;
-  const weekdayAvg = activeDays.filter(d => new Date(d.date).getDay() > 0 && new Date(d.date).getDay() < 6).length > 0 ? weekdayCals / activeDays.filter(d => new Date(d.date).getDay() > 0 && new Date(d.date).getDay() < 6).length : 0;
+  
+  const getLocalDay = (dateStr: string) => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d).getDay();
+  };
+
+  const weekendAvg = activeDays.filter(d => getLocalDay(d.date) === 0 || getLocalDay(d.date) === 6).length > 0 ? weekendCals / activeDays.filter(d => getLocalDay(d.date) === 0 || getLocalDay(d.date) === 6).length : 0;
+  const weekdayAvg = activeDays.filter(d => getLocalDay(d.date) > 0 && getLocalDay(d.date) < 6).length > 0 ? weekdayCals / activeDays.filter(d => getLocalDay(d.date) > 0 && getLocalDay(d.date) < 6).length : 0;
 
   // Generate Summary
   let summaryShort = "";
@@ -161,6 +170,7 @@ export function WeeklyReportPage() {
   const { data: goal, isLoading: goalLoading } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
   const { data: meals = [], isLoading: mealsLoading } = useQuery({ queryKey: ['meals', 'month'], queryFn: () => mealService.getMeals({ days: 35, limit: 2000 }) });
   const { data: dailyMetrics = [], isLoading: metricsLoading } = useQuery({ queryKey: ['dailyMetrics'], queryFn: () => reportService.getDailyMetrics() });
+  const { data: weightLogs = [] } = useQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
 
   const isLoading = profileLoading || goalLoading || mealsLoading || metricsLoading;
   
@@ -173,11 +183,31 @@ export function WeeklyReportPage() {
       const d = new Date(today);
       d.setDate(d.getDate() - (6 - i));
       const dateStr = getLocalDateString(d);
-      const dayMeals = meals.filter(m => getLocalDateString(new Date(m.meal_time)) === dateStr);
+      
+      const dayMeals = meals.filter(m => {
+        const d = new Date(m.meal_time);
+        const mDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        return mDateStr === dateStr;
+      });
+      
       const metric = dailyMetrics.find(m => m.date === dateStr);
       
       const caloriesConsumed = dayMeals.reduce((a, m) => a + m.calories, 0);
       const proteinConsumed = dayMeals.reduce((a, m) => a + m.protein, 0);
+      
+      let complianceScore = metric?.score ?? 0;
+      
+      // Dynamic recalculation to fix stale metrics caused by previous UTC bugs
+      if (caloriesConsumed > 0 && metric?.actual_calories !== caloriesConsumed) {
+         const hasWeightLogged = weightLogs.some((w: any) => w.date.startsWith(dateStr));
+         complianceScore = calculateDailyScore({
+           targetCalories: metric?.target_calories ?? calorieGoal,
+           actualCalories: caloriesConsumed,
+           targetProtein: metric?.target_protein ?? proteinGoal,
+           actualProtein: proteinConsumed,
+           hasWeightLogged
+         });
+      }
       
       return {
         date: dateStr,
@@ -189,10 +219,10 @@ export function WeeklyReportPage() {
         fatTarget: 60,
         carbsConsumed: dayMeals.reduce((a, m) => a + m.carbs, 0),
         carbsTarget: 220,
-        complianceScore: metric?.score ?? 0,
+        complianceScore,
       };
     });
-  }, [meals, dailyMetrics, calorieGoal, proteinGoal]);
+  }, [meals, dailyMetrics, calorieGoal, proteinGoal, today, weightLogs]);
 
   const activeDays = last7Days.filter(d => d.caloriesConsumed > 0 || d.complianceScore > 0);
   const loggedDaysCount = activeDays.length;
@@ -437,8 +467,9 @@ export function WeeklyReportPage() {
                
                <div className="flex flex-col gap-4">
                  {last7Days.map((day, i) => {
-                   const d = new Date(day.date);
-                   const dayLabel = d.toLocaleDateString('en-US', { weekday: 'short' });
+                   const [y, m, d] = day.date.split('-').map(Number);
+                   const localDate = new Date(y, m - 1, d);
+                   const dayLabel = localDate.toLocaleDateString('en-US', { weekday: 'short' });
                    const pct = Math.min(Math.max(day.complianceScore, 0), 100);
                    const barColor = pct >= 80 ? '#D4FF00' : (pct >= 50 ? '#fbbf24' : '#FF4D1C');
                    

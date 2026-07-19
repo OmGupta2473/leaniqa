@@ -68,15 +68,39 @@ export function ProteinDetailPage() {
   const { profileData: onboardingData } = useCalculatedProfile();
   const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
   const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => profileService.getProfile() });
-  const { data: meals = [] } = useQuery({ queryKey: ["meals", "today"], queryFn: () => mealService.getTodaysMeals() });
+  const { data: meals = [] } = useQuery({ queryKey: ["meals", "month"], queryFn: () => mealService.getMeals({ days: 35, limit: 2000 }) });
 
   const target_protein = profile?.protein_target ?? onboardingData?.proteinMid ?? 150;
 
   const todayStr = getLocalDateString();
-  const proteinConsumed = meals ? meals.reduce((acc, m) => acc + m.protein, 0) : 0;
+  const todayMeals = meals.filter(m => {
+    const d = new Date(m.meal_time);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return dateStr === todayStr;
+  });
+  const proteinConsumed = todayMeals.reduce((acc, m) => acc + m.protein, 0);
   
   const chartLogs = useMemo(() => {
     const logs = [...metrics];
+    
+    // Group all meals by date
+    const mealsByDate = meals.reduce((acc: any, m: any) => {
+      const d = new Date(m.meal_time);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      if (!acc[dateStr]) acc[dateStr] = 0;
+      acc[dateStr] += m.protein;
+      return acc;
+    }, {});
+
+    // Overwrite actuals with dynamically aggregated meals
+    logs.forEach(l => {
+      if (mealsByDate[l.date] !== undefined) {
+        l.actual_protein = mealsByDate[l.date];
+      } else {
+        l.actual_protein = 0;
+      }
+    });
+
     const todayIdx = logs.findIndex(l => l.date === todayStr);
     if (todayIdx >= 0) {
       logs[todayIdx] = { ...logs[todayIdx], actual_protein: proteinConsumed, target_protein };
@@ -90,7 +114,7 @@ export function ProteinDetailPage() {
       });
     }
     return logs;
-  }, [metrics, todayStr, proteinConsumed, target_protein]);
+  }, [metrics, meals, todayStr, proteinConsumed, target_protein]);
 
   const chartData = useMemo(() => {
     return chartLogs.map(l => ({
@@ -101,10 +125,10 @@ export function ProteinDetailPage() {
   }, [chartLogs]);
 
   const slots = [
-    { id: 'breakfast', label: 'Breakfast', items: meals.filter(m => m.meal_slot === 'breakfast') },
-    { id: 'lunch', label: 'Lunch', items: meals.filter(m => m.meal_slot === 'lunch') },
-    { id: 'dinner', label: 'Dinner', items: meals.filter(m => m.meal_slot === 'dinner') },
-    { id: 'other', label: 'Snacks / Other', items: meals.filter(m => !['breakfast', 'lunch', 'dinner'].includes(m.meal_slot || '')) },
+    { id: 'breakfast', label: 'Breakfast', items: todayMeals.filter(m => m.meal_slot === 'breakfast') },
+    { id: 'lunch', label: 'Lunch', items: todayMeals.filter(m => m.meal_slot === 'lunch') },
+    { id: 'dinner', label: 'Dinner', items: todayMeals.filter(m => m.meal_slot === 'dinner') },
+    { id: 'other', label: 'Snacks / Other', items: todayMeals.filter(m => !['breakfast', 'lunch', 'dinner'].includes(m.meal_slot || '')) },
   ];
 
   const proPct = target_protein ? Math.min(proteinConsumed / target_protein, 1.1) : 0;

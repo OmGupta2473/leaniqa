@@ -69,7 +69,7 @@ export function CalorieDetailPage() {
   const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
   const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => profileService.getProfile() });
   const { data: goal } = useQuery({ queryKey: ["goal"], queryFn: () => profileService.getGoal() });
-  const { data: meals = [] } = useQuery({ queryKey: ["meals", "today"], queryFn: () => mealService.getTodaysMeals() });
+  const { data: meals = [] } = useQuery({ queryKey: ["meals", "month"], queryFn: () => mealService.getMeals({ days: 35, limit: 2000 }) });
 
   const dailyCalorieGoal =
     profile?.maintenance_kcal && goal?.deficit_kcal !== undefined
@@ -77,11 +77,35 @@ export function CalorieDetailPage() {
       : (onboardingData?.dailyCalorieGoal ?? 2000);
 
   const todayStr = getLocalDateString();
-  const caloriesConsumed = meals ? meals.reduce((acc, m) => acc + m.calories, 0) : 0;
+  const todayMeals = meals.filter(m => {
+    const d = new Date(m.meal_time);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return dateStr === todayStr;
+  });
+  const caloriesConsumed = todayMeals.reduce((acc, m) => acc + m.calories, 0);
   const isUnderTarget = caloriesConsumed <= dailyCalorieGoal;
   
   const chartLogs = useMemo(() => {
     const logs = [...metrics];
+    
+    // Group all meals by date
+    const mealsByDate = meals.reduce((acc: any, m: any) => {
+      const d = new Date(m.meal_time);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      if (!acc[dateStr]) acc[dateStr] = 0;
+      acc[dateStr] += m.calories;
+      return acc;
+    }, {});
+
+    // Overwrite actuals with dynamically aggregated meals
+    logs.forEach(l => {
+      if (mealsByDate[l.date] !== undefined) {
+        l.actual_calories = mealsByDate[l.date];
+      } else {
+        l.actual_calories = 0;
+      }
+    });
+
     const todayIdx = logs.findIndex(l => l.date === todayStr);
     if (todayIdx >= 0) {
       logs[todayIdx] = { ...logs[todayIdx], actual_calories: caloriesConsumed, target_calories: dailyCalorieGoal };
@@ -95,7 +119,7 @@ export function CalorieDetailPage() {
       });
     }
     return logs;
-  }, [metrics, todayStr, caloriesConsumed, dailyCalorieGoal]);
+  }, [metrics, meals, todayStr, caloriesConsumed, dailyCalorieGoal]);
 
   const chartData = useMemo(() => {
     return chartLogs.map(l => ({
@@ -106,10 +130,10 @@ export function CalorieDetailPage() {
   }, [chartLogs]);
 
   const slots = [
-    { id: 'breakfast', label: 'Breakfast', items: meals.filter(m => m.meal_slot === 'breakfast') },
-    { id: 'lunch', label: 'Lunch', items: meals.filter(m => m.meal_slot === 'lunch') },
-    { id: 'dinner', label: 'Dinner', items: meals.filter(m => m.meal_slot === 'dinner') },
-    { id: 'other', label: 'Snacks / Other', items: meals.filter(m => !['breakfast', 'lunch', 'dinner'].includes(m.meal_slot || '')) },
+    { id: 'breakfast', label: 'Breakfast', items: todayMeals.filter(m => m.meal_slot === 'breakfast') },
+    { id: 'lunch', label: 'Lunch', items: todayMeals.filter(m => m.meal_slot === 'lunch') },
+    { id: 'dinner', label: 'Dinner', items: todayMeals.filter(m => m.meal_slot === 'dinner') },
+    { id: 'other', label: 'Snacks / Other', items: todayMeals.filter(m => !['breakfast', 'lunch', 'dinner'].includes(m.meal_slot || '')) },
   ];
 
   const calPct = dailyCalorieGoal ? Math.min(caloriesConsumed / dailyCalorieGoal, 1.1) : 0;
