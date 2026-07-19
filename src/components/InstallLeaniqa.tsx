@@ -18,37 +18,38 @@ export function InstallLeaniqa() {
     );
   }
 
-  const handleInstallClick = async () => {
-    setIsOpen(true);
-    
+const handleInstallClick = async () => {
     // Check if user is on Desktop Web
     const isDesktop = platform !== 'ios' && platform !== 'android';
 
     if (deferredPrompt && !isDesktop) {
-      setStep(1);
-      // Simulate beautiful install animation before showing prompt for mobile
-      setStatus('installing');
-      setTimeout(async () => {
-        try {
-          await deferredPrompt.prompt();
-          const choiceResult = await deferredPrompt.userChoice;
-          if (choiceResult.outcome === 'accepted') {
-            setStatus('success');
-            setTimeout(() => setIsOpen(false), 3000);
-          } else {
-            // Dismissed, show manual instructions based on platform
-            setStatus('idle');
-            setStep(1); 
-          }
-        } catch (e) {
+      // 1. MUST call prompt() immediately. Do NOT put this in a setTimeout
+      // otherwise the browser will block the native install popup.
+      try {
+        await deferredPrompt.prompt();
+        const choiceResult = await deferredPrompt.userChoice;
+        
+        if (choiceResult.outcome === 'accepted') {
+          // If accepted, show the success modal briefly
+          setIsOpen(true);
+          setStatus('success');
+          setTimeout(() => setIsOpen(false), 3000);
+        } else {
+          // If dismissed, fallback to the manual instructions modal
+          setIsOpen(true);
           setStatus('idle');
-          setStep(1);
+          setStep(1); 
         }
-      }, 1500);
+      } catch (e) {
+        setIsOpen(true);
+        setStatus('idle');
+        setStep(1);
+      }
     } else {
-      // No prompt available OR it's a desktop user
+      // 2. No prompt available OR it's a desktop user
+      // Open the modal instantly for manual instructions / desktop choice
+      setIsOpen(true);
       setStatus('idle');
-      // For desktop, step doesn't matter until they choose, but we start at 1 for mobile
       setStep(isDesktop ? 0 : 1);
     }
   };
