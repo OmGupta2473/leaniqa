@@ -1823,18 +1823,6 @@ export function LandingPage() {
                 Start Your Journey
                 <ArrowRight className="w-4 h-4 flex-shrink-0" />
               </motion.button>
-
-              {/* Secondary CTA */}
-              <motion.button
-                onClick={handleEnterApp}
-                whileHover={{ scale: 1.03, borderColor: "rgba(161,161,170,0.8)" }}
-                whileTap={{ scale: 0.97 }}
-                transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                className="border border-zinc-700 text-zinc-300 w-full sm:w-auto px-6 sm:px-8 py-4 font-medium text-xs sm:text-sm uppercase tracking-wide rounded-full"
-                style={{ willChange: "transform" }}
-              >
-                See How It Works
-              </motion.button>
             </motion.div>
           </div>
           
