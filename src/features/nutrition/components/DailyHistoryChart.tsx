@@ -41,7 +41,7 @@ export function DailyHistoryChart({ logs, todayStr, unit, type }: DailyHistoryCh
           dayNum
         });
       }
-      current.setDate(current.getDate() + 1);
+      current.setUTCDate(current.getUTCDate() + 1);
       dayNum++;
     }
     return result;
