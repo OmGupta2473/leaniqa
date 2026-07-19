@@ -1,20 +1,20 @@
 import re
 
-def insert_import(file_path, imp_statement):
-    with open(file_path, "r") as f:
-        c = f.read()
-    if imp_statement not in c:
-        c = imp_statement + "\n" + c
-    with open(file_path, "w") as f:
-        f.write(c)
+with open('src/LandingPage.tsx', 'r') as f:
+    content = f.read()
 
-insert_import("src/features/profile/pages/ProfilePage.tsx", "import { useUserStore } from '@/features/profile/store/userStore';")
-insert_import("src/features/profile/pages/ProfilePage.tsx", "import { useChatStore } from '@/app/store';")
-
-with open("src/features/goal/pages/GoalSetterPage.tsx", "r") as f:
-    c = f.read()
-# Fix duplicate import
-c = re.sub(r"import \{ useUserStore \} from '@\/features\/profile\/store\/userStore';\n+", "import { useUserStore } from '@/features/profile/store/userStore';\n", c)
-with open("src/features/goal/pages/GoalSetterPage.tsx", "w") as f:
-    f.write(c)
-
+lucide_imports_match = re.search(r'import \{([\s\S]*?)\} from "lucide-react";', content)
+if lucide_imports_match:
+    imports_str = lucide_imports_match.group(1)
+    new_imports = ["ClipboardList", "BarChart2", "Dumbbell", "Activity", "Droplets", "Brain", "ShieldCheck", "Lock", "X", "Check", "CalendarHeart"]
+    
+    for imp in new_imports:
+        if imp not in imports_str:
+            imports_str += f", {imp}"
+            
+    new_lucide_imports = f'import {{{imports_str}}} from "lucide-react";'
+    content = content.replace(lucide_imports_match.group(0), new_lucide_imports)
+    
+    with open('src/LandingPage.tsx', 'w') as f:
+        f.write(content)
+        print("Imports updated")
