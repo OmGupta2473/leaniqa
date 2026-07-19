@@ -68,6 +68,7 @@ export function ProteinDetailPage() {
   const { profileData: onboardingData } = useCalculatedProfile();
   const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
   const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => profileService.getProfile() });
+  const { data: goal } = useQuery({ queryKey: ["goal"], queryFn: () => profileService.getGoal() });
   const { data: meals = [] } = useQuery({ queryKey: ["meals", "month"], queryFn: () => mealService.getMeals({ days: 35, limit: 2000 }) });
 
   const target_protein = profile?.protein_target ?? onboardingData?.proteinMid ?? 150;
