@@ -1823,6 +1823,7 @@ export function LandingPage() {
                 Start Your Journey
                 <ArrowRight className="w-4 h-4 flex-shrink-0" />
               </motion.button>
+              <InstallLeaniqa />
             </motion.div>
           </div>
           
@@ -1970,6 +1971,7 @@ export function LandingPage() {
           >
             Start Your Journey <ArrowRight className="w-4 h-4" />
           </motion.button>
+          <div className="mt-4 flex justify-center"><InstallLeaniqa /></div>
         </div>
       </section>
 
