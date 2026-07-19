@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Smartphone, Download, X, CheckCircle2, Monitor, ArrowRight, Share, MoreVertical, Compass, Home, PlusSquare, Lock } from 'lucide-react';
 import { usePwaInstall, Platform } from './usePwaInstall';
@@ -72,7 +71,15 @@ export function InstallLeaniqa() {
       </motion.button>
 
       <AnimatePresence>
-        {isOpen && createPortal(<InstallWizard platform={platform} step={step} setStep={setStep} status={status} close={close} />, document.body)}
+        {isOpen && (
+          <InstallWizard 
+            platform={platform} 
+            step={step} 
+            setStep={setStep} 
+            status={status} 
+            close={close} 
+          />
+        )}
       </AnimatePresence>
     </>
   );
@@ -131,7 +138,7 @@ function InstallWizard({ platform, step, setStep, status, close }: any) {
   }
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-4 sm:p-6">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 sm:p-6">
       <motion.div 
         initial={{ opacity: 0 }} 
         animate={{ opacity: 1 }} 
