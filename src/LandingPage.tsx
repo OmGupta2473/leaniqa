@@ -1787,9 +1787,9 @@ export function LandingPage() {
       </motion.nav>
 
       {/* ── Hero ── */}
-      <section className="pt-20 sm:pt-24 lg:pt-32 pb-12 sm:pb-16 lg:pb-12 px-6 relative z-100 lg:min-h-[calc(100vh-80px)] flex lg:items-start items-center">
+      <section className="pt-20 sm:pt-24 lg:pt-20 pb-12 sm:pb-16 lg:pb-12 px-6 relative z-100 lg:min-h-[calc(100vh-80px)] flex lg:items-start items-center">
         <div className="w-full max-w-7xl mx-auto flex flex-col lg:flex-row items-center lg:items-start gap-10 lg:gap-8">
-          <div className="max-w-2xl relative z-100 flex-1 lg:pt-8">
+          <div className="max-w-2xl relative z-[100] flex-1">
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
