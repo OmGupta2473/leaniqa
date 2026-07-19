@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { authService } from '@/features/auth/services/authService';
 import { haptics } from '@/shared/utils/haptics';
 import { subscriptionService } from '@/features/pricing/services/subscriptionService';
+import { TransformationSection } from '@/features/transformation/components/TransformationSection';
 
 function displayVal(val: any) {
   return val === undefined || val === null || isNaN(val) ? '—' : val;
@@ -206,6 +207,9 @@ export function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Transformation Section */}
+      <TransformationSection />
 
       {/* Macros Section */}
       <div className="mb-12">

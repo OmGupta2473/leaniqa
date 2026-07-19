@@ -17,7 +17,6 @@ const ProgressPage = lazy(() => import('@/features/progress/pages/ProgressPage')
 const WeeklyReportPage = lazy(() => import('@/features/reports/pages/WeeklyReportPage').then(module => ({ default: module.WeeklyReportPage })));
 const PricingPage = lazy(() => import('@/features/pricing/pages/PricingPage').then(module => ({ default: module.PricingPage })));
 const ProfilePage = lazy(() => import('@/features/profile/pages/ProfilePage').then(module => ({ default: module.ProfilePage })));
-const TransformationPage = lazy(() => import('@/features/transformation/pages/TransformationPage').then(module => ({ default: module.TransformationPage })));
 const CalorieDetailPage = lazy(() => import('@/features/nutrition/pages/CalorieDetailPage').then(module => ({ default: module.CalorieDetailPage })));
 const ProteinDetailPage = lazy(() => import('@/features/nutrition/pages/ProteinDetailPage').then(module => ({ default: module.ProteinDetailPage })));
 const AwardsPage = lazy(() => import('@/features/awards/pages/AwardsPage').then(module => ({ default: module.AwardsPage })));
@@ -90,7 +89,6 @@ export const routes: RouteObject[] = [
               { path: '/profile', element: <Suspense fallback={<ScreenSkeleton />}><ProfilePage /></Suspense>, handle: { title: 'Profile', description: 'Manage your LeanIQA profile.' } },
               { path: '/pricing', element: <Suspense fallback={<ScreenSkeleton />}><PricingPage /></Suspense>, handle: { title: 'Pricing', description: 'Choose a subscription plan.' } },
               { path: '/awards', element: <Suspense fallback={<ScreenSkeleton />}><AwardsPage /></Suspense>, handle: { title: 'Awards', description: 'View your earned achievements.' } },
-              { path: '/transformation', element: <Suspense fallback={<ScreenSkeleton />}><TransformationPage /></Suspense>, handle: { title: 'Transformation', description: 'Your body transformation journey.' } },
               { path: '/calorie', element: <Suspense fallback={<ScreenSkeleton />}><CalorieDetailPage /></Suspense>, handle: { title: 'Calorie Detail', description: 'Detailed breakdown of your calorie intake.' } },
               { path: '/protein', element: <Suspense fallback={<ScreenSkeleton />}><ProteinDetailPage /></Suspense>, handle: { title: 'Protein Detail', description: 'Detailed breakdown of your protein intake.' } }
             ]
