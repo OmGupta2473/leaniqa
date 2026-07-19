@@ -1,1 +1,1 @@
-export { TransformationPage } from './pages/TransformationPage';
+export * from './components/TransformationSection';
