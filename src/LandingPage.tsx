@@ -1453,7 +1453,7 @@ function InteractiveMealDemo() {
   const ySpring = useSpring(mouseY, { stiffness: 400, damping: 30 });
 
   return (
-    <div className="w-full max-w-[480px] bg-[#0A0A0B] border border-zinc-800/50 rounded-[32px] p-6 shadow-2xl relative overflow-hidden group/demo">
+    <div className="w-full max-w-[480px] mx-auto bg-[#0A0A0B] border border-zinc-800/50 rounded-[24px] sm:rounded-[32px] p-4 sm:p-6 shadow-2xl relative overflow-hidden group/demo">
       {/* Background ambient glow */}
       <motion.div 
         animate={{
@@ -1480,15 +1480,15 @@ function InteractiveMealDemo() {
           className="text-lg"
         >👇</motion.span>
       </div>
-      <p className="text-zinc-400 text-sm mb-6 relative z-10">Click Log This Meal to see how LeanIQA instantly analyzes real food.</p>
+      <p className="text-zinc-400 text-xs sm:text-sm mb-4 sm:mb-6 relative z-10">Click Log This Meal to see how LeanIQA instantly analyzes real food.</p>
       
       {/* Input Field */}
       <motion.div 
         animate={state !== 'idle' ? { opacity: 0.5, scale: 0.98, filter: 'blur(2px)' } : { opacity: 1, scale: 1, filter: 'blur(0px)' }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="bg-[#111112]/80 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-4 flex items-center justify-between mb-6 relative z-10 shadow-inner group/input cursor-text transition-all duration-300 hover:border-zinc-700 hover:bg-[#111112] hover:shadow-[0_4px_20px_-10px_rgba(255,255,255,0.05)]"
+        className="bg-[#111112]/80 backdrop-blur-md border border-zinc-800/80 rounded-xl sm:rounded-2xl p-3 sm:p-4 flex items-center justify-between mb-4 sm:mb-6 relative z-10 shadow-inner group/input cursor-text transition-all duration-300 hover:border-zinc-700 hover:bg-[#111112] hover:shadow-[0_4px_20px_-10px_rgba(255,255,255,0.05)]"
       >
-        <span className="text-zinc-200 text-[15px] selection:bg-[#D4FF00]/30 transition-colors duration-300">3 eggs curry, 80g boiled cooked rice</span>
+        <span className="text-zinc-200 text-[13px] sm:text-[15px] selection:bg-[#D4FF00]/30 transition-colors duration-300">3 eggs curry, 80g boiled cooked rice</span>
         <X className="w-4 h-4 text-zinc-500 cursor-pointer transition-colors duration-300 group-hover/input:text-zinc-300" />
       </motion.div>
 
@@ -1516,9 +1516,9 @@ function InteractiveMealDemo() {
           transition={{ type: 'spring', stiffness: 400, damping: 30, mass: 0.8 }}
           className={`w-full overflow-hidden flex items-center justify-center gap-2 uppercase tracking-wider relative transition-colors duration-300 border border-transparent ${
             state === 'idle' 
-              ? 'bg-[#D4FF00] text-black py-4 rounded-2xl font-bold text-base cursor-pointer'
+              ? 'bg-[#D4FF00] text-black py-3.5 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-base cursor-pointer'
               : state === 'loading'
-                ? 'bg-[#18181A] border-zinc-800 text-zinc-400 py-3 rounded-2xl cursor-default scale-95'
+                ? 'bg-[#18181A] border-zinc-800 text-zinc-400 py-3 rounded-xl sm:rounded-2xl cursor-default scale-95'
                 : 'bg-transparent py-0 h-0 opacity-0 pointer-events-none'
           }`}
         >
@@ -1575,7 +1575,7 @@ function InteractiveMealDemo() {
             transition={{ type: "spring", stiffness: 250, damping: 25, mass: 0.8 }}
             className="mt-4 relative z-10"
           >
-            <div className="bg-[#18181A]/90 backdrop-blur-xl border border-zinc-800/80 rounded-[24px] p-5 relative shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] group/card transition-colors duration-500 hover:border-zinc-700/80">
+            <div className="bg-[#18181A]/90 backdrop-blur-xl border border-zinc-800/80 rounded-[20px] sm:rounded-[24px] p-4 sm:p-5 relative shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] group/card transition-colors duration-500 hover:border-zinc-700/80">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2">
                   <div className="relative flex items-center justify-center w-5 h-5">
@@ -1626,13 +1626,13 @@ function InteractiveMealDemo() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="text-zinc-100 font-medium text-[15px] mb-5 border-b border-zinc-800/50 pb-4"
+                className="text-zinc-100 font-medium text-[13px] sm:text-[15px] mb-4 sm:mb-5 border-b border-zinc-800/50 pb-3 sm:pb-4"
               >
                 3 eggs curry, 80g boiled cooked rice
               </motion.div>
 
               {/* Nutrition Chips */}
-              <div className="grid grid-cols-4 gap-2 mb-5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 sm:mb-5">
                 {[
                   { label: "Calories", val: cal, unit: "kcal", icon: Flame, color: "#FF4D1C", delay: 0.12 },
                   { label: "Protein", val: pro, unit: "g", icon: Dumbbell, color: "#D4FF00", delay: 0.20 },
@@ -1645,7 +1645,7 @@ function InteractiveMealDemo() {
                     animate={{ opacity: 1, scale: 1, y: 0 }} 
                     transition={{ type: "spring", stiffness: 350, damping: 25, delay: chip.delay }} 
                     whileHover={{ scale: 1.05, y: -2 }}
-                    className="bg-[#212124]/80 rounded-xl p-3 flex flex-col justify-between h-[84px] border border-white/5 relative overflow-hidden group/chip cursor-default transition-all duration-300 hover:bg-[#252528] hover:shadow-[0_4px_20px_-10px_rgba(255,255,255,0.05)]"
+                    className="bg-[#212124]/80 rounded-xl p-2.5 sm:p-3 flex flex-col justify-between h-[72px] sm:h-[84px] border border-white/5 relative overflow-hidden group/chip cursor-default transition-all duration-300 hover:bg-[#252528] hover:shadow-[0_4px_20px_-10px_rgba(255,255,255,0.05)]"
                   >
                     <div className="flex items-center gap-1.5 text-zinc-400 group-hover/chip:text-zinc-300 transition-colors">
                       <chip.icon className="w-3.5 h-3.5" style={{ color: chip.color }} />
@@ -1656,10 +1656,10 @@ function InteractiveMealDemo() {
                         initial={{ opacity: 0, filter: 'blur(4px)' }}
                         animate={{ opacity: 1, filter: 'blur(0px)' }}
                         transition={{ duration: 0.4, delay: chip.delay + 0.1 }}
-                        className="text-white font-bold text-xl leading-none drop-shadow-md"
+                        className="text-white font-bold text-lg sm:text-xl leading-none drop-shadow-md"
                       >
                         {chip.val}
-                        <span className="text-[12px] text-zinc-400 font-medium ml-0.5">{chip.unit}</span>
+                        <span className="text-[10px] sm:text-[12px] text-zinc-400 font-medium ml-0.5">{chip.unit}</span>
                       </motion.div>
                     </div>
                     <div 
@@ -1685,7 +1685,7 @@ function InteractiveMealDemo() {
                   initial={{ y: 20 }}
                   animate={{ y: 0 }}
                   transition={{ type: "spring", stiffness: 200, damping: 30, delay: 0.6 }}
-                  className="bg-[#212124]/50 rounded-xl p-4 border border-[#378ADD]/20 relative group/insight hover:bg-[#212124]/80 hover:border-[#378ADD]/40 transition-colors duration-500"
+                  className="bg-[#212124]/50 rounded-xl p-3 sm:p-4 border border-[#378ADD]/20 relative group/insight hover:bg-[#212124]/80 hover:border-[#378ADD]/40 transition-colors duration-500"
                 >
                   <div className="absolute top-0 left-0 w-1 h-full bg-[#378ADD] shadow-[0_0_12px_rgba(55,138,221,0.5)]"></div>
                   
@@ -1710,7 +1710,7 @@ function InteractiveMealDemo() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.8, delay: 0.9 }}
-                    className="text-zinc-400 text-[13px] leading-relaxed italic"
+                    className="text-zinc-400 text-[12px] sm:text-[13px] leading-relaxed italic"
                   >
                     <motion.span
                       initial={{ opacity: 0, filter: 'blur(4px)' }}
