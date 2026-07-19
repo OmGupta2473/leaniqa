@@ -58,62 +58,74 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
   const pro = meals.reduce((s, m) => s + m.protein, 0);
   return (
     <Profiler id="MealLoggerPage" onRender={onRenderCallback}>
-      <div className="card-base mb-3 overflow-hidden">
-      <div className="p-4 flex items-center justify-between select-none cursor-pointer" onClick={() => setExpanded(!expanded)}>
-        <div className="flex items-center gap-3">
-          <div className="text-[rgba(255,255,255,0.7)]">{icon}</div>
+      <motion.div 
+        layout
+        className="mb-4 overflow-hidden rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] shadow-sm backdrop-blur-xl transition-all duration-300 hover:bg-[rgba(255,255,255,0.05)]"
+      >
+      <div className="p-5 flex items-center justify-between select-none cursor-pointer" onClick={() => { haptics.selection(); setExpanded(!expanded); }}>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-[16px] bg-[rgba(255,255,255,0.05)] flex items-center justify-center text-[rgba(255,255,255,0.8)] shadow-inner">
+            {icon}
+          </div>
           <div>
-            <div className="text-[16px] font-medium text-white leading-none">{label}</div>
-            <div className="text-[11px] text-[rgba(255,255,255,0.4)] mt-1">{timeRange}</div>
+            <div className="text-[17px] font-semibold text-white tracking-tight">{label}</div>
+            <div className="text-[13px] font-medium text-[rgba(255,255,255,0.4)] mt-0.5">{timeRange}</div>
           </div>
         </div>
-        <div className="flex items-center gap-4 text-right">
+        <div className="flex items-center gap-5 text-right">
           <div>
-            <div className="text-[14px] font-bold text-white leading-none">{kcal} kcal</div>
-            <div className="text-[11px] font-semibold text-[#378ADD] mt-1">{pro}g protein</div>
+            <div className="text-[16px] font-bold text-white tracking-tight">{kcal} <span className="text-[12px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">kcal</span></div>
+            <div className="text-[13px] font-semibold text-[#378ADD] mt-0.5">{pro}<span className="text-[10px] font-medium opacity-70 uppercase tracking-wider">g pro</span></div>
           </div>
-          <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
-            <ChevronDown size={16} className="text-[rgba(255,255,255,0.4)]" />
+          <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ type: "spring", stiffness: 300, damping: 24 }}>
+            <ChevronDown size={20} className="text-[rgba(255,255,255,0.4)]" />
           </motion.div>
         </div>
       </div>
       <AnimatePresence initial={false}>
         {expanded && (
           <motion.div
-            initial={{ height: 0 }}
-            animate={{ height: "auto" }}
-            exit={{ height: 0 }}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 28 }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-4 space-y-2 border-t border-[rgba(255,255,255,0.06)] pt-3">
+            <div className="px-5 pb-5 space-y-3 border-t border-[rgba(255,255,255,0.06)] pt-4">
               {meals.length > 0 ? meals.map((m, i) => (
-                <div key={m.id || i} className="flex items-center justify-between group">
-                  <div className="flex-1 min-w-0 pr-2">
-                    <div className="text-[13px] text-[rgba(255,255,255,0.8)] capitalize truncate">{m.meal_text}</div>
+                <motion.div 
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  key={m.id || i} 
+                  className="flex items-center justify-between group p-3 rounded-[16px] bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)] transition-colors"
+                >
+                  <div className="flex-1 min-w-0 pr-3">
+                    <div className="text-[15px] font-medium text-[rgba(255,255,255,0.9)] capitalize truncate">{m.meal_text}</div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-[10px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-2 py-0.5 rounded-full font-bold">{m.calories} KCAL</span>
-                    <span className="text-[10px] badge-lime px-2 py-0.5 font-bold rounded-full">{m.protein}G PRO</span>
+                    <span className="text-[11px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-2.5 py-1 rounded-full font-bold tracking-wide">{m.calories} KCAL</span>
+                    <span className="text-[11px] badge-lime px-2.5 py-1 font-bold rounded-full tracking-wide">{m.protein}G PRO</span>
                     {m.id && !m.id.toString().startsWith('opt-') && (
                       <button onClick={(e) => {
                           e.stopPropagation();
                           if (window.confirm("Delete Meal? This action cannot be undone.")) {
                             onDelete(m.id);
                           }
-                      }} className="w-6 h-6 rounded-full flex items-center justify-center text-[rgba(255,255,255,0.4)] hover:bg-[rgba(255,77,28,0.2)] hover:text-[#FF4D1C] transition-colors ml-1">
-                        <X size={12} />
+                      }} className="ml-2 w-7 h-7 rounded-full bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,77,28,0.2)] flex items-center justify-center text-[rgba(255,255,255,0.5)] hover:text-[#FF4D1C] transition-colors">
+                        <X size={14} />
                       </button>
                     )}
                   </div>
-                </div>
+                </motion.div>
               )) : (
-                <div className="text-[12px] text-[rgba(255,255,255,0.25)] italic">Nothing logged yet</div>
+                <div className="text-[14px] text-[rgba(255,255,255,0.4)] text-center py-4 font-medium">Nothing logged yet</div>
               )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
     </Profiler>
   );
 }
@@ -500,7 +512,7 @@ export function MealLoggerPage() {
     },
   });
 
-  const handleSend = useCallback(() => {
+  const handleSend = React.useCallback(() => {
     if (import.meta.env.DEV) console.time('[PERF] MealLogger handleSend');
     const text = input.trim();
     if (!text || loading || !selectedMealSlot) return;
@@ -514,12 +526,12 @@ export function MealLoggerPage() {
     <>
       <div className="screen-container screen-enter" style={{ display: 'flex', flexDirection: 'column' }}>
       {/* ── PAGE HEADER ── */}
-      <div className="mb-[20px] flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between">
         <div className="flex flex-col">
-          <h2 className="text-[22px] font-bold text-white tracking-[-0.3px]">Meal Log</h2>
-          <div className="text-[13px] text-[rgba(235,235,245,0.5)] mt-[2px]">{selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</div>
+          <h2 className="text-[28px] font-semibold text-white tracking-tight">Meal Log</h2>
+          <div className="text-[14px] font-medium text-[rgba(235,235,245,0.5)] mt-0.5">{selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button 
             onClick={() => {
               if (isAtOrBeforeCreatedAt(selectedDate)) return;
@@ -529,14 +541,14 @@ export function MealLoggerPage() {
             }}
             disabled={isAtOrBeforeCreatedAt(selectedDate)}
             className={cn(
-              "w-8 h-8 flex items-center justify-center rounded-full transition-colors",
-              isAtOrBeforeCreatedAt(selectedDate) ? "opacity-30 cursor-not-allowed" : "bg-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,255,255,0.1)] cursor-pointer"
+              "w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200",
+              isAtOrBeforeCreatedAt(selectedDate) ? "opacity-30 cursor-not-allowed" : "bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] cursor-pointer active:scale-95"
             )}
             title={isAtOrBeforeCreatedAt(selectedDate) ? "This is your first day on LeanIQA. No meal history exists before this date." : "Previous Day"}
           >
-            <ChevronLeft size={16} className="text-white" />
+            <ChevronLeft size={18} className="text-white" />
           </button>
-          <span className="text-[15px] font-medium text-white min-w-[80px] text-center">
+          <span className="text-[15px] font-semibold text-white min-w-[85px] text-center tracking-tight">
             {formatDateLabel(selectedDate)}
           </span>
           <button 
@@ -548,52 +560,57 @@ export function MealLoggerPage() {
             }}
             disabled={isToday(selectedDate)}
             className={cn(
-              "w-8 h-8 flex items-center justify-center rounded-full transition-colors",
-              isToday(selectedDate) ? "opacity-30 cursor-not-allowed" : "bg-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,255,255,0.1)] cursor-pointer"
+              "w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200",
+              isToday(selectedDate) ? "opacity-30 cursor-not-allowed" : "bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] cursor-pointer active:scale-95"
             )}
           >
-            <ChevronRight size={16} className="text-white" />
+            <ChevronRight size={18} className="text-white" />
           </button>
         </div>
       </div>
 
       {/* ── CALORIE RING SUMMARY ── */}
-      <div className="glass-card p-[16px_20px] mb-[16px]">
-        <div className="flex justify-between items-center mb-[12px]">
-          <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[rgba(235,235,245,0.5)]">Daily Summary</div>
-          <div className="text-[12px] font-semibold" style={{ color: eatenKcal > dailyTargetKcal ? '#FF4D1C' : '#D4FF00' }}>
+      <div className="mb-6 rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] p-5 shadow-sm backdrop-blur-xl relative overflow-hidden">
+        <div className="flex justify-between items-center mb-5">
+          <div className="text-[12px] font-semibold uppercase tracking-widest text-[rgba(235,235,245,0.5)]">Daily Summary</div>
+          <div className="text-[13px] font-bold px-2.5 py-1 rounded-full bg-[rgba(255,255,255,0.05)]" style={{ color: eatenKcal > dailyTargetKcal ? '#FF4D1C' : '#D4FF00' }}>
             {eatenKcal > dailyTargetKcal ? `${eatenKcal - dailyTargetKcal} over` : `${dailyTargetKcal - eatenKcal} left`}
           </div>
         </div>
+
         {/* Calorie bar */}
-        <div className="mb-[10px]">
-          <div className="flex justify-between mb-[4px]">
-            <span className="text-[11px] text-[rgba(235,235,245,0.5)]">Calories</span>
-            <span className="text-[11px] font-semibold text-white">{eatenKcal} / {dailyTargetKcal} kcal</span>
+        <div className="mb-4">
+          <div className="flex justify-between mb-1.5 items-end">
+            <span className="text-[13px] font-medium text-[rgba(235,235,245,0.5)]">Calories</span>
+            <span className="text-[14px] font-bold text-white tracking-tight">{eatenKcal} <span className="text-[11px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">/ {dailyTargetKcal}</span></span>
           </div>
-          <div className="h-[6px] bg-[rgba(255,255,255,0.08)] rounded-full overflow-hidden">
-            <div className="h-full w-full rounded-full origin-left transition-transform duration-700 will-change-transform" style={{ transform: `translateX(-${100 - caloriePercent}%)`, background: eatenKcal > dailyTargetKcal ? '#FF4D1C' : '#D4FF00' }}></div>
+          <div className="h-2 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden shadow-inner">
+            <div className="h-full w-full rounded-full origin-left transition-transform duration-1000 ease-out will-change-transform" style={{ transform: `translateX(-${100 - caloriePercent}%)`, background: eatenKcal > dailyTargetKcal ? '#FF4D1C' : '#D4FF00' }}></div>
           </div>
         </div>
+
         {/* Protein bar */}
         <div>
-          <div className="flex justify-between mb-[4px]">
-            <span className="text-[11px] text-[rgba(235,235,245,0.5)]">Protein</span>
-            <span className="text-[11px] font-semibold text-white">{eatenProtein}g / {proteinTarget}g</span>
+          <div className="flex justify-between mb-1.5 items-end">
+            <span className="text-[13px] font-medium text-[rgba(235,235,245,0.5)]">Protein</span>
+            <span className="text-[14px] font-bold text-white tracking-tight">{eatenProtein}g <span className="text-[11px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">/ {proteinTarget}g</span></span>
           </div>
-          <div className="h-[6px] bg-[rgba(255,255,255,0.08)] rounded-full overflow-hidden">
-            <div className="h-full w-full rounded-full bg-[#378ADD] origin-left transition-transform duration-700 will-change-transform" style={{ transform: `translateX(-${100 - proteinPercent}%)` }}></div>
+          <div className="h-2 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden shadow-inner">
+            <div className="h-full w-full rounded-full bg-[#378ADD] origin-left transition-transform duration-1000 ease-out will-change-transform" style={{ transform: `translateX(-${100 - proteinPercent}%)` }}></div>
           </div>
         </div>
+
         {/* Macros row */}
-        <div className="grid grid-cols-4 gap-[8px] mt-[14px] pt-[12px] border-t border-[rgba(255,255,255,0.06)]">
-          {[{ label: 'Kcal', val: eatenKcal, target: dailyTargetKcal, unit: 'kcal', color: '#FF4D1C' }, { label: 'Protein', val: eatenProtein, target: proteinTarget, unit: 'g', color: '#378ADD' }, { label: 'Fat', val: eatenFat, target: fatTarget, unit: 'g', color: 'white' }, { label: 'Carbs', val: eatenCarbs, target: carbsTarget, unit: 'g', color: 'white' }].map(item => (
+        <div className="grid grid-cols-4 gap-2 mt-5 pt-4 border-t border-[rgba(255,255,255,0.06)]">
+          {[{ label: 'Kcal', val: eatenKcal, target: dailyTargetKcal, unit: '', color: '#FF4D1C' }, 
+            { label: 'Protein', val: eatenProtein, target: proteinTarget, unit: 'g', color: '#378ADD' }, 
+            { label: 'Fat', val: eatenFat, target: fatTarget, unit: 'g', color: 'white' }, 
+            { label: 'Carbs', val: eatenCarbs, target: carbsTarget, unit: 'g', color: 'white' }].map(item => (
             <div key={item.label} className="text-center flex flex-col items-center">
-              <div className="text-[14px] font-bold flex items-baseline gap-[1px]" style={{ color: item.color }}>
-                {item.val}
-                <span className="text-[10px] font-medium opacity-60">/ {item.target}{item.unit}</span>
+              <div className="text-[16px] font-bold tracking-tight" style={{ color: item.color }}>
+                {item.val}<span className="text-[12px]">{item.unit}</span>
               </div>
-              <div className="text-[10px] text-[rgba(235,235,245,0.5)] uppercase tracking-wide mt-[1px]">{item.label}</div>
+              <div className="text-[10px] text-[rgba(235,235,245,0.5)] uppercase tracking-widest mt-0.5 font-medium">{item.label}</div>
             </div>
           ))}
         </div>
@@ -601,15 +618,19 @@ export function MealLoggerPage() {
 
       {/* ── MEAL SLOT ROWS ── */}
       <div>
-        <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[rgba(235,235,245,0.5)] mb-[10px]">Meal Log</div>
-                {meals.length === 0 && (
-          <div className="text-[14px] text-center text-[rgba(235,235,245,0.5)] mb-[16px] italic">No meals logged for this day.</div>
+        <div className="text-[12px] font-semibold uppercase tracking-widest text-[rgba(235,235,245,0.5)] mb-3 px-1">Meal Log</div>
+        
+        {meals.length === 0 && (
+          <div className="text-[14px] font-medium text-center text-[rgba(235,235,245,0.5)] my-8 py-8 rounded-[24px] border border-dashed border-[rgba(255,255,255,0.1)]">No meals logged for this day.</div>
         )}
-        <MealSlotRow slot="breakfast" icon={<Sunrise size={14} />} label="Breakfast" timeRange="6 am – 12 pm" meals={breakfastMeals} onDelete={handleDeleteMeal} />
-        <MealSlotRow slot="lunch" icon={<Sun size={14} />} label="Lunch" timeRange="12 pm – 6 pm" meals={lunchMeals} onDelete={handleDeleteMeal} />
-        <MealSlotRow slot="dinner" icon={<Moon size={14} />} label="Dinner" timeRange="6 pm – 10 pm" meals={dinnerMeals} onDelete={handleDeleteMeal} />
-      </div>      {/* ── SPACER TO PREVENT FAB OVERLAP ── */}
+
+        <MealSlotRow slot="breakfast" icon={<Sunrise size={20} />} label="Breakfast" timeRange="6 am – 12 pm" meals={breakfastMeals} onDelete={handleDeleteMeal} />
+        <MealSlotRow slot="lunch" icon={<Sun size={20} />} label="Lunch" timeRange="12 pm – 6 pm" meals={lunchMeals} onDelete={handleDeleteMeal} />
+        <MealSlotRow slot="dinner" icon={<Moon size={20} />} label="Dinner" timeRange="6 pm – 10 pm" meals={dinnerMeals} onDelete={handleDeleteMeal} />
+      </div>
+      {/* ── SPACER TO PREVENT FAB OVERLAP ── */}
       <div style={{ height: '120px', flexShrink: 0 }} aria-hidden="true" />
+
 
       </div>
       {/* ── FLOATING ADD BUTTON ── */}

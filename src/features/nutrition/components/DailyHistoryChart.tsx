@@ -97,7 +97,7 @@ export function DailyHistoryChart({ logs, todayStr, startDateStr, unit, type }: 
         >
           <ChevronLeft size={18} color="white" />
         </button>
-        <div className="text-[18px] font-semibold tracking-tight text-white tracking-[-0.2px]">
+        <div className="text-[18px] font-bold tracking-tight text-white">
           Days {startIndex + 1} – {startIndex + 7}
         </div>
         <button 
@@ -111,8 +111,8 @@ export function DailyHistoryChart({ logs, todayStr, startDateStr, unit, type }: 
       
       {/* Target top right */}
       <div className="flex justify-end mb-[24px]">
-        <div className="text-[13px] text-[#EBEBF599]">
-          Target: <span className="text-[#D4FF00] font-bold">{currentTarget} {unit}</span>
+        <div className="text-[12px] font-semibold text-[rgba(235,235,245,0.5)] tracking-widest uppercase">
+          Target: <span className="text-[#D4FF00] font-bold ml-1">{currentTarget} {unit}</span>
         </div>
       </div>
 
@@ -144,16 +144,16 @@ export function DailyHistoryChart({ logs, todayStr, startDateStr, unit, type }: 
           
           return (
             <div key={day.date} className="relative z-10 flex flex-col items-center justify-end h-full w-[30px]">
-              <div className="text-[10px] font-medium text-white mb-[4px] whitespace-nowrap">
+              <div className="text-[11px] font-bold text-white mb-[6px] whitespace-nowrap tracking-tight">
                 {day.actual}{isToday ? '*' : ''}
               </div>
               <div 
                 style={{ height: `${heightPct}%`, backgroundColor: barColor }} 
-                className="w-[20px] rounded-t-[4px] min-h-[4px] transition-all duration-500 ease-out"
+                className="w-[20px] rounded-[6px] min-h-[4px] transition-all duration-500 ease-out"
               />
               <div className="absolute -bottom-[36px] flex flex-col items-center justify-start pt-1 h-[36px] w-full">
                 <span className="text-[10px] text-[#EBEBF599] font-bold leading-tight">D{day.dayNum}</span>
-                <span className="text-[9px] text-[rgba(235,235,245,0.4)] leading-tight">{formattedDate}</span>
+                <span className="text-[9px] text-[rgba(235,235,245,0.4)] font-medium leading-tight">{formattedDate}</span>
               </div>
             </div>
           );
@@ -161,18 +161,18 @@ export function DailyHistoryChart({ logs, todayStr, startDateStr, unit, type }: 
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap items-center gap-[16px]">
+      <div className="flex flex-wrap items-center gap-[16px] mt-2">
         <div className="flex items-center gap-[6px]">
           <div className="w-[8px] h-[8px] rounded-full bg-[#D4FF00]"></div>
-          <span className="text-[11px] text-[#EBEBF599] uppercase tracking-[0.05em] font-medium">{type === "calorie" ? "Under Target" : "Target Hit"}</span>
+          <span className="text-[10px] text-[#EBEBF599] uppercase tracking-[0.05em] font-bold">{type === "calorie" ? "Under Target" : "Target Hit"}</span>
         </div>
         <div className="flex items-center gap-[6px]">
           <div className="w-[8px] h-[8px] rounded-full bg-[#FF4D1C]"></div>
-          <span className="text-[11px] text-[#EBEBF599] uppercase tracking-[0.05em] font-medium">{type === "calorie" ? "Over Target" : "Missed Target"}</span>
+          <span className="text-[10px] text-[#EBEBF599] uppercase tracking-[0.05em] font-bold">{type === "calorie" ? "Over Target" : "Missed Target"}</span>
         </div>
         <div className="flex items-center gap-[6px]">
           <div className="w-[8px] h-[8px] rounded-full bg-[#737373]"></div>
-          <span className="text-[11px] text-[#EBEBF599] uppercase tracking-[0.05em] font-medium">In Calculation (Today)</span>
+          <span className="text-[10px] text-[#EBEBF599] uppercase tracking-[0.05em] font-bold">In Calculation (Today)</span>
         </div>
       </div>
     </div>
