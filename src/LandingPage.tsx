@@ -1416,10 +1416,10 @@ function InteractiveMealDemo() {
   const [state, setState] = useState<'idle' | 'loading' | 'success'>('idle');
   const [showReplay, setShowReplay] = useState(false);
 
-  const cal = useDemoNumber(425, 1200, state === 'success', 0);
-  const pro = useDemoNumber(22.7, 1200, state === 'success', 1);
-  const fat = useDemoNumber(24.2, 1200, state === 'success', 1);
-  const carbs = useDemoNumber(30.2, 1200, state === 'success', 1);
+  const cal = useDemoNumber(496, 1200, state === 'success', 0);
+  const pro = useDemoNumber(20.73, 1200, state === 'success', 2);
+  const fat = useDemoNumber(13.76, 1200, state === 'success', 2);
+  const carbs = useDemoNumber(74.77, 1200, state === 'success', 2);
 
   const handleLog = () => {
     if (state !== 'idle') return;
@@ -1488,7 +1488,7 @@ function InteractiveMealDemo() {
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         className="bg-[#111112]/80 backdrop-blur-md border border-zinc-800/80 rounded-xl sm:rounded-2xl p-3 sm:p-4 flex items-center justify-between mb-4 sm:mb-6 relative z-10 shadow-inner group/input cursor-text transition-all duration-300 hover:border-zinc-700 hover:bg-[#111112] hover:shadow-[0_4px_20px_-10px_rgba(255,255,255,0.05)]"
       >
-        <span className="text-zinc-200 text-[13px] sm:text-[15px] selection:bg-[#D4FF00]/30 transition-colors duration-300">3 eggs curry, 80g boiled cooked rice</span>
+        <span className="text-zinc-200 text-[13px] sm:text-[15px] selection:bg-[#D4FF00]/30 transition-colors duration-300">soya sabji + 3 roti</span>
         <X className="w-4 h-4 text-zinc-500 cursor-pointer transition-colors duration-300 group-hover/input:text-zinc-300" />
       </motion.div>
 
@@ -1628,7 +1628,7 @@ function InteractiveMealDemo() {
                 transition={{ duration: 0.6, delay: 0.2 }}
                 className="text-zinc-100 font-medium text-[13px] sm:text-[15px] mb-4 sm:mb-5 border-b border-zinc-800/50 pb-3 sm:pb-4"
               >
-                3 eggs curry, 80g boiled cooked rice
+                soya sabji + 3 roti
               </motion.div>
 
               {/* Nutrition Chips */}
@@ -1702,7 +1702,7 @@ function InteractiveMealDemo() {
                       transition={{ duration: 0.4, delay: 0.7 }}
                       className="text-zinc-200 font-medium text-sm"
                     >
-                      Gemini AI Insight
+                      AI Insight
                     </motion.span>
                   </div>
                   
@@ -1716,18 +1716,11 @@ function InteractiveMealDemo() {
                       initial={{ opacity: 0, filter: 'blur(4px)' }}
                       animate={{ opacity: 1, filter: 'blur(0px)' }}
                       transition={{ duration: 0.5, delay: 0.9 }}
-                      className="block text-zinc-300 mb-1"
+                      className="block text-zinc-300"
                     >
-                      Great choice! This meal provides excellent lean protein from eggs, perfectly balanced with energy-sustaining carbs from the rice.
+                      Great choice! This meal provides a good source of plant-based protein from soya, perfectly balanced with energy-sustaining carbs from the roti.
                     </motion.span>
-                    <motion.span
-                      initial={{ opacity: 0, filter: 'blur(4px)' }}
-                      animate={{ opacity: 1, filter: 'blur(0px)' }}
-                      transition={{ duration: 0.5, delay: 1.3 }}
-                      className="block"
-                    >
-                      To hit your remaining <span className="text-[#D4FF00] font-semibold not-italic drop-shadow-[0_0_4px_rgba(212,255,0,0.3)]">108g protein</span> target today, consider adding grilled chicken breast or a protein shake to your next meal.
-                    </motion.span>
+                    
                   </motion.div>
                 </motion.div>
               </motion.div>
@@ -1793,7 +1786,7 @@ export function LandingPage() {
       </motion.nav>
 
       {/* ── Hero ── */}
-      <section className="pt-12 sm:pt-16 lg:pt-16 pb-16 sm:pb-24 px-6 relative z-10">
+      <section className="pt-24 sm:pt-28 lg:pt-32 pb-16 sm:pb-24 px-6 relative z-10">
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-12 lg:gap-8">
           <div className="max-w-2xl relative z-10 flex-1">
             <motion.h1
