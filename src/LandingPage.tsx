@@ -64,39 +64,52 @@ function SocialProofBar() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
   const users   = useAnimatedCounter(10000, 1600, inView);
-  const weeks   = useAnimatedCounter(12,    1200, inView);
   const score   = useAnimatedCounter(49,    1400, inView); // displayed as 4.9
+  const percent = useAnimatedCounter(100,   1200, inView); 
 
   const stats = [
-    { value: `${(users / 1000).toFixed(0)}K+`, label: "Active users",             color: "#D4FF00" },
-    { value: `${weeks} weeks`,                  label: "Avg. transformation time", color: "#D4FF00" },
-    { value: `${(score / 10).toFixed(1)}★`,     label: "User rating",              color: "#D4FF00" },
-    { value: "80%+",                            label: "Report visible progress",  color: "#D4FF00" },
+    { value: `${(users / 1000).toFixed(0)}K+`, label: "ACTIVE USERS",             color: "#D4FF00", icon: Users },
+    { value: `${(score / 10).toFixed(1)}★`,     label: "USER RATING",              color: "#D4FF00", icon: Star },
+    { value: `${percent}%`,                     label: "PERSONALIZED PLANS",       color: "#D4FF00", icon: CheckCircle2 },
+    { value: "24/7",                            label: "AI COACH",                 color: "#D4FF00", icon: MessageSquare },
   ];
 
   return (
-    <section
-      ref={ref}
-      className="border-t border-zinc-900 bg-[#0C0C0D]"
-    >
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-zinc-900 divide-y lg:divide-y-0">
+    <section ref={ref} className="py-16 sm:py-24 px-6 border-t border-zinc-900 bg-[#0A0A0B]">
+      <div className="max-w-5xl mx-auto">
+        <div className="text-center mb-12 sm:mb-16">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white mb-4">
+            Trusted by <span style={{ color: "#D4FF00" }}>Thousands</span>. Built for <span style={{ color: "#D4FF00" }}>Results</span>.
+          </h2>
+          <p className="text-zinc-400 text-sm sm:text-base lg:text-lg max-w-2xl mx-auto">
+            LeanIQA is your AI-powered fitness companion for a smarter, healthier you.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
           {stats.map((s, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 16 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ delay: i * 0.1, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-              className="py-8 px-6 text-center"
+              className="bg-[#111112] border border-zinc-800/60 rounded-2xl p-4 sm:p-6 lg:p-8 flex flex-col xl:flex-row items-center xl:items-start text-center xl:text-left gap-3 sm:gap-6"
+              style={{ background: "linear-gradient(145deg, rgba(17,17,18,1) 0%, rgba(212,255,0,0.03) 100%)" }}
             >
-              <div
-                className="text-3xl sm:text-4xl font-bold tracking-tight mb-1"
-                style={{ color: s.color, fontVariantNumeric: "tabular-nums" }}
-              >
-                {s.value}
+              <div className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-[14px] sm:rounded-2xl flex items-center justify-center bg-[rgba(212,255,0,0.08)] border border-[rgba(212,255,0,0.15)] shadow-[0_0_20px_rgba(212,255,0,0.1)]">
+                <s.icon className="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-[#D4FF00]" />
               </div>
-              <div className="text-xs sm:text-sm text-zinc-500 font-medium uppercase tracking-wider">
-                {s.label}
+              <div className="flex flex-col justify-center h-full pt-1 lg:pt-2">
+                <div
+                  className="text-xl sm:text-3xl lg:text-4xl font-bold tracking-tight mb-1 sm:mb-2"
+                  style={{ color: s.color, fontVariantNumeric: "tabular-nums" }}
+                >
+                  {s.value}
+                </div>
+                <div className="w-6 sm:w-8 h-[2px] bg-[#D4FF00] mb-1.5 sm:mb-3 mx-auto xl:mx-0 opacity-80" />
+                <div className="text-[10px] sm:text-xs lg:text-sm text-zinc-300 font-medium uppercase tracking-wider">
+                  {s.label}
+                </div>
               </div>
             </motion.div>
           ))}
@@ -107,194 +120,127 @@ function SocialProofBar() {
 }
 
 function DisciplineAdvantage() {
-  const comparisons = [
+  const battles = [
     {
-      other: "Passive diary — you log, it stores.",
-      leaniqa: "Active partner — it scores, adjusts, and coaches.",
-      icon: Shield,
-      label: "Accountability",
+      title: "Accountability",
+      other: "Passive Food Diary",
+      leaniqa: "AI Coaches You Daily",
+      demo: (
+        <div className="flex flex-col gap-3">
+          <div className="bg-zinc-900/80 border border-white/5 rounded-xl p-3 text-sm text-zinc-300">
+            🍛 2 Roti, Dal
+            <div className="flex items-center gap-1 mt-2 text-[#D4FF00] text-xs font-semibold">
+              <CheckCircle2 className="w-3 h-3"/> Logged
+            </div>
+          </div>
+          <div className="bg-[#D4FF00]/10 border border-[#D4FF00]/20 rounded-xl p-3 text-xs text-[#D4FF00]">
+            <span className="font-semibold block mb-1">AI Coach</span>
+            +32g Protein Needed to hit today's target.
+          </div>
+        </div>
+      )
     },
     {
-      other: "Shows calories. No context on whether it's enough.",
-      leaniqa: "Daily Score out of 100. Shifts focus to compliance over numbers.",
-      icon: BarChart3,
-      label: "Progress metric",
+      title: "Progress Metric",
+      other: "Shows Calories",
+      leaniqa: "Daily Score",
+      demo: (
+        <div className="bg-zinc-900/80 border border-white/5 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-zinc-400">Today's Score</span>
+            <span className="text-2xl font-bold text-white">91</span>
+          </div>
+          <div className="w-full h-1.5 bg-zinc-800 rounded-full mb-4 overflow-hidden">
+            <div className="h-full bg-[#D4FF00] w-[91%]" />
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-zinc-500">Calories</span>
+            <span className="text-zinc-300">1780 / 2100</span>
+          </div>
+        </div>
+      )
     },
     {
-      other: "Vague goal of 'losing weight someday'.",
-      leaniqa: "Exact calendar date for your goal, calculated from your real adherence.",
-      icon: Calendar,
-      label: "Goal clarity",
-    },
+      title: "Goal Clarity",
+      other: "Generic Goal",
+      leaniqa: "Exact Finish Date",
+      demo: (
+        <div className="bg-zinc-900/80 border border-white/5 rounded-xl p-4 flex items-center justify-between">
+           <div className="text-center">
+             <div className="text-xs text-zinc-500 mb-1">Today</div>
+             <div className="text-lg font-bold text-zinc-300">62kg</div>
+           </div>
+           <div className="flex flex-col items-center flex-1 px-4">
+             <ArrowRight className="w-4 h-4 text-[#D4FF00] mb-1" />
+             <div className="text-[10px] text-[#D4FF00] font-mono bg-[#D4FF00]/10 px-2 py-0.5 rounded-full">Nov 28</div>
+           </div>
+           <div className="text-center">
+             <div className="text-xs text-zinc-500 mb-1">Goal</div>
+             <div className="text-lg font-bold text-white">55kg</div>
+           </div>
+        </div>
+      )
+    }
   ];
 
   return (
-    <section className="py-16 sm:py-24 px-6 border-t border-zinc-900 bg-[#0A0A0B]">
-      <div className="max-w-7xl mx-auto">
-
-        {/* Header */}
-        <Reveal>
-          <div className="max-w-2xl mb-12 sm:mb-16">
+    <section className="py-24 sm:py-32 px-6 border-t border-zinc-900 bg-[#0A0A0B] overflow-hidden">
+      <div className="max-w-5xl mx-auto">
+        <div className="text-center mb-20 max-w-3xl mx-auto">
+          <Reveal>
             <p className="text-xs font-mono text-[#D4FF00] uppercase tracking-widest mb-3">
-              Why LeanIQA
+              WHY LEANIQA
             </p>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight leading-[1.1] mb-4">
-              Most apps are food diaries.
-              <br />
-              <span className="text-zinc-400">LeanIQA is a discipline engine.</span>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white mb-6">
+              Most Apps Count Calories.<br/>
+              <span className="text-zinc-500">Leaniqa Builds Discipline.</span>
             </h2>
-            <p className="text-zinc-400 text-sm sm:text-base leading-relaxed">
-              People don't fail transformations because they lack information. They fail because
-              rigid plans break when real life happens. LeanIQA is built around that reality.
-            </p>
-          </div>
-        </Reveal>
-
-        {/* Comparison cards */}
-        <div className="grid sm:grid-cols-3 gap-1">
-          {comparisons.map((c, i) => (
-            <Reveal key={i} delay={i * 0.1}>
-              <div className="bg-[#111112] border border-zinc-800/50 p-6 sm:p-8 h-full flex flex-col min-h-[280px]">
-
-                {/* Label row */}
-                <div className="flex items-center gap-2 mb-8">
-                  <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center"
-                    style={{ background: "rgba(212,255,0,0.08)" }}
-                  >
-                    <c.icon className="w-4 h-4" style={{ color: "#D4FF00" }} />
-                  </div>
-                  <span className="text-xs font-mono text-zinc-500 uppercase tracking-wider">
-                    {c.label}
-                  </span>
-                </div>
-
-                {/* Other apps */}
-                <div className="flex-1 mb-6">
-                  <p className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-2">
-                    Other apps
-                  </p>
-                  <p className="text-zinc-500 text-sm leading-relaxed line-through decoration-zinc-700">
-                    {c.other}
-                  </p>
-                </div>
-
-                {/* Divider */}
-                <div className="w-8 h-px bg-[#D4FF00]/30 mb-6" />
-
-                {/* LeanIQA */}
-                <div>
-                  <p className="text-xs font-semibold text-[#D4FF00] uppercase tracking-widest mb-2">
-                    LeanIQA
-                  </p>
-                  <p className="text-zinc-100 text-sm leading-relaxed font-medium">
-                    {c.leaniqa}
-                  </p>
-                </div>
-
-              </div>
-            </Reveal>
-          ))}
+          </Reveal>
         </div>
 
-        {/* Daily Score callout — standalone hero stat block */}
-        <Reveal delay={0.2}>
-          <div
-            className="mt-1 border border-zinc-800/50 bg-[#111112] p-8 sm:p-12"
-            style={{ background: "linear-gradient(135deg, rgba(212,255,0,0.03) 0%, rgba(212,255,0,0.01) 100%)" }}
-          >
-            <div className="max-w-4xl mx-auto flex flex-col lg:flex-row items-start lg:items-center gap-10 lg:gap-16">
+        <div className="space-y-6">
+          {battles.map((b, i) => (
+             <Reveal key={i} delay={0.1}>
+               <div className="group relative bg-[#111112] border border-zinc-800/60 rounded-3xl overflow-hidden hover:border-[#D4FF00]/30 transition-all duration-500 hover:shadow-[0_0_40px_rgba(212,255,0,0.05)]">
+                 <div className="flex flex-col md:flex-row">
+                   
+                   {/* Other Apps (Left) */}
+                   <div className="md:w-5/12 p-8 md:p-10 border-b md:border-b-0 md:border-r border-zinc-800/60 bg-zinc-900/20 relative overflow-hidden group-hover:opacity-40 transition-opacity duration-500">
+                     <div className="text-xs font-mono text-red-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+                       <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                       Other Apps
+                     </div>
+                     <h3 className="text-xl sm:text-2xl font-semibold text-zinc-500 line-through decoration-red-500/30">
+                       {b.other}
+                     </h3>
+                   </div>
 
-              {/* Left: explanation */}
-              <div className="flex-1">
-                <p className="text-xs font-mono text-[#D4FF00] uppercase tracking-widest mb-3">
-                  The Compliance Engine
-                </p>
-                <h3 className="text-2xl sm:text-3xl font-semibold tracking-tight leading-[1.15] mb-4">
-                  Your Daily Score tells you the truth.
-                </h3>
-                <p className="text-zinc-400 text-sm sm:text-base leading-relaxed mb-6">
-                  Every day, LeanIQA calculates a score from 0–100 based on how closely you hit your
-                  calorie and macro targets. Not a vague "good job" — a precise number that builds
-                  your streak and fuels your timeline projection.
-                </p>
-                <div className="flex flex-wrap gap-3">
-                  {[
-                    "90–100 = Perfect execution",
-                    "70–89 = Strong compliance",
-                    "Below 70 = Adjust & recover",
-                  ].map((tag) => (
-                    <span
-                      key={tag}
-                      className="text-xs font-medium px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-zinc-400"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
+                   {/* Leaniqa (Right) */}
+                   <div className="md:w-7/12 p-8 md:p-10 relative bg-gradient-to-br from-transparent to-[#D4FF00]/[0.02]">
+                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#D4FF00]/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+                     <div className="relative z-10">
+                       <div className="text-xs font-mono text-[#D4FF00] uppercase tracking-widest mb-6 flex items-center gap-2">
+                         <div className="w-1.5 h-1.5 rounded-full bg-[#D4FF00] shadow-[0_0_8px_#D4FF00]" />
+                         Leaniqa
+                       </div>
+                       
+                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-8">
+                         <h3 className="text-xl sm:text-2xl font-semibold text-white group-hover:text-[#D4FF00] transition-colors duration-500">
+                           {b.leaniqa}
+                         </h3>
+                         
+                         <div className="w-full sm:w-64 flex-shrink-0">
+                           {b.demo}
+                         </div>
+                       </div>
+                     </div>
+                   </div>
 
-              {/* Right: mock score card */}
-              <div
-                className="flex-shrink-0 w-full lg:w-64 border border-white/8 rounded-2xl p-6"
-                style={{ background: "rgba(255,255,255,0.03)" }}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-xs text-zinc-500 font-mono uppercase tracking-wider">
-                    Today's Score
-                  </span>
-                  <span className="text-xs text-zinc-500">Thu, Oct 12</span>
-                </div>
-
-                {/* Big score */}
-                <div className="flex items-end gap-1 mb-1">
-                  <motion.span
-                    className="text-6xl font-bold tracking-tight leading-none"
-                    style={{ color: "#D4FF00" }}
-                    initial={{ opacity: 0, y: 12 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    94
-                  </motion.span>
-                  <span className="text-zinc-500 text-lg mb-1">/100</span>
-                </div>
-                <p className="text-xs text-zinc-500 mb-5">
-                  🔥 Streak Day 12 — Keep going
-                </p>
-
-                {/* Mini breakdown */}
-                {[
-                  { label: "Calories",  val: "98%", color: "#D4FF00" },
-                  { label: "Protein",   val: "91%", color: "#378ADD" },
-                  { label: "Adherence", val: "94%", color: "#D4FF00" },
-                ].map((row) => (
-                  <div key={row.label} className="flex items-center justify-between mb-2.5">
-                    <span className="text-xs text-zinc-500">{row.label}</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-20 h-1 bg-white/10 rounded-full overflow-hidden">
-                        <motion.div
-                          className="h-full rounded-full"
-                          style={{ backgroundColor: row.color }}
-                          initial={{ width: "0%" }}
-                          whileInView={{ width: row.val }}
-                          viewport={{ once: true }}
-                          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-                        />
-                      </div>
-                      <span className="text-xs font-semibold" style={{ color: row.color }}>
-                        {row.val}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-            </div>
-          </div>
-        </Reveal>
-
+                 </div>
+               </div>
+             </Reveal>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -305,84 +251,192 @@ function HowItWorks() {
     {
       number: "01",
       icon: Target,
-      title: "Set your strategy",
+      title: "Define Your Goal",
       desc: "Input your weight, body fat %, and goal. LeanIQA calculates your deficit, macro targets, and a precise completion date.",
+      demo: (
+        <div className="bg-zinc-900/50 rounded-xl p-3 border border-white/5 mt-3 group-hover:border-[#D4FF00]/30 transition-colors duration-500">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] text-zinc-400 font-medium">Goal Weight</span>
+            <span className="text-[10px] text-[#D4FF00] flex items-center gap-1"><Sparkles className="w-2.5 h-2.5"/> AI Calculated</span>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-xl font-bold text-zinc-300 line-through opacity-50">62kg</span>
+            <ArrowRight className="w-3 h-3 text-zinc-500" />
+            <span className="text-2xl font-bold text-white">55kg</span>
+          </div>
+        </div>
+      )
     },
     {
       number: "02",
       icon: MessageSquare,
-      title: "Log meals in plain English",
+      title: "Describe Any Meal Naturally",
       desc: "Type '2 roti + dal + 100g paneer'. AI parses it instantly — no barcode scanning, no database hunting.",
+      demo: (
+        <div className="mt-3 flex flex-col gap-2">
+          <div className="bg-[#D4FF00]/10 border border-[#D4FF00]/20 rounded-xl rounded-tr-sm p-2.5 text-xs text-[#D4FF00] self-end max-w-[90%] group-hover:bg-[#D4FF00]/20 transition-colors duration-500">
+            2 Roti, Dal, 100g Paneer
+          </div>
+          <div className="bg-zinc-800/50 border border-white/5 rounded-xl rounded-tl-sm p-2.5 text-[10px] text-zinc-300 self-start max-w-[90%] shadow-lg">
+            <div className="flex items-center gap-1.5 mb-1.5 pb-1.5 border-b border-white/5">
+              <CheckCircle2 className="w-2.5 h-2.5 text-[#D4FF00]" />
+              <span className="font-semibold text-white">Parsed</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div><div className="text-zinc-500 mb-0.5">Cal</div><div className="font-medium text-white">450</div></div>
+              <div><div className="text-zinc-500 mb-0.5">Pro</div><div className="font-medium text-white">28g</div></div>
+              <div><div className="text-zinc-500 mb-0.5">Carb</div><div className="font-medium text-white">45g</div></div>
+            </div>
+          </div>
+        </div>
+      )
     },
     {
       number: "03",
       icon: BarChart3,
-      title: "Score your day",
+      title: "Your AI Coaches Every Decision",
       desc: "Receive a Daily Score (0–100) based on compliance. The app recalibrates your remaining meals in real time.",
+      demo: (
+        <div className="bg-zinc-900/50 rounded-xl p-3 border border-white/5 mt-3 group-hover:border-[#D4FF00]/30 transition-colors duration-500">
+           <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] text-zinc-400 font-medium">Today's Score</span>
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#D4FF00]/10 text-[#D4FF00]">Excellent</span>
+          </div>
+          <div className="flex items-end gap-1 mb-2">
+             <span className="text-3xl font-bold text-white leading-none">91</span>
+             <span className="text-xs text-zinc-500 mb-1">/100</span>
+          </div>
+          <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
+            <div className="h-full bg-[#D4FF00] rounded-full w-[91%]" />
+          </div>
+        </div>
+      )
     },
     {
       number: "04",
       icon: TrendingUp,
-      title: "Watch the transformation",
+      title: "See Your Body Change Week by Week",
       desc: "Your physique timeline updates based on your actual adherence. Stay consistent, and your goal date moves closer.",
+      demo: (
+        <div className="bg-zinc-900/50 rounded-xl p-3 border border-white/5 mt-3 relative overflow-hidden group-hover:border-[#D4FF00]/30 transition-colors duration-500">
+           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#D4FF00]/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+           <div className="flex items-center justify-between text-[10px] font-medium">
+             <div className="flex flex-col items-center">
+               <div className="w-1.5 h-1.5 rounded-full bg-[#D4FF00] mb-1.5 shadow-[0_0_8px_#D4FF00]" />
+               <span className="text-white">Week 1</span>
+             </div>
+             <div className="h-px bg-zinc-800 flex-1 mx-2 relative">
+               <div className="absolute left-0 top-0 h-full bg-[#D4FF00]/50 w-[50%]" />
+             </div>
+             <div className="flex flex-col items-center">
+               <div className="w-1.5 h-1.5 rounded-full bg-zinc-700 mb-1.5" />
+               <span className="text-zinc-500">Week 6</span>
+             </div>
+             <div className="h-px bg-zinc-800 flex-1 mx-2" />
+             <div className="flex flex-col items-center">
+               <div className="w-1.5 h-1.5 rounded-full bg-zinc-700 mb-1.5" />
+               <span className="text-zinc-500">Week 12</span>
+             </div>
+           </div>
+        </div>
+      )
     },
   ];
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start center", "end center"]
+  });
+
+  const lineHeight = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
+
   return (
-    <section className="py-16 sm:py-24 px-6 border-t border-zinc-900 bg-[#0C0C0D]">
+    <section className="py-24 sm:py-32 px-6 border-t border-zinc-900 bg-[#0A0A0B] overflow-hidden" id="how-it-works">
       <div className="max-w-7xl mx-auto">
-        <Reveal>
-          <div className="mb-12 sm:mb-16 max-w-2xl">
+        <div className="text-center mb-20 max-w-2xl mx-auto">
+          <Reveal>
             <p className="text-xs font-mono text-[#D4FF00] uppercase tracking-widest mb-3">
-              How it works
+              HOW IT WORKS
             </p>
-            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4">
-              Four steps. One system. Real results.
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white mb-6">
+              Four simple steps to transform.
             </h2>
-            <p className="text-zinc-400 text-sm sm:text-base">
+            <p className="text-zinc-400 text-sm sm:text-base lg:text-lg">
               Everything is designed to reduce friction and increase accountability from day one.
             </p>
-          </div>
-        </Reveal>
+          </Reveal>
+        </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-1">
-          {steps.map((s, i) => (
-            <Reveal key={i} delay={i * 0.1}>
-              <div className="bg-[#111112] border border-zinc-800/50 p-6 sm:p-8 h-full min-h-[220px] flex flex-col relative overflow-hidden group">
+        <div className="relative max-w-4xl mx-auto pl-6 md:pl-0" ref={containerRef}>
+          {/* Central connecting line for Desktop, Left line for Mobile */}
+          <div className="absolute left-0 md:left-1/2 top-0 bottom-0 w-px bg-zinc-800 md:-translate-x-1/2" />
+          <motion.div 
+            className="absolute left-0 md:left-1/2 top-0 w-px bg-gradient-to-b from-[#D4FF00] to-transparent md:-translate-x-1/2 origin-top"
+            style={{ height: lineHeight }}
+          />
 
-                {/* Step number watermark */}
-                <span
-                  className="absolute top-4 right-5 text-7xl font-black text-white/[0.03] select-none pointer-events-none leading-none transition-all duration-500 group-hover:text-white/[0.06]"
-                  aria-hidden
-                >
-                  {s.number}
-                </span>
-
-                {/* Icon */}
-                <div
-                  className="w-9 h-9 rounded-lg flex items-center justify-center mb-6"
-                  style={{ background: "rgba(212,255,0,0.08)", border: "1px solid rgba(212,255,0,0.15)" }}
-                >
-                  <s.icon className="w-4 h-4" style={{ color: "#D4FF00" }} />
-                </div>
-
-                <h3 className="text-base font-semibold text-zinc-100 mb-3 tracking-tight">
-                  {s.title}
-                </h3>
-                <p className="text-zinc-400 text-sm leading-relaxed">
-                  {s.desc}
-                </p>
-
-                {/* Connector arrow — hidden on last item */}
-                {i < steps.length - 1 && (
-                  <div className="hidden lg:block absolute top-8 -right-[1px] z-10">
-                    <ChevronRight className="w-4 h-4 text-zinc-700" />
+          <div className="space-y-12 md:space-y-0">
+            {steps.map((s, i) => {
+              const isEven = i % 2 === 0;
+              
+              const CardContent = (
+                <div className="bg-[#111112] border border-zinc-800/60 rounded-2xl p-5 md:p-6 relative group hover:-translate-y-2 transition-all duration-500 hover:border-[#D4FF00]/40 hover:shadow-[0_10px_40px_rgba(212,255,0,0.05)] overflow-hidden w-full">
+                  {/* Background blurred number */}
+                  <div className="absolute -right-4 -bottom-6 text-8xl font-black text-white/5 blur-sm select-none pointer-events-none group-hover:text-[#D4FF00]/10 transition-colors duration-500">
+                     {s.number}
                   </div>
-                )}
 
-              </div>
-            </Reveal>
-          ))}
+                  <div className="relative z-10">
+                    <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-[#D4FF00]/10 group-hover:border-[#D4FF00]/30 transition-all duration-500">
+                      <s.icon className="w-5 h-5 text-zinc-400 group-hover:text-[#D4FF00] transition-colors duration-500" />
+                    </div>
+                    <h3 className="text-lg sm:text-xl font-semibold text-white mb-2 tracking-tight">
+                      {s.title}
+                    </h3>
+                    <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed">
+                      {s.desc}
+                    </p>
+                    
+                    {/* Live Demo */}
+                    <div className="mt-6">
+                      {s.demo}
+                    </div>
+                  </div>
+                </div>
+              );
+
+              return (
+                <Reveal key={i} delay={0.1}>
+                  {/* We use a grid for desktop to properly place it in columns, and flex for mobile */}
+                  <div className="relative grid grid-cols-1 md:grid-cols-2 md:gap-16 items-center w-full md:py-12">
+                    
+                    {/* Center Node Desktop / Left Node Mobile */}
+                    <div className="flex absolute left-0 md:left-1/2 top-12 md:top-1/2 -translate-x-1/2 md:-translate-y-1/2 w-8 h-8 rounded-full bg-[#0A0A0B] border-2 border-zinc-800 items-center justify-center z-10 transition-colors duration-500 delay-300">
+                       <div className="w-2.5 h-2.5 rounded-full bg-zinc-700 transition-colors duration-500 group-hover:bg-[#D4FF00]" />
+                    </div>
+
+                    {isEven ? (
+                      <>
+                        <div className="w-full">
+                           {CardContent}
+                        </div>
+                        <div className="hidden md:block" />
+                      </>
+                    ) : (
+                      <>
+                        <div className="hidden md:block" />
+                        <div className="w-full">
+                           {CardContent}
+                        </div>
+                      </>
+                    )}
+
+                  </div>
+                </Reveal>
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>
@@ -1107,7 +1161,7 @@ export function LandingPage() {
       </motion.nav>
 
       {/* ── Hero ── */}
-      <section className="pt-28 sm:pt-32 lg:pt-40 pb-16 sm:pb-24 px-6 relative z-10">
+      <section className="pt-12 sm:pt-16 lg:pt-16 pb-16 sm:pb-24 px-6 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="max-w-2xl relative z-10">
             <motion.h1
