@@ -172,7 +172,13 @@ export function CalorieDetailPage() {
       {/* 7-Day History Chart */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card-base p-4 mb-10">
         <div className="text-[16px] font-medium text-white mb-6">Daily calorie history</div>
-        <DailyHistoryChart logs={chartData} todayStr={todayStr} unit="kcal" type="calorie" />
+        <DailyHistoryChart 
+          logs={chartData} 
+          todayStr={todayStr} 
+          startDateStr={goal?.created_at ? getLocalDateString(new Date(goal.created_at)) : undefined}
+          unit="kcal" 
+          type="calorie" 
+        />
       </motion.div>
 
       {/* Meal Breakdown Section */}
