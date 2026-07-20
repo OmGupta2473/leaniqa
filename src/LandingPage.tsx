@@ -11,7 +11,6 @@ import {
   useInView,
 } from "motion/react";
 import { useNavigate } from "react-router-dom";
-import { AIOperatingSystem } from "./components/AIOperatingSystem";
 import {
   MessageSquare,
   Target,
@@ -1846,8 +1845,27 @@ export function LandingPage() {
 
       <DisciplineAdvantage />
 
-      {/* ── AI Operating System (Phase 2) ── */}
-      <AIOperatingSystem />
+      {/* ── Features grid ── */}
+      <section className="py-16 sm:py-24 px-6 border-t border-zinc-900 bg-[#0C0C0D]">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-12 sm:mb-16 max-w-3xl mx-auto text-center">
+            <h2 className="text-2xl sm:text-3xl font-semibold mb-4">Intelligence that drives consistency.</h2>
+            <p className="text-zinc-400 text-sm sm:text-base">People don't fail because they lack motivation. They fail because rigid plans break when real life happens. LeanIQA fixes this.</p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-1">
+            {[
+              { subsystem: "Natural Language",   icon: MessageSquare, title: "AI Meal Parsing",               desc: "Describe your meal in plain English or Hinglish. We handle the exact calorie and macro calculations instantly." },
+              { subsystem: "Dynamic Adjustments", icon: Target,  title: "Adaptive Recovery",                desc: "Missed your protein goal or went over on carbs? The AI automatically adjusts your upcoming meals to keep you on track." },
+              { subsystem: "Accountability", icon: CheckCircle2, title: "Compliance Scoring",                desc: "A realistic 0-100 score of how well you hit your targets. Progress over perfection. We measure habits, not just numbers." },
+              { subsystem: "Forecasting",   icon: LineChart,  title: "Physique Timeline",            desc: "Watch your future unfold. We project your weight and body composition based on your actual adherence rate." },
+              { subsystem: "Motivation", icon: Flame, title: "Daily Streaks",        desc: "Build unbreakable momentum. Our system is engineered to help you never miss twice." },
+              { subsystem: "Gamification", icon: Trophy, title: "Achievement Awards", desc: "Unlock milestones for consistency, high-protein days, and perfect adherence. Celebrate every step of your journey." },
+            ].map((feature, i) => (
+              <GridCard key={i} feature={feature} delay={i * 0.1} />
+            ))}
+          </div>
+        </div>
+      </section>
 
       <HowItWorks />
       <TestimonialStrip />
