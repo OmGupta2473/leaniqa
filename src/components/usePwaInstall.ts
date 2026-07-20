@@ -11,31 +11,31 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
+function getInitialPlatform(): Platform {
+  if (typeof window === 'undefined') return 'unknown';
+  
+  const ua = window.navigator.userAgent.toLowerCase();
+  const isIOS = /iphone|ipad|ipod/.test(ua);
+  const isAndroid = /android/.test(ua);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+  
+  if (isStandalone) return 'installed';
+  if (isIOS) return 'ios';
+  if (isAndroid) return 'android';
+  return 'desktop';
+}
+
+function getInitialIsInstalled(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+}
+
 export function usePwaInstall() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
-  const [platform, setPlatform] = useState<Platform>('unknown');
+  const [isInstalled, setIsInstalled] = useState(getInitialIsInstalled);
+  const [platform, setPlatform] = useState<Platform>(getInitialPlatform);
 
   useEffect(() => {
-    // Detect platform
-    const ua = window.navigator.userAgent.toLowerCase();
-    const isIOS = /iphone|ipad|ipod/.test(ua);
-    const isAndroid = /android/.test(ua);
-    
-    // Check if already installed
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
-    
-    if (isStandalone) {
-      setPlatform('installed');
-      setIsInstalled(true);
-    } else if (isIOS) {
-      setPlatform('ios');
-    } else if (isAndroid) {
-      setPlatform('android');
-    } else {
-      setPlatform('desktop');
-    }
-
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);

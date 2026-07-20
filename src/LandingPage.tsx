@@ -1787,9 +1787,9 @@ export function LandingPage() {
       </motion.nav>
 
       {/* ── Hero ── */}
-      <section className="pt-20 sm:pt-24 lg:pt-20 pb-12 sm:pb-16 lg:pb-12 px-6 relative z-100 lg:min-h-[calc(100vh-80px)] flex lg:items-start items-center">
+      <section className="pt-20 sm:pt-24 lg:pt-32 pb-12 sm:pb-16 lg:pb-12 px-6 relative z-10 lg:min-h-[calc(100vh-80px)] flex lg:items-start items-center">
         <div className="w-full max-w-7xl mx-auto flex flex-col lg:flex-row items-center lg:items-start gap-10 lg:gap-8">
-          <div className="max-w-2xl relative z-[100] flex-1">
+          <div className="max-w-2xl relative z-10 flex-1 lg:pt-8">
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1950,12 +1950,12 @@ export function LandingPage() {
       </section>
 
       {/* ── CTA ── */}
-      <section className="py-20 sm:py-32 px-6 border-t border-zinc-900 bg-[#0A0A0B] text-center relative z-[100]">
+      <section className="py-20 sm:py-32 px-6 border-t border-zinc-900 bg-[#0A0A0B] text-center relative overflow-hidden">
         <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">
            <div className="w-[80vw] h-[80vw] max-w-[800px] max-h-[800px] bg-gradient-to-tr from-[#FF4D1C]/10 via-[#378ADD]/5 to-[#D4FF00]/10 rounded-full blur-[120px] mix-blend-screen opacity-50" />
         </div>
         
-        <div className="max-w-2xl mx-auto relative z-[100]">
+        <div className="max-w-2xl mx-auto relative z-10">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold mb-6 tracking-tight leading-[1.1]">
             The hardest part isn't losing fat. It's staying consistent.
           </h2>
