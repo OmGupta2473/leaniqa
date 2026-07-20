@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Smartphone, Download, X, CheckCircle2, Monitor, ArrowRight, Share, MoreVertical, Compass, Home, PlusSquare, Lock, Apple, ArrowLeft, Loader2 } from 'lucide-react';
+import { Smartphone, Download, X, CheckCircle2, Monitor, ArrowRight, Share, MoreVertical, Compass, Home, PlusSquare, Lock } from 'lucide-react';
 import { usePwaInstall, Platform } from './usePwaInstall';
 
 export function InstallLeaniqa() {
@@ -8,7 +8,6 @@ export function InstallLeaniqa() {
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState(0);
   const [status, setStatus] = useState<'idle' | 'installing' | 'success'>('idle');
-  const [isButtonLoading, setIsButtonLoading] = useState(false);
 
   if (isInstalled || platform === 'installed') {
     return (
@@ -20,49 +19,37 @@ export function InstallLeaniqa() {
   }
 
   const handleInstallClick = async () => {
-    // 1. Give instant feedback to the user to kill perceived lag
-    setIsButtonLoading(true);
     setIsOpen(true);
+    setStep(1);
     
-    const isDesktop = platform !== 'ios' && platform !== 'android';
-
-    if (deferredPrompt && !isDesktop) {
-      // 2. Show the loading animation inside the popup instantly
+    if (deferredPrompt) {
+      // Simulate beautiful install animation before showing prompt
       setStatus('installing');
-      
-      try {
-        // 3. Prompt synchronously (Browser requires this to not be inside a setTimeout)
-        await deferredPrompt.prompt();
-        const choiceResult = await deferredPrompt.userChoice;
-        
-        if (choiceResult.outcome === 'accepted') {
-          setStatus('success');
-          setTimeout(() => {
-            setIsOpen(false);
-            setIsButtonLoading(false);
-          }, 3000);
-        } else {
-          // Dismissed native prompt, fallback to manual instructions
+      setTimeout(async () => {
+        try {
+          await deferredPrompt.prompt();
+          const choiceResult = await deferredPrompt.userChoice;
+          if (choiceResult.outcome === 'accepted') {
+            setStatus('success');
+            setTimeout(() => setIsOpen(false), 3000);
+          } else {
+            // Dismissed, show manual instructions based on platform
+            setStatus('idle');
+            setStep(1); // Proceed with manual flow
+          }
+        } catch (e) {
           setStatus('idle');
-          setStep(1); 
-          setIsButtonLoading(false);
+          setStep(1);
         }
-      } catch (e) {
-        setStatus('idle');
-        setStep(1);
-        setIsButtonLoading(false);
-      }
+      }, 1500);
     } else {
-      // No prompt available OR it's a desktop user
+      // No prompt available, show manual instructions
       setStatus('idle');
-      setStep(isDesktop ? 0 : 1);
-      setIsButtonLoading(false);
     }
   };
 
   const close = () => {
     setIsOpen(false);
-    setIsButtonLoading(false);
     setTimeout(() => {
       setStep(0);
       setStatus('idle');
@@ -73,19 +60,14 @@ export function InstallLeaniqa() {
     <>
       <motion.button
         onClick={handleInstallClick}
-        disabled={isButtonLoading}
         whileHover={{ scale: 1.03, backgroundColor: "rgba(255,255,255,0.1)" }}
         whileTap={{ scale: 0.97 }}
         transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-        className="bg-zinc-900/80 text-white w-full sm:w-auto px-6 sm:px-8 py-4 font-semibold flex items-center justify-center gap-2 text-xs sm:text-sm uppercase tracking-wide rounded-full border border-zinc-800 shadow-xl backdrop-blur-md disabled:opacity-80 disabled:cursor-not-allowed"
+        className="bg-zinc-900/90 text-white w-full sm:w-auto px-6 sm:px-8 py-4 font-semibold flex items-center justify-center gap-2 text-xs sm:text-sm uppercase tracking-wide rounded-full border border-zinc-800 shadow-xl"
         style={{ willChange: "transform" }}
       >
-        {isButtonLoading ? (
-          <Loader2 className="w-4 h-4 text-[#D4FF00] animate-spin" />
-        ) : (
-          <Smartphone className="w-4 h-4 text-[#D4FF00]" />
-        )}
-        {isButtonLoading ? "Preparing..." : "Install LeaniQA"}
+        <Smartphone className="w-4 h-4 text-[#D4FF00]" />
+        Install LeaniQA
       </motion.button>
 
       <AnimatePresence>
@@ -104,19 +86,9 @@ export function InstallLeaniqa() {
 }
 
 function InstallWizard({ platform, step, setStep, status, close }: any) {
-  const [desktopChoice, setDesktopChoice] = useState<'ios' | 'android' | null>(null);
-
-  // Reset choice when modal closes/opens
-  useEffect(() => {
-    if (status === 'idle' && platform !== 'ios' && platform !== 'android') {
-      setDesktopChoice(null);
-    }
-  }, [platform, status]);
-
-  const activePlatform = (platform === 'ios' || platform === 'android') ? platform : desktopChoice;
-  const maxSteps = activePlatform === 'ios' ? 4 : 3;
-
+  // Wizard content based on platform
   let content = null;
+  const maxSteps = platform === 'ios' ? 4 : (platform === 'android' ? 3 : 2);
 
   if (status === 'installing') {
     content = (
@@ -129,13 +101,12 @@ function InstallWizard({ platform, step, setStep, status, close }: any) {
           <Smartphone className="w-10 h-10 text-[#D4FF00]" />
         </motion.div>
         <h3 className="text-xl font-semibold text-white mb-2">Preparing Installation...</h3>
-        <p className="text-zinc-400 text-sm mb-6 text-center">Please wait while we summon the installer.</p>
         <div className="w-48 h-1 bg-zinc-800 rounded-full overflow-hidden">
           <motion.div 
             className="h-full bg-[#D4FF00]"
             initial={{ width: "0%" }}
             animate={{ width: "100%" }}
-            transition={{ duration: 1.5, repeat: Infinity }}
+            transition={{ duration: 1.5 }}
           />
         </div>
       </div>
@@ -158,41 +129,13 @@ function InstallWizard({ platform, step, setStep, status, close }: any) {
         </button>
       </div>
     );
-  } else if (!activePlatform) {
-    content = (
-      <div className="flex flex-col h-full items-center justify-center text-center py-4">
-        <h3 className="text-xl font-semibold text-white mb-2">Get the Mobile App</h3>
-        <p className="text-zinc-400 text-sm mb-8">You can use LeaniQA directly in your web browser, or install it on your mobile device for the best experience.</p>
-        
-        <div className="grid grid-cols-2 gap-4 w-full">
-          <button 
-            onClick={() => { setDesktopChoice('android'); setStep(1); }}
-            className="bg-zinc-900/50 border border-zinc-800 hover:border-[#D4FF00]/50 p-6 rounded-2xl flex flex-col items-center gap-3 transition-colors group"
-          >
-            <Smartphone className="w-10 h-10 text-zinc-500 group-hover:text-[#D4FF00] transition-colors" />
-            <span className="text-white font-medium">Android</span>
-          </button>
-          
-          <button 
-            onClick={() => { setDesktopChoice('ios'); setStep(1); }}
-            className="bg-zinc-900/50 border border-zinc-800 hover:border-white/50 p-6 rounded-2xl flex flex-col items-center gap-3 transition-colors group"
-          >
-            <Apple className="w-10 h-10 text-zinc-500 group-hover:text-white transition-colors" />
-            <span className="text-white font-medium">iOS / iPhone</span>
-          </button>
-        </div>
-      </div>
-    );
-  } else if (activePlatform === 'ios') {
-    content = <IOSInstructions step={step} />;
-  } else if (activePlatform === 'android') {
-    content = <AndroidInstructions step={step} />;
+  } else if (platform === 'ios') {
+    content = <IOSInstructions step={step} setStep={setStep} />;
+  } else if (platform === 'android') {
+    content = <AndroidInstructions step={step} setStep={setStep} />;
+  } else {
+    content = <DesktopInstructions step={step} setStep={setStep} />;
   }
-
-  const handleBackToChoices = () => {
-    setDesktopChoice(null);
-    setStep(0);
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 sm:p-6">
@@ -200,7 +143,7 @@ function InstallWizard({ platform, step, setStep, status, close }: any) {
         initial={{ opacity: 0 }} 
         animate={{ opacity: 1 }} 
         exit={{ opacity: 0 }} 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/80"
         onClick={close}
       />
       <motion.div 
@@ -212,16 +155,9 @@ function InstallWizard({ platform, step, setStep, status, close }: any) {
       >
         <div className="p-6 pb-2 border-b border-zinc-900 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {platform !== 'ios' && platform !== 'android' && desktopChoice && status === 'idle' ? (
-              <button onClick={handleBackToChoices} className="p-2 -ml-2 bg-zinc-900/50 hover:bg-zinc-800 rounded-full text-zinc-400 hover:text-white transition-colors mr-1">
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-            ) : (
-              <div className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center">
-                <Download className="w-5 h-5 text-[#D4FF00]" />
-              </div>
-            )}
-            
+            <div className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center">
+              <Download className="w-5 h-5 text-[#D4FF00]" />
+            </div>
             <div>
               <h2 className="text-lg font-semibold text-white leading-tight">Install LeaniQA</h2>
               <p className="text-xs text-zinc-500">Premium App Experience</p>
@@ -235,7 +171,7 @@ function InstallWizard({ platform, step, setStep, status, close }: any) {
         <div className="p-6 flex-1 min-h-[300px] flex flex-col">
           <AnimatePresence mode="wait">
             <motion.div 
-              key={`${status}-${step}-${activePlatform}`}
+              key={`${status}-${step}`}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
@@ -247,7 +183,7 @@ function InstallWizard({ platform, step, setStep, status, close }: any) {
           </AnimatePresence>
         </div>
 
-        {status === 'idle' && activePlatform && (
+        {status === 'idle' && (
           <div className="p-6 pt-4 border-t border-zinc-900 bg-zinc-950/50 flex items-center justify-between">
             <div className="flex items-center gap-2">
               {Array.from({ length: maxSteps }).map((_, i) => (
@@ -268,7 +204,7 @@ function InstallWizard({ platform, step, setStep, status, close }: any) {
             ) : (
               <button 
                 onClick={() => {
-                  setStep(step + 1); 
+                  setStep(step + 1); // just to trigger success or finish
                   close();
                 }}
                 className="bg-[#D4FF00] text-black px-6 py-2 rounded-full text-sm font-semibold hover:brightness-110 transition-all shadow-[0_0_20px_rgba(212,255,0,0.2)]"
@@ -283,12 +219,13 @@ function InstallWizard({ platform, step, setStep, status, close }: any) {
   );
 }
 
-function IOSInstructions({ step }: { step: number }) {
+function IOSInstructions({ step }: { step: number; setStep: (step: number) => void }) {
   if (step === 1) {
     return (
       <div className="flex flex-col h-full">
         <h3 className="text-xl font-semibold text-white mb-2">1. Open Safari Menu</h3>
         <p className="text-zinc-400 text-sm mb-8">Tap the Share icon at the bottom of Safari.</p>
+        
         <div className="flex-1 bg-zinc-900/50 rounded-2xl border border-zinc-800 relative overflow-hidden flex flex-col justify-end">
            <div className="bg-zinc-800 h-16 w-full flex items-center justify-between px-6 border-t border-zinc-700/50">
              <Compass className="w-6 h-6 text-blue-500" />
@@ -311,10 +248,11 @@ function IOSInstructions({ step }: { step: number }) {
       <div className="flex flex-col h-full">
         <h3 className="text-xl font-semibold text-white mb-2">2. Add to Home Screen</h3>
         <p className="text-zinc-400 text-sm mb-8">Scroll down the menu and tap "Add to Home Screen".</p>
+        
         <div className="flex-1 relative bg-zinc-900/50 rounded-2xl border border-zinc-800 overflow-hidden flex items-end justify-center pb-4">
            <motion.div 
              initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: "spring" }}
-             className="w-64 bg-zinc-800/90 backdrop-blur-md rounded-2xl border border-zinc-700/50 shadow-2xl p-2 space-y-1"
+             className="w-64 bg-zinc-800 border border-zinc-700/50 shadow-2xl p-2 space-y-1 rounded-2xl"
            >
              <div className="p-3 bg-zinc-700/30 rounded-xl flex items-center justify-between">
                 <span className="text-sm text-white">Copy Link</span>
@@ -333,6 +271,7 @@ function IOSInstructions({ step }: { step: number }) {
       <div className="flex flex-col h-full">
         <h3 className="text-xl font-semibold text-white mb-2">3. Confirm</h3>
         <p className="text-zinc-400 text-sm mb-8">Tap "Add" in the top right corner.</p>
+        
         <div className="flex-1 bg-zinc-900/50 rounded-2xl border border-zinc-800 relative overflow-hidden flex flex-col pt-4">
            <div className="bg-zinc-800 w-full p-4 rounded-xl shadow-lg border border-zinc-700/50 max-w-[280px] mx-auto">
              <div className="flex items-center justify-between mb-4">
@@ -370,12 +309,13 @@ function IOSInstructions({ step }: { step: number }) {
   }
 }
 
-function AndroidInstructions({ step }: { step: number }) {
+function AndroidInstructions({ step }: { step: number; setStep: (step: number) => void }) {
   if (step === 1) {
     return (
       <div className="flex flex-col h-full">
         <h3 className="text-xl font-semibold text-white mb-2">1. Open Menu</h3>
         <p className="text-zinc-400 text-sm mb-8">Tap the three dots in Chrome's top right corner.</p>
+        
         <div className="flex-1 bg-zinc-900/50 rounded-2xl border border-zinc-800 relative overflow-hidden flex flex-col pt-4">
            <div className="bg-zinc-800 h-14 w-full flex items-center justify-between px-4 border-b border-zinc-700/50 shadow-md">
              <div className="flex items-center gap-2 bg-zinc-900/50 rounded-full px-4 py-1.5 flex-1 mx-4">
@@ -396,6 +336,7 @@ function AndroidInstructions({ step }: { step: number }) {
       <div className="flex flex-col h-full">
         <h3 className="text-xl font-semibold text-white mb-2">2. Install App</h3>
         <p className="text-zinc-400 text-sm mb-8">Tap "Install App" or "Add to Home Screen".</p>
+        
         <div className="flex-1 relative bg-zinc-900/50 rounded-2xl border border-zinc-800 overflow-hidden flex justify-end pr-4 pt-4">
            <motion.div 
              initial={{ opacity: 0, scale: 0.9, transformOrigin: 'top right' }} animate={{ opacity: 1, scale: 1 }}
@@ -418,6 +359,7 @@ function AndroidInstructions({ step }: { step: number }) {
       <div className="flex flex-col h-full">
         <h3 className="text-xl font-semibold text-white mb-2">3. Confirm</h3>
         <p className="text-zinc-400 text-sm mb-8">Tap "Install" on the popup that appears.</p>
+        
         <div className="flex flex-col items-center justify-center flex-1">
           <motion.div 
              initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
@@ -435,6 +377,71 @@ function AndroidInstructions({ step }: { step: number }) {
              <div className="flex justify-end gap-4">
                <span className="text-sm font-medium text-zinc-400">Cancel</span>
                <motion.span animate={{ opacity: [0.7, 1, 0.7] }} transition={{ repeat: Infinity, duration: 1.5 }} className="text-sm font-bold text-[#D4FF00]">Install</motion.span>
+             </div>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+}
+
+function DesktopInstructions({ step }: { step: number; setStep: (step: number) => void }) {
+  if (step === 1) {
+    return (
+      <div className="flex flex-col h-full">
+        <h3 className="text-xl font-semibold text-white mb-2">Install on Desktop</h3>
+        <p className="text-zinc-400 text-sm mb-8">Click the install icon in your browser's address bar.</p>
+        
+        <div className="flex-1 bg-zinc-900/50 rounded-2xl border border-zinc-800 relative overflow-hidden p-6 flex flex-col">
+           <div className="bg-zinc-800 rounded-lg p-2 flex items-center gap-3 border border-zinc-700">
+             <div className="flex gap-1.5 ml-2">
+               <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+               <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
+               <div className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
+             </div>
+             <div className="flex-1 bg-zinc-900 rounded flex items-center px-3 py-1.5 justify-between">
+                <span className="text-xs text-zinc-400 flex items-center gap-2"><Lock className="w-3 h-3"/> leaniqa.com</span>
+                <div className="relative">
+                  <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1.5 }}>
+                    <Monitor className="w-4 h-4 text-[#D4FF00]" />
+                  </motion.div>
+                  <motion.div className="absolute -inset-2 border-2 border-[#D4FF00]/30 rounded-full" animate={{ opacity: [0, 1, 0], scale: [0.8, 1.2, 0.8] }} transition={{ repeat: Infinity, duration: 1.5 }} />
+                </div>
+             </div>
+           </div>
+           
+           <div className="mt-8 flex justify-end pr-8">
+             <motion.div animate={{ y: [0, -10, 0] }} transition={{ repeat: Infinity, duration: 1.5 }} className="text-[#D4FF00] flex flex-col items-center">
+                <span className="text-xs font-mono mb-1">Click here</span>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="rotate-180"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+             </motion.div>
+           </div>
+        </div>
+      </div>
+    );
+  } else {
+    return (
+      <div className="flex flex-col h-full">
+        <h3 className="text-xl font-semibold text-white mb-2">Confirm Installation</h3>
+        <p className="text-zinc-400 text-sm mb-8">Click Install to use LeaniQA like a native app.</p>
+        
+        <div className="flex flex-col items-center justify-center flex-1">
+          <motion.div 
+             initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+             className="bg-zinc-800 p-5 rounded-lg border border-zinc-700 shadow-2xl w-full max-w-[280px]"
+          >
+             <div className="flex gap-4 mb-6">
+                <div className="w-10 h-10 bg-black rounded flex items-center justify-center border border-zinc-700">
+                   <Monitor className="w-5 h-5 text-[#D4FF00]" />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-white">Install app?</div>
+                  <div className="text-xs text-zinc-400">LeaniQA</div>
+                </div>
+             </div>
+             <div className="flex justify-end gap-3">
+               <span className="bg-zinc-700 text-white px-4 py-1.5 rounded text-xs font-medium">Cancel</span>
+               <motion.span animate={{ backgroundColor: ["#D4FF00", "#bfe600", "#D4FF00"] }} transition={{ repeat: Infinity, duration: 2 }} className="bg-[#D4FF00] text-black px-4 py-1.5 rounded text-xs font-semibold">Install</motion.span>
              </div>
           </motion.div>
         </div>
