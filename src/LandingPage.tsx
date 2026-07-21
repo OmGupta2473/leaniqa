@@ -1758,7 +1758,7 @@ export function LandingPage() {
 
       {/* ── Navbar ── */}
       <motion.nav
-        className="fixed top-0 w-full z-50 backdrop-blur-md"
+        className="fixed top-0 w-full z-[999] backdrop-blur-md"
         animate={{
           backgroundColor: scrolled ? "rgba(10,10,11,0.95)" : "rgba(10,10,11,0)",
           borderBottomColor: scrolled ? "rgba(39,39,42,0.6)" : "rgba(39,39,42,0)",
