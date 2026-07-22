@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { motion, useMotionValue, useTransform, animate, PanInfo } from 'motion/react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { motion, useMotionValue, useSpring, useTransform, animate, PanInfo } from 'motion/react';
 import { cn } from '@/shared/utils/utils';
+import { useWheelPhysics } from "./useWheelPhysics";
 import { haptics } from '@/shared/utils/haptics';
 
 export interface WheelPickerProps {
@@ -23,65 +24,26 @@ export function WheelPicker({
   className
 }: WheelPickerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const y = useMotionValue(0);
-  const isInteracting = useRef(false);
-  const wheelTimeout = useRef<ReturnType<typeof setTimeout>>();
-  const selectedIndex = Math.max(0, items.indexOf(value as never));
+  
+  const { 
+    y, 
+    springY, 
+    handlePanStart, 
+    handlePan, 
+    handlePanEnd, 
+    snapToNearest,
+    isInteracting
+  } = useWheelPhysics({
+    itemsLength: items.length,
+    itemHeight,
+    value,
+    items,
+    onChange
+  });
 
-  // Sync external value changes to motion value, unless actively interacting
-  useEffect(() => {
-    if (!isInteracting.current) {
-      const targetY = -selectedIndex * itemHeight;
-      animate(y, targetY, { type: 'spring', stiffness: 400, damping: 40 });
-    }
-  }, [selectedIndex, itemHeight, y]);
+  const wheelTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Haptics on crossing boundaries
-  useEffect(() => {
-    let lastIndex = selectedIndex;
-    const unsubscribe = y.on('change', (val) => {
-      const currentIndex = Math.max(0, Math.min(items.length - 1, Math.round(-val / itemHeight)));
-      if (currentIndex !== lastIndex) {
-        lastIndex = currentIndex;
-        haptics.tap();
-      }
-    });
-    return unsubscribe;
-  }, [y, itemHeight, items.length, selectedIndex]);
-
-  const handleDragStart = () => {
-    isInteracting.current = true;
-    y.stop();
-  };
-
-  const handleDragEnd = (e: any, info: PanInfo) => {
-    const velocity = info.velocity.y;
-    const currentY = y.get();
-    
-    // Project velocity forward to simulate natural decay
-    const power = 0.4; 
-    const projectedY = currentY + velocity * power;
-    
-    let targetIndex = Math.round(-projectedY / itemHeight);
-    targetIndex = Math.max(0, Math.min(items.length - 1, targetIndex));
-    
-    const targetY = -targetIndex * itemHeight;
-    
-    // Optimistically update to enable "Continue" buttons instantly
-    onChange(items[targetIndex]);
-    
-    animate(y, targetY, { 
-      type: 'spring', 
-      stiffness: 250, 
-      damping: 30, 
-      velocity,
-      onComplete: () => {
-        isInteracting.current = false;
-      }
-    });
-  };
-
-  // Wheel handling for desktop (mouse wheel & trackpad)
+  // Wheel handling for desktop
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -89,7 +51,6 @@ export function WheelPicker({
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault(); // Stop main page scrolling
       isInteracting.current = true;
-      y.stop();
       
       const currentY = y.get();
       // Delta mapping for trackpads vs mice
@@ -106,22 +67,13 @@ export function WheelPicker({
       }
       
       y.set(nextY);
+      springY.jump(nextY);
       
       // Debounce snapping until scrolling stops
-      clearTimeout(wheelTimeout.current);
+      if (wheelTimeout.current) clearTimeout(wheelTimeout.current);
       wheelTimeout.current = setTimeout(() => {
-         let targetIndex = Math.round(-y.get() / itemHeight);
-         targetIndex = Math.max(0, Math.min(items.length - 1, targetIndex));
-         const targetY = -targetIndex * itemHeight;
-         
-         onChange(items[targetIndex]);
-         
-         animate(y, targetY, { 
-             type: 'spring', stiffness: 400, damping: 40,
-             onComplete: () => {
-                 isInteracting.current = false;
-             }
-         });
+         snapToNearest(y.get());
+         setTimeout(() => { isInteracting.current = false; }, 100);
       }, 100);
     };
 
@@ -129,16 +81,15 @@ export function WheelPicker({
     el.addEventListener('wheel', handleWheel, { passive: false });
     return () => {
       el.removeEventListener('wheel', handleWheel);
-      clearTimeout(wheelTimeout.current);
+      if (wheelTimeout.current) clearTimeout(wheelTimeout.current);
     };
-  }, [items, itemHeight, y, onChange]);
+  }, [items, itemHeight, y, springY, snapToNearest, isInteracting]);
 
   // Keyboard accessibility
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End'].includes(e.key)) {
       e.preventDefault();
       isInteracting.current = true;
-      y.stop();
       
       let currentIndex = Math.round(-y.get() / itemHeight);
       if (e.key === 'ArrowUp') currentIndex--;
@@ -149,14 +100,9 @@ export function WheelPicker({
       else if (e.key === 'End') currentIndex = items.length - 1;
       
       currentIndex = Math.max(0, Math.min(items.length - 1, currentIndex));
-      const targetY = -currentIndex * itemHeight;
       
-      onChange(items[currentIndex]);
-      
-      animate(y, targetY, {
-         type: 'spring', stiffness: 400, damping: 40,
-         onComplete: () => { isInteracting.current = false; }
-      });
+      snapToNearest(-currentIndex * itemHeight);
+      setTimeout(() => { isInteracting.current = false; }, 100);
     }
   };
 
@@ -168,7 +114,7 @@ export function WheelPicker({
         width: '100%', 
         WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%)', 
         maskImage: 'linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%)',
-        touchAction: 'none' // CRITICAL: prevents mobile page scrolling when dragging the wheel
+        touchAction: 'none'
       }}
       ref={containerRef}
       tabIndex={0}
@@ -177,7 +123,6 @@ export function WheelPicker({
       aria-valuenow={typeof value === 'number' ? value : undefined}
       aria-valuetext={String(value)}
     >
-      {/* Center highlight overlay */}
       <div 
         className="absolute w-full top-1/2 -translate-y-1/2 pointer-events-none rounded-2xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] shadow-[inset_0_0_12px_rgba(255,255,255,0.02)]"
         style={{ height: itemHeight + 8 }}
@@ -190,24 +135,18 @@ export function WheelPicker({
       </div>
 
       <motion.div
-        drag="y"
-        dragConstraints={{
-          top: -(items.length - 1) * itemHeight,
-          bottom: 0
-        }}
-        dragElastic={0.2}
-        dragMomentum={false}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        style={{ y }}
-        className="absolute w-full top-1/2"
+        onPanStart={handlePanStart}
+        onPan={handlePan}
+        onPanEnd={handlePanEnd}
+        style={{ y: springY }}
+        className="absolute w-full top-1/2 touch-none"
       >
         {items.map((item, i) => (
           <WheelItem 
             key={item} 
             item={item} 
             index={i} 
-            y={y} 
+            springY={springY} 
             itemHeight={itemHeight} 
           />
         ))}
@@ -216,15 +155,13 @@ export function WheelPicker({
   );
 }
 
-function WheelItem({ item, index, y, itemHeight }: { item: any, index: number, y: any, itemHeight: number }) {
+function WheelItem({ item, index, springY, itemHeight }: { item: any, index: number, springY: any, itemHeight: number }) {
   const itemPosition = index * itemHeight;
   
-  // y ranges from 0 (first item selected) to -(length-1)*itemHeight (last item selected)
-  const distance = useTransform(y, (currentY) => {
+  const distance = useTransform(springY, (currentY) => {
     return (currentY as number) + itemPosition;
   });
 
-  // Calculate abs distance for scale/opacity
   const absDistance = useTransform(distance, (d) => Math.abs(d as number));
 
   const scale = useTransform(absDistance, [0, itemHeight * 2.5], [1.08, 0.7]);
