@@ -242,7 +242,8 @@ export function GoalSetterPage() {
 
   // AI Step 1 Progression
   useEffect(() => {
-    if (step === 0 && !goal && !onboardingData?.chosenStrategyName) {
+    if (step === 0 && !goal) {
+      setAnalysisProgress(0);
       const messages = [
         "Calculating maintenance calories...",
         "Estimating body fat...",
@@ -263,7 +264,7 @@ export function GoalSetterPage() {
       
       return () => clearInterval(interval);
     }
-  }, [step, goal, onboardingData?.chosenStrategyName]);
+  }, [step, goal]);
 
   // AI Step 3 Progression
   useEffect(() => {
