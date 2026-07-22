@@ -1,7 +1,7 @@
-import React, { Profiler } from 'react';
+
+import React, { Profiler, useState, useEffect, useRef } from 'react';
 import { onRenderCallback, useRenderTracker } from '@/shared/utils/perfDebug';
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect, useRef } from 'react';
 import { useUserStore } from '@/features/profile/store/userStore';
 import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
 import { useAppStore } from '@/app/store';
@@ -9,13 +9,35 @@ import { cn } from '@/shared/utils/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileService } from '@/features/profile/services/profileService';
 import { complianceService } from '@/features/reports/services/complianceService';
-import { CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, ArrowRight, ChevronLeft, ChevronRight, Activity, Zap, Flame, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { pageVariants, itemVariants, hover, tap } from '@/features/reports/components/motion';
 import { ScreenSkeleton } from '@/shared/components/ScreenSkeleton';
 import { calculateBodyComposition, calculateGoalStats, estimateBodyFatPercentage } from '@/shared/utils/profileCalculations';
-import { BodyFatSelector } from '@/features/goal/components/BodyFatSelector';
 import { haptics } from '@/shared/utils/haptics';
+
+// Use same options from BodyFatSelector but duplicate them here so we don't need to change its props or use it directly to have more control
+const maleOptions = [
+  { range: 'Under 8%', label: 'Essential fat', characteristics: ['Extremely lean', 'Visible striations', 'Competition level'], mid: 5 },
+  { range: '8–12%', label: 'Athletic', characteristics: ['Visible abs', 'Very defined', 'Typical fitness model'], mid: 10 },
+  { range: '12–15%', label: 'Fit', characteristics: ['Some ab definition', 'Lean look', 'Low belly fat'], mid: 13.5 },
+  { range: '15–20%', label: 'Average fit', characteristics: ['Slight lower belly', 'Face appears lean', 'Waist visible', 'No visible abs'], mid: 17.5 },
+  { range: '20–25%', label: 'Average', characteristics: ['Soft belly', 'Fuller face', 'No muscle definition'], mid: 22.5 },
+  { range: '25–30%', label: 'Above average', characteristics: ['Noticeable belly', 'Rounder build', 'Love handles'], mid: 27.5 },
+  { range: '30–40%', label: 'High body fat', characteristics: ['Significant fat storage', 'Round face', 'High waist circumference'], mid: 35 },
+  { range: 'Above 40%', label: 'Obese', characteristics: ['Excessive fat storage across whole body', 'Health risks'], mid: 45 }
+];
+
+const femaleOptions = [
+  { range: 'Under 14%', label: 'Essential fat', characteristics: ['Extremely lean', 'Visible striations', 'Competition level'], mid: 12 },
+  { range: '14–20%', label: 'Athletic', characteristics: ['Visible abs', 'Very defined', 'Typical fitness model'], mid: 17 },
+  { range: '20–24%', label: 'Fit', characteristics: ['Some definition', 'Lean look', 'Low belly fat'], mid: 22 },
+  { range: '24–30%', label: 'Average fit', characteristics: ['Slight lower belly', 'Face appears lean', 'Waist visible', 'No visible abs'], mid: 27 },
+  { range: '30–35%', label: 'Average', characteristics: ['Soft belly', 'Fuller face', 'No muscle definition'], mid: 32.5 },
+  { range: '35–40%', label: 'Above average', characteristics: ['Noticeable belly', 'Rounder build', 'Love handles'], mid: 37.5 },
+  { range: '40–50%', label: 'High body fat', characteristics: ['Significant fat storage', 'Round face', 'High waist circumference'], mid: 45 },
+  { range: 'Above 50%', label: 'Obese', characteristics: ['Excessive fat storage across whole body', 'Health risks'], mid: 55 }
+];
 
 function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: number }) {
   const [displayValue, setDisplayValue] = useState(0);
@@ -44,6 +66,21 @@ function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: n
   return <span ref={elementRef}>{displayValue}</span>;
 }
 
+function BodyFatImagePlaceholder({ gender, categoryRange, className }: { gender: string, categoryRange: string, className?: string }) {
+  return (
+    <div className={cn("w-full h-full bg-[rgba(255,255,255,0.02)] flex flex-col items-center justify-center border border-[rgba(255,255,255,0.05)] relative overflow-hidden", className)}>
+      <div className="absolute inset-0 bg-gradient-to-t from-[rgba(0,0,0,0.5)] to-transparent pointer-events-none" />
+      <div className="text-[rgba(255,255,255,0.2)] flex flex-col items-center relative z-10">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mb-2">
+          <path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+          <rect width="20" height="14" x="2" y="6" rx="2"/>
+        </svg>
+        <span className="text-[10px] uppercase font-bold tracking-wider">{gender}</span>
+        <span className="text-[10px] mt-1">{categoryRange}</span>
+      </div>
+    </div>
+  );
+}
 
 export function GoalSetterPage() {
   useRenderTracker('GoalSetterPage');
@@ -59,10 +96,19 @@ export function GoalSetterPage() {
   const resetGoalConfirm = activeModal === 'reset_goal_confirm';
   const setResetGoalConfirm = (isOpen: boolean) => setActiveModal(isOpen ? 'reset_goal_confirm' : null);
 
-  const currentBfMid = useUserStore(s => s.goalWizardCurrentBfMid);
-  const setCurrentBfMid = useUserStore(s => s.setGoalWizardCurrentBfMid);
-  const targetBfMid = useUserStore(s => s.goalWizardTargetBfMid);
-  const setTargetBfMid = useUserStore(s => s.setGoalWizardTargetBfMid);
+  const [step, setStep] = useState(0); // 0: ai_analysis_1, 1: current_bf, 2: target_bf, 3: ai_analysis_2, 4: speed, 5: customize, 6: summary
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+  
+  // Data state
+  const [currentBfMid, setCurrentBfMid] = useState<number | null>(null);
+  const [targetBfMid, setTargetBfMid] = useState<number | null>(null);
+  const [selectedStrategyName, setSelectedStrategyName] = useState<string | null>(null);
+  
+  // Customization state
+  const [customCalories, setCustomCalories] = useState<number | null>(null);
+  const [customProtein, setCustomProtein] = useState<number | null>(null);
+  const [customFat, setCustomFat] = useState<number | null>(null);
+  const [customCarbs, setCustomCarbs] = useState<number | null>(null);
 
   if (isProfileLoading || isGoalLoading) {
     return <ScreenSkeleton />;
@@ -81,12 +127,26 @@ export function GoalSetterPage() {
   const proteinMid = onboardingData?.proteinMid || 150;
   const proteinMin = onboardingData?.proteinMin || 140;
 
-  useEffect(() => {
-    if (currentBfMid && targetBfMid && targetBfMid >= currentBfMid) {
-      setTargetBfMid(null);
+  // Options
+  const bfOptions = (gender.toLowerCase() === 'female' || gender.toLowerCase() === 'f') ? femaleOptions : maleOptions;
+  let recommendedCurrentOpt = bfOptions[0];
+  let minDiff = Infinity;
+  for (const opt of bfOptions) {
+    const diff = Math.abs(opt.mid - estimatedBf);
+    if (diff < minDiff) {
+      minDiff = diff;
+      recommendedCurrentOpt = opt;
     }
-  }, [currentBfMid]);
+  }
 
+  // Set initial current BF when entering step 1
+  useEffect(() => {
+    if (step === 1 && currentBfMid === null) {
+      setCurrentBfMid(recommendedCurrentOpt.mid);
+    }
+  }, [step, currentBfMid, recommendedCurrentOpt]);
+
+  // Calculations
   let fatToLoseKg = 0;
   let targetWeightKg = currentWeight;
   let currentFatMass = 0;
@@ -102,6 +162,135 @@ export function GoalSetterPage() {
     }
   }
 
+  const strategies = targetBfMid === currentBfMid ? [
+    {
+      name: 'Maintenance',
+      deficit: 0,
+      pros: 'No deficit needed, full energy',
+      cons: 'Requires consistent nutrition discipline',
+      isRecommended: true
+    }
+  ] : fatToLoseKg > 0 ? [
+    {
+      name: '🔥 Aggressive Cut',
+      id: 'Aggressive',
+      deficit: 600,
+      pros: 'Fastest progress, Visible changes quickly',
+      cons: 'Harder to sustain, More hunger',
+      styleClass: 'border-[rgba(255,77,28,0.25)]',
+      activeClass: 'border-[#FF4D1C] bg-[rgba(255,77,28,0.06)] shadow-[0_0_20px_rgba(255,77,28,0.15)]',
+    },
+    {
+      name: '⚡ Balanced Cut',
+      id: 'Recommended',
+      deficit: 400,
+      isRecommended: true,
+      pros: 'Sustainable, Best muscle retention, Highest long-term success',
+      cons: 'Requires consistency',
+      styleClass: 'border-[rgba(212,255,0,0.4)]',
+      activeClass: 'border-[#D4FF00] bg-[rgba(212,255,0,0.06)] shadow-[0_0_20px_rgba(212,255,0,0.15)]',
+    },
+    {
+      name: '🌱 Slow & Sustainable',
+      id: 'Slow & Steady',
+      deficit: 200,
+      pros: 'Easier adherence, Minimal fatigue',
+      cons: 'Slower visible results',
+      styleClass: 'border-[rgba(55,138,221,0.25)]',
+      activeClass: 'border-[#378ADD] bg-[rgba(55,138,221,0.06)] shadow-[0_0_20px_rgba(55,138,221,0.15)]',
+    }
+  ] : [];
+
+  const calculatedStrategies = strategies.map(s => {
+    const stats = calculateGoalStats(tdee, currentWeight, currentBfMid || 0, targetBfMid || 0, s.deficit);
+    return { 
+      ...s, 
+      dailyTarget: stats.dailyCalorieGoal, 
+      weeks: stats.estimatedWeeks, 
+      dateStr: stats.targetDateStr, 
+      targetDateIso: stats.targetDateIso 
+    };
+  });
+
+  const selectedStrategy = calculatedStrategies.find(s => s.id === selectedStrategyName) || calculatedStrategies.find(s => s.isRecommended) || calculatedStrategies[0];
+
+  useEffect(() => {
+    if (step === 4 && !selectedStrategyName && calculatedStrategies.length > 0) {
+      setSelectedStrategyName(calculatedStrategies.find(s => s.isRecommended)?.id || calculatedStrategies[0].id);
+    }
+  }, [step, selectedStrategyName, calculatedStrategies]);
+
+  useEffect(() => {
+    if (step === 5) {
+      if (customCalories === null && selectedStrategy) setCustomCalories(selectedStrategy.dailyTarget);
+      if (customProtein === null) setCustomProtein(proteinMid);
+      if (customFat === null && selectedStrategy) {
+        const defaultFat = Math.round((currentWeight * 1.0)); // 1g per kg
+        setCustomFat(defaultFat);
+      }
+    }
+  }, [step, customCalories, customProtein, customFat, selectedStrategy, currentWeight, proteinMid]);
+
+  useEffect(() => {
+    if (customCalories !== null && customProtein !== null && customFat !== null) {
+      const pCals = customProtein * 4;
+      const fCals = customFat * 9;
+      const rem = customCalories - pCals - fCals;
+      setCustomCarbs(Math.max(0, Math.round(rem / 4)));
+    }
+  }, [customCalories, customProtein, customFat]);
+
+  // AI Step 1 Progression
+  useEffect(() => {
+    if (step === 0 && !goal && !onboardingData?.chosenStrategyName) {
+      const messages = [
+        "Calculating maintenance calories...",
+        "Estimating body fat...",
+        "Predicting body composition...",
+        "Building your transformation profile..."
+      ];
+      
+      let index = 0;
+      const interval = setInterval(() => {
+        index++;
+        if (index >= messages.length) {
+          clearInterval(interval);
+          setTimeout(() => setStep(1), 800);
+        } else {
+          setAnalysisProgress(index);
+        }
+      }, 700);
+      
+      return () => clearInterval(interval);
+    }
+  }, [step, goal, onboardingData]);
+
+  // AI Step 3 Progression
+  useEffect(() => {
+    if (step === 3) {
+      const messages = [
+        "Calculating fat to lose...",
+        "Estimating timeline...",
+        "Building nutrition strategy...",
+        "Selecting safest calorie target...",
+        "Preparing transformation plan..."
+      ];
+      setAnalysisProgress(0);
+      let index = 0;
+      const interval = setInterval(() => {
+        index++;
+        if (index >= messages.length) {
+          clearInterval(interval);
+          setTimeout(() => setStep(4), 800);
+        } else {
+          setAnalysisProgress(index);
+        }
+      }, 600);
+      return () => clearInterval(interval);
+    }
+  }, [step]);
+
+
   const saveMutation = useMutation({
     mutationFn: async (strategyData: any) => {
       const savedGoal = await profileService.upsertGoal({
@@ -110,7 +299,8 @@ export function GoalSetterPage() {
         strategy: strategyData.strategy,
         deficit_kcal: strategyData.deficit_kcal,
         target_date: strategyData.targetDateIso,
-        target_weight: strategyData.targetWeightKg
+        target_weight: strategyData.targetWeightKg,
+        
       });
       return { strategyData, savedGoal };
     },
@@ -147,7 +337,8 @@ export function GoalSetterPage() {
         dailyDeficit: data.strategyData.deficit_kcal,
         targetWeightKg: data.strategyData.targetWeightKg,
         estimatedWeeks: data.strategyData.estimatedWeeks,
-        estimatedCompletionDate: data.strategyData.estimatedCompletionDate
+        estimatedCompletionDate: data.strategyData.estimatedCompletionDate,
+        macros: data.strategyData.macros
       });
       
       haptics.success();
@@ -164,87 +355,57 @@ export function GoalSetterPage() {
     }
   });
 
-  const handleChooseStrategy = (strategy: any) => {
+  const handleFinish = () => {
+    if (!selectedStrategy) return;
+    
+    // Check if custom macros apply
+    let finalCals = selectedStrategy.dailyTarget;
+    let finalDeficit = selectedStrategy.deficit;
+    
+    if (customCalories && customCalories !== selectedStrategy.dailyTarget) {
+      finalCals = customCalories;
+      finalDeficit = tdee - customCalories;
+    }
+    
     saveMutation.mutate({
       current_bf: currentBfMid,
       target_bf: targetBfMid,
-      strategy: strategy.name,
-      deficit_kcal: strategy.deficit,
+      strategy: selectedStrategy.name,
+      deficit_kcal: finalDeficit,
       fatToLoseKg,
-      dailyTarget: strategy.dailyTarget,
+      dailyTarget: finalCals,
       targetWeightKg,
-      estimatedWeeks: strategy.weeks,
-      estimatedCompletionDate: strategy.dateStr,
-      targetDateIso: strategy.targetDateIso
+      estimatedWeeks: selectedStrategy.weeks,
+      estimatedCompletionDate: selectedStrategy.dateStr,
+      targetDateIso: selectedStrategy.targetDateIso,
+      macros: {
+        protein: customProtein,
+        fat: customFat,
+        carbs: customCarbs
+      }
     });
   };
 
-  const strategies = targetBfMid === currentBfMid ? [
-    {
-      name: 'Maintenance',
-      deficit: 0,
-      pros: 'No deficit needed, full energy',
-      cons: 'Requires consistent nutrition discipline',
-      proteinNote: `Aim for ${proteinMid || proteinMax}g/day protein to maintain muscle mass`,
-      isRecommended: true
-    }
-  ] : fatToLoseKg > 0 ? [
-    {
-      name: 'Aggressive',
-      deficit: 600,
-      pros: 'Fastest route to your goal',
-      cons: 'Higher risk of muscle loss',
-      proteinNote: `Protein critical — stay above ${proteinMax}g`,
-      styleClass: 'border-[rgba(255,77,28,0.25)]',
-      activeClass: 'border-[#FF4D1C] bg-[rgba(255,77,28,0.06)] shadow-[0_0_20px_rgba(255,77,28,0.15)]',
-    },
-    {
-      name: 'Recommended',
-      deficit: 400,
-      isRecommended: true,
-      pros: 'Best balance of speed and retention',
-      cons: 'Requires consistency',
-      proteinNote: `Aim for ${proteinMid || proteinMax}g/day protein`,
-      styleClass: 'border-[rgba(212,255,0,0.4)]',
-      activeClass: 'border-[#D4FF00] bg-[rgba(212,255,0,0.06)] shadow-[0_0_20px_rgba(212,255,0,0.15)]',
-    },
-    {
-      name: 'Slow & Steady',
-      deficit: 200,
-      pros: 'Easiest to maintain',
-      cons: 'Slowest — requires patience',
-      proteinNote: `Target is ${proteinMin || proteinMax}g/day`,
-      styleClass: 'border-[rgba(55,138,221,0.25)]',
-      activeClass: 'border-[#378ADD] bg-[rgba(55,138,221,0.06)] shadow-[0_0_20px_rgba(55,138,221,0.15)]',
-    }
-  ] : [];
+  const aiAnalysisMessages1 = [
+    "Calculating maintenance calories...",
+    "Estimating body fat...",
+    "Predicting body composition...",
+    "Building your transformation profile..."
+  ];
 
-  const calculatedStrategies = strategies.map(s => {
-    const stats = calculateGoalStats(tdee, currentWeight, currentBfMid || 0, targetBfMid || 0, s.deficit);
-    return { 
-      ...s, 
-      dailyTarget: stats.dailyCalorieGoal, 
-      weeks: stats.estimatedWeeks, 
-      dateStr: stats.targetDateStr, 
-      targetDateIso: stats.targetDateIso 
-    };
-  });
+  const aiAnalysisMessages2 = [
+    "Calculating fat to lose...",
+    "Estimating timeline...",
+    "Building nutrition strategy...",
+    "Selecting safest calorie target...",
+    "Preparing transformation plan..."
+  ];
 
-  const [selectedStrategy, setSelectedStrategy] = useState<any>(null);
-  
-  useEffect(() => {
-    if (calculatedStrategies.length > 0 && !selectedStrategy) {
-      setSelectedStrategy(calculatedStrategies.find(s => s.isRecommended) || calculatedStrategies[0]);
-    } else if (calculatedStrategies.length === 0) {
-      setSelectedStrategy(null);
-    }
-  }, [calculatedStrategies]);
-
-  if (goal) {
-    const activeGoal = goal || onboardingData;
+  if (goal && step === 0) {
+    const activeGoal = goal;
     const dailyKcal = profile?.maintenance_kcal && goal?.deficit_kcal !== undefined 
       ? profile.maintenance_kcal - goal.deficit_kcal 
-      : activeGoal?.dailyCalorieGoal;
+      : (activeGoal as any)?.dailyCalorieGoal;
 
     return (
       <motion.div 
@@ -263,15 +424,15 @@ export function GoalSetterPage() {
           <div className="space-y-4">
             <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-4">
               <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Current BF%</span>
-              <span className="text-[16px] font-medium text-white">{activeGoal?.current_bf || activeGoal?.currentBodyFatPct || '-'}%</span>
+              <span className="text-[16px] font-medium text-white">{activeGoal?.current_bf || (activeGoal as any)?.currentBodyFatPct || '-'}%</span>
             </div>
             <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-4">
               <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Target BF%</span>
-              <span className="text-[16px] font-medium text-white">{activeGoal?.target_bf || activeGoal?.targetBodyFatPct || '-'}%</span>
+              <span className="text-[16px] font-medium text-white">{activeGoal?.target_bf || (activeGoal as any)?.targetBodyFatPct || '-'}%</span>
             </div>
             <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-4">
               <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Strategy</span>
-              <span className="text-[16px] font-medium text-white">{activeGoal?.strategy || activeGoal?.chosenStrategyName || '-'}</span>
+              <span className="text-[16px] font-medium text-white">{activeGoal?.strategy || (activeGoal as any)?.chosenStrategyName || '-'}</span>
             </div>
             <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-4">
               <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Daily Target</span>
@@ -280,9 +441,9 @@ export function GoalSetterPage() {
             <div className="flex justify-between items-center">
               <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Estimated Time</span>
               <span className="text-[16px] font-medium text-white">
-                {activeGoal?.deficit_kcal === 0 || activeGoal?.dailyDeficit === 0 ? 'Ongoing' : 
+                {activeGoal?.deficit_kcal === 0 || (activeGoal as any)?.dailyDeficit === 0 ? 'Ongoing' : 
                  activeGoal?.target_date ? new Date(activeGoal.target_date).toLocaleDateString() : 
-                 activeGoal?.estimatedWeeks ? `~${activeGoal.estimatedWeeks} weeks` : '-'}
+                 (activeGoal as any)?.estimatedWeeks ? `~${(activeGoal as any).estimatedWeeks} weeks` : '-'}
               </span>
             </div>
           </div>
@@ -321,9 +482,7 @@ export function GoalSetterPage() {
                         await profileService.deleteGoal();
                         setResetGoalConfirm(false);
                         queryClient.setQueryData(['goal'], null);
-                        useUserStore.getState().setGoalWizardCurrentBfMid(null);
-                        useUserStore.getState().setGoalWizardTargetBfMid(null);
-                        navigate('/goal');
+                        setStep(0);
                       } catch { alert('Failed to reset goal. Try again.'); }
                     }} 
                     className="w-full py-3.5 rounded-full bg-[#FF3B30] text-white font-bold text-[15px]"
@@ -341,171 +500,439 @@ export function GoalSetterPage() {
 
   return (
     <Profiler id="GoalSetterPage" onRender={onRenderCallback}>
-      <motion.div variants={pageVariants} initial="hidden" animate="visible" exit="exit" className="screen-container pb-28 pt-6">
-      
-      <motion.div variants={itemVariants} className="mb-10">
-        <h2 className="text-[26px] font-semibold text-white tracking-tight -tracking-[0.4px] leading-tight mb-2">Body Goals</h2>
-        <p className="text-[15px] text-[rgba(255,255,255,0.8)] tracking-[-0.1px]">Set your target body fat and choose a timeline.</p>
-      </motion.div>
-
-      {/* SECTION A */}
-      <motion.div variants={itemVariants} className="mb-10">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-[11px] font-bold uppercase tracking-widest text-[rgba(255,255,255,0.4)] mb-1">Current Body</h2>
-            <h3 className="text-[18px] font-semibold text-white tracking-tight">Select your current physique</h3>
-          </div>
-          {currentBfMid && <div className="text-[#D4FF00]"><CheckCircle2 size={20} /></div>}
-        </div>
+      <motion.div variants={pageVariants} initial="hidden" animate="visible" exit="exit" className="min-h-screen bg-black text-white relative flex flex-col overflow-x-hidden">
         
-        <BodyFatSelector 
-          gender={gender} 
-          estimatedBf={estimatedBf} 
-          value={currentBfMid} 
-          onChange={setCurrentBfMid} 
-        />
-      </motion.div>
-
-      {/* SECTION B */}
-      <motion.div variants={itemVariants} className={cn("mb-10 transition-all duration-300", !currentBfMid ? "opacity-30 pointer-events-none grayscale" : "opacity-100")}>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-[11px] font-bold uppercase tracking-widest text-[rgba(255,255,255,0.4)] mb-1">Target Body</h2>
-            <h3 className="text-[18px] font-semibold text-white tracking-tight">Now choose your target</h3>
-          </div>
-          {targetBfMid && <div className="text-[#D4FF00]"><CheckCircle2 size={20} /></div>}
-        </div>
-
-        {currentBfMid === 2.5 && (
-          <div className="text-[14px] font-medium text-[#D4FF00] mb-4 p-4 bg-[rgba(212,255,0,0.08)] border border-[rgba(212,255,0,0.4)] rounded-[20px]">
-            You're already at elite level. Only maintenance is available.
-          </div>
+        {/* Back Button */}
+        {step > 0 && step !== 3 && (
+          <button 
+            onClick={() => setStep(step - 1)}
+            className="absolute top-6 left-6 z-50 p-2 text-[rgba(255,255,255,0.6)] hover:text-white transition-colors"
+          >
+            <ChevronLeft size={28} />
+          </button>
         )}
 
-        <div className="mb-4">
-          <BodyFatSelector 
-            gender={gender} 
-            value={targetBfMid} 
-            onChange={setTargetBfMid} 
-            maxBf={currentBfMid}
-          />
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {currentBfMid && (
-            <motion.button
-              key="maintain"
-              onClick={() => setTargetBfMid(currentBfMid)}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className={cn(
-                "bg-[#111113] border-[0.5px] border-[rgba(255,255,255,0.06)] rounded-[24px] p-4 cursor-pointer transition-all duration-200 text-left flex flex-col hover:border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.02)]",
-                targetBfMid === currentBfMid && "border-[#D4FF00] bg-[rgba(212,255,0,0.06)] shadow-[0_0_20px_rgba(212,255,0,0.15)] hover:border-[#D4FF00]"
-              )}
-            >
-              <div className={cn("text-[20px] font-bold tracking-tight mb-1", targetBfMid === currentBfMid ? "text-[#D4FF00]" : "text-white")}>Maintain</div>
-              <div className="text-[13px] font-medium text-[rgba(255,255,255,0.8)] mb-1">Stay at {currentBfMid}%</div>
-              <div className="text-[11px] text-[rgba(255,255,255,0.45)] leading-relaxed">Keep your current physique</div>
-            </motion.button>
-          )}
-        </div>
-      </motion.div>
-
-      {/* SECTION C */}
-      <motion.div variants={itemVariants} className={cn("transition-all duration-300", (!currentBfMid || !targetBfMid) ? "opacity-30 pointer-events-none grayscale" : "opacity-100")}>
-        <div className="mb-6">
-          <h2 className="text-[11px] font-bold uppercase tracking-widest text-[rgba(255,255,255,0.4)] mb-1">Plan Strategy</h2>
-          <h3 className="text-[18px] font-semibold text-white tracking-tight">How do you want to get there?</h3>
-        </div>
-
-        {currentBfMid && targetBfMid && targetBfMid > currentBfMid && (
-          <div className="text-[14px] text-[#FF3B30] flex items-center gap-2 mb-4 p-4 bg-[rgba(255,59,48,0.05)] border border-[rgba(255,59,48,0.6)] rounded-[20px]">
-            <AlertTriangle size={16} /> Target body fat must be lower than current.
-          </div>
-        )}
-
-        {currentBfMid && targetBfMid && targetBfMid <= currentBfMid && calculatedStrategies.length > 0 && (
-          <div className="space-y-6">
+        <div className="flex-1 w-full max-w-lg mx-auto flex flex-col px-6 pt-24 pb-32 relative">
+          <AnimatePresence mode="wait">
             
-            {fatToLoseKg > 0 && (
-              <div className="grid grid-cols-3 gap-2 md:gap-3">
-                {calculatedStrategies.map((s) => {
-                  const isSelected = selectedStrategy?.name === s.name;
-                  return (
-                    <motion.button 
-                      key={s.name}
-                      onClick={() => setSelectedStrategy(s)}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className={cn(
-                        "relative bg-[#111113] border-[0.5px] rounded-[20px] p-3 flex flex-col items-center text-center cursor-pointer transition-all duration-200 hover:border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.02)]",
-                        isSelected ? s.activeClass : "border-[rgba(255,255,255,0.06)]"
-                      )}
-                    >
-                      {s.isRecommended && (
-                        <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-[#D4FF00] text-black text-[7px] font-extrabold uppercase px-2 py-0.5 rounded-full whitespace-nowrap tracking-wide">
-                          Best
-                        </div>
-                      )}
-                      <div className="text-[12px] font-semibold text-white mb-1 leading-tight">{s.name}</div>
-                      <div className="text-[11px] text-[rgba(255,255,255,0.5)]">-{s.deficit} kcal</div>
-                    </motion.button>
-                  )
-                })}
-              </div>
-            )}
-
-            {selectedStrategy && (
+            {/* STEP 0: AI Analysis 1 */}
+            {step === 0 && (
               <motion.div 
-                key={selectedStrategy.name}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="card-lime overflow-hidden"
+                key="step0"
+                initial={{ opacity: 0, filter: "blur(10px)" }}
+                animate={{ opacity: 1, filter: "blur(0px)" }}
+                exit={{ opacity: 0, filter: "blur(10px)", scale: 1.05 }}
+                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                className="flex flex-col items-center justify-center flex-1 text-center"
               >
-                <div className="p-6 text-center border-b border-[rgba(212,255,0,0.1)]">
-                  <div className="text-[40px] font-bold text-[#D4FF00] tracking-[-1px] leading-none mb-1">
-                    {selectedStrategy.deficit === 0 ? 'Maintenance' : (
-                      <><AnimatedNumber value={selectedStrategy.weeks} /> weeks</>
-                    )}
-                  </div>
-                  <div className="text-[14px] text-[rgba(235,235,245,0.6)]">
-                    {selectedStrategy.deficit === 0 ? 'Keep your current physique' : `Estimated completion by ${selectedStrategy.dateStr}`}
+                <div className="relative w-32 h-32 mb-10">
+                  <motion.div 
+                    animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute inset-0 bg-[#D4FF00] rounded-full blur-[40px]"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Activity size={40} className="text-[#D4FF00]" />
                   </div>
                 </div>
-                
-                <div className="p-6 space-y-4">
-                  <div className="flex justify-between items-center text-[14px]">
-                    <span className="text-[rgba(255,255,255,0.5)]">Daily Target</span>
-                    <span className="font-semibold text-white">{selectedStrategy.dailyTarget} kcal</span>
-                  </div>
-                  <div className="flex justify-between items-center text-[14px]">
-                    <span className="text-[rgba(255,255,255,0.5)]">Pros</span>
-                    <span className="font-medium text-white text-right max-w-[60%]">{selectedStrategy.pros}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-[14px]">
-                    <span className="text-[rgba(255,255,255,0.5)]">Cons</span>
-                    <span className="font-medium text-[rgba(255,255,255,0.8)] text-right max-w-[60%]">{selectedStrategy.cons}</span>
-                  </div>
+                <h2 className="text-[24px] font-semibold text-white tracking-tight mb-4">Analyzing your body profile...</h2>
+                <div className="h-[24px] overflow-hidden">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={analysisProgress}
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: -20, opacity: 0 }}
+                      className="text-[15px] text-[rgba(255,255,255,0.6)]"
+                    >
+                      {aiAnalysisMessages1[analysisProgress] || "Ready."}
+                    </motion.div>
+                  </AnimatePresence>
                 </div>
               </motion.div>
             )}
 
-            {selectedStrategy && (
-              <div className="mt-6 pt-4 border-t border-[rgba(255,255,255,0.06)]">
-                <motion.button 
-                  whileHover={hover.glow}
-                  whileTap={tap.scale}
-                  onClick={() => handleChooseStrategy(selectedStrategy)}
-                  disabled={saveMutation.isPending}
-                  className="btn-primary w-full max-w-[400px] mx-auto block"
-                >
-                  {saveMutation.isPending ? 'Saving...' : `Start ${selectedStrategy.name} Plan`}
-                </motion.button>
-              </div>
+            {/* STEP 1: Current Body Fat */}
+            {step === 1 && (
+              <motion.div
+                key="step1"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                className="flex flex-col flex-1"
+              >
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center gap-2 bg-[rgba(212,255,0,0.1)] border border-[rgba(212,255,0,0.2)] px-4 py-2 rounded-full mb-6">
+                    <span className="text-xl">✨</span>
+                    <span className="text-[14px] font-semibold text-white">Estimated Current Body Fat: <span className="text-[#D4FF00]">{Math.round(estimatedBf)}%</span></span>
+                  </div>
+                  <h2 className="text-[28px] font-bold tracking-tight text-white mb-3">Does this look similar to your current physique?</h2>
+                  <p className="text-[16px] text-[rgba(255,255,255,0.6)]">Select the image that closest matches your body right now.</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 flex-1 content-start pb-20">
+                  {bfOptions.map(opt => {
+                    const isSelected = currentBfMid === opt.mid;
+                    const isRec = recommendedCurrentOpt.mid === opt.mid;
+                    return (
+                      <motion.div
+                        key={opt.range}
+                        whileTap={{ scale: 0.96 }}
+                        onClick={() => {
+                          haptics.tap();
+                          setCurrentBfMid(opt.mid);
+                          setTimeout(() => setStep(2), 500); // Auto-advance
+                        }}
+                        className={cn(
+                          "relative rounded-3xl overflow-hidden cursor-pointer transition-all duration-300",
+                          "bg-[#111113] border border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.15)]",
+                          isSelected && "border-[#D4FF00] shadow-[0_0_30px_rgba(212,255,0,0.15)]"
+                        )}
+                      >
+                        <div className="aspect-[3/4] w-full relative">
+                          <BodyFatImagePlaceholder gender={gender} categoryRange={opt.range} className="rounded-none border-none" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#111113] via-[rgba(17,17,19,0.5)] to-transparent pointer-events-none" />
+                          {isRec && (
+                            <div className="absolute top-3 left-3 px-2 py-1 bg-[rgba(0,0,0,0.6)] backdrop-blur-md text-[#D4FF00] border border-[rgba(212,255,0,0.3)] text-[10px] font-bold uppercase tracking-wider rounded-full">
+                              Estimate
+                            </div>
+                          )}
+                          <div className="absolute bottom-4 left-4 right-4 text-left">
+                            <div className={cn("text-[22px] font-bold tracking-tight leading-none mb-1", isSelected ? "text-[#D4FF00]" : "text-white")}>{opt.range}</div>
+                            <div className="text-[14px] font-medium text-[rgba(255,255,255,0.8)] leading-tight">{opt.label}</div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )
+                  })}
+                </div>
+              </motion.div>
             )}
-          </div>
-        )}
+
+            {/* STEP 2: Target Body Fat */}
+            {step === 2 && (
+              <motion.div
+                key="step2"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                className="flex flex-col flex-1"
+              >
+                <div className="text-center mb-8">
+                  <h2 className="text-[28px] font-bold tracking-tight text-white mb-3">What physique do you want to achieve?</h2>
+                  <p className="text-[16px] text-[rgba(255,255,255,0.6)]">Choose your ultimate transformation goal.</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 flex-1 content-start pb-20">
+                  {bfOptions.filter(opt => currentBfMid ? opt.mid <= currentBfMid : true).map(opt => {
+                    const isSelected = targetBfMid === opt.mid;
+                    return (
+                      <motion.div
+                        key={opt.range}
+                        whileTap={{ scale: 0.96 }}
+                        onClick={() => {
+                          haptics.tap();
+                          setTargetBfMid(opt.mid);
+                          setTimeout(() => setStep(3), 500); // Auto-advance to AI planning
+                        }}
+                        className={cn(
+                          "relative rounded-3xl overflow-hidden cursor-pointer transition-all duration-300",
+                          "bg-[#111113] border border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.15)]",
+                          isSelected && "border-[#D4FF00] shadow-[0_0_30px_rgba(212,255,0,0.15)]"
+                        )}
+                      >
+                        <div className="aspect-[3/4] w-full relative">
+                          <BodyFatImagePlaceholder gender={gender} categoryRange={opt.range} className="rounded-none border-none" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#111113] via-[rgba(17,17,19,0.5)] to-transparent pointer-events-none" />
+                          <div className="absolute bottom-4 left-4 right-4 text-left">
+                            <div className={cn("text-[22px] font-bold tracking-tight leading-none mb-1", isSelected ? "text-[#D4FF00]" : "text-white")}>{opt.range}</div>
+                            <div className="text-[14px] font-medium text-[rgba(255,255,255,0.8)] leading-tight">{opt.label}</div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )
+                  })}
+                </div>
+              </motion.div>
+            )}
+
+            {/* STEP 3: AI Planning */}
+            {step === 3 && (
+              <motion.div 
+                key="step3"
+                initial={{ opacity: 0, filter: "blur(10px)" }}
+                animate={{ opacity: 1, filter: "blur(0px)" }}
+                exit={{ opacity: 0, filter: "blur(10px)", scale: 1.05 }}
+                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                className="flex flex-col items-center justify-center flex-1 text-center"
+              >
+                <div className="relative w-32 h-32 mb-10">
+                  <motion.div 
+                    animate={{ scale: [1, 1.3, 1], opacity: [0.4, 0.7, 0.4] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute inset-0 bg-[#D4FF00] rounded-full blur-[40px]"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Target size={40} className="text-[#D4FF00]" />
+                  </div>
+                </div>
+                <h2 className="text-[24px] font-semibold text-white tracking-tight mb-4">Planning your transformation...</h2>
+                <div className="h-[24px] overflow-hidden">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={analysisProgress}
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: -20, opacity: 0 }}
+                      className="text-[15px] text-[rgba(255,255,255,0.6)]"
+                    >
+                      {aiAnalysisMessages2[analysisProgress] || "Ready."}
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+              </motion.div>
+            )}
+
+            {/* STEP 4: Choose Speed */}
+            {step === 4 && (
+              <motion.div
+                key="step4"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                className="flex flex-col flex-1"
+              >
+                <div className="text-center mb-8">
+                  <h2 className="text-[28px] font-bold tracking-tight text-white mb-3">Choose Your Strategy</h2>
+                  <p className="text-[16px] text-[rgba(255,255,255,0.6)]">How fast do you want to transform?</p>
+                </div>
+
+                <div className="flex flex-col gap-4 flex-1">
+                  {calculatedStrategies.map(s => {
+                    const isSelected = selectedStrategyName === s.id;
+                    return (
+                      <motion.div
+                        key={s.id}
+                        onClick={() => {
+                          haptics.tap();
+                          setSelectedStrategyName(s.id);
+                        }}
+                        className={cn(
+                          "relative rounded-3xl p-6 cursor-pointer transition-all duration-300 overflow-hidden",
+                          "bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.06)] backdrop-blur-xl",
+                          isSelected ? "border-[#D4FF00] bg-[rgba(212,255,0,0.03)] scale-[1.02] shadow-[0_10px_40px_rgba(212,255,0,0.1)]" : "opacity-60 hover:opacity-100"
+                        )}
+                      >
+                        {isSelected && (
+                          <div className="absolute inset-0 bg-gradient-to-tr from-[rgba(212,255,0,0.05)] to-transparent pointer-events-none" />
+                        )}
+                        {s.isRecommended && (
+                          <div className="absolute top-4 right-4 px-3 py-1 bg-[rgba(212,255,0,0.1)] text-[#D4FF00] text-[11px] font-bold uppercase tracking-wider rounded-full border border-[rgba(212,255,0,0.2)]">
+                            ⭐ AI Recommended
+                          </div>
+                        )}
+                        <h3 className="text-[22px] font-bold text-white tracking-tight mb-1">{s.name}</h3>
+                        <p className="text-[15px] font-medium text-[#D4FF00] mb-4">Approx. {s.deficit} kcal deficit</p>
+                        
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          <div className="bg-[rgba(0,0,0,0.2)] rounded-2xl p-3 border border-[rgba(255,255,255,0.03)]">
+                            <div className="text-[11px] text-[rgba(255,255,255,0.5)] uppercase tracking-wider font-semibold mb-1">Target Calories</div>
+                            <div className="text-[20px] font-bold text-white">{s.dailyTarget}</div>
+                          </div>
+                          <div className="bg-[rgba(0,0,0,0.2)] rounded-2xl p-3 border border-[rgba(255,255,255,0.03)]">
+                            <div className="text-[11px] text-[rgba(255,255,255,0.5)] uppercase tracking-wider font-semibold mb-1">Estimated Date</div>
+                            <div className="text-[18px] font-bold text-white truncate">{s.dateStr}</div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex items-start">
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#D4FF00] mt-1.5 mr-2 shrink-0" />
+                            <span className="text-[14px] text-[rgba(255,255,255,0.8)]"><strong>Pros:</strong> {s.pros}</span>
+                          </div>
+                          {s.cons && (
+                            <div className="flex items-start">
+                              <div className="w-1.5 h-1.5 rounded-full bg-[#FF3B30] mt-1.5 mr-2 shrink-0" />
+                              <span className="text-[14px] text-[rgba(255,255,255,0.6)]"><strong>Cons:</strong> {s.cons}</span>
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )
+                  })}
+                </div>
+
+                <div className="fixed bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black via-black/80 to-transparent">
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => { haptics.success(); setStep(5); }}
+                    className="w-full max-w-lg mx-auto block py-4 rounded-full bg-[#D4FF00] text-black font-bold text-[17px] shadow-[0_0_30px_rgba(212,255,0,0.3)]"
+                  >
+                    Continue
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* STEP 5: Customize */}
+            {step === 5 && selectedStrategy && (
+              <motion.div
+                key="step5"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                className="flex flex-col flex-1"
+              >
+                <div className="text-center mb-8">
+                  <h2 className="text-[28px] font-bold tracking-tight text-white mb-3">Want to fine-tune your plan?</h2>
+                  <p className="text-[16px] text-[rgba(255,255,255,0.6)]">Adjust your targets below. The AI will recalculate the rest.</p>
+                </div>
+
+                <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-3xl p-6 mb-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <span className="text-[16px] font-semibold text-white">Daily Calories</span>
+                    <input 
+                      type="number" 
+                      value={customCalories || ''}
+                      onChange={(e) => setCustomCalories(Math.max(1200, parseInt(e.target.value) || 1200))}
+                      className="bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-2 w-28 text-right text-[18px] font-bold text-[#D4FF00] focus:outline-none focus:border-[#D4FF00]"
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[15px] text-[rgba(255,255,255,0.8)]">Protein (g)</span>
+                      <input 
+                        type="number" 
+                        value={customProtein || ''}
+                        onChange={(e) => setCustomProtein(Math.max(50, parseInt(e.target.value) || 50))}
+                        className="bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-2 w-24 text-right text-[16px] font-bold text-white focus:outline-none"
+                      />
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[15px] text-[rgba(255,255,255,0.8)]">Fat (g)</span>
+                      <input 
+                        type="number" 
+                        value={customFat || ''}
+                        onChange={(e) => setCustomFat(Math.max(30, parseInt(e.target.value) || 30))}
+                        className="bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-2 w-24 text-right text-[16px] font-bold text-white focus:outline-none"
+                      />
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[15px] text-[rgba(255,255,255,0.8)]">Carbs (g)</span>
+                      <div className="bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.05)] rounded-xl px-4 py-2 w-24 text-right text-[16px] font-bold text-[rgba(255,255,255,0.5)]">
+                        {customCarbs}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-[rgba(212,255,0,0.05)] border border-[rgba(212,255,0,0.2)] rounded-2xl p-5 mb-8 flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-full bg-[rgba(212,255,0,0.1)] flex items-center justify-center shrink-0">
+                    <span className="text-[18px]">🤖</span>
+                  </div>
+                  <div>
+                    <h4 className="text-[14px] font-bold text-white mb-1">AI Coach Feedback</h4>
+                    <p className="text-[13px] text-[rgba(255,255,255,0.7)] leading-relaxed">
+                      {customCalories && customCalories < 1500 ? "This is a very aggressive deficit. Ensure you prioritize protein." : 
+                       customCalories && customCalories > tdee - 200 ? "This is a very small deficit. Progress will be slow but easily sustainable." : 
+                       "Great balance. Your protein is sufficient for muscle retention."}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="fixed bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black via-black/80 to-transparent">
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => { haptics.success(); setStep(6); }}
+                    className="w-full max-w-lg mx-auto block py-4 rounded-full bg-[#D4FF00] text-black font-bold text-[17px] shadow-[0_0_30px_rgba(212,255,0,0.3)]"
+                  >
+                    Review Final Plan
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* STEP 6: Final Review */}
+            {step === 6 && selectedStrategy && (
+              <motion.div
+                key="step6"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                className="flex flex-col flex-1"
+              >
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center gap-2 bg-[rgba(212,255,0,0.1)] text-[#D4FF00] px-4 py-2 rounded-full text-[13px] font-bold uppercase tracking-wider mb-4 border border-[rgba(212,255,0,0.2)]">
+                    Your Transformation Plan
+                  </div>
+                  <h2 className="text-[32px] font-bold tracking-tight text-white leading-tight">Ready to begin?</h2>
+                </div>
+
+                <div className="bg-[#111113] border border-[rgba(255,255,255,0.06)] rounded-3xl overflow-hidden mb-8 shadow-2xl relative">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#D4FF00] to-transparent opacity-50" />
+                  
+                  <div className="p-6 border-b border-[rgba(255,255,255,0.06)] flex justify-between items-center bg-[rgba(255,255,255,0.02)]">
+                    <div className="text-center">
+                      <div className="text-[12px] text-[rgba(255,255,255,0.5)] font-bold uppercase tracking-wider mb-1">Current</div>
+                      <div className="text-[24px] font-bold text-white">{currentBfMid}%</div>
+                    </div>
+                    <ArrowRight className="text-[rgba(255,255,255,0.2)]" />
+                    <div className="text-center">
+                      <div className="text-[12px] text-[rgba(255,255,255,0.5)] font-bold uppercase tracking-wider mb-1">Target</div>
+                      <div className="text-[24px] font-bold text-[#D4FF00]">{targetBfMid}%</div>
+                    </div>
+                  </div>
+
+                  <div className="p-6">
+                    <div className="grid grid-cols-4 gap-2 text-center mb-6">
+                      <div>
+                        <div className="text-[20px] font-bold text-white mb-1">{customCalories}</div>
+                        <div className="text-[11px] text-[rgba(255,255,255,0.5)] uppercase tracking-wider font-semibold">Kcal</div>
+                      </div>
+                      <div>
+                        <div className="text-[20px] font-bold text-[#FF4D1C] mb-1">{customProtein}</div>
+                        <div className="text-[11px] text-[rgba(255,255,255,0.5)] uppercase tracking-wider font-semibold">Pro</div>
+                      </div>
+                      <div>
+                        <div className="text-[20px] font-bold text-[#FFD60A] mb-1">{customFat}</div>
+                        <div className="text-[11px] text-[rgba(255,255,255,0.5)] uppercase tracking-wider font-semibold">Fat</div>
+                      </div>
+                      <div>
+                        <div className="text-[20px] font-bold text-[#378ADD] mb-1">{customCarbs}</div>
+                        <div className="text-[11px] text-[rgba(255,255,255,0.5)] uppercase tracking-wider font-semibold">Carb</div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-[rgba(255,255,255,0.03)] rounded-2xl p-4 border border-[rgba(255,255,255,0.05)]">
+                      <p className="text-[14px] text-white leading-relaxed text-center font-medium">
+                        If you remain consistent, LeaniQA predicts you'll reach your goal around <span className="text-[#D4FF00]">{selectedStrategy.dateStr}</span>.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="fixed bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black via-black/80 to-transparent">
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => { haptics.success(); handleFinish(); }}
+                    disabled={saveMutation.isPending}
+                    className="w-full max-w-lg mx-auto block py-4 rounded-full bg-white text-black font-bold text-[17px] shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+                  >
+                    {saveMutation.isPending ? 'Starting...' : 'Start My Transformation'}
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+
+          </AnimatePresence>
+        </div>
       </motion.div>
-    </motion.div>
     </Profiler>
   );
 }
