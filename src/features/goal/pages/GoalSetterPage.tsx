@@ -263,7 +263,7 @@ export function GoalSetterPage() {
       
       return () => clearInterval(interval);
     }
-  }, [step, goal, onboardingData]);
+  }, [step, goal, onboardingData?.chosenStrategyName]);
 
   // AI Step 3 Progression
   useEffect(() => {

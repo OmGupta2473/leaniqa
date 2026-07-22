@@ -1,4 +1,9 @@
-import { useMemo } from 'react';
+import sys
+
+with open('src/shared/hooks/useCalculatedProfile.ts', 'r') as f:
+    content = f.read()
+
+new_content = """import { useMemo } from 'react';
 import { useHasCompletedOnboarding } from './useHasCompletedOnboarding';
 import { useUserStore } from '@/features/profile/store/userStore';
 import { calculateMacros, calculateGoalStats } from '../utils/profileCalculations';
@@ -55,3 +60,7 @@ export function useCalculatedProfile() {
   if (import.meta.env.DEV) console.timeEnd('[PERF] useCalculatedProfile');
   return { profileData: mergedData, profile, goal, hasCompletedOnboarding, isLoading };
 }
+"""
+
+with open('src/shared/hooks/useCalculatedProfile.ts', 'w') as f:
+    f.write(new_content)
