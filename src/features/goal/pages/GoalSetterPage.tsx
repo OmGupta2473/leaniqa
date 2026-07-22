@@ -105,8 +105,8 @@ export function GoalSetterPage() {
   const [selectedStrategyName, setSelectedStrategyName] = useState<string | null>(null);
   
   // Customization state
-  const [customCalories, setCustomCalories] = useState<number | null>(null);
-  const [customProtein, setCustomProtein] = useState<number | null>(null);
+  const [customCalories, setCustomCalories] = useState<number | string | null>(null);
+  const [customProtein, setCustomProtein] = useState<number | string | null>(null);
   const [customFat, setCustomFat] = useState<number | null>(null);
   const [customCarbs, setCustomCarbs] = useState<number | null>(null);
 
@@ -232,10 +232,12 @@ export function GoalSetterPage() {
   }, [step, customCalories, customProtein, customFat, selectedStrategy, currentWeight, proteinMid]);
 
   useEffect(() => {
-    if (customCalories !== null && customProtein !== null && customFat !== null) {
-      const pCals = customProtein * 4;
+    const c = typeof customCalories === 'number' ? customCalories : parseInt(customCalories as string);
+    const p = typeof customProtein === 'number' ? customProtein : parseInt(customProtein as string);
+    if (!isNaN(c) && !isNaN(p) && customFat !== null) {
+      const pCals = p * 4;
       const fCals = customFat * 9;
-      const rem = customCalories - pCals - fCals;
+      const rem = c - pCals - fCals;
       setCustomCarbs(Math.max(0, Math.round(rem / 4)));
     }
   }, [customCalories, customProtein, customFat]);
@@ -359,13 +361,15 @@ export function GoalSetterPage() {
   const handleFinish = () => {
     if (!selectedStrategy) return;
     
-    // Check if custom macros apply
+    const parsedCals = typeof customCalories === 'number' ? customCalories : parseInt(customCalories as string);
+    const parsedProtein = typeof customProtein === 'number' ? customProtein : parseInt(customProtein as string);
+    
     let finalCals = selectedStrategy.dailyTarget;
     let finalDeficit = selectedStrategy.deficit;
     
-    if (customCalories && customCalories !== selectedStrategy.dailyTarget) {
-      finalCals = customCalories;
-      finalDeficit = tdee - customCalories;
+    if (!isNaN(parsedCals) && parsedCals !== selectedStrategy.dailyTarget) {
+      finalCals = parsedCals;
+      finalDeficit = tdee - parsedCals;
     }
     
     saveMutation.mutate({
@@ -380,7 +384,7 @@ export function GoalSetterPage() {
       estimatedCompletionDate: selectedStrategy.dateStr,
       targetDateIso: selectedStrategy.targetDateIso,
       macros: {
-        protein: customProtein,
+        protein: isNaN(parsedProtein) ? proteinMid : parsedProtein,
         fat: customFat,
         carbs: customCarbs
       }
@@ -781,14 +785,23 @@ export function GoalSetterPage() {
             )}
 
             {/* STEP 5: Customize */}
-            {step === 5 && selectedStrategy && (
+            {step === 5 && selectedStrategy && (() => {
+              const minC = Math.max(1200, tdee - 1000);
+              const maxC = tdee + 2000;
+              const minP = Math.round(currentWeight * 1.4);
+              const maxP = Math.round(currentWeight * 2.5);
+              
+              const currentCals = typeof customCalories === 'number' ? customCalories : (parseInt(customCalories as string) || minC);
+              const currentPro = typeof customProtein === 'number' ? customProtein : (parseInt(customProtein as string) || minP);
+
+              return (
               <motion.div
                 key="step5"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                className="flex flex-col flex-1"
+                className="flex flex-col flex-1 pb-20"
               >
                 <div className="text-center mb-8">
                   <h2 className="text-[28px] font-bold tracking-tight text-white mb-3">Want to fine-tune your plan?</h2>
@@ -796,38 +809,69 @@ export function GoalSetterPage() {
                 </div>
 
                 <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-3xl p-6 mb-6">
-                  <div className="flex justify-between items-center mb-6">
-                    <span className="text-[16px] font-semibold text-white">Daily Calories</span>
+                  {/* Calories */}
+                  <div className="mb-8">
+                    <div className="flex justify-between items-center mb-4">
+                      <span className="text-[16px] font-semibold text-white">Daily Calories</span>
+                      <input 
+                        type="number" 
+                        value={customCalories === null ? '' : customCalories}
+                        onChange={(e) => setCustomCalories(e.target.value)}
+                        className="bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-2 w-28 text-right text-[18px] font-bold text-[#D4FF00] focus:outline-none focus:border-[#D4FF00]"
+                      />
+                    </div>
                     <input 
-                      type="number" 
-                      value={customCalories || ''}
-                      onChange={(e) => setCustomCalories(Math.max(1200, parseInt(e.target.value) || 1200))}
-                      className="bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-2 w-28 text-right text-[18px] font-bold text-[#D4FF00] focus:outline-none focus:border-[#D4FF00]"
+                      type="range"
+                      min={minC}
+                      max={maxC}
+                      step={10}
+                      value={currentCals}
+                      onChange={(e) => setCustomCalories(parseInt(e.target.value))}
+                      className="w-full h-2 bg-[rgba(255,255,255,0.1)] rounded-lg appearance-none cursor-pointer accent-[#D4FF00]"
                     />
+                    <div className="flex justify-between text-[11px] text-[rgba(255,255,255,0.4)] mt-2 font-medium">
+                      <span>{minC} kcal</span>
+                      <span>{maxC} kcal</span>
+                    </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[15px] text-[rgba(255,255,255,0.8)]">Protein (g)</span>
+                  {/* Protein */}
+                  <div className="mb-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <span className="text-[16px] font-semibold text-white">Protein (g)</span>
                       <input 
                         type="number" 
-                        value={customProtein || ''}
-                        onChange={(e) => setCustomProtein(Math.max(50, parseInt(e.target.value) || 50))}
-                        className="bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-2 w-24 text-right text-[16px] font-bold text-white focus:outline-none"
+                        value={customProtein === null ? '' : customProtein}
+                        onChange={(e) => setCustomProtein(e.target.value)}
+                        className="bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-2 w-28 text-right text-[18px] font-bold text-white focus:outline-none focus:border-white"
                       />
                     </div>
+                    <input 
+                      type="range"
+                      min={minP}
+                      max={maxP}
+                      step={1}
+                      value={currentPro}
+                      onChange={(e) => setCustomProtein(parseInt(e.target.value))}
+                      className="w-full h-2 bg-[rgba(255,255,255,0.1)] rounded-lg appearance-none cursor-pointer accent-white"
+                    />
+                    <div className="flex justify-between text-[11px] text-[rgba(255,255,255,0.4)] mt-2 font-medium">
+                      <span>{minP}g</span>
+                      <span>{maxP}g</span>
+                    </div>
+                  </div>
+
+                  {/* Read-only Fat & Carbs */}
+                  <div className="space-y-4 border-t border-[rgba(255,255,255,0.06)] pt-6 mt-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-[15px] text-[rgba(255,255,255,0.8)]">Fat (g)</span>
-                      <input 
-                        type="number" 
-                        value={customFat || ''}
-                        onChange={(e) => setCustomFat(Math.max(30, parseInt(e.target.value) || 30))}
-                        className="bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-2 w-24 text-right text-[16px] font-bold text-white focus:outline-none"
-                      />
+                      <span className="text-[15px] text-[rgba(255,255,255,0.6)]">Fat (g)</span>
+                      <div className="bg-[rgba(0,0,0,0.2)] rounded-xl px-4 py-2 w-24 text-right text-[15px] font-semibold text-[rgba(255,255,255,0.6)]">
+                        {customFat}
+                      </div>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-[15px] text-[rgba(255,255,255,0.8)]">Carbs (g)</span>
-                      <div className="bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.05)] rounded-xl px-4 py-2 w-24 text-right text-[16px] font-bold text-[rgba(255,255,255,0.5)]">
+                      <span className="text-[15px] text-[rgba(255,255,255,0.6)]">Carbs (g)</span>
+                      <div className="bg-[rgba(0,0,0,0.2)] rounded-xl px-4 py-2 w-24 text-right text-[15px] font-semibold text-[rgba(255,255,255,0.6)]">
                         {customCarbs}
                       </div>
                     </div>
@@ -841,8 +885,8 @@ export function GoalSetterPage() {
                   <div>
                     <h4 className="text-[14px] font-bold text-white mb-1">AI Coach Feedback</h4>
                     <p className="text-[13px] text-[rgba(255,255,255,0.7)] leading-relaxed">
-                      {customCalories && customCalories < 1500 ? "This is a very aggressive deficit. Ensure you prioritize protein." : 
-                       customCalories && customCalories > tdee - 200 ? "This is a very small deficit. Progress will be slow but easily sustainable." : 
+                      {currentCals < 1500 ? "This is a very aggressive deficit. Ensure you prioritize protein." : 
+                       currentCals > tdee - 200 ? "This is a very small deficit. Progress will be slow but easily sustainable." : 
                        "Great balance. Your protein is sufficient for muscle retention."}
                     </p>
                   </div>
@@ -851,15 +895,26 @@ export function GoalSetterPage() {
                 <div className="fixed bottom-[80px] left-0 w-full p-6 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none z-40">
                   <motion.button
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => { haptics.success(); setStep(6); }}
+                    onClick={() => {
+                      let finalCals = typeof customCalories === 'number' ? customCalories : (parseInt(customCalories as string) || minC);
+                      let finalPro = typeof customProtein === 'number' ? customProtein : (parseInt(customProtein as string) || minP);
+                      if (finalCals < minC) finalCals = minC;
+                      if (finalCals > maxC) finalCals = maxC;
+                      if (finalPro < minP) finalPro = minP;
+                      if (finalPro > maxP) finalPro = maxP;
+                      setCustomCalories(finalCals);
+                      setCustomProtein(finalPro);
+                      haptics.success(); 
+                      setStep(6); 
+                    }}
                     className="pointer-events-auto w-full max-w-lg mx-auto block py-4 rounded-full bg-[#D4FF00] text-black font-bold text-[17px] shadow-[0_0_30px_rgba(212,255,0,0.3)]"
                   >
                     Review Final Plan
                   </motion.button>
                 </div>
               </motion.div>
-            )}
-
+              );
+            })()}
             {/* STEP 6: Final Review */}
             {step === 6 && selectedStrategy && (
               <motion.div
