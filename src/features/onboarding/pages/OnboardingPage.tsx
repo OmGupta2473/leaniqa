@@ -4,6 +4,7 @@ import { useUserStore } from '@/features/profile/store/userStore';
 import { useAppStore } from '@/app/store';
 import { cn } from '@/shared/utils/utils';
 import { CheckCircle2, ArrowRight, ChevronLeft } from 'lucide-react';
+import { WheelPicker } from '@/components/WheelPicker';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { profileService } from '@/features/profile/services/profileService';
 import { complianceService } from '@/features/reports/services/complianceService';
@@ -31,6 +32,10 @@ function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: n
   }, [value, duration]);
   return <span>{displayValue}</span>;
 }
+
+const cmItems = Array.from({ length: 151 }, (_, i) => i + 100);
+const ftItems = [3, 4, 5, 6, 7, 8];
+const inItems = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
 export function OnboardingPage() {
   const navigate = useNavigate();
@@ -137,6 +142,34 @@ export function OnboardingPage() {
       alert("Failed to save profile: " + (error.message || "Unknown error"));
     }
   });
+
+  const toggleHeightUnit = (unit: 'cm'|'ft') => {
+    if (unit === heightUnit) return;
+    if (unit === 'ft') {
+      const cm = parseFloat(height);
+      if (!isNaN(cm) && cm > 0) {
+        const totalInches = cm / 2.54;
+        const ft = Math.floor(totalInches / 12);
+        const inches = Math.round(totalInches % 12);
+        setHeightFt(ft.toString());
+        setHeightIn(inches.toString());
+      } else {
+        setHeightFt('5');
+        setHeightIn('8');
+      }
+    } else {
+      const ft = parseFloat(heightFt) || 0;
+      const inc = parseFloat(heightIn) || 0;
+      if (ft > 0 || inc > 0) {
+        const totalInches = (ft * 12) + inc;
+        const cm = Math.round(totalInches * 2.54);
+        setHeight(cm.toString());
+      } else {
+        setHeight('170');
+      }
+    }
+    setHeightUnit(unit);
+  };
 
   const getComputedHeight = () => {
     if (heightUnit === 'cm') return parseFloat(height) || 170;
@@ -377,56 +410,65 @@ export function OnboardingPage() {
                             className="absolute inset-y-1 bg-[#D4FF00] rounded-full transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]" 
                             style={{ width: '48%', left: heightUnit === 'cm' ? '1%' : '51%' }}
                         />
-                        <button onClick={() => setHeightUnit('cm')} className={cn("px-6 py-2 rounded-full text-sm font-medium transition-colors relative z-10 w-20", heightUnit === 'cm' ? "text-black" : "text-zinc-400")}>cm</button>
-                        <button onClick={() => setHeightUnit('ft')} className={cn("px-6 py-2 rounded-full text-sm font-medium transition-colors relative z-10 w-20", heightUnit === 'ft' ? "text-black" : "text-zinc-400")}>ft/in</button>
+                        <button onClick={() => toggleHeightUnit('cm')} className={cn("px-6 py-2 rounded-full text-sm font-medium transition-colors relative z-10 w-20", heightUnit === 'cm' ? "text-black" : "text-zinc-400")}>cm</button>
+                        <button onClick={() => toggleHeightUnit('ft')} className={cn("px-6 py-2 rounded-full text-sm font-medium transition-colors relative z-10 w-20", heightUnit === 'ft' ? "text-black" : "text-zinc-400")}>ft/in</button>
                     </div>
 
-                    {heightUnit === 'cm' ? (
-                         <div className="flex items-center justify-center gap-4">
-                             <input 
-                                 type="number" 
-                                 autoFocus
-                                 value={height}
-                                 onChange={(e) => setHeight(e.target.value)}
-                                 placeholder="175"
-                                 className="w-[160px] bg-transparent text-center text-6xl font-semibold text-white placeholder-zinc-800 outline-none border-none caret-[#D4FF00]"
-                                 onKeyDown={(e) => {
-                                     if (e.key === 'Enter' && height) setStep(5);
-                                 }}
-                             />
-                             <span className="text-2xl text-zinc-500 font-medium pb-2">cm</span>
-                         </div>
-                    ) : (
-                         <div className="flex items-center justify-center gap-4">
-                             <input 
-                                 type="number" 
-                                 autoFocus
-                                 value={heightFt}
-                                 onChange={(e) => setHeightFt(e.target.value)}
-                                 placeholder="5"
-                                 className="w-[80px] bg-transparent text-center text-6xl font-semibold text-white placeholder-zinc-800 outline-none border-none caret-[#D4FF00]"
-                             />
-                             <span className="text-2xl text-zinc-500 font-medium pb-2">ft</span>
-                             <input 
-                                 type="number" 
-                                 value={heightIn}
-                                 onChange={(e) => setHeightIn(e.target.value)}
-                                 placeholder="9"
-                                 className="w-[80px] bg-transparent text-center text-6xl font-semibold text-white placeholder-zinc-800 outline-none border-none caret-[#D4FF00]"
-                                 onKeyDown={(e) => {
-                                     if (e.key === 'Enter' && heightFt) setStep(5);
-                                 }}
-                             />
-                             <span className="text-2xl text-zinc-500 font-medium pb-2">in</span>
-                         </div>
-                    )}
+                    <div className="w-full max-w-sm h-[300px] relative">
+                      <AnimatePresence mode="popLayout">
+                        {heightUnit === 'cm' ? (
+                            <motion.div 
+                              key="cm-picker"
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              exit={{ opacity: 0, x: -20 }}
+                              transition={{ duration: 0.3 }}
+                              className="absolute inset-0 flex items-center justify-center"
+                            >
+                                <WheelPicker 
+                                  items={cmItems} 
+                                  value={parseInt(height) || 170} 
+                                  onChange={(v) => setHeight(v.toString())} 
+                                  unit="cm"
+                                />
+                            </motion.div>
+                        ) : (
+                            <motion.div 
+                              key="ft-picker"
+                              initial={{ opacity: 0, x: 20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              exit={{ opacity: 0, x: 20 }}
+                              transition={{ duration: 0.3 }}
+                              className="absolute inset-0 flex items-center justify-center gap-4"
+                            >
+                                <WheelPicker 
+                                  items={ftItems} 
+                                  value={parseInt(heightFt) || 5} 
+                                  onChange={(v) => setHeightFt(v.toString())} 
+                                  unit="ft"
+                                />
+                                <WheelPicker 
+                                  items={inItems} 
+                                  value={parseInt(heightIn) || 8} 
+                                  onChange={(v) => setHeightIn(v.toString())} 
+                                  unit="in"
+                                />
+                            </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                     
                     <div className="mt-12 flex justify-center">
                         <motion.button 
-                            disabled={heightUnit === 'cm' ? !height : (!heightFt && !heightIn)}
+                            disabled={false}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            onClick={() => setStep(5)}
+                            onClick={() => {
+                                if (heightUnit === 'cm' && !height) setHeight('170');
+                                if (heightUnit === 'ft' && !heightFt) setHeightFt('5');
+                                if (heightUnit === 'ft' && !heightIn) setHeightIn('8');
+                                setStep(5);
+                            }}
                             className="bg-[#D4FF00] text-black font-semibold rounded-full px-12 py-4 disabled:opacity-30 transition-opacity"
                         >
                             Continue
