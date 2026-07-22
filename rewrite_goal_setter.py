@@ -1,4 +1,6 @@
+import sys
 
+content = """
 import React, { Profiler, useState, useEffect, useRef } from 'react';
 import { onRenderCallback, useRenderTracker } from '@/shared/utils/perfDebug';
 import { useNavigate } from "react-router-dom";
@@ -300,7 +302,7 @@ export function GoalSetterPage() {
         deficit_kcal: strategyData.deficit_kcal,
         target_date: strategyData.targetDateIso,
         target_weight: strategyData.targetWeightKg,
-        
+        macros: strategyData.macros
       });
       return { strategyData, savedGoal };
     },
@@ -405,7 +407,7 @@ export function GoalSetterPage() {
     const activeGoal = goal;
     const dailyKcal = profile?.maintenance_kcal && goal?.deficit_kcal !== undefined 
       ? profile.maintenance_kcal - goal.deficit_kcal 
-      : (activeGoal as any)?.dailyCalorieGoal;
+      : activeGoal?.dailyCalorieGoal;
 
     return (
       <motion.div 
@@ -424,15 +426,15 @@ export function GoalSetterPage() {
           <div className="space-y-4">
             <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-4">
               <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Current BF%</span>
-              <span className="text-[16px] font-medium text-white">{activeGoal?.current_bf || (activeGoal as any)?.currentBodyFatPct || '-'}%</span>
+              <span className="text-[16px] font-medium text-white">{activeGoal?.current_bf || activeGoal?.currentBodyFatPct || '-'}%</span>
             </div>
             <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-4">
               <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Target BF%</span>
-              <span className="text-[16px] font-medium text-white">{activeGoal?.target_bf || (activeGoal as any)?.targetBodyFatPct || '-'}%</span>
+              <span className="text-[16px] font-medium text-white">{activeGoal?.target_bf || activeGoal?.targetBodyFatPct || '-'}%</span>
             </div>
             <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-4">
               <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Strategy</span>
-              <span className="text-[16px] font-medium text-white">{activeGoal?.strategy || (activeGoal as any)?.chosenStrategyName || '-'}</span>
+              <span className="text-[16px] font-medium text-white">{activeGoal?.strategy || activeGoal?.chosenStrategyName || '-'}</span>
             </div>
             <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-4">
               <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Daily Target</span>
@@ -441,9 +443,9 @@ export function GoalSetterPage() {
             <div className="flex justify-between items-center">
               <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Estimated Time</span>
               <span className="text-[16px] font-medium text-white">
-                {activeGoal?.deficit_kcal === 0 || (activeGoal as any)?.dailyDeficit === 0 ? 'Ongoing' : 
+                {activeGoal?.deficit_kcal === 0 || activeGoal?.dailyDeficit === 0 ? 'Ongoing' : 
                  activeGoal?.target_date ? new Date(activeGoal.target_date).toLocaleDateString() : 
-                 (activeGoal as any)?.estimatedWeeks ? `~${(activeGoal as any).estimatedWeeks} weeks` : '-'}
+                 activeGoal?.estimatedWeeks ? `~${activeGoal.estimatedWeeks} weeks` : '-'}
               </span>
             </div>
           </div>
@@ -936,3 +938,9 @@ export function GoalSetterPage() {
     </Profiler>
   );
 }
+"""
+
+with open('src/features/goal/pages/GoalSetterPage.tsx', 'w') as f:
+    f.write(content)
+
+print("GoalSetterPage rewritten")
