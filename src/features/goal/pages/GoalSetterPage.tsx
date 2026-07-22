@@ -772,7 +772,7 @@ export function GoalSetterPage() {
                   })}
                 </div>
 
-                <div className="fixed bottom-[80px] left-0 w-full p-6 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none z-40">
+                <div className="fixed bottom-[100px] md:bottom-8 left-0 w-full md:left-[240px] md:w-[calc(100%-240px)] p-6 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none z-40">
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={() => { haptics.success(); setStep(5); }}
@@ -892,7 +892,7 @@ export function GoalSetterPage() {
                   </div>
                 </div>
 
-                <div className="fixed bottom-[80px] left-0 w-full p-6 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none z-40">
+                <div className="fixed bottom-[100px] md:bottom-8 left-0 w-full md:left-[240px] md:w-[calc(100%-240px)] p-6 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none z-40">
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={() => {
@@ -975,7 +975,7 @@ export function GoalSetterPage() {
                   </div>
                 </div>
 
-                <div className="fixed bottom-[80px] left-0 w-full p-6 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none z-40">
+                <div className="fixed bottom-[100px] md:bottom-8 left-0 w-full md:left-[240px] md:w-[calc(100%-240px)] p-6 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none z-40">
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={() => { haptics.success(); handleFinish(); }}
