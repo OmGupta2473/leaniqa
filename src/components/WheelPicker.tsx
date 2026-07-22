@@ -24,34 +24,51 @@ export function WheelPicker({
 }: WheelPickerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const y = useMotionValue(0);
-  const [isDragging, setIsDragging] = useState(false);
+  const isInteracting = useRef(false);
+  const wheelTimeout = useRef<ReturnType<typeof setTimeout>>();
   const selectedIndex = Math.max(0, items.indexOf(value as never));
-  
-  // Set initial position
+
+  // Sync external value changes to motion value, unless actively interacting
   useEffect(() => {
-    if (!isDragging) {
+    if (!isInteracting.current) {
       const targetY = -selectedIndex * itemHeight;
-      animate(y, targetY, { type: 'spring', stiffness: 300, damping: 30 });
+      animate(y, targetY, { type: 'spring', stiffness: 400, damping: 40 });
     }
-  }, [value, selectedIndex, itemHeight, isDragging, y]);
+  }, [selectedIndex, itemHeight, y]);
+
+  // Haptics on crossing boundaries
+  useEffect(() => {
+    let lastIndex = selectedIndex;
+    const unsubscribe = y.on('change', (val) => {
+      const currentIndex = Math.max(0, Math.min(items.length - 1, Math.round(-val / itemHeight)));
+      if (currentIndex !== lastIndex) {
+        lastIndex = currentIndex;
+        haptics.tap();
+      }
+    });
+    return unsubscribe;
+  }, [y, itemHeight, items.length, selectedIndex]);
+
+  const handleDragStart = () => {
+    isInteracting.current = true;
+    y.stop();
+  };
 
   const handleDragEnd = (e: any, info: PanInfo) => {
-    setIsDragging(false);
-    
-    // Calculate current projected position based on velocity
     const velocity = info.velocity.y;
     const currentY = y.get();
     
-    // Simple projection (distance = velocity * constant)
-    const projectedY = currentY + velocity * 0.15;
+    // Project velocity forward to simulate natural decay
+    const power = 0.4; 
+    const projectedY = currentY + velocity * power;
     
-    // Calculate nearest index
     let targetIndex = Math.round(-projectedY / itemHeight);
-    
-    // Bound the index
     targetIndex = Math.max(0, Math.min(items.length - 1, targetIndex));
     
     const targetY = -targetIndex * itemHeight;
+    
+    // Optimistically update to enable "Continue" buttons instantly
+    onChange(items[targetIndex]);
     
     animate(y, targetY, { 
       type: 'spring', 
@@ -59,27 +76,106 @@ export function WheelPicker({
       damping: 30, 
       velocity,
       onComplete: () => {
-        const newValue = items[targetIndex];
-        if (newValue !== value) {
-          onChange(newValue);
-          haptics.tap();
-        }
+        isInteracting.current = false;
       }
     });
-    
-    // Optimistically update
-    const newValue = items[targetIndex];
-    if (newValue !== value) {
-      onChange(newValue);
-      haptics.tap();
+  };
+
+  // Wheel handling for desktop (mouse wheel & trackpad)
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault(); // Stop main page scrolling
+      isInteracting.current = true;
+      y.stop();
+      
+      const currentY = y.get();
+      // Delta mapping for trackpads vs mice
+      let nextY = currentY - e.deltaY * 0.6; 
+      
+      const minY = -(items.length - 1) * itemHeight;
+      const maxY = 0;
+      
+      // Rubber band effect at boundaries
+      if (nextY > maxY) {
+         nextY = maxY + (nextY - maxY) * 0.1; 
+      } else if (nextY < minY) {
+         nextY = minY + (nextY - minY) * 0.1;
+      }
+      
+      y.set(nextY);
+      
+      // Debounce snapping until scrolling stops
+      clearTimeout(wheelTimeout.current);
+      wheelTimeout.current = setTimeout(() => {
+         let targetIndex = Math.round(-y.get() / itemHeight);
+         targetIndex = Math.max(0, Math.min(items.length - 1, targetIndex));
+         const targetY = -targetIndex * itemHeight;
+         
+         onChange(items[targetIndex]);
+         
+         animate(y, targetY, { 
+             type: 'spring', stiffness: 400, damping: 40,
+             onComplete: () => {
+                 isInteracting.current = false;
+             }
+         });
+      }, 100);
+    };
+
+    // Passive MUST be false to allow preventDefault
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', handleWheel);
+      clearTimeout(wheelTimeout.current);
+    };
+  }, [items, itemHeight, y, onChange]);
+
+  // Keyboard accessibility
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End'].includes(e.key)) {
+      e.preventDefault();
+      isInteracting.current = true;
+      y.stop();
+      
+      let currentIndex = Math.round(-y.get() / itemHeight);
+      if (e.key === 'ArrowUp') currentIndex--;
+      else if (e.key === 'ArrowDown') currentIndex++;
+      else if (e.key === 'PageUp') currentIndex -= 5;
+      else if (e.key === 'PageDown') currentIndex += 5;
+      else if (e.key === 'Home') currentIndex = 0;
+      else if (e.key === 'End') currentIndex = items.length - 1;
+      
+      currentIndex = Math.max(0, Math.min(items.length - 1, currentIndex));
+      const targetY = -currentIndex * itemHeight;
+      
+      onChange(items[currentIndex]);
+      
+      animate(y, targetY, {
+         type: 'spring', stiffness: 400, damping: 40,
+         onComplete: () => { isInteracting.current = false; }
+      });
     }
   };
 
   return (
     <div 
-      className={cn("relative overflow-hidden cursor-grab active:cursor-grabbing", className)} 
-      style={{ height: itemHeight * visibleItems, width: '100%', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%)', maskImage: 'linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%)' }}
+      className={cn("relative overflow-hidden cursor-grab active:cursor-grabbing outline-none select-none", className)} 
+      style={{ 
+        height: itemHeight * visibleItems, 
+        width: '100%', 
+        WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%)', 
+        maskImage: 'linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%)',
+        touchAction: 'none' // CRITICAL: prevents mobile page scrolling when dragging the wheel
+      }}
       ref={containerRef}
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      role="listbox"
+      aria-valuenow={typeof value === 'number' ? value : undefined}
+      aria-valuetext={String(value)}
     >
       {/* Center highlight overlay */}
       <div 
@@ -101,7 +197,7 @@ export function WheelPicker({
         }}
         dragElastic={0.2}
         dragMomentum={false}
-        onDragStart={() => setIsDragging(true)}
+        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         style={{ y }}
         className="absolute w-full top-1/2"
@@ -131,14 +227,12 @@ function WheelItem({ item, index, y, itemHeight }: { item: any, index: number, y
   // Calculate abs distance for scale/opacity
   const absDistance = useTransform(distance, (d) => Math.abs(d as number));
 
-  const scale = useTransform(absDistance, [0, itemHeight * 2.5], [1.1, 0.7]);
+  const scale = useTransform(absDistance, [0, itemHeight * 2.5], [1.08, 0.7]);
   const opacity = useTransform(absDistance, [0, itemHeight, itemHeight * 2.5], [1, 0.3, 0]);
   const rotateX = useTransform(distance, [-itemHeight * 2, 0, itemHeight * 2], [-45, 0, 45]);
+  
   const blurRaw = useTransform(absDistance, [0, itemHeight * 1.5, itemHeight * 3], [0, 2, 8]);
   const filter = useTransform(blurRaw, (b) => `blur(${b}px)`);
-  
-  // We can't interpolate colors easily across all devices without framer-motion full color support,
-  // so we'll rely on opacity and a slightly brighter base color
   
   return (
     <motion.div
