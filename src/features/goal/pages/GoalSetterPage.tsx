@@ -767,11 +767,11 @@ export function GoalSetterPage() {
                   })}
                 </div>
 
-                <div className="fixed bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black via-black/80 to-transparent">
+                <div className="fixed bottom-[80px] left-0 w-full p-6 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none z-40">
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={() => { haptics.success(); setStep(5); }}
-                    className="w-full max-w-lg mx-auto block py-4 rounded-full bg-[#D4FF00] text-black font-bold text-[17px] shadow-[0_0_30px_rgba(212,255,0,0.3)]"
+                    className="pointer-events-auto w-full max-w-lg mx-auto block py-4 rounded-full bg-[#D4FF00] text-black font-bold text-[17px] shadow-[0_0_30px_rgba(212,255,0,0.3)]"
                   >
                     Continue
                   </motion.button>
@@ -847,11 +847,11 @@ export function GoalSetterPage() {
                   </div>
                 </div>
 
-                <div className="fixed bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black via-black/80 to-transparent">
+                <div className="fixed bottom-[80px] left-0 w-full p-6 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none z-40">
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={() => { haptics.success(); setStep(6); }}
-                    className="w-full max-w-lg mx-auto block py-4 rounded-full bg-[#D4FF00] text-black font-bold text-[17px] shadow-[0_0_30px_rgba(212,255,0,0.3)]"
+                    className="pointer-events-auto w-full max-w-lg mx-auto block py-4 rounded-full bg-[#D4FF00] text-black font-bold text-[17px] shadow-[0_0_30px_rgba(212,255,0,0.3)]"
                   >
                     Review Final Plan
                   </motion.button>
@@ -919,12 +919,12 @@ export function GoalSetterPage() {
                   </div>
                 </div>
 
-                <div className="fixed bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black via-black/80 to-transparent">
+                <div className="fixed bottom-[80px] left-0 w-full p-6 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none z-40">
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={() => { haptics.success(); handleFinish(); }}
                     disabled={saveMutation.isPending}
-                    className="w-full max-w-lg mx-auto block py-4 rounded-full bg-white text-black font-bold text-[17px] shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+                    className="pointer-events-auto w-full max-w-lg mx-auto block py-4 rounded-full bg-white text-black font-bold text-[17px] shadow-[0_0_30px_rgba(255,255,255,0.2)]"
                   >
                     {saveMutation.isPending ? 'Starting...' : 'Start My Transformation'}
                   </motion.button>
