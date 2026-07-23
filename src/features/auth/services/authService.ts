@@ -25,25 +25,8 @@ export const authService = {
         status: 401,
       });
     }
-    
-    // Check if the user is actually valid on the server
-    // This catches cases where the user was manually deleted from the database
-    // but the session token is still cached in local storage.
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    if (userError || !user) {
-      console.warn('Local session exists but user is invalid on server. Logging out.');
-      await supabase.auth.signOut();
-      useChatStore.getState().clearChatStore();
-      throw new AppError({
-        code: ErrorCodes.UNAUTHORIZED,
-        message: 'User session invalid or expired. Please log in again.',
-        retryable: false,
-        status: 401,
-      });
-    }
 
-    return user.id;
+    return session.user.id;
   },
   
   async logout(): Promise<void> {
