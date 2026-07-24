@@ -25,6 +25,7 @@ import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
 import { analytics } from '@/shared/utils/analytics';
 import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
 import { MealLoggerSkeleton } from '@/shared/components/Skeletons';
+import { useToast } from '@/shared/components/Toast';
 
 const getDeterministicFallback = (text: string) => {
   const normalizedText = text.toLowerCase();
@@ -58,6 +59,7 @@ const getDeterministicFallback = (text: string) => {
 // ── SLOT ROW — used in the persistent summary ─────────────────────────────
 function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: string; icon: React.ReactNode; label: string; timeRange: string; meals: any[], onDelete: (id: string) => void }) {
   const [expanded, setExpanded] = useState(false);
+  const { toast } = useToast();
   const kcal = meals.reduce((s, m) => s + m.calories, 0);
   const pro = meals.reduce((s, m) => s + m.protein, 0);
   return (
@@ -118,9 +120,15 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
                     {m.id && !m.id.toString().startsWith('opt-') && (
                       <button onClick={(e) => {
                           e.stopPropagation();
-                          if (window.confirm("Delete Meal? This action cannot be undone.")) {
-                            onDelete(m.id);
-                          }
+                          toast({
+                            type: 'warning',
+                            message: 'Delete meal?',
+                            duration: 5000,
+                            action: {
+                              label: 'Delete',
+                              onClick: () => onDelete(m.id)
+                            }
+                          });
                       }} className="ml-2 w-7 h-7 rounded-full bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,77,28,0.2)] flex items-center justify-center text-[rgba(255,255,255,0.5)] hover:text-[#FF4D1C] transition-colors">
                         <X size={14} />
                       </button>

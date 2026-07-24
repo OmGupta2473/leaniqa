@@ -18,6 +18,7 @@ import { haptics } from '@/shared/utils/haptics';
 import { analytics } from '@/shared/utils/analytics';
 import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
 import { GoalSkeleton } from '@/shared/components/Skeletons';
+import { useToast } from '@/shared/components/Toast';
 
 // Use same options from BodyFatSelector but duplicate them here so we don't need to change its props or use it directly to have more control
 const maleOptions = [
@@ -114,6 +115,7 @@ export function GoalSetterPage() {
   const [customCarbs, setCustomCarbs] = useState<number | null>(null);
 
   const { isOnline } = useNetworkConnectivity();
+  const { toast } = useToast();
 
   if (isProfileLoading || isGoalLoading) {
     if (!isOnline) {
@@ -355,7 +357,7 @@ export function GoalSetterPage() {
         queryClient.setQueryData(['goal'], context.previousGoal);
       }
       console.error("saveMutation error:", error);
-      alert("Failed to save goal: " + error.message);
+      toast({ type: 'error', message: "Failed to save goal: " + error.message });
     },
     onSuccess: (data) => {
       setOnboardingData({
@@ -524,7 +526,8 @@ export function GoalSetterPage() {
                         setResetGoalConfirm(false);
                         queryClient.setQueryData(['goal'], null);
                         setStep(0);
-                      } catch { alert('Failed to reset goal. Try again.'); }
+                        toast({ type: 'success', message: 'Goal reset successfully' });
+                      } catch { toast({ type: 'error', message: 'Failed to reset goal. Try again.' }); }
                     }} 
                     className="w-full py-3.5 rounded-full bg-[#FF3B30] text-white font-bold text-[15px]"
                   >
