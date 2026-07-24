@@ -16,6 +16,8 @@ import { ScreenSkeleton } from '@/shared/components/ScreenSkeleton';
 import { calculateBodyComposition, calculateGoalStats, estimateBodyFatPercentage } from '@/shared/utils/profileCalculations';
 import { haptics } from '@/shared/utils/haptics';
 import { analytics } from '@/shared/utils/analytics';
+import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
+import { GoalSkeleton } from '@/shared/components/Skeletons';
 
 // Use same options from BodyFatSelector but duplicate them here so we don't need to change its props or use it directly to have more control
 const maleOptions = [
@@ -111,8 +113,24 @@ export function GoalSetterPage() {
   const [customFat, setCustomFat] = useState<number | null>(null);
   const [customCarbs, setCustomCarbs] = useState<number | null>(null);
 
+  const { isOnline } = useNetworkConnectivity();
+
   if (isProfileLoading || isGoalLoading) {
-    return <ScreenSkeleton />;
+    if (!isOnline) {
+      return (
+        <div className="min-h-screen bg-[#0A0A0A] pb-[100px] flex flex-col items-center justify-center px-6 text-center">
+          <AlertTriangle className="w-12 h-12 text-[rgba(255,255,255,0.2)] mb-4" />
+          <h2 className="text-[18px] font-semibold text-white mb-2">You're offline</h2>
+          <p className="text-[14px] text-[rgba(255,255,255,0.6)]">
+            Connect to the internet to load your goals for the first time.
+          </p>
+          <button onClick={() => navigate('/dashboard')} className="mt-8 text-[#D4FF00] font-medium text-[15px]">
+            Return to Dashboard
+          </button>
+        </div>
+      );
+    }
+    return <GoalSkeleton />;
   }
 
   const tdee = onboardingData?.tdee || profile?.maintenance_kcal || 2500;

@@ -4,7 +4,7 @@ const QUEUE_KEY = 'LEANIQA_OFFLINE_QUEUE';
 
 interface OfflineAction {
   id: string;
-  type: 'ADD_MEAL' | 'SAVE_GOAL' | 'DELETE_MEAL';
+  type: 'ADD_MEAL' | 'SAVE_GOAL' | 'DELETE_MEAL' | 'ADD_WEIGHT';
   payload: any;
   timestamp: number;
 }
@@ -64,6 +64,13 @@ export const offlineSyncService = {
           await profileService.upsertGoal(action.payload);
         } else if (action.type === 'DELETE_MEAL') {
           await mealService.deleteMeal(action.payload);
+        } else if (action.type === 'ADD_WEIGHT') {
+          const { weightService } = await import('@/features/progress/services/weightService');
+          if (action.payload.updates) {
+             const { profileService } = await import('@/features/profile/services/profileService');
+             await profileService.updateProfile(action.payload.updates);
+          }
+          await weightService.addWeightLog({ weight: action.payload.weight, date: action.payload.date }, action.payload.showAdvanced);
         }
         // Add more actions here if needed
       } catch (err: any) {

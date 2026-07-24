@@ -7,9 +7,12 @@ import { useCalculatedProfile } from "@/shared/hooks/useCalculatedProfile";
 import { useUserStore } from "@/features/profile/store/userStore";
 import { reportService } from "@/features/reports/services/reportService";
 import { DailyHistoryChart } from "../components/DailyHistoryChart";
-import { ChevronLeft, Utensils } from "lucide-react";
+import { ChevronLeft, Utensils, AlertTriangle, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 import { cn } from "@/shared/utils/utils";
+import { EmptyState } from '@/shared/components/EmptyState';
+import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
+import { NutritionDetailSkeleton } from '@/shared/components/Skeletons';
 
 const AnimatedNumber = memo(function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: number }) {
   const [displayValue, setDisplayValue] = useState(0);
@@ -68,7 +71,7 @@ export function CalorieDetailPage() {
   const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
   const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => profileService.getProfile() });
   const { data: goal } = useQuery({ queryKey: ["goal"], queryFn: () => profileService.getGoal() });
-  const { data: meals = [] } = useQuery({ queryKey: ["meals", "month"], queryFn: () => mealService.getMeals({ days: 35, limit: 2000 }) });
+  const { data: meals = [], isLoading } = useQuery({ queryKey: ["meals", "month"], queryFn: () => mealService.getMeals({ days: 35, limit: 2000 }) });
 
   const dailyCalorieGoal =
     profile?.maintenance_kcal && goal?.deficit_kcal !== undefined
@@ -155,6 +158,24 @@ export function CalorieDetailPage() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  if (isLoading) {
+    if (!isOnline) {
+      return (
+        <div className="min-h-screen bg-[#0A0A0A] pb-[100px] flex flex-col items-center justify-center px-6 text-center">
+          <AlertTriangle className="w-12 h-12 text-[rgba(255,255,255,0.2)] mb-4" />
+          <h2 className="text-[18px] font-semibold text-white mb-2">You're offline</h2>
+          <p className="text-[14px] text-[rgba(255,255,255,0.6)]">
+            Connect to the internet to load your calorie details for the first time.
+          </p>
+          <button onClick={() => navigate('/dashboard')} className="mt-8 text-[#D4FF00] font-medium text-[15px]">
+            Return to Dashboard
+          </button>
+        </div>
+      );
+    }
+    return <NutritionDetailSkeleton />;
+  }
+
   return (
     <div className="page-enter pt-[calc(env(safe-area-inset-top)+20px)] pb-[calc(100px+env(safe-area-inset-bottom))] min-h-[100dvh] bg-[#0A0A0A] px-5">
       {/* Header */}
@@ -198,14 +219,15 @@ export function CalorieDetailPage() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="stagger-children">
         <div className="text-[12px] font-semibold text-[rgba(235,235,245,0.5)] uppercase tracking-widest mb-4 px-1">Today's Meals</div>
         
-        {meals.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 rounded-[24px] border border-dashed border-[rgba(255,255,255,0.1)]">
-            <Utensils size={32} className="text-[rgba(255,255,255,0.15)] mb-4" />
-            <div className="text-[14px] font-medium text-[rgba(255,255,255,0.4)] mb-4 text-center">No meals logged yet</div>
-            <button onClick={() => navigate('/meals')} className="btn-ghost text-[14px] font-bold text-[#D4FF00] border-[rgba(212,255,0,0.3)] hover:bg-[rgba(212,255,0,0.1)] rounded-full px-5 py-2">
-              Log your first meal →
-            </button>
-          </div>
+        {todayMeals.length === 0 ? (
+          <EmptyState
+            icon={Utensils}
+            title="No meals logged yet"
+            description="Your daily meal log is empty. Tap the button below to add your first meal."
+            ctaText="Log Meal"
+            onCtaClick={() => navigate('/log-meal')}
+            className="py-10"
+          />
         ) : (
           <div>
             {slots.filter(s => s.items.length > 0).map(slot => {
