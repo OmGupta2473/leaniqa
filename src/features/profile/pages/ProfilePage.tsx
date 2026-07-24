@@ -22,7 +22,7 @@ function displayVal(val: any) {
 
 export function ProfilePage() {
   const navigate = useNavigate();
-  const { isOnline } = useNetworkConnectivity();
+  const isOnline = useNetworkConnectivity();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showResetModal, setShowResetModal] = useState(false);

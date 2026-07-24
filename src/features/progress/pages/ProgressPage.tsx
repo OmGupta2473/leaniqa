@@ -31,7 +31,7 @@ export function ProgressPage() {
   const setShowAdvanced = (val: boolean) => useDashboardStore.getState().setTemporaryPreferences({ showAdvanced: val });
   
   const navigate = useNavigate();
-  const { isOnline } = useNetworkConnectivity();
+  const isOnline = useNetworkConnectivity();
   const queryClient = useQueryClient();
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
@@ -140,6 +140,9 @@ export function ProgressPage() {
   const hasLoggedToday = weightLogs.some((l: any) => l.date.startsWith(todayPrefix));
 
   const handleLog = (isUpdate = false) => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     setErrorMsg('');
     const val = parseFloat(weight);
     if (!val) return;
@@ -225,6 +228,12 @@ export function ProgressPage() {
               setWeight(e.target.value);
               setErrorMsg('');
             }} 
+            onFocus={(e) => {
+              const target = e.target;
+              setTimeout(() => {
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 300);
+            }}
             placeholder={`e.g. ${currentWeight} kg`} 
             className="input-apple flex-1"
             disabled={addWeightMutation.isPending}
@@ -252,6 +261,12 @@ export function ProgressPage() {
                 type="number" 
                 value={waist} 
                 onChange={(e) => setWaist(e.target.value)} 
+                onFocus={(e) => {
+                  const target = e.target;
+                  setTimeout(() => {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }, 300);
+                }}
                 placeholder={`Waist (cm)`} 
                 className="input-apple disabled:opacity-50"
                 disabled={addWeightMutation.isPending}
@@ -260,6 +275,12 @@ export function ProgressPage() {
                 type="number" 
                 value={neck} 
                 onChange={(e) => setNeck(e.target.value)} 
+                onFocus={(e) => {
+                  const target = e.target;
+                  setTimeout(() => {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }, 300);
+                }}
                 placeholder={`Neck (cm)`} 
                 className="input-apple disabled:opacity-50"
                 disabled={addWeightMutation.isPending}
@@ -269,6 +290,12 @@ export function ProgressPage() {
                   type="number" 
                   value={hip} 
                   onChange={(e) => setHip(e.target.value)} 
+                  onFocus={(e) => {
+                    const target = e.target;
+                    setTimeout(() => {
+                      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 300);
+                  }}
                   placeholder={`Hip (cm)`} 
                   className="col-span-2 input-apple disabled:opacity-50"
                   disabled={addWeightMutation.isPending}

@@ -7,7 +7,7 @@ import { useChatStore } from "@/app/store";
 import { useNutritionStore } from "../store/nutritionStore";
 import {
   Send, Loader2, Dumbbell, Lightbulb, Sun, Sunrise, Moon,  Plus, X, ChevronLeft, ChevronRight, ArrowRight, ChevronDown, 
- } from "lucide-react";
+ AlertTriangle } from "lucide-react";
 import { EmptyState } from '@/shared/components/EmptyState';
 import { cn } from "@/shared/utils/utils";
 import { SmoothInput } from "@/shared/components/SmoothInput";
@@ -243,7 +243,7 @@ export function MealLoggerPage() {
   const { data: goal } = useQuery({ queryKey: ["goal"], queryFn: () => profileService.getGoal() });
   const { profileData: onboardingData } = useCalculatedProfile();
   const { data: meals = [], isLoading } = useQuery({ queryKey: ["meals", "date", dateKeyStr], queryFn: () => mealService.getMealsForDate(selectedDate) });
-  const { isOnline } = useNetworkConnectivity();
+  const isOnline = useNetworkConnectivity();
 
   const eatenKcal = meals.reduce((acc, m) => acc + m.calories, 0);
   const eatenProtein = meals.reduce((acc, m) => acc + m.protein, 0);
@@ -619,6 +619,9 @@ export function MealLoggerPage() {
   });
 
   const handleSend = React.useCallback(() => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     if (import.meta.env.DEV) console.time('[PERF] MealLogger handleSend');
     const text = input.trim();
     if (!text || loading || !selectedMealSlot) return;

@@ -114,7 +114,7 @@ export function GoalSetterPage() {
   const [customFat, setCustomFat] = useState<number | null>(null);
   const [customCarbs, setCustomCarbs] = useState<number | null>(null);
 
-  const { isOnline } = useNetworkConnectivity();
+  const isOnline = useNetworkConnectivity();
   const { toast } = useToast();
 
   if (isProfileLoading || isGoalLoading) {
@@ -397,6 +397,9 @@ export function GoalSetterPage() {
   });
 
   const handleFinish = () => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     if (!selectedStrategy) return;
     
     const parsedCals = typeof customCalories === 'number' ? customCalories : parseInt(customCalories as string);
@@ -856,6 +859,12 @@ export function GoalSetterPage() {
                         type="number" 
                         value={customCalories === null ? '' : customCalories}
                         onChange={(e) => setCustomCalories(e.target.value)}
+                        onFocus={(e) => {
+                          const target = e.target;
+                          setTimeout(() => {
+                            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }, 300);
+                        }}
                         className="bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-2 w-28 text-right text-[18px] font-bold text-[#D4FF00] focus:outline-none focus:border-[#D4FF00]"
                       />
                     </div>
@@ -882,6 +891,12 @@ export function GoalSetterPage() {
                         type="number" 
                         value={customProtein === null ? '' : customProtein}
                         onChange={(e) => setCustomProtein(e.target.value)}
+                        onFocus={(e) => {
+                          const target = e.target;
+                          setTimeout(() => {
+                            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }, 300);
+                        }}
                         className="bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-2 w-28 text-right text-[18px] font-bold text-white focus:outline-none focus:border-white"
                       />
                     </div>

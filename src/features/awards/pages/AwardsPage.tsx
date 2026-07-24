@@ -22,7 +22,7 @@ const SMOOTH_TRANSITION: any = { duration: 0.4, ease: [0.16, 1, 0.3, 1] };
 
 export function AwardsPage() {
   const navigate = useNavigate();
-  const { isOnline } = useNetworkConnectivity();
+  const isOnline = useNetworkConnectivity();
   
   const { data: metrics = [], isLoading } = useQuery({ 
     queryKey: ["dailyMetrics"], 

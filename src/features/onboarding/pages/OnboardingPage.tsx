@@ -56,6 +56,7 @@ export function OnboardingPage() {
   const setHeight = (val: string) => useUserStore.getState().setTemporaryOnboardingValues({ height: val });
   const heightUnit = useUserStore(s => s.temporaryOnboardingValues.heightUnit || "cm");
   const setHeightUnit = (val: "cm"|"ft") => useUserStore.getState().setTemporaryOnboardingValues({ heightUnit: val });
+
   const heightFt = useUserStore(s => s.temporaryOnboardingValues.heightFt || "");
   const setHeightFt = (val: string) => useUserStore.getState().setTemporaryOnboardingValues({ heightFt: val });
   const heightIn = useUserStore(s => s.temporaryOnboardingValues.heightIn || "");
@@ -69,6 +70,12 @@ export function OnboardingPage() {
   const setActivity = (val: "Sedentary"|"Lightly Active"|"Moderately Active"|"Very Active"|"Athlete"|"") => useUserStore.getState().setTemporaryOnboardingValues({ activity: val });
   
   const [step, setStep] = useState(0); // 0: Welcome, 1: Name, 2: Gender, 3: Age, 4: Height, 5: Weight, 6: Activity, 7: AI Analysis, 8: Results
+
+  useEffect(() => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  }, [step]);
 
   const [aiStatus, setAiStatus] = useState(0);
   
@@ -309,6 +316,12 @@ export function OnboardingPage() {
                         autoFocus
                         value={name}
                         onChange={(e) => setName(e.target.value)}
+                        onFocus={(e) => {
+                            const target = e.target;
+                            setTimeout(() => {
+                                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }, 300);
+                        }}
                         placeholder="Your name"
                         className="w-full bg-transparent text-center text-4xl font-semibold text-white placeholder-zinc-800 outline-none border-none caret-[#D4FF00]"
                         onKeyDown={(e) => {
@@ -361,6 +374,12 @@ export function OnboardingPage() {
                             autoFocus
                             value={age}
                             onChange={(e) => setAge(e.target.value)}
+                            onFocus={(e) => {
+                                const target = e.target;
+                                setTimeout(() => {
+                                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }, 300);
+                            }}
                             placeholder="30"
                             className="w-[120px] bg-transparent text-center text-6xl font-semibold text-white placeholder-zinc-800 outline-none border-none caret-[#D4FF00]"
                             onKeyDown={(e) => {
@@ -403,6 +422,12 @@ export function OnboardingPage() {
                                  autoFocus
                                  value={height}
                                  onChange={(e) => setHeight(e.target.value)}
+                                 onFocus={(e) => {
+                                     const target = e.target;
+                                     setTimeout(() => {
+                                         target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                     }, 300);
+                                 }}
                                  placeholder="175"
                                  className="w-[160px] bg-transparent text-center text-6xl font-semibold text-white placeholder-zinc-800 outline-none border-none caret-[#D4FF00]"
                                  onKeyDown={(e) => {
@@ -418,6 +443,12 @@ export function OnboardingPage() {
                                  autoFocus
                                  value={heightFt}
                                  onChange={(e) => setHeightFt(e.target.value)}
+                                 onFocus={(e) => {
+                                     const target = e.target;
+                                     setTimeout(() => {
+                                         target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                     }, 300);
+                                 }}
                                  placeholder="5"
                                  className="w-[80px] bg-transparent text-center text-6xl font-semibold text-white placeholder-zinc-800 outline-none border-none caret-[#D4FF00]"
                              />
@@ -426,6 +457,12 @@ export function OnboardingPage() {
                                  type="number" 
                                  value={heightIn}
                                  onChange={(e) => setHeightIn(e.target.value)}
+                                 onFocus={(e) => {
+                                     const target = e.target;
+                                     setTimeout(() => {
+                                         target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                     }, 300);
+                                 }}
                                  placeholder="9"
                                  className="w-[80px] bg-transparent text-center text-6xl font-semibold text-white placeholder-zinc-800 outline-none border-none caret-[#D4FF00]"
                                  onKeyDown={(e) => {
@@ -459,6 +496,12 @@ export function OnboardingPage() {
                             autoFocus
                             value={weight}
                             onChange={(e) => setWeight(e.target.value)}
+                            onFocus={(e) => {
+                                const target = e.target;
+                                setTimeout(() => {
+                                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }, 300);
+                            }}
                             placeholder="70"
                             className="w-[160px] bg-transparent text-center text-6xl font-semibold text-white placeholder-zinc-800 outline-none border-none caret-[#D4FF00]"
                             onKeyDown={(e) => {

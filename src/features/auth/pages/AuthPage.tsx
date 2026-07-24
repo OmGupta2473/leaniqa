@@ -36,6 +36,9 @@ export function AuthPage() {
 
   const handleEmailLogin = async (e: FormEvent) => {
     e.preventDefault();
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     setLoading(true);
     
     const { error } = await supabase.auth.signInWithOtp({ 
@@ -156,6 +159,12 @@ export function AuthPage() {
                         placeholder="Enter your email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                        onFocus={(e) => {
+                          const target = e.target;
+                          setTimeout(() => {
+                            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }, 300);
+                        }}
                         disabled={loading}
                         className="input-apple"
                         required
@@ -188,7 +197,7 @@ export function AuthPage() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => { setIsOtpSent(false); setMessage(''); }}
+                    onClick={() => { setIsOtpSent(false); }}
                     className="text-[14px] text-[#D4FF00] font-semibold hover:opacity-80 transition-opacity mt-4 bg-[rgba(212,255,0,0.1)] px-5 py-2.5 rounded-full"
                   >
                     Use a different email
