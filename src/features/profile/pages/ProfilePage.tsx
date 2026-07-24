@@ -338,6 +338,15 @@ export function ProfilePage() {
 
       {/* Danger Zone */}
       <div className="flex flex-col gap-4">
+        {import.meta.env.MODE === 'development' && (
+          <button 
+            onClick={() => { throw new Error('Test Crash from LeanIQA!'); }} 
+            className="flex items-center justify-center gap-2 w-full py-3.5 rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.7)] font-medium text-[15px] transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+          >
+            <AlertTriangle size={18} />
+            Test Crash Report
+          </button>
+        )}
         <button 
           onClick={handleLogout}
           disabled={isLoggingOut}

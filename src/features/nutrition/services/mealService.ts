@@ -1,6 +1,7 @@
 import { supabase } from '@/shared/utils/supabase';
 import { DbMealLog } from '@/shared/types/supabase';
 import { authService } from '@/features/auth/services/authService';
+import { logError } from '@/shared/utils/logger';
 
 export const mealService = {
   async getMeals(options?: { days?: number, limit?: number }): Promise<DbMealLog[]> {
@@ -20,7 +21,7 @@ export const mealService = {
       .limit(limit);
       
     if (error) {
-      console.error('Error fetching meals:', error);
+      logError(new Error('Error fetching meals'), { error, userId, options });
       return [];
     }
     return data || [];
@@ -45,7 +46,7 @@ export const mealService = {
       .order('meal_time', { ascending: true });
       
     if (error) {
-      console.error('Error fetching todays meals:', error);
+      logError(new Error('Error fetching todays meals'), { error, userId });
       return [];
     }
     return data || [];
@@ -65,7 +66,7 @@ export const mealService = {
       .order('meal_time', { ascending: true });
       
     if (error) {
-      console.error('Error fetching meals for date:', error);
+      logError(new Error('Error fetching meals for date'), { error, userId, date: date.toISOString() });
       return [];
     }
     return data || [];
@@ -105,10 +106,7 @@ export const mealService = {
     }
       
     if (res.error && res.error.code !== 'PGRST116') {
-      console.error('--- SUPABASE INSERT ERROR ---');
-      console.error('Payload:', payload);
-      console.error('Error Details:', JSON.stringify(res.error, null, 2));
-      console.error('Raw Error:', res.error);
+      logError(new Error('Supabase insert error'), { error: res.error, payload });
       throw res.error;
     }
     console.log('--- SUPABASE INSERT SUCCESS ---', res.data);
@@ -125,7 +123,7 @@ export const mealService = {
       .eq('user_id', userId);
       
     if (error) {
-      console.error('Error deleting meal:', error);
+      logError(new Error('Error deleting meal'), { error, id, userId });
       throw error;
     }
     return true;
@@ -146,7 +144,7 @@ export const mealService = {
       .order('meal_time', { ascending: true });
       
     if (error) {
-      console.error('Error fetching meals by date:', error);
+      logError(new Error('Error fetching meals by date'), { error, userId, dateStr });
       return [];
     }
     return data || [];
