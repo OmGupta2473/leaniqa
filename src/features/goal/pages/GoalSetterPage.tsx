@@ -297,6 +297,16 @@ export function GoalSetterPage() {
 
   const saveMutation = useMutation({
     mutationFn: async (strategyData: any) => {
+      if (typeof window !== 'undefined' && !navigator.onLine) {
+        // Enqueue for offline
+        const { offlineSyncService } = await import('@/shared/services/offlineSyncService');
+        offlineSyncService.enqueue({
+          type: 'SAVE_GOAL',
+          payload: strategyData
+        });
+        return { strategyData, savedGoal: strategyData, _localOnly: true };
+      }
+
       const savedGoal = await profileService.upsertGoal({
         current_bf: strategyData.current_bf,
         target_bf: strategyData.target_bf,
@@ -304,7 +314,6 @@ export function GoalSetterPage() {
         deficit_kcal: strategyData.deficit_kcal,
         target_date: strategyData.targetDateIso,
         target_weight: strategyData.targetWeightKg,
-        
       });
       return { strategyData, savedGoal };
     },
