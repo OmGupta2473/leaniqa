@@ -67,6 +67,7 @@ function getLocalDateString(d: Date = new Date()) {
 
 export function CalorieDetailPage() {
   const navigate = useNavigate();
+  const isOnline = useNetworkConnectivity();
   const { profileData: onboardingData } = useCalculatedProfile();
   const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
   const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => profileService.getProfile() });
