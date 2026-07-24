@@ -9,6 +9,10 @@ interface OfflineAction {
   timestamp: number;
 }
 
+let syncTimeoutId: number | null = null;
+let retryAttempt = 0;
+let isSyncing = false;
+
 export const offlineSyncService = {
   getQueue(): OfflineAction[] {
     if (typeof window === 'undefined') return [];
@@ -28,15 +32,28 @@ export const offlineSyncService = {
       timestamp: Date.now(),
     });
     localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+    
+    // Attempt to flush immediately if online
+    if (typeof window !== 'undefined' && navigator.onLine) {
+        this.flush();
+    }
   },
 
   async flush() {
     if (typeof window === 'undefined' || !navigator.onLine) return;
+    
     const queue = this.getQueue();
-    if (queue.length === 0) return;
+    if (queue.length === 0) {
+        retryAttempt = 0;
+        return;
+    }
 
-    console.log(`Flushing offline queue (${queue.length} items)`);
+    if (isSyncing) return;
+    isSyncing = true;
+
+    console.log(`Flushing offline queue (${queue.length} items), attempt ${retryAttempt + 1}`);
     const newQueue = [];
+    let hadNetworkError = false;
 
     for (const action of queue) {
       try {
@@ -49,11 +66,15 @@ export const offlineSyncService = {
           await mealService.deleteMeal(action.payload);
         }
         // Add more actions here if needed
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to sync offline action:', action, err);
         // Keep in queue if it's a network error
-        if (err instanceof TypeError && err.message.includes('fetch')) {
+        if ((err instanceof TypeError && err.message.includes('fetch')) || err?.message?.toLowerCase().includes('network') || err?.message?.toLowerCase().includes('failed to fetch')) {
           newQueue.push(action);
+          hadNetworkError = true;
+        } else if (err?.status >= 500) {
+          newQueue.push(action);
+          hadNetworkError = true;
         }
       }
     }
@@ -66,12 +87,33 @@ export const offlineSyncService = {
         m.queryClient.invalidateQueries({ queryKey: ['goal'] });
       });
     }
+
+    isSyncing = false;
+
+    if (hadNetworkError && navigator.onLine) {
+        // Schedule next sync with exponential backoff
+        retryAttempt++;
+        const backoffMs = Math.min(1000 * (2 ** retryAttempt), 5 * 60 * 1000); // Max 5 mins
+        console.log(`Sync failed, retrying in ${backoffMs}ms`);
+        if (syncTimeoutId) window.clearTimeout(syncTimeoutId);
+        syncTimeoutId = window.setTimeout(() => this.flush(), backoffMs);
+    } else if (!hadNetworkError) {
+        // Success
+        retryAttempt = 0;
+        if (syncTimeoutId) window.clearTimeout(syncTimeoutId);
+        syncTimeoutId = null;
+    }
   }
 };
 
 // Listen for online event to flush
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
+    retryAttempt = 0;
+    if (syncTimeoutId) {
+        window.clearTimeout(syncTimeoutId);
+        syncTimeoutId = null;
+    }
     offlineSyncService.flush();
   });
 }
