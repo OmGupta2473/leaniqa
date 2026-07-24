@@ -2,9 +2,11 @@ import { createRoot } from 'react-dom/client';
 import App from './app/App.tsx';
 import { AppProvider } from './app/providers/AppProvider';
 import { initCrashReporting, SentryErrorBoundary } from './shared/utils/logger';
+import { initAnalytics } from './shared/utils/analytics';
 import './index.css';
 
-// Initialize crash reporting before anything else
+// Initialize analytics and crash reporting before anything else
+initAnalytics();
 initCrashReporting();
 
 // One-time branding migration for localStorage keys

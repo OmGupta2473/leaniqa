@@ -2,6 +2,7 @@ import { useChatStore } from '@/app/store/chatStore';
 import { useAuthStore } from '@/app/store/authStore';
 import { supabase } from '@/shared/utils/supabase';
 import { AppError, ErrorCodes } from '@/shared/utils/errors';
+import { analytics } from '@/shared/utils/analytics';
 
 export const authService = {
   async getUserId(): Promise<string> {
@@ -33,6 +34,7 @@ export const authService = {
     await supabase.auth.signOut();
     useChatStore.getState().clearChatStore();
     useAuthStore.getState().setSession(null);
+    analytics.reset();
   }
 };
 

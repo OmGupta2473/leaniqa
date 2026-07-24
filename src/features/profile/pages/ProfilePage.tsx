@@ -11,6 +11,7 @@ import { authService } from '@/features/auth/services/authService';
 import { haptics } from '@/shared/utils/haptics';
 import { subscriptionService } from '@/features/pricing/services/subscriptionService';
 import { TransformationSection } from '@/features/transformation/components/TransformationSection';
+import { analytics } from '@/shared/utils/analytics';
 
 function displayVal(val: any) {
   return val === undefined || val === null || isNaN(val) ? '—' : val;
@@ -289,6 +290,18 @@ export function ProfilePage() {
                 </div>
               </div>
               <ArrowRight size={18} className="text-[rgba(255,255,255,0.4)] group-hover:text-white group-hover:translate-x-1 transition-all" />
+            </button>
+            <button 
+              onClick={() => {
+                if (window.confirm("Are you sure you want to cancel your subscription?")) {
+                  subscriptionService.cancelSubscription();
+                  analytics.trackEvent('Subscription Cancelled');
+                  alert("Subscription cancelled.");
+                }
+              }}
+              className="mt-2 flex items-center justify-center w-full p-3 rounded-[24px] text-[14px] text-[rgba(255,255,255,0.5)] hover:text-red-400 hover:bg-[rgba(255,77,28,0.1)] transition-colors"
+            >
+              Cancel Subscription
             </button>
           </motion.div>
         ) : (
