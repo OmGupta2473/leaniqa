@@ -14,6 +14,7 @@ import { calculateDailyScore } from '@/shared/utils/complianceEngine';
 import { weightService } from '@/features/progress/services/weightService';
 import { analytics } from '@/shared/utils/analytics';
 import { useEffect } from 'react';
+import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
 
 function getLocalDateString(d: Date) {
   const year = d.getFullYear();
@@ -180,7 +181,8 @@ export function WeeklyReportPage() {
   const { data: weightLogs = [] } = useQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
 
   const isLoading = profileLoading || goalLoading || mealsLoading || metricsLoading;
-  
+  const isOnline = useNetworkConnectivity();
+
   const calorieGoal = profile?.maintenance_kcal && goal?.deficit_kcal !== undefined ? profile.maintenance_kcal - goal.deficit_kcal : 2000;
   const proteinGoal = profile?.protein_target || 150;
   const today = new Date();
@@ -341,6 +343,20 @@ export function WeeklyReportPage() {
   };
 
   if (isLoading) {
+    if (!isOnline) {
+      return (
+        <div className="min-h-screen bg-[#0A0A0A] pb-[100px] flex flex-col items-center justify-center px-6 text-center">
+          <AlertTriangle className="w-12 h-12 text-[rgba(255,255,255,0.2)] mb-4" />
+          <h2 className="text-[18px] font-semibold text-white mb-2">You're offline</h2>
+          <p className="text-[14px] text-[rgba(255,255,255,0.6)]">
+            Connect to the internet to load your weekly report for the first time.
+          </p>
+          <button onClick={() => navigate('/dashboard')} className="mt-8 text-[#D4FF00] font-medium text-[15px]">
+            Return to Dashboard
+          </button>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen bg-[#0A0A0A] pb-[100px] flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-[#D4FF00] animate-spin" />

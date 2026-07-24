@@ -258,6 +258,12 @@ export function MealLoggerPage() {
     mutationFn: async (id: string) => {
       console.group('Delete Meal Audit: ' + id);
       console.log('Meal Selected:', id);
+      if (typeof window !== 'undefined' && !navigator.onLine) {
+        console.log('Offline: queueing delete meal');
+        const { offlineSyncService } = await import('@/shared/services/offlineSyncService');
+        offlineSyncService.enqueue({ type: 'DELETE_MEAL', payload: id });
+        return id;
+      }
       console.log('Delete Request sent to Database');
       await mealService.deleteMeal(id);
       console.log('Database Delete Response: Success');
@@ -411,6 +417,23 @@ export function MealLoggerPage() {
       } catch (saveErr) {
         // Save failed — log it but still return the estimate so onSuccess fires
         console.error('[meal-fallback] save to DB failed:', saveErr);
+        if (typeof window !== 'undefined' && !navigator.onLine) {
+          console.log('[meal-fallback] offline: queueing meal for sync');
+          const { offlineSyncService } = await import('@/shared/services/offlineSyncService');
+          offlineSyncService.enqueue({
+            type: 'ADD_MEAL',
+            payload: {
+              meal_text: text,
+              calories: fallback.calories,
+              protein: fallback.protein,
+              fat: fallback.fat,
+              carbs: fallback.carbs,
+              meal_time: getMealTime().toISOString(),
+              tip: `Estimated: ${text}`,
+              meal_slot: selectedMealSlot || undefined,
+            }
+          });
+        }
         // Do NOT rethrow. The user gets their estimate displayed even if save failed.
       }
 
@@ -421,6 +444,7 @@ export function MealLoggerPage() {
           ? `Database estimate — ${errorContext}.`
           : `Rough estimate — ${errorContext}.`,
         _errorMessage: errorContext,
+        _localOnly: typeof window !== 'undefined' && !navigator.onLine,
       };
       // ── END STEP 3 ─────────────────────────────────────────────────────────────
     },
@@ -468,6 +492,13 @@ export function MealLoggerPage() {
         analytics.trackEvent('AI Parse Failure', { error: data._errorMessage, input: text });
       } else if (!data?._fromCache) {
         analytics.trackEvent('AI Parse Success', { confidence: data?.confidence, calories: data.calories });
+      }
+
+      if (data?._localOnly) {
+        queryClient.setQueryData(["meals", "date", dateKeyStr], (old: any) => {
+          if (!old) return old;
+          return old.map((m: any) => m.meal_text === text ? { ...m, calories: data.calories, protein: data.protein, fat: data.fat, carbs: data.carbs } : m);
+        });
       }
 
       console.group('Meal Parsing Audit: ' + text);
