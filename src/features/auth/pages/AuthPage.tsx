@@ -10,6 +10,7 @@ import { Logo } from "@/shared/components/Logo";
 // 5. If OAuth consent screen is in "Testing" mode, add your email as a test user.
 
 import { useState, FormEvent } from 'react';
+import { useLocation } from 'react-router-dom';
 import { supabase } from '@/shared/utils/supabase';
 import { Mail, Apple } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -29,10 +30,26 @@ const GoogleIcon = ({ className }: { className?: string }) => (
 
 export function AuthPage() {
   const { toast } = useToast();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [showEmailSuggestion, setShowEmailSuggestion] = useState(false);
   const [isOtpSent, setIsOtpSent] = useState(false);
+
+  const getRedirectUrl = () => {
+    let nextPath = '';
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('next')) {
+      nextPath = searchParams.get('next') as string;
+    } else if (location.state?.from?.pathname) {
+      nextPath = location.state.from.pathname + (location.state.from.search || '');
+    }
+    
+    if (nextPath) {
+      return `${window.location.origin}/login?next=${encodeURIComponent(nextPath)}`;
+    }
+    return `${window.location.origin}/dashboard`;
+  };
 
   const handleEmailLogin = async (e: FormEvent) => {
     e.preventDefault();
@@ -41,11 +58,13 @@ export function AuthPage() {
     }
     setLoading(true);
     
+    const redirectUrl = getRedirectUrl();
+
     const { error } = await supabase.auth.signInWithOtp({ 
       email,
       options: {
         shouldCreateUser: true,
-        emailRedirectTo: `${window.location.origin}/dashboard`,
+        emailRedirectTo: redirectUrl,
       }
     });
     
@@ -69,10 +88,13 @@ export function AuthPage() {
   const handleOAuthLogin = async (provider: 'google' | 'apple') => {
     setLoading(true);
     setShowEmailSuggestion(false);
+    
+    const redirectUrl = getRedirectUrl();
+
     const { error } = await supabase.auth.signInWithOAuth({ 
       provider,
       options: {
-        redirectTo: `${window.location.origin}/dashboard`
+        redirectTo: redirectUrl
       }
     });
     if (error) {
