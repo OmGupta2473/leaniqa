@@ -17,7 +17,7 @@ const navItems = [
   { id: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { id: "/meals", icon: Plus, label: "Log" },
   { id: "/progress", icon: TrendingUp, label: "Progress" },
-  { id: "/activity", icon: FileBarChart, label: "Activity" },
+  { id: "/reports", icon: FileBarChart, label: "Reports" },
 ];
 
 export function BottomNav() {

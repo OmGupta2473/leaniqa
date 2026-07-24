@@ -27,7 +27,7 @@ const navItems = [
   { id: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { id: "/meals", icon: MessageSquare, label: "Meals", dot: true },
   { id: "/progress", icon: TrendingUp, label: "Progress" },
-  { id: "/activity", icon: FileBarChart, label: "Activity" },
+  { id: "/reports", icon: FileBarChart, label: "Reports" },
 ];
 
 export function Sidebar({ className }: { className?: string }) {
