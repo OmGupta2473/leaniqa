@@ -176,9 +176,12 @@ export function AuthPage() {
             {!isOtpSent ? (
                 <>
                   <div>
+                      <label htmlFor="email-input" className="sr-only">Email address</label>
                       <input
+                        id="email-input"
                         type="email"
                         placeholder="Enter your email"
+                        aria-label="Email address"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         onFocus={(e) => {
@@ -188,7 +191,7 @@ export function AuthPage() {
                           }, 300);
                         }}
                         disabled={loading}
-                        className="input-apple"
+                        className="input-apple min-h-[44px]"
                         required
                       />
                   </div>
@@ -220,7 +223,7 @@ export function AuthPage() {
                   <button
                     type="button"
                     onClick={() => { setIsOtpSent(false); }}
-                    className="text-[14px] text-[#D4FF00] font-semibold hover:opacity-80 transition-opacity mt-4 bg-[rgba(212,255,0,0.1)] px-5 py-2.5 rounded-full"
+                    className="text-[14px] text-[#D4FF00] font-semibold hover:opacity-80 transition-opacity mt-4 bg-[rgba(212,255,0,0.1)] px-5 py-2.5 min-h-[44px] rounded-full"
                   >
                     Use a different email
                   </button>
@@ -230,8 +233,8 @@ export function AuthPage() {
 
           {/* Footer */}
           <div className="flex justify-center gap-6 text-[12px] font-medium text-[rgba(255,255,255,0.3)] mt-8">
-            <span className="hover:text-[rgba(255,255,255,0.6)] transition-colors cursor-pointer">Privacy Policy</span>
-            <span className="hover:text-[rgba(255,255,255,0.6)] transition-colors cursor-pointer">Terms of Service</span>
+            <button type="button" className="hover:text-[rgba(255,255,255,0.6)] transition-colors cursor-pointer min-h-[44px] min-w-[44px]">Privacy Policy</button>
+            <button type="button" className="hover:text-[rgba(255,255,255,0.6)] transition-colors cursor-pointer min-h-[44px] min-w-[44px]">Terms of Service</button>
           </div>
 
         </motion.div>

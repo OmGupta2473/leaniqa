@@ -116,7 +116,7 @@ export function ProfilePage() {
     <div className="page-enter pt-[calc(env(safe-area-inset-top)+20px)] pb-[calc(100px+env(safe-area-inset-bottom))] min-h-[100dvh] bg-[#0A0A0A] px-5">
       {/* Header */}
       <div className="flex justify-between items-center mb-10">
-        <button onClick={() => navigate('/dashboard')} className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.03)] flex items-center justify-center transition-colors hover:bg-[rgba(255,255,255,0.1)]">
+        <button onClick={() => navigate('/dashboard')} aria-label="Back to dashboard" className="w-[44px] h-[44px] rounded-full bg-[rgba(255,255,255,0.03)] flex items-center justify-center transition-colors hover:bg-[rgba(255,255,255,0.1)]">
           <ChevronLeft size={20} className="text-white" />
         </button>
         <div className="text-[17px] font-semibold text-white tracking-tight">Profile</div>

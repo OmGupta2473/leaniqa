@@ -46,7 +46,7 @@ export function Sidebar({ className }: { className?: string }) {
 
   return (
     <Profiler id="Sidebar" onRender={onRenderCallback}>
-      <div 
+      <nav aria-label="Main Navigation" 
       className={cn("flex flex-col h-full w-full overflow-hidden", className)}
       style={{
         background: 'var(--color-bg-raised)',
@@ -261,7 +261,7 @@ export function Sidebar({ className }: { className?: string }) {
           </div>
         </button>
       </div>
-    </div>
+    </nav>
     </Profiler>
   );
 }

@@ -118,7 +118,7 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
                     <span className="text-[11px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-2.5 py-1 rounded-full font-bold tracking-wide">{m.calories} KCAL</span>
                     <span className="text-[11px] badge-lime px-2.5 py-1 font-bold rounded-full tracking-wide">{m.protein}G PRO</span>
                     {m.id && !m.id.toString().startsWith('opt-') && (
-                      <button onClick={(e) => {
+                      <button aria-label="Delete meal" className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-[rgba(255,255,255,0.1)]" onClick={(e) => {
                           e.stopPropagation();
                           toast({
                             type: 'warning',
@@ -665,10 +665,10 @@ export function MealLoggerPage() {
             }}
             disabled={isAtOrBeforeCreatedAt(selectedDate)}
             className={cn(
-              "w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200",
+              "min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full transition-all duration-200",
               isAtOrBeforeCreatedAt(selectedDate) ? "opacity-30 cursor-not-allowed" : "bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] cursor-pointer active:scale-95"
             )}
-            title={isAtOrBeforeCreatedAt(selectedDate) ? "This is your first day on LeanIQA. No meal history exists before this date." : "Previous Day"}
+            aria-label="Previous Day" title={isAtOrBeforeCreatedAt(selectedDate) ? "This is your first day on LeanIQA. No meal history exists before this date." : "Previous Day"}
           >
             <ChevronLeft size={18} className="text-white" />
           </button>
@@ -684,7 +684,7 @@ export function MealLoggerPage() {
             }}
             disabled={isToday(selectedDate)}
             className={cn(
-              "w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200",
+              "min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full transition-all duration-200",
               isToday(selectedDate) ? "opacity-30 cursor-not-allowed" : "bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] cursor-pointer active:scale-95"
             )}
           >
@@ -823,7 +823,7 @@ export function MealLoggerPage() {
                   <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Log a meal</div>
                   <div style={{ fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.45)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Type naturally, I handle the rest</div>
                 </div>
-                <button onClick={() => setModalOpen(false)} style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0 }}>
+                <button aria-label="Close modal" onClick={() => setModalOpen(false)} style={{ minWidth: '44px', minHeight: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0 }}>
                   <X size={16} />
                 </button>
               </div>
@@ -925,7 +925,7 @@ export function MealLoggerPage() {
 
               {/* Input row */}
               <div className="glass-strong border-t border-[rgba(255,255,255,0.06)] px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex gap-3 items-center">
-                <input
+                <input aria-label="Meal description"
                   className="input-apple flex-1 text-[16px] placeholder:text-[rgba(255,255,255,0.3)] bg-[rgba(255,255,255,0.03)]"
                   style={{ borderRadius: '14px', border: '0.5px solid rgba(255,255,255,0.15)', padding: '12px 16px' }}
                   type="text"

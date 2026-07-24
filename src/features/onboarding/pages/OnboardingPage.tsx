@@ -311,7 +311,7 @@ export function OnboardingPage() {
             {step === 1 && (
                 <motion.div key="name" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="w-full">
                     <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-8 text-center">What should I call you?</h2>
-                    <input 
+                    <input aria-label="First name" 
                         type="text" 
                         autoFocus
                         value={name}
@@ -369,7 +369,7 @@ export function OnboardingPage() {
                 <motion.div key="age" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="w-full">
                     <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-8 text-center">How old are you?</h2>
                     <div className="flex items-center justify-center gap-4">
-                        <input 
+                        <input aria-label="Age" 
                             type="number" 
                             autoFocus
                             value={age}
@@ -417,7 +417,7 @@ export function OnboardingPage() {
 
                     {heightUnit === 'cm' ? (
                          <div className="flex items-center justify-center gap-4">
-                             <input 
+                             <input aria-label="Height in centimeters" 
                                  type="number" 
                                  autoFocus
                                  value={height}
@@ -438,7 +438,7 @@ export function OnboardingPage() {
                          </div>
                     ) : (
                          <div className="flex items-center justify-center gap-4">
-                             <input 
+                             <input aria-label="Height in feet" 
                                  type="number" 
                                  autoFocus
                                  value={heightFt}
@@ -453,7 +453,7 @@ export function OnboardingPage() {
                                  className="w-[80px] bg-transparent text-center text-6xl font-semibold text-white placeholder-zinc-800 outline-none border-none caret-[#D4FF00]"
                              />
                              <span className="text-2xl text-zinc-500 font-medium pb-2">ft</span>
-                             <input 
+                             <input aria-label="Height in inches" 
                                  type="number" 
                                  value={heightIn}
                                  onChange={(e) => setHeightIn(e.target.value)}
@@ -491,7 +491,7 @@ export function OnboardingPage() {
                 <motion.div key="weight" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="w-full">
                     <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-8 text-center">Current weight?</h2>
                     <div className="flex items-center justify-center gap-4">
-                        <input 
+                        <input aria-label="Weight" 
                             type="number" 
                             autoFocus
                             value={weight}

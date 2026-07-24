@@ -1,0 +1,3 @@
+s/w-9 h-9/min-w-[44px] min-h-[44px]/g
+s/title={isAtOrBeforeCreatedAt(selectedDate)/aria-label="Previous Day" title={isAtOrBeforeCreatedAt(selectedDate)/
+s/title="Next Day"/aria-label="Next Day" title="Next Day"/
