@@ -15,6 +15,7 @@ import { Mail, Apple } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { pageVariants, hover, tap } from '@/features/reports/components/motion';
 import { haptics } from '@/shared/utils/haptics';
+import { useToast } from '@/shared/components/Toast';
 
 // SVG Icons
 const GoogleIcon = ({ className }: { className?: string }) => (
@@ -27,15 +28,15 @@ const GoogleIcon = ({ className }: { className?: string }) => (
 );
 
 export function AuthPage() {
+  const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
+  const [showEmailSuggestion, setShowEmailSuggestion] = useState(false);
   const [isOtpSent, setIsOtpSent] = useState(false);
 
   const handleEmailLogin = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setMessage('');
     
     const { error } = await supabase.auth.signInWithOtp({ 
       email,
@@ -47,16 +48,16 @@ export function AuthPage() {
     
     if (error) {
       if (error.message.includes('fetch') || error.message.includes('Network')) {
-        setMessage('No internet connection. Please check your network and try again.');
+        toast({ type: 'warning', message: 'No internet connection. Please check your network and try again.' });
       } else if (error.message.includes('rate limit') || error.message.includes('429')) {
-        setMessage('Too many requests. Please wait a minute before trying again.');
+        toast({ type: 'warning', message: 'Too many requests. Please wait a minute before trying again.' });
       } else {
-        setMessage('Could not send the login link. Please try again.');
+        toast({ type: 'error', message: 'Could not send the login link. Please try again.' });
       }
     } else {
       setIsOtpSent(true);
       haptics.success();
-      setMessage('');
+      toast({ type: 'success', message: 'Magic link sent! Check your email.' });
     }
     
     setLoading(false);
@@ -64,7 +65,7 @@ export function AuthPage() {
 
   const handleOAuthLogin = async (provider: 'google' | 'apple') => {
     setLoading(true);
-    setMessage('');
+    setShowEmailSuggestion(false);
     const { error } = await supabase.auth.signInWithOAuth({ 
       provider,
       options: {
@@ -72,14 +73,20 @@ export function AuthPage() {
       }
     });
     if (error) {
-      if (error.message.includes('fetch') || error.message.includes('Network')) setMessage("Network offline");
-      else if (error.message.toLowerCase().includes('exchange') || error.message.toLowerCase().includes('redirect_uri_mismatch')) setMessage("Google sign-in configuration error. Please contact support or use email sign-in.");
-      else setMessage("Authentication failed");
+      if (error.message.includes('fetch') || error.message.includes('Network')) {
+        toast({ type: 'warning', message: 'Network offline' });
+      }
+      else if (error.message.toLowerCase().includes('exchange') || error.message.toLowerCase().includes('redirect_uri_mismatch')) {
+        toast({ type: 'error', message: 'Google sign-in configuration error. Please contact support or use email sign-in.' });
+        setShowEmailSuggestion(true);
+      }
+      else {
+        toast({ type: 'error', message: 'Authentication failed' });
+        setShowEmailSuggestion(true);
+      }
       setLoading(false);
     }
   };
-
-  const showEmailSuggestion = message.includes("Authentication failed") || message.includes("configuration error");
 
   return (
     <div className="bg-[#080809] min-h-dvh flex items-center justify-center px-6 overflow-x-hidden text-white w-full">
@@ -115,7 +122,7 @@ export function AuthPage() {
             <motion.button 
                 whileHover={hover.subtle}
                 whileTap={tap.scale}
-                onClick={() => window.alert('This feature is currently unavailable.')}
+                onClick={() => toast({ type: 'info', message: 'This feature is currently unavailable.' })}
                 disabled={loading}
                 className="btn-ghost w-full opacity-50 cursor-not-allowed"
             >
@@ -189,16 +196,6 @@ export function AuthPage() {
               </motion.div>
             )}
           </form>
-
-          {message && !showEmailSuggestion && (
-            <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`text-center text-sm font-medium mt-6 p-3 rounded-[20px] fade-in ${message.includes('could not') || message.includes('No internet') || message.includes('Too many') || message.includes('failed') ? 'bg-[rgba(255,77,28,0.1)] text-[#FF4D1C] border border-[rgba(255,77,28,0.25)]' : 'bg-[rgba(212,255,0,0.1)] text-[#D4FF00] border border-[rgba(212,255,0,0.25)]'}`}
-            >
-                {message}
-            </motion.div>
-          )}
 
           {/* Footer */}
           <div className="flex justify-center gap-6 text-[12px] font-medium text-[rgba(255,255,255,0.3)] mt-8">

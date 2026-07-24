@@ -4,9 +4,11 @@ import { motion } from 'motion/react';
 import { haptics } from '@/shared/utils/haptics';
 import { analytics } from '@/shared/utils/analytics';
 import { useEffect } from 'react';
+import { useToast } from '@/shared/components/Toast';
 
 export function PricingPage() {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     analytics.trackEvent('Subscription Started');
@@ -14,7 +16,7 @@ export function PricingPage() {
 
   const activateBeta = () => {
     analytics.trackEvent('Subscription Purchased', { plan: 'Pro Yearly', price: 999 });
-    alert("Founding Member Beta - Premium features unlocked.");
+    toast({ type: 'success', message: 'Founding Member Beta - Premium features unlocked.' });
     navigate('/dashboard');
   };
 

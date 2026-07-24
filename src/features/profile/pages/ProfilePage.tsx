@@ -14,6 +14,7 @@ import { TransformationSection } from '@/features/transformation/components/Tran
 import { analytics } from '@/shared/utils/analytics';
 import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
 import { ProfileSkeleton } from '@/shared/components/Skeletons';
+import { useToast } from '@/shared/components/Toast';
 
 function displayVal(val: any) {
   return val === undefined || val === null || isNaN(val) ? '—' : val;
@@ -22,6 +23,7 @@ function displayVal(val: any) {
 export function ProfilePage() {
   const navigate = useNavigate();
   const { isOnline } = useNetworkConnectivity();
+  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showResetModal, setShowResetModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -314,11 +316,19 @@ export function ProfilePage() {
             </button>
             <button 
               onClick={() => {
-                if (window.confirm("Are you sure you want to cancel your subscription?")) {
-                  subscriptionService.cancelSubscription();
-                  analytics.trackEvent('Subscription Cancelled');
-                  alert("Subscription cancelled.");
-                }
+                toast({
+                  type: 'warning',
+                  message: 'Cancel your subscription?',
+                  duration: 8000,
+                  action: {
+                    label: 'Yes, cancel',
+                    onClick: () => {
+                      subscriptionService.cancelSubscription();
+                      analytics.trackEvent('Subscription Cancelled');
+                      toast({ type: 'info', message: 'Subscription cancelled.' });
+                    }
+                  }
+                });
               }}
               className="mt-2 flex items-center justify-center w-full p-3 rounded-[24px] text-[14px] text-[rgba(255,255,255,0.5)] hover:text-red-400 hover:bg-[rgba(255,77,28,0.1)] transition-colors"
             >

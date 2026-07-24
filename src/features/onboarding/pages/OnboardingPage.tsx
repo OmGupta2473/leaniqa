@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { hover, tap } from '@/features/reports/components/motion';
 import { calculateMacros } from '@/shared/utils/profileCalculations';
 import { analytics } from '@/shared/utils/analytics';
+import { useToast } from '@/shared/components/Toast';
 
 function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: number }) {
   const [displayValue, setDisplayValue] = useState(0);
@@ -35,6 +36,7 @@ function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: n
 
 export function OnboardingPage() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const onboardingData = useUserStore(s => s.onboardingData);
   const setOnboardingData = useUserStore(s => s.setOnboardingData);
   const activeModal = useAppStore(s => s.activeModal);
@@ -141,7 +143,7 @@ export function OnboardingPage() {
     },
     onError: (error: any) => {
       console.error("Save mutation failed:", error);
-      alert("Failed to save profile: " + (error.message || "Unknown error"));
+      toast({ type: 'error', message: "Failed to save profile: " + (error.message || "Unknown error") });
     }
   });
 
