@@ -100,8 +100,8 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
                   key={m.id || i} 
                   className="flex items-center justify-between group p-3 rounded-[16px] bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)] transition-colors"
                 >
-                  <div className="flex-1 min-w-0 pr-3">
-                    <div className="text-[15px] font-medium text-[rgba(255,255,255,0.9)] capitalize truncate">{m.meal_text}</div>
+                  <div className="flex-1 pr-3">
+                    <div className="text-[15px] font-medium text-[rgba(255,255,255,0.9)] capitalize break-words">{m.meal_text}</div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="text-[11px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-2.5 py-1 rounded-full font-bold tracking-wide">{m.calories} KCAL</span>
