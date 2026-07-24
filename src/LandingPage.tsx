@@ -834,7 +834,6 @@ function Reveal({
     </motion.div>
   );
 }
-
 function GridCard({
   feature,
   delay,
@@ -843,63 +842,29 @@ function GridCard({
   delay: number;
   key?: React.Key;
 }) {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const mouseXSpring = useSpring(x, { stiffness: 180, damping: 28 });
-  const mouseYSpring = useSpring(y, { stiffness: 180, damping: 28 });
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["8deg", "-8deg"]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-8deg", "8deg"]);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    x.set((e.clientX - rect.left) / rect.width - 0.5);
-    y.set((e.clientY - rect.top) / rect.height - 0.5);
-  };
-  const handleMouseLeave = () => { x.set(0); y.set(0); };
-
   return (
     <motion.div
-      ref={cardRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
-      whileHover={{ borderColor: "rgba(63,63,70,0.9)" }}
+      whileHover={{ borderColor: "rgba(63,63,70,0.9)", y: -4 }}
       whileTap={{ scale: 0.98 }}
       transition={{ duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] }}
-      style={{
-        transformStyle: "preserve-3d",
-        rotateX,
-        rotateY,
-        willChange: "transform",
-      }}
       className="bg-[#111112] border border-zinc-800/50 p-6 sm:p-8 flex flex-col min-h-[200px] cursor-default"
     >
       <div className="flex justify-between items-start mb-10 sm:mb-16">
-        <span
-          style={{ transform: "translateZ(20px)" }}
-          className="text-zinc-500 font-mono text-xs uppercase tracking-wider"
-        >
+        <span className="text-zinc-500 font-mono text-xs uppercase tracking-wider">
           {feature.subsystem}
         </span>
-        <div style={{ transform: "translateZ(40px)" }} className="text-[#D4FF00]">
+        <div className="text-[#D4FF00]">
           <feature.icon className="w-6 h-6" />
         </div>
       </div>
-      <div className="mt-auto">
-        <h3
-          style={{ transform: "translateZ(30px)" }}
-          className="text-lg font-medium mb-2 text-zinc-100"
-        >
+      <div>
+        <h3 className="text-lg font-semibold text-zinc-50 mb-3 tracking-tight">
           {feature.title}
         </h3>
-        <p
-          style={{ transform: "translateZ(20px)" }}
-          className="text-zinc-400 text-sm leading-relaxed"
-        >
+        <p className="text-zinc-400 text-sm leading-relaxed">
           {feature.desc}
         </p>
       </div>
@@ -907,103 +872,49 @@ function GridCard({
   );
 }
 
-/* ─────────────────────────────────────────────
-   PHONE FRAME
-───────────────────────────────────────────── */
-function PhoneFrame({
-  children,
-  // 1. Mobile width is now based on screen height (28dvh) so it never overflows vertically
-  widthClass = "w-[clamp(160px,28dvh,180px)] md:w-[clamp(180px,16vw,260px)] lg:w-[clamp(200px,15vw,280px)]",
-}: {
-  children: React.ReactNode;
-  widthClass?: string;
-}) {
+function PhoneFrame({ children }: { children: React.ReactNode }) {
   return (
-    <div className={`relative ${widthClass} aspect-[9/19.5] mx-auto`}>
-      <div className="absolute inset-x-6 bottom-0 h-6 bg-[#0C0C0D]/80 blur-xl -z-10" />
-      <div className="absolute inset-0 rounded-[2.5rem] border-[6px] border-[#1C1C1E] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] bg-[#0C0C0D] overflow-hidden ring-1 ring-white/10">
-        <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-black/40 pointer-events-none z-30" />
-        
-        {/* Dynamic Island / Notch */}
-        <div className="absolute top-[2.5%] left-1/2 -translate-x-1/2 w-[35%] h-[4.2%] min-h-[16px] bg-black rounded-full z-50 border border-zinc-900 shadow-inner flex items-center justify-end px-1.5">
-            <div className="w-[35%] max-w-[12px] aspect-square rounded-full bg-[#111112] border border-[#222] mr-1 flex items-center justify-center">
-                <div className="w-[40%] aspect-square rounded-full bg-[#142036]" />
-            </div>
-        </div>
-        
-        {/* Status Bar: Time & Icons (Responsive using Container Queries 'cqw') */}
-        <div className="absolute top-[3%] left-[7%] z-50 text-white font-semibold tracking-tight" style={{ fontSize: "clamp(10px, 4.5cqw, 15px)" }}>
-            9:41
-        </div>
-        <div className="absolute top-[3%] right-[7%] flex items-center gap-1 z-50 w-[17%] justify-end">
-           <svg className="w-[40%] h-auto text-white" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 21L23.6 7.6C23.1 7.2 18.6 4 12 4C5.4 4 0.9 7.2 0.4 7.6L12 21Z" />
-           </svg>
-           <svg className="w-[55%] h-auto text-white" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M20 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM20 18H4V6H20V18ZM24 9H22V15H24V9Z" />
-           </svg>
-        </div>
-
-        <div className="absolute inset-0 font-sans z-0" style={{ containerType: 'inline-size' }}>{children}</div>
+    <div className="relative w-full max-w-[320px] mx-auto aspect-[9/19] rounded-[40px] border-[8px] border-zinc-900 bg-[#0A0A0B] shadow-2xl overflow-hidden shadow-black/50">
+      <div className="absolute top-0 inset-x-0 h-6 bg-zinc-900/90 rounded-b-2xl z-50 flex items-center justify-center">
+        <div className="w-16 h-4 bg-black rounded-full" />
       </div>
+      <div className="absolute inset-0 overflow-y-auto overflow-x-hidden scrollbar-hide pb-20">
+        {children}
+      </div>
+      <div className="absolute inset-x-6 bottom-0 h-6 bg-[#0C0C0D]/80 blur-xl -z-10" />
     </div>
   );
 }
 
-/* ─────────────────────────────────────────────
-   PHONE SCREENS
-───────────────────────────────────────────── */
-
 function AICoachScreen() {
   return (
-    <div className="w-full h-full bg-[#0A0A0A] flex flex-col overflow-hidden relative pt-[16%]">
-      <div className="flex-1 p-[5%] flex flex-col justify-end gap-[4%] pb-[20%]">
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="self-end bg-white/10 rounded-[24px] rounded-tr-sm px-[5%] py-[4%] max-w-[85%]"
-        >
-           <p className="text-white" style={{ fontSize: "clamp(9px, 3.5%, 14px)" }}>2 roti + 1 bowl dal + 100g paneer</p>
-        </motion.div>
-        
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-          className="self-start bg-[#1C1C1E] border border-white/10 rounded-[24px] rounded-tl-sm px-[5%] py-[5%] max-w-[90%]"
-        >
-           <div className="flex items-center gap-[3%] mb-[6%]">
-             <div className="w-[12%] aspect-square rounded-full bg-[#378ADD]/20 flex items-center justify-center">
-               <Sparkles className="w-[60%] h-[60%] text-[#378ADD]" />
-             </div>
-             <span className="text-[#378ADD] font-semibold" style={{ fontSize: "clamp(8px, 3%, 12px)" }}>AI Coach</span>
-           </div>
-           <p className="text-white/90 mb-[6%] leading-relaxed" style={{ fontSize: "clamp(9px, 3.5%, 14px)" }}>Logged! Here is the breakdown:</p>
-           
-           <div className="bg-black/40 rounded-lg p-[5%] flex justify-between mb-[6%] border border-white/5">
-              <div className="text-center flex-1">
-                 <div className="text-white/50 uppercase tracking-wider mb-1" style={{ fontSize: "clamp(6px, 2.2%, 10px)" }}>Calories</div>
-                 <div className="text-[#FF4D1C] font-bold" style={{ fontSize: "clamp(12px, 5%, 20px)" }}>480</div>
-              </div>
-              <div className="w-[1px] bg-white/10 mx-2" />
-              <div className="text-center flex-1">
-                 <div className="text-white/50 uppercase tracking-wider mb-1" style={{ fontSize: "clamp(6px, 2.2%, 10px)" }}>Protein</div>
-                 <div className="text-[#D4FF00] font-bold" style={{ fontSize: "clamp(12px, 5%, 20px)" }}>28g</div>
-              </div>
-           </div>
-           
-           <p className="text-white/80 leading-relaxed" style={{ fontSize: "clamp(8.5px, 3.2%, 13px)" }}>You're 15g short on protein. I've adjusted your dinner target.</p>
-        </motion.div>
+    <div className="p-4 pt-10 pb-8 flex flex-col min-h-full">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-8 h-8 rounded-full bg-[#D4FF00] flex items-center justify-center">
+          <Sparkles className="w-4 h-4 text-black" />
+        </div>
+        <div>
+          <h4 className="text-sm font-semibold text-white">AI Coach</h4>
+          <p className="text-[10px] text-[#D4FF00]">Active now</p>
+        </div>
       </div>
-      
-      <div className="absolute bottom-0 w-full p-[5%] border-t border-white/5 bg-[#1C1C1E]/90 backdrop-blur-md">
-         <div className="bg-black rounded-full px-[5%] py-[3%] flex items-center justify-between border border-white/10">
-            <span className="text-white/30" style={{ fontSize: "clamp(9px, 3.5%, 14px)" }}>Type your meal...</span>
-            <div className="w-[12%] aspect-square bg-[#D4FF00] rounded-full flex items-center justify-center">
-               <ArrowRight className="w-[50%] h-[50%] text-black" />
+      <div className="flex-1 flex flex-col justify-end gap-3">
+        <div className="bg-zinc-800/50 border border-white/5 p-3 rounded-2xl rounded-tr-sm self-end max-w-[85%]">
+          <p className="text-xs text-zinc-300">Logged: 2 roti with 100g paneer and some dal.</p>
+        </div>
+        <div className="bg-[#111112] border border-zinc-800/80 p-3 rounded-2xl rounded-tl-sm self-start max-w-[90%] shadow-lg">
+          <p className="text-xs text-zinc-300 mb-2 leading-relaxed">Logged. You have 45g of protein left today. Dinner suggestion:</p>
+          <div className="flex flex-col gap-2">
+            <div className="bg-zinc-900/50 border border-white/5 p-2 rounded-lg flex items-center justify-between">
+              <span className="text-[10px] text-zinc-400">Grilled Chicken Salad</span>
+              <span className="text-[10px] font-medium text-[#D4FF00]">40g Pro</span>
             </div>
-         </div>
+            <div className="bg-zinc-900/50 border border-white/5 p-2 rounded-lg flex items-center justify-between">
+              <span className="text-[10px] text-zinc-400">Soya Chunks Curry</span>
+              <span className="text-[10px] font-medium text-[#D4FF00]">45g Pro</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1011,270 +922,126 @@ function AICoachScreen() {
 
 function DashboardScreen() {
   return (
-    <div className="w-full h-full bg-[#0A0A0A] flex flex-col overflow-hidden pt-[16%]">
-      <div className="flex items-center justify-between px-[6%] py-[6%] border-b border-white/5 bg-white/[0.01]">
-        <div className="flex items-center gap-[4%] w-full">
-           <div style={{ width: "12%", aspectRatio: "1", borderRadius: "50%", background: "#D4FF00", display: "flex", alignItems: "center", justifyContent: "center", color: "black", fontWeight: "bold", fontSize: "clamp(8px, 3.5%, 14px)" }}>L</div>
-           <div>
-             <div className="text-white font-semibold" style={{ fontSize: "clamp(10px, 4%, 16px)" }}>Today's Plan</div>
-             <div className="text-white/40" style={{ fontSize: "clamp(7px, 2.5%, 11px)" }}>Thursday, Oct 12</div>
+    <div className="p-4 pt-10 min-h-full flex flex-col bg-[#0A0A0B]">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+           <p className="text-[10px] text-zinc-500 font-medium">Daily Score</p>
+           <div className="text-3xl font-bold text-white tracking-tighter">92<span className="text-lg text-zinc-500 font-normal">/100</span></div>
+        </div>
+        <div className="w-12 h-12 rounded-full border-[3px] border-[#D4FF00] flex items-center justify-center shadow-[0_0_15px_rgba(212,255,0,0.2)]">
+           <Flame className="w-5 h-5 text-[#D4FF00]" />
+        </div>
+      </div>
+      
+      <div className="space-y-4 flex-1">
+        <div>
+           <div className="flex justify-between text-[10px] mb-1.5 font-medium">
+             <span className="text-zinc-400">Calories</span>
+             <span className="text-zinc-300">1850 / 2200 kcal</span>
            </div>
-           <div className="ml-auto bg-white/5 px-[4%] py-[2%] rounded-full flex items-center">
-             <span className="text-[#FF4D1C] font-bold" style={{ fontSize: "clamp(8px, 3%, 12px)" }}>🔥 12</span>
+           <div className="h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+              <div className="h-full bg-orange-400 rounded-full w-[84%]" />
+           </div>
+        </div>
+        <div>
+           <div className="flex justify-between text-[10px] mb-1.5 font-medium">
+             <span className="text-[#D4FF00]">Protein</span>
+             <span className="text-zinc-300">140 / 150 g</span>
+           </div>
+           <div className="h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+              <div className="h-full bg-[#D4FF00] rounded-full w-[93%]" />
            </div>
         </div>
       </div>
       
-      <div className="flex flex-col items-center justify-center py-[12%]">
-         <div className="relative w-[50%] aspect-square flex items-center justify-center mb-[8%]">
-             <svg className="absolute inset-0 w-full h-full transform -rotate-90">
-               <circle cx="50%" cy="50%" r="42%" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8%" />
-               <motion.circle 
-                 initial={{ pathLength: 0 }}
-                 whileInView={{ pathLength: 0.15 }}
-                 viewport={{ once: true }}
-                 transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
-                 cx="50%" cy="50%" r="42%" fill="none" stroke="#D4FF00" strokeWidth="8%" strokeLinecap="round"
-               />
-             </svg>
-             <div className="text-center mt-2">
-               <div className="font-bold text-white leading-none" style={{ fontSize: "clamp(24px, 10%, 40px)" }}>1,420</div>
-               <div className="text-white/40 uppercase tracking-widest mt-1" style={{ fontSize: "clamp(6px, 2.5%, 10px)" }}>Eaten / 2200</div>
-             </div>
+      <div className="mt-8 bg-[#111112] border border-zinc-800/80 rounded-xl p-3 flex items-start gap-3">
+         <div className="w-8 h-8 rounded-full bg-[#D4FF00]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+           <Trophy className="w-4 h-4 text-[#D4FF00]" />
          </div>
-         
-         <div className="flex justify-between w-[85%]">
-             {[
-               { name: 'Protein', val: '80g', col: '#378ADD', pct: '70%' },
-               { name: 'Fat', val: '45g', col: '#FF4D1C', pct: '40%' },
-               { name: 'Carbs', val: '120g', col: '#D4FF00', pct: '85%' }
-             ].map((m, i) => (
-               <div key={i} className="text-center w-[28%]">
-                 <div className="uppercase text-white/40 tracking-wider mb-1" style={{ fontSize: "clamp(6px, 2.5%, 10px)" }}>{m.name}</div>
-                 <div className="font-semibold text-white mb-2" style={{ fontSize: "clamp(10px, 4%, 16px)" }}>{m.val}</div>
-                 <div className="w-full h-[3px] bg-white/10 rounded-full overflow-hidden">
-                    <motion.div 
-                      className="h-full rounded-full" 
-                      style={{ backgroundColor: m.col }}
-                      initial={{ width: "0%" }}
-                      whileInView={{ width: m.pct }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.9, delay: i * 0.08, ease: [0.22, 1, 0.36, 1] }}
-                    />
-                 </div>
-               </div>
-             ))}
+         <div>
+           <h5 className="text-xs font-semibold text-white mb-0.5">14 Day Streak!</h5>
+           <p className="text-[10px] text-zinc-500">You are in the top 5% of consistent users this week.</p>
          </div>
       </div>
-      
-      <div className="flex-1 px-[6%] pt-[2%]">
-         <div className="bg-white/5 border border-white/5 rounded-[20px] p-[6%]">
-            <div className="font-semibold text-white/50 uppercase tracking-wider mb-2" style={{ fontSize: "clamp(7px, 2.8%, 11px)" }}>Adjusted Target</div>
-            <div className="text-[#D4FF00] font-semibold mb-1" style={{ fontSize: "clamp(10px, 4%, 16px)" }}>Dinner: 450 kcal</div>
-            <div className="text-white/70" style={{ fontSize: "clamp(8px, 3.2%, 13px)" }}>Must include 45g Protein</div>
-         </div>
-      </div>
+      <div className="absolute bottom-0 w-full p-[5%] border-t border-white/5 bg-[#1C1C1E]/90 backdrop-blur-md"></div>
     </div>
   );
 }
 
 function TimelineScreen() {
   return (
-    <div className="w-full h-full bg-[#0A0A0A] flex flex-col p-[6%] pt-[16%]">
-       <div className="flex items-center gap-2 mb-[8%] mt-[4%]">
-         <LineChart className="text-[#D4FF00] w-[1em] h-[1em]" style={{ fontSize: "clamp(12px, 5%, 20px)" }} />
-         <p className="text-white/80 font-semibold" style={{ fontSize: "clamp(10px, 4%, 16px)" }}>
-           Transformation
-         </p>
-       </div>
-       
-       <div className="bg-[#1C1C1E] border border-white/5 rounded-[24px] p-[6%] mb-[6%] shadow-lg">
-          <div className="text-white/50 uppercase tracking-wider mb-[2%]" style={{ fontSize: "clamp(7px, 2.8%, 11px)" }}>Projected Weight</div>
-          <div className="flex items-end gap-[4%]">
-            <span className="text-white font-bold tracking-tight" style={{ fontSize: "clamp(28px, 12%, 48px)" }}>72.5<span className="text-white/40 font-normal ml-1" style={{ fontSize: "0.5em" }}>kg</span></span>
-            <div className="flex items-center bg-[#D4FF00]/10 text-[#D4FF00] px-[3%] py-[1%] rounded-full mb-[2%]" style={{ fontSize: "clamp(8px, 3.2%, 13px)" }}>
-               <TrendingDown className="w-[1em] h-[1em] mr-1" />
-               12%
-            </div>
-          </div>
-          <div className="text-white/40 mt-[4%]" style={{ fontSize: "clamp(7px, 2.8%, 11px)" }}>In 12 Weeks (Based on 85% compliance)</div>
-       </div>
-       
-       <div className="flex-1 bg-white/[0.02] border border-white/5 rounded-[24px] relative overflow-hidden flex flex-col justify-end p-[5%] mt-[2%]">
-          {/* Grid lines */}
-          <div className="absolute inset-0 flex flex-col justify-between py-[10%] opacity-20">
-            {[1,2,3,4].map(i => <div key={i} className="w-full h-[1px] bg-white/20" />)}
-          </div>
-          
-          <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
-            <path 
-              d="M0,20 Q25,30 50,60 T100,90" 
-              fill="none" 
-              stroke="rgba(255,255,255,0.1)" 
-              strokeWidth="2" 
-              strokeDasharray="4 4"
-            />
-            <motion.path 
-              d="M0,20 Q25,30 50,60 T100,90" 
-              fill="none" 
-              stroke="#D4FF00" 
-              strokeWidth="3"
-              initial={{ pathLength: 0 }}
-              whileInView={{ pathLength: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
-            />
-          </svg>
-          <motion.div 
-            className="absolute bg-[#D4FF00] rounded-full border-2 border-[#1C1C1E] shadow-[0_0_15px_#D4FF00]"
-            style={{ width: "8%", aspectRatio: "1", right: "0%", bottom: "10%", x: "50%", y: "50%" }}
-            initial={{ scale: 0 }}
-            whileInView={{ scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 1.2, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
-          />
-       </div>
+    <div className="p-4 pt-10 min-h-full bg-[#0A0A0B]">
+      <div className="mb-6">
+        <h4 className="text-lg font-semibold text-white mb-1">Physique Forecast</h4>
+        <p className="text-[10px] text-zinc-500">Based on your 92% adherence rate</p>
+      </div>
+      
+      <div className="relative pl-6 space-y-8 border-l border-zinc-800 ml-3">
+        <div className="relative">
+           <div className="absolute -left-[29px] top-1 w-3 h-3 rounded-full bg-[#D4FF00] border-2 border-[#0A0A0B] shadow-[0_0_10px_rgba(212,255,0,0.5)]" />
+           <p className="text-[10px] font-bold text-[#D4FF00] uppercase tracking-wider mb-1">Today</p>
+           <h5 className="text-lg font-semibold text-white">78.5 kg</h5>
+        </div>
+        <div className="relative opacity-60">
+           <div className="absolute -left-[29px] top-1 w-3 h-3 rounded-full bg-zinc-700 border-2 border-[#0A0A0B]" />
+           <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">In 4 Weeks</p>
+           <h5 className="text-lg font-semibold text-white">76.0 kg</h5>
+           <p className="text-[10px] text-zinc-500 mt-1">Expected fat loss: 2.5kg</p>
+        </div>
+        <div className="relative opacity-40">
+           <div className="absolute -left-[29px] top-1 w-3 h-3 rounded-full bg-zinc-700 border-2 border-[#0A0A0B]" />
+           <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Goal Date: Oct 15</p>
+           <h5 className="text-lg font-semibold text-[#D4FF00]">72.0 kg</h5>
+        </div>
+      </div>
     </div>
   );
 }
 
-/* ─────────────────────────────────────────────
-   ANIMATED PHONE
-───────────────────────────────────────────── */
-function PremiumPhone({ scrollYProgress: _ }: { scrollYProgress: any }) {
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const mouseXSpring = useSpring(x, { stiffness: 160, damping: 28 });
-  const mouseYSpring = useSpring(y, { stiffness: 160, damping: 28 });
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["6deg", "-6deg"]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-6deg", "6deg"]);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    x.set((e.clientX - r.left) / r.width - 0.5);
-    y.set((e.clientY - r.top) / r.height - 0.5);
-  };
-
+function MobilePhoneReveal({ step }: { step: number }) {
   return (
-    <motion.div
-      onMouseMove={handleMouseMove}
-      onMouseLeave={() => { x.set(0); y.set(0); }}
-      style={{ rotateX, rotateY, transformStyle: "preserve-3d", willChange: "transform" }}
-    >
-      <PhoneFrame>
-        <PhoneScreen layerIndex={0} scrollYProgress={_}>
-          <AICoachScreen />
-        </PhoneScreen>
-        <PhoneScreen layerIndex={1} scrollYProgress={_}>
-          <DashboardScreen />
-        </PhoneScreen>
-        <PhoneScreen layerIndex={2} scrollYProgress={_}>
-          <TimelineScreen />
-        </PhoneScreen>
-      </PhoneFrame>
-    </motion.div>
+    <div className="relative w-full max-w-[280px] aspect-[9/19] rounded-[40px] border-[8px] border-zinc-900 bg-[#0A0A0B] shadow-2xl overflow-hidden">
+      <div className="absolute top-0 inset-x-0 h-6 bg-zinc-900/90 rounded-b-2xl z-50 flex items-center justify-center">
+        <div className="w-16 h-4 bg-black rounded-full" />
+      </div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={step}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 1.05 }}
+          transition={{ duration: 0.4 }}
+          className="absolute inset-0 overflow-y-auto overflow-x-hidden scrollbar-hide pb-20"
+        >
+          {step === 0 && <AICoachScreen />}
+          {step === 1 && <DashboardScreen />}
+          {step === 2 && <TimelineScreen />}
+        </motion.div>
+      </AnimatePresence>
+    </div>
   );
 }
 
-function getScrollRanges(index: number, total: number) {
-  // Peaks are inset from 0 and 1 so every item gets a full symmetric fade window.
-  // With total=3: peaks = [0.15, 0.50, 0.85]
-  // Each item is fully visible at its peak and fully invisible 0.18 either side.
-  const FADE = 0.17; // half-width of the crossfade window
-  const peak = total === 1 ? 0.5 : 0.15 + (index / (total - 1)) * 0.70;
-
-  const inputPoints  = [Math.max(0, peak - FADE), peak, Math.min(1, peak + FADE)];
-  const opacityOut   = [0, 1, 0];
-  const yOut         = [28, 0, -28];
-
-  return { input: inputPoints, opacity: opacityOut, y: yOut };
-}
-
-function PhoneScreen({
-  children,
-  layerIndex,
-  scrollYProgress,
-}: {
-  children: React.ReactNode;
-  layerIndex: number;
-  scrollYProgress: any;
-}) {
-  const { input, opacity: opacityOut } = getScrollRanges(layerIndex, STORY.length);
-
-  const opacity = useTransform(scrollYProgress, input, opacityOut);
-
-  const peak = 0.15 + (layerIndex / (STORY.length - 1)) * 0.70;
-  const pointerEvents = useTransform(
-    scrollYProgress,
-    (v: number) => Math.abs(v - peak) < 0.15 ? "auto" : "none"
-  );
-
-  return (
-    <motion.div
-      style={{ opacity, pointerEvents }}
-      className="absolute inset-0 w-full h-full bg-[#0C0C0D] overflow-hidden rounded-[1.8rem] z-10"
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-/* ─────────────────────────────────────────────
-   STORY CONTENT
-───────────────────────────────────────────── */
 const STORY = [
   {
-    title: "Just type what you ate.",
-    subtitle: "Stop searching databases and guessing portion sizes. LeanIQA uses advanced AI to instantly parse natural language into precise macronutrients.",
+    title: "Log meals instantly.",
+    subtitle: "Just type what you ate. LeanIQA's AI handles the exact macronutrient math without you needing to search a database."
   },
   {
-    title: "Adaptive Targets.",
-    subtitle: "Overate at lunch? Traditional apps treat it as a failure. LeanIQA recalculates the rest of your day, showing you exactly how to bounce back.",
+    title: "A score you can trust.",
+    subtitle: "Stop obsessing over exact calories. Your Daily Score tells you immediately if you're on track, factoring in macros, steps, and consistency."
   },
   {
-    title: "See your future body.",
-    subtitle: "LeanIQA predicts your physical transformation based on your actual compliance, not just a theoretical formula. Stay on track, and watch the timeline unfold.",
-  },
+    title: "See your future.",
+    subtitle: "Our forecasting engine uses your actual adherence rate to plot an exact timeline to your goal. The more consistent you are, the faster you get there."
+  }
 ];
 
-/* ─────────────────────────────────────────────
-   STICKY SCROLL
-───────────────────────────────────────────── */
-function MobilePhoneReveal({ step }: { step: number }) {
-  const [hasEntered, setHasEntered] = useState(false);
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-100px" }}
-      onViewportEnter={() => setHasEntered(true)}
-      transition={{ duration: 0.6 }}
-      className="flex justify-center"
-    >
-      <PhoneFrame>
-        {hasEntered && (
-           <>
-             {step === 0 && <AICoachScreen />}
-             {step === 1 && <DashboardScreen />}
-             {step === 2 && <TimelineScreen />}
-           </>
-        )}
-      </PhoneFrame>
-    </motion.div>
-  );
-}
-
-/* ─────────────────────────────────────────────
-   MOBILE STORY (Updated for Single-Screen View)
-───────────────────────────────────────────── */
 function MobileStory() {
   return (
     <div className="lg:hidden flex flex-col">
       {STORY.map((step, i) => (
-        // Each block now takes up exactly one screen height minimum
         <div key={i} className="min-h-[100dvh] flex flex-col px-6 pt-24 pb-12">
-          
-          {/* Top Text Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -1289,49 +1056,12 @@ function MobileStory() {
               {step.subtitle}
             </p>
           </motion.div>
-          
-          {/* Bottom Phone Section - Centered in remaining space */}
           <div className="flex-1 flex items-center justify-center">
             <MobilePhoneReveal step={i} />
           </div>
-
         </div>
       ))}
     </div>
-  );
-}
-function StoryTextItem({
-  step,
-  index,
-  scrollYProgress,
-}: {
-  step: any;
-  index: number;
-  scrollYProgress: any;
-}) {
-  const { input, opacity: opacityOut, y: yOut } = getScrollRanges(index, STORY.length);
-
-  const opacity = useTransform(scrollYProgress, input, opacityOut);
-  const y = useTransform(scrollYProgress, input, yOut);
-
-  const peak = 0.15 + (index / (STORY.length - 1)) * 0.70;
-  const pointerEvents = useTransform(
-    scrollYProgress,
-    (v: number) => Math.abs(v - peak) < 0.1 ? "auto" : "none"
-  );
-
-  return (
-    <motion.div
-      style={{ opacity, y, pointerEvents }}
-      className="absolute inset-x-0 top-1/2 -translate-y-1/2 pr-8"
-    >
-      <h3 className="text-4xl lg:text-5xl xl:text-6xl font-semibold leading-[1.1] text-zinc-50 tracking-tight">
-        {step.title}
-      </h3>
-      <p className="mt-6 text-lg text-zinc-400 leading-relaxed max-w-md">
-        {step.subtitle}
-      </p>
-    </motion.div>
   );
 }
 
@@ -1355,7 +1085,6 @@ function DesktopStory() {
                 {step.subtitle}
               </p>
             </motion.div>
-
             <motion.div 
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -1385,10 +1114,6 @@ function StickyScrollFeatures() {
   );
 }
 
-/* ─────────────────────────────────────────────
-   LANDING PAGE
-───────────────────────────────────────────── */
-
 function useDemoNumber(target: number, duration = 1000, trigger = false, decimals = 0) {
   const [value, setValue] = useState(0);
   useEffect(() => {
@@ -1416,7 +1141,6 @@ function useDemoNumber(target: number, duration = 1000, trigger = false, decimal
 function InteractiveMealDemo() {
   const [state, setState] = useState<'idle' | 'loading' | 'success'>('idle');
   const [showReplay, setShowReplay] = useState(false);
-
   const cal = useDemoNumber(496, 1200, state === 'success', 0);
   const pro = useDemoNumber(20.73, 1200, state === 'success', 2);
   const fat = useDemoNumber(13.76, 1200, state === 'success', 2);
@@ -1436,295 +1160,87 @@ function InteractiveMealDemo() {
     setShowReplay(false);
   };
 
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const [isHovered, setIsHovered] = useState(false);
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!btnRef.current) return;
-    const rect = btnRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left - rect.width / 2;
-    const y = e.clientY - rect.top - rect.height / 2;
-    mouseX.set(x * 0.15);
-    mouseY.set(y * 0.15);
-  };
-
-  const xSpring = useSpring(mouseX, { stiffness: 400, damping: 30 });
-  const ySpring = useSpring(mouseY, { stiffness: 400, damping: 30 });
-
   return (
-    <div className="w-full max-w-[480px] lg:max-w-[420px] xl:max-w-[480px] mx-auto bg-[#0A0A0B] border border-zinc-800/50 rounded-[24px] sm:rounded-[32px] p-4 sm:p-5 shadow-2xl relative overflow-hidden group/demo">
-      {/* Background ambient glow */}
-      <motion.div 
-        animate={{
-          opacity: [0.2, 0.4, 0.2],
-          scale: [1, 1.05, 1]
-        }}
-        transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-        className="absolute -top-[40%] -right-[40%] w-[80%] h-[80%] bg-[#D4FF00]/5 rounded-full blur-[80px] pointer-events-none"
-      />
-      <motion.div 
-        animate={{
-          opacity: [0.1, 0.3, 0.1],
-          scale: [1, 1.1, 1]
-        }}
-        transition={{ duration: 10, repeat: Infinity, ease: "linear", delay: 2 }}
-        className="absolute -bottom-[40%] -left-[40%] w-[80%] h-[80%] bg-[#378ADD]/5 rounded-full blur-[80px] pointer-events-none"
-      />
-
-      <div className="flex items-center gap-2 mb-4 relative z-10">
-        <span className="text-[#D4FF00] text-sm font-semibold tracking-wider uppercase drop-shadow-[0_0_8px_rgba(212,255,0,0.3)]">Try it yourself</span>
-        <motion.span 
-          animate={{ y: [0, -4, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          className="text-lg"
-        >👇</motion.span>
-      </div>
-      <p className="text-zinc-400 text-xs sm:text-sm mb-4 relative z-10">Click Log This Meal to see how LeanIQA instantly analyzes real food.</p>
+    <div className="relative w-full max-w-[420px] mx-auto mt-6 sm:mt-10 lg:mt-0 perspective-1000">
+      <div className="absolute -top-[40%] -right-[40%] w-[80%] h-[80%] bg-[#D4FF00]/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-[40%] -left-[40%] w-[80%] h-[80%] bg-[#378ADD]/5 rounded-full blur-3xl pointer-events-none" />
       
-      {/* Input Field */}
       <motion.div 
         animate={state !== 'idle' ? { opacity: 0.5, scale: 0.98, filter: 'blur(2px)' } : { opacity: 1, scale: 1, filter: 'blur(0px)' }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="bg-[#111112]/80 backdrop-blur-md border border-zinc-800/80 rounded-xl sm:rounded-2xl p-3 flex items-center justify-between mb-4 relative z-10 shadow-inner group/input cursor-text transition-all duration-300 hover:border-zinc-700 hover:bg-[#111112] hover:shadow-[0_4px_20px_-10px_rgba(255,255,255,0.05)]"
+        transition={{ duration: 0.4 }}
+        className="bg-[#111112]/80 backdrop-blur-md border border-zinc-800/80 rounded-xl sm:rounded-2xl p-3 flex items-center justify-between mb-4 relative z-10 shadow-inner"
       >
-        <span className="text-zinc-200 text-[13px] sm:text-[15px] selection:bg-[#D4FF00]/30 transition-colors duration-300">soya sabji + 3 roti</span>
-        <X className="w-4 h-4 text-zinc-500 cursor-pointer transition-colors duration-300 group-hover/input:text-zinc-300" />
+        <div className="flex items-center gap-3 w-full">
+           <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center flex-shrink-0">
+             <MessageSquare className="w-4 h-4 text-zinc-500" />
+           </div>
+           <div className="flex-1">
+             <div className="text-[13px] sm:text-[15px] font-medium text-white truncate pr-2">2 rotis with palak paneer</div>
+             <div className="text-[10px] sm:text-[11px] text-[#D4FF00] font-medium opacity-80 mt-0.5">Natural language parsing</div>
+           </div>
+           <button 
+             onClick={handleLog}
+             className="w-10 h-10 rounded-xl bg-[#D4FF00] flex items-center justify-center flex-shrink-0 text-black shadow-[0_0_15px_rgba(212,255,0,0.3)] hover:scale-105 active:scale-95 transition-all"
+           >
+             {state === 'loading' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+           </button>
+        </div>
       </motion.div>
 
-      {/* Primary CTA */}
-      <div className="relative z-10" style={{ perspective: 1000 }}>
-        <motion.button
-          ref={btnRef}
-          layout
-          onClick={handleLog}
-          onMouseMove={handleMouseMove}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => {
-            setIsHovered(false);
-            mouseX.set(0);
-            mouseY.set(0);
-          }}
-          whileTap={state === 'idle' ? { scale: 0.98 } : {}}
-          style={{
-            x: state === 'idle' && isHovered ? xSpring : 0,
-            y: state === 'idle' && isHovered ? ySpring : 0,
-            boxShadow: state === 'idle' 
-              ? (isHovered ? '0 12px 40px -10px rgba(212,255,0,0.6), inset 0 1px 0 rgba(255,255,255,0.4)' : '0 4px 20px -10px rgba(212,255,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2)')
-              : 'none'
-          }}
-          transition={{ type: 'spring', stiffness: 400, damping: 30, mass: 0.8 }}
-          className={`w-full overflow-hidden flex items-center justify-center gap-2 uppercase tracking-wider relative transition-colors duration-300 border border-transparent ${
-            state === 'idle' 
-              ? 'bg-[#D4FF00] text-black py-3.5 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-base cursor-pointer'
-              : state === 'loading'
-                ? 'bg-[#18181A] border-zinc-800 text-zinc-400 py-3 rounded-xl sm:rounded-2xl cursor-default scale-95'
-                : 'bg-transparent py-0 h-0 opacity-0 pointer-events-none'
-          }`}
-        >
-          <AnimatePresence mode="popLayout">
-            {state === 'idle' && (
-              <motion.div 
-                key="idle"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10, filter: 'blur(4px)' }}
-                transition={{ duration: 0.2 }}
-                className="flex items-center gap-2"
-              >
-                <span>🍽️</span> LOG THIS MEAL
-              </motion.div>
-            )}
-            {state === 'loading' && (
-              <motion.div
-                key="loading"
-                initial={{ opacity: 0, filter: 'blur(4px)' }}
-                animate={{ opacity: 1, filter: 'blur(0px)' }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.3 }}
-                className="w-full relative h-1.5 bg-zinc-800 rounded-full overflow-hidden mx-4"
-              >
-                <motion.div
-                  className="absolute top-0 left-0 bottom-0 w-full bg-gradient-to-r from-transparent via-[#D4FF00] to-transparent"
-                  animate={{ x: ['-100%', '100%'] }}
-                  transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Ripple Effect (fake pseudo) */}
-          {state === 'loading' && (
-            <motion.div 
-              initial={{ scale: 0, opacity: 0.5 }}
-              animate={{ scale: 2, opacity: 0 }}
-              transition={{ duration: 0.6, ease: 'easeOut' }}
-              className="absolute inset-0 bg-white/20 rounded-full pointer-events-none"
-            />
-          )}
-        </motion.button>
-      </div>
-
-      {/* Success View */}
       <AnimatePresence>
         {state === 'success' && (
-          <motion.div
+          <motion.div 
             initial={{ opacity: 0, y: 30, scale: 0.96, filter: 'blur(8px)' }}
             animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
             exit={{ opacity: 0, y: 20, scale: 0.96, filter: 'blur(4px)' }}
-            transition={{ type: "spring", stiffness: 250, damping: 25, mass: 0.8 }}
-            className="mt-4 relative z-10"
+            transition={{ type: "spring", stiffness: 200, damping: 20 }}
+            className="relative z-20"
           >
-            <div className="bg-[#18181A]/90 backdrop-blur-xl border border-zinc-800/80 rounded-[20px] sm:rounded-[24px] p-4 sm:p-5 relative shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] group/card transition-colors duration-500 hover:border-zinc-700/80">
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-2">
-                  <div className="relative flex items-center justify-center w-5 h-5">
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 25, delay: 0.1 }}
-                      className="absolute inset-0 bg-green-500/20 rounded-full"
-                    />
-                    <motion.div
-                      initial={{ scale: 0, rotate: -45 }}
-                      animate={{ scale: 1, rotate: 0 }}
-                      transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.2 }}
-                    >
-                      <CheckCircle2 className="w-4 h-4 text-green-500 relative z-10 drop-shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-                    </motion.div>
-                  </div>
-                  <motion.span 
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.4, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                    className="text-zinc-200 text-sm font-medium"
-                  >
-                    Meal Logged Successfully
-                  </motion.span>
-                </div>
-                <AnimatePresence>
-                  {showReplay && (
-                    <motion.button
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={handleReset}
-                      className="flex items-center gap-1.5 text-[#D4FF00] hover:text-[#e2ff33] transition-colors text-xs font-semibold uppercase tracking-wider bg-[#D4FF00]/10 px-3 py-1.5 rounded-full border border-[#D4FF00]/20 hover:bg-[#D4FF00]/20 hover:shadow-[0_0_12px_rgba(212,255,0,0.2)]"
-                    >
-                      <motion.span 
-                        animate={{ rotate: -360 }} 
-                        transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
-                        className="inline-block"
-                      >↻</motion.span> Try Again
-                    </motion.button>
-                  )}
-                </AnimatePresence>
+            <div className="bg-[#18181A]/90 backdrop-blur-xl border border-zinc-800/80 rounded-[20px] sm:rounded-[24px] p-4 sm:p-5 relative shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]">
+              
+              <div className="flex justify-between items-center mb-5 sm:mb-6">
+                 <div className="flex items-center gap-2">
+                   <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#D4FF00]/20 flex items-center justify-center">
+                     <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#D4FF00]" />
+                   </div>
+                   <span className="text-xs sm:text-sm font-semibold text-white">Parsed Meal</span>
+                 </div>
+                 {showReplay && (
+                   <motion.button
+                     initial={{ opacity: 0 }}
+                     animate={{ opacity: 1 }}
+                     onClick={handleReset}
+                     className="text-[10px] sm:text-xs text-zinc-500 hover:text-white flex items-center gap-1 transition-colors bg-zinc-900 px-2 py-1 rounded-md"
+                   >
+                     <RotateCcw className="w-3 h-3" /> Replay
+                   </motion.button>
+                 )}
               </div>
 
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="text-zinc-100 font-medium text-[13px] sm:text-[14px] mb-2 sm:mb-4 border-b border-zinc-800/50 pb-3"
-              >
-                soya sabji + 3 roti
-              </motion.div>
-
-              {/* Nutrition Chips */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2 sm:mb-4">
-                {[
-                  { label: "Calories", val: cal, unit: "kcal", icon: Flame, color: "#FF4D1C", delay: 0.12 },
-                  { label: "Protein", val: pro, unit: "g", icon: Dumbbell, color: "#D4FF00", delay: 0.20 },
-                  { label: "Fat", val: fat, unit: "g", icon: Droplets, color: "#FFC107", delay: 0.28 },
-                  { label: "Carbs", val: carbs, unit: "g", icon: () => <div className="w-3.5 h-3.5 flex items-center justify-center font-serif text-[10px] font-bold">🌾</div>, color: "#378ADD", delay: 0.36 }
-                ].map((chip, i) => (
-                  <motion.div 
-                    key={chip.label}
-                    initial={{ opacity: 0, scale: 0.85, y: 15 }} 
-                    animate={{ opacity: 1, scale: 1, y: 0 }} 
-                    transition={{ type: "spring", stiffness: 350, damping: 25, delay: chip.delay }} 
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    className="bg-[#212124]/80 rounded-xl p-2.5 sm:p-3 flex flex-col justify-between h-[72px] sm:h-[84px] border border-white/5 relative overflow-hidden group/chip cursor-default transition-all duration-300 hover:bg-[#252528] hover:shadow-[0_4px_20px_-10px_rgba(255,255,255,0.05)]"
-                  >
-                    <div className="flex items-center gap-1.5 text-zinc-400 group-hover/chip:text-zinc-300 transition-colors">
-                      <chip.icon className="w-3.5 h-3.5" style={{ color: chip.color }} />
-                      <span className="text-[11px] font-medium">{chip.label}</span>
-                    </div>
-                    <div className="text-center relative z-10">
-                      <motion.div 
-                        initial={{ opacity: 0, filter: 'blur(4px)' }}
-                        animate={{ opacity: 1, filter: 'blur(0px)' }}
-                        transition={{ duration: 0.4, delay: chip.delay + 0.1 }}
-                        className="text-white font-bold text-lg sm:text-xl leading-none drop-shadow-md"
-                      >
-                        {chip.val}
-                        <span className="text-[10px] sm:text-[12px] text-zinc-400 font-medium ml-0.5">{chip.unit}</span>
-                      </motion.div>
-                    </div>
-                    <div 
-                      className="absolute bottom-0 left-0 h-1 rounded-r-full transition-all duration-500 opacity-80 group-hover/chip:opacity-100 group-hover/chip:h-1.5" 
-                      style={{ backgroundColor: chip.color, width: chip.label === "Calories" ? '60%' : chip.label === "Protein" ? '70%' : chip.label === "Fat" ? '45%' : '50%', boxShadow: `0 -2px 10px ${chip.color}40` }} 
-                    />
-                    <div 
-                      className="absolute inset-0 opacity-0 group-hover/chip:opacity-10 transition-opacity duration-300"
-                      style={{ background: `radial-gradient(circle at 50% -20%, ${chip.color}, transparent 70%)` }}
-                    />
-                  </motion.div>
-                ))}
+              <div className="flex items-end gap-2 mb-6 sm:mb-8 pb-5 sm:pb-6 border-b border-zinc-800/60">
+                 <div className="text-4xl sm:text-5xl font-bold text-white tracking-tighter tabular-nums leading-none">
+                   {cal}
+                 </div>
+                 <div className="text-xs sm:text-sm text-zinc-500 font-medium mb-1">kcal</div>
               </div>
 
-              {/* AI Insight */}
-              <motion.div
-                initial={{ opacity: 0, height: 0, filter: 'blur(8px)' }}
-                animate={{ opacity: 1, height: 'auto', filter: 'blur(0px)' }}
-                transition={{ type: "spring", stiffness: 200, damping: 30, delay: 0.6 }}
-                className="overflow-hidden"
-              >
-                <motion.div 
-                  initial={{ y: 20 }}
-                  animate={{ y: 0 }}
-                  transition={{ type: "spring", stiffness: 200, damping: 30, delay: 0.6 }}
-                  className="bg-[#212124]/50 rounded-xl p-3 sm:p-4 border border-[#378ADD]/20 relative group/insight hover:bg-[#212124]/80 hover:border-[#378ADD]/40 transition-colors duration-500"
-                >
-                  <div className="absolute top-0 left-0 w-1 h-full bg-[#378ADD] shadow-[0_0_12px_rgba(55,138,221,0.5)]"></div>
-                  
-                  <div className="flex items-center gap-2 mb-2">
-                    <motion.div
-                      animate={{ rotate: [0, 15, -10, 0] }}
-                      transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-                    >
-                      <Sparkles className="w-4 h-4 text-[#D4FF00] drop-shadow-[0_0_8px_rgba(212,255,0,0.5)]" />
-                    </motion.div>
-                    <motion.span 
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.4, delay: 0.7 }}
-                      className="text-zinc-200 font-medium text-sm"
-                    >
-                      AI Insight
-                    </motion.span>
-                  </div>
-                  
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.8, delay: 0.9 }}
-                    className="text-zinc-400 text-[12px] sm:text-[13px] leading-relaxed italic"
-                  >
-                    <motion.span
-                      initial={{ opacity: 0, filter: 'blur(4px)' }}
-                      animate={{ opacity: 1, filter: 'blur(0px)' }}
-                      transition={{ duration: 0.5, delay: 0.9 }}
-                      className="block text-zinc-300"
-                    >
-                      Great choice! This meal provides a good source of plant-based protein from soya, perfectly balanced with energy-sustaining carbs from the roti.
-                    </motion.span>
-                    
-                  </motion.div>
-                </motion.div>
-              </motion.div>
+              <div className="grid grid-cols-3 gap-3 sm:gap-4">
+                 <div className="bg-zinc-900/60 border border-zinc-800/50 p-2 sm:p-3 rounded-xl flex flex-col justify-center relative overflow-hidden">
+                    <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#D4FF00]/20"><div className="h-full bg-[#D4FF00] w-[60%]" /></div>
+                    <span className="text-[10px] sm:text-xs text-zinc-500 font-medium mb-1 uppercase tracking-wider">Protein</span>
+                    <span className="text-base sm:text-lg font-bold text-white tabular-nums">{pro}<span className="text-[10px] text-zinc-500 ml-0.5">g</span></span>
+                 </div>
+                 <div className="bg-zinc-900/60 border border-zinc-800/50 p-2 sm:p-3 rounded-xl flex flex-col justify-center relative overflow-hidden">
+                    <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-500/20"><div className="h-full bg-blue-500 w-[70%]" /></div>
+                    <span className="text-[10px] sm:text-xs text-zinc-500 font-medium mb-1 uppercase tracking-wider">Carbs</span>
+                    <span className="text-base sm:text-lg font-bold text-white tabular-nums">{carbs}<span className="text-[10px] text-zinc-500 ml-0.5">g</span></span>
+                 </div>
+                 <div className="bg-zinc-900/60 border border-zinc-800/50 p-2 sm:p-3 rounded-xl flex flex-col justify-center relative overflow-hidden">
+                    <div className="absolute bottom-0 left-0 w-full h-0.5 bg-orange-500/20"><div className="h-full bg-orange-500 w-[40%]" /></div>
+                    <span className="text-[10px] sm:text-xs text-zinc-500 font-medium mb-1 uppercase tracking-wider">Fat</span>
+                    <span className="text-base sm:text-lg font-bold text-white tabular-nums">{fat}<span className="text-[10px] text-zinc-500 ml-0.5">g</span></span>
+                 </div>
+              </div>
             </div>
           </motion.div>
         )}
@@ -1740,25 +1256,17 @@ export function LandingPage() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-  
+
   const handleEnterApp = () => {
     navigate('/login');
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0B] text-zinc-50 font-sans selection:bg-[#D4FF00] selection:text-black overflow-x-hidden">
-      <div
-        className="fixed inset-0 pointer-events-none opacity-[0.03]"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right,#fff 1px,transparent 1px),linear-gradient(to bottom,#fff 1px,transparent 1px)",
-          backgroundSize: "40px 40px",
-        }}
-      />
-
+    <div className="min-h-screen bg-[#0A0A0B] text-zinc-50 font-sans selection:bg-[#D4FF00] selection:text-black overflow-x-hidden relative">
+      
       {/* ── Navbar ── */}
       <motion.nav
-        className="fixed top-0 w-full z-[999] backdrop-blur-md"
+        className="fixed top-0 w-full z-[999] backdrop-blur-md transition-colors"
         animate={{
           backgroundColor: scrolled ? "rgba(10,10,11,0.95)" : "rgba(10,10,11,0)",
           borderBottomColor: scrolled ? "rgba(39,39,42,0.6)" : "rgba(39,39,42,0)",
@@ -1787,9 +1295,9 @@ export function LandingPage() {
       </motion.nav>
 
       {/* ── Hero ── */}
-      <section className="pt-24 pb-12 sm:pb-16 lg:pb-12 px-6 relative z-100 lg:min-h-[calc(100vh-80px)] flex lg:items-center items-center">
+      <section className="pt-24 pb-12 sm:pb-16 lg:pb-12 px-6 relative z-10 lg:min-h-[calc(100vh-80px)] flex lg:items-center items-center">
         <div className="w-full max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-10 lg:gap-8">
-          <div className="max-w-2xl relative z-100 flex-1">
+          <div className="max-w-2xl relative z-10 flex-1">
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1812,14 +1320,12 @@ export function LandingPage() {
               transition={{ duration: 0.6, delay: 0.3 }}
               className="flex flex-col sm:flex-row items-center gap-4"
             >
-              {/* Primary CTA */}
               <motion.button
                 onClick={handleEnterApp}
                 whileHover={{ scale: 1.03, backgroundColor: "#ffffff" }}
                 whileTap={{ scale: 0.97 }}
                 transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
                 className="bg-[#D4FF00] text-black w-full sm:w-auto px-6 sm:px-8 py-4 font-semibold flex items-center justify-center gap-2 text-xs sm:text-sm uppercase tracking-wide rounded-full"
-                style={{ willChange: "transform" }}
               >
                 Start Your Journey
                 <ArrowRight className="w-4 h-4 flex-shrink-0" />
@@ -1834,15 +1340,13 @@ export function LandingPage() {
         </div>
         
         {/* Ambient Glows */}
-        <div className="absolute top-1/4 right-[10%] w-[40vw] h-[40vw] max-w-[600px] max-h-[600px] bg-[#D4FF00] rounded-full mix-blend-screen filter blur-[120px] opacity-[0.15] pointer-events-none" />
-        <div className="absolute bottom-1/4 left-[10%] w-[50vw] h-[50vw] max-w-[800px] max-h-[800px] bg-[#378ADD] rounded-full mix-blend-screen filter blur-[150px] opacity-[0.1] pointer-events-none" />
+        <div className="absolute top-1/4 right-[10%] w-[40vw] h-[40vw] max-w-[600px] max-h-[600px] bg-[#D4FF00] rounded-full blur-3xl opacity-[0.15] pointer-events-none" />
+        <div className="absolute bottom-1/4 left-[10%] w-[50vw] h-[50vw] max-w-[800px] max-h-[800px] bg-[#378ADD] rounded-full blur-3xl opacity-[0.1] pointer-events-none" />
       </section>
 
       <SocialProofBar />
 
-      {/* ── Storytelling ── */}
       <StickyScrollFeatures />
-
       <DisciplineAdvantage />
 
       {/* ── Features grid ── */}
@@ -1872,77 +1376,53 @@ export function LandingPage() {
 
       {/* ── Pricing ── */}
       <section id="pricing" className="border-t border-zinc-900 bg-[#0A0A0B] py-16 sm:py-24 px-6">
-        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+        <div className="max-w-5xl mx-auto">
           <Reveal>
-            <div style={{ textAlign: "center", marginBottom: 48 }}>
-              <h2 style={{ fontSize: "clamp(28px,4vw,52px)", fontWeight: 800, letterSpacing: -2, marginBottom: 12, color: "#F1F5F9" }}>
+            <div className="text-center mb-12">
+              <h2 className="text-3xl sm:text-5xl font-semibold tracking-tight mb-3 text-zinc-50">
                 Invest in your consistency.
               </h2>
-              <p style={{ fontSize: 16, color: "#64748B", maxWidth: 600, margin: "0 auto" }}>
+              <p className="text-base text-zinc-400 max-w-2xl mx-auto">
                 Simple pricing. No hidden fees. Unlock the full power of your AI Coach.
               </p>
             </div>
           </Reveal>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 24, maxWidth: 800, margin: "0 auto" }}>
+          
+          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {[
-              { name: "Starter", price: "Free",   sub: "Basic tracking forever", accent: "#378ADD", features: ["Manual calorie tracking","Basic macro splits","Standard food database"], missing: ["AI Meal Parsing","Adaptive Targets", "Timeline Predictions"], badge: null, delay: 0 },
-              { name: "Pro",  price: "₹499",   sub: "per month", accent: LIME,     features: ["Unlimited AI Meal Logging","Adaptive Calorie & Macro Targets","Consistency Engine & Analytics","Physique Prediction Timeline","Priority Support"], missing: [], badge: "Most Popular", delay: 0.1 },
+              { name: "Starter", price: "Free", sub: "Basic tracking forever", accent: "#378ADD", features: ["Manual calorie tracking","Basic macro splits","Standard food database"], missing: ["AI Meal Parsing","Adaptive Targets", "Timeline Predictions"], badge: null, delay: 0 },
+              { name: "Pro", price: "₹499", sub: "per month", accent: "#D4FF00", features: ["Unlimited AI Meal Logging","Adaptive Calorie & Macro Targets","Consistency Engine & Analytics","Physique Prediction Timeline","Priority Support"], missing: [], badge: "Most Popular", delay: 0.1 },
             ].map((p, i) => (
               <Reveal key={i} delay={p.delay}>
-                <motion.div
-                  whileHover={{ y: -5 }}
-                  whileTap={{ scale: 0.99 }}
-                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                  style={{
-                    background: p.badge ? "rgba(212,255,0,0.04)" : "rgba(255,255,255,0.02)",
-                    border: p.badge ? `2px solid ${LIME}40` : "1px solid rgba(255,255,255,0.07)",
-                    borderRadius: 24,
-                    padding: "32px 24px",
-                    boxShadow: p.badge ? `0 0 60px ${LIME}10` : "none",
-                    position: "relative",
-                    overflow: "hidden",
-                    height: "100%",
-                    willChange: "transform",
-                  }}
-                >
+                <div className={`p-8 rounded-3xl h-full border ${p.badge ? 'border-[#D4FF00]/40 bg-[#D4FF00]/5' : 'border-zinc-800 bg-[#111112]'} relative overflow-hidden flex flex-col`}>
                   {p.badge && (
-                    <div style={{ position: "absolute", top: 0, right: 0, background: LIME, color: "#020817", fontSize: 10, fontWeight: 800, padding: "6px 16px", borderRadius: "0 22px 0 16px", letterSpacing: 1, textTransform: "uppercase" }}>
+                    <div className="absolute top-0 right-0 bg-[#D4FF00] text-black text-[10px] font-bold px-4 py-1.5 rounded-bl-xl uppercase tracking-wider">
                       {p.badge}
                     </div>
                   )}
-                  <div style={{ fontSize: 12, fontWeight: 700, color: p.accent, letterSpacing: 1, textTransform: "uppercase", marginBottom: 12 }}>{p.name}</div>
-                  <div style={{ fontSize: 48, fontWeight: 900, letterSpacing: -2, color: "#F1F5F9", lineHeight: 1 }}>{p.price}</div>
-                  <div style={{ fontSize: 14, color: "#64748B", marginTop: 8, marginBottom: 32 }}>{p.sub}</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 32 }}>
+                  <div className={`text-xs font-bold uppercase tracking-wider mb-3`} style={{color: p.accent}}>{p.name}</div>
+                  <div className="text-4xl font-extrabold text-white mb-2">{p.price}</div>
+                  <div className="text-sm text-zinc-500 mb-8">{p.sub}</div>
+                  
+                  <div className="flex flex-col gap-3 mb-8 flex-1">
                     {p.features.map((f, j) => (
-                      <div key={j} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                        <span style={{ color: p.accent, fontSize: 14, flexShrink: 0, marginTop: 2 }}>✓</span>
-                        <span style={{ fontSize: 14, color: "#94A3B8" }}>{f}</span>
+                      <div key={j} className="flex items-start gap-3">
+                        <Check className="w-4 h-4 mt-0.5" style={{color: p.accent}} />
+                        <span className="text-sm text-zinc-300">{f}</span>
                       </div>
                     ))}
                     {p.missing.map((f, j) => (
-                      <div key={j} style={{ display: "flex", gap: 12, alignItems: "flex-start", opacity: 0.35 }}>
-                        <span style={{ color: "#475569", fontSize: 14, flexShrink: 0, marginTop: 2 }}>✗</span>
-                        <span style={{ fontSize: 14, color: "#475569", textDecoration: "line-through" }}>{f}</span>
+                      <div key={j} className="flex items-start gap-3 opacity-40">
+                        <X className="w-4 h-4 mt-0.5 text-zinc-500" />
+                        <span className="text-sm text-zinc-500 line-through">{f}</span>
                       </div>
                     ))}
                   </div>
-                  <button
-                    onClick={handleEnterApp}
-                    style={{
-                      width: "100%", padding: "14px 0",
-                      background: p.badge ? LIME : "transparent",
-                      border: p.badge ? "none" : "1px solid rgba(255,255,255,0.1)",
-                      borderRadius: 99, color: p.badge ? "#000" : "#94A3B8",
-                      fontSize: 15, fontWeight: 700, cursor: "pointer", transition: "all 0.2s",
-                    }}
-                    onMouseEnter={e => { if (!p.badge) { e.currentTarget.style.borderColor = p.accent; e.currentTarget.style.color = "#F1F5F9"; } }}
-                    onMouseLeave={e => { if (!p.badge) { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = "#94A3B8"; } }}
-                  >
+                  
+                  <button onClick={handleEnterApp} className={`w-full py-3.5 rounded-full font-semibold transition-all ${p.badge ? 'bg-[#D4FF00] text-black hover:bg-[#bce000]' : 'bg-zinc-800 text-white hover:bg-zinc-700'}`}>
                     {p.price === "Free" ? "Get started free" : "Start free trial"}
                   </button>
-                </motion.div>
+                </div>
               </Reveal>
             ))}
           </div>
@@ -1950,12 +1430,12 @@ export function LandingPage() {
       </section>
 
       {/* ── CTA ── */}
-      <section className="py-20 sm:py-32 px-6 border-t border-zinc-900 bg-[#0A0A0B] text-center relative z-[100]">
+      <section className="py-20 sm:py-32 px-6 border-t border-zinc-900 bg-[#0A0A0B] text-center relative z-10 overflow-hidden">
         <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">
-           <div className="w-[80vw] h-[80vw] max-w-[800px] max-h-[800px] bg-gradient-to-tr from-[#FF4D1C]/10 via-[#378ADD]/5 to-[#D4FF00]/10 rounded-full blur-[120px] mix-blend-screen opacity-50" />
+           <div className="w-[80vw] h-[80vw] max-w-[800px] max-h-[800px] bg-gradient-to-tr from-[#FF4D1C]/10 via-[#378ADD]/5 to-[#D4FF00]/10 rounded-full blur-3xl opacity-50" />
         </div>
         
-        <div className="max-w-2xl mx-auto relative z-[100]">
+        <div className="max-w-2xl mx-auto relative z-10">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold mb-6 tracking-tight leading-[1.1]">
             The hardest part isn't losing fat. It's staying consistent.
           </h2>
@@ -1968,7 +1448,6 @@ export function LandingPage() {
             whileTap={{ scale: 0.96 }}
             transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
             className="bg-white text-black px-8 py-4 font-semibold inline-flex items-center gap-2 text-sm uppercase tracking-wide rounded-full shadow-[0_0_40px_rgba(255,255,255,0.1)]"
-            style={{ willChange: "transform" }}
           >
             Start Your Journey <ArrowRight className="w-4 h-4" />
           </motion.button>
@@ -1977,7 +1456,7 @@ export function LandingPage() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="border-t border-zinc-900 py-8 px-6 text-zinc-500 text-xs flex flex-col md:flex-row justify-between items-center gap-4 max-w-7xl mx-auto text-center md:text-left">
+      <footer className="border-t border-zinc-900 py-8 px-6 text-zinc-500 text-xs flex flex-col md:flex-row justify-between items-center gap-4 max-w-7xl mx-auto text-center md:text-left relative z-10">
         <div 
           className="flex items-center gap-2 cursor-pointer transition-opacity hover:opacity-80"
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
