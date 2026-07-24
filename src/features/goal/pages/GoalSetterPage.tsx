@@ -15,6 +15,7 @@ import { pageVariants, itemVariants, hover, tap } from '@/features/reports/compo
 import { ScreenSkeleton } from '@/shared/components/ScreenSkeleton';
 import { calculateBodyComposition, calculateGoalStats, estimateBodyFatPercentage } from '@/shared/utils/profileCalculations';
 import { haptics } from '@/shared/utils/haptics';
+import { analytics } from '@/shared/utils/analytics';
 
 // Use same options from BodyFatSelector but duplicate them here so we don't need to change its props or use it directly to have more control
 const maleOptions = [
@@ -342,6 +343,14 @@ export function GoalSetterPage() {
         estimatedWeeks: data.strategyData.estimatedWeeks,
         estimatedCompletionDate: data.strategyData.estimatedCompletionDate,
         macros: data.strategyData.macros
+      });
+      
+      analytics.trackEvent('Goal Created', {
+        strategy: data.strategyData.strategy,
+        deficit_kcal: data.strategyData.deficit_kcal,
+        fatToLoseKg: data.strategyData.fatToLoseKg,
+        dailyTarget: data.strategyData.dailyTarget,
+        estimatedWeeks: data.strategyData.estimatedWeeks
       });
       
       haptics.success();

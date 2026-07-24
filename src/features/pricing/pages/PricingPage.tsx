@@ -2,11 +2,18 @@ import { CheckCircle2, Shield, Clock, CreditCard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { haptics } from '@/shared/utils/haptics';
+import { analytics } from '@/shared/utils/analytics';
+import { useEffect } from 'react';
 
 export function PricingPage() {
   const navigate = useNavigate();
 
+  useEffect(() => {
+    analytics.trackEvent('Subscription Started');
+  }, []);
+
   const activateBeta = () => {
+    analytics.trackEvent('Subscription Purchased', { plan: 'Pro Yearly', price: 999 });
     alert("Founding Member Beta - Premium features unlocked.");
     navigate('/dashboard');
   };

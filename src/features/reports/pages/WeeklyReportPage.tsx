@@ -12,6 +12,8 @@ import { useNavigate } from 'react-router-dom';
 import { haptics } from '@/shared/utils/haptics';
 import { calculateDailyScore } from '@/shared/utils/complianceEngine';
 import { weightService } from '@/features/progress/services/weightService';
+import { analytics } from '@/shared/utils/analytics';
+import { useEffect } from 'react';
 
 function getLocalDateString(d: Date) {
   const year = d.getFullYear();
@@ -166,6 +168,11 @@ function generateCoachData(days: DailyActivityData[], loggedCount: number) {
 export function WeeklyReportPage() {
   useRenderTracker('WeeklyReportPage');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    analytics.trackEvent('Weekly Report Viewed');
+  }, []);
+
   const { data: profile, isLoading: profileLoading } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
   const { data: goal, isLoading: goalLoading } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
   const { data: meals = [], isLoading: mealsLoading } = useQuery({ queryKey: ['meals', 'month'], queryFn: () => mealService.getMeals({ days: 35, limit: 2000 }) });

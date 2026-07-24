@@ -10,6 +10,7 @@ import { complianceService } from '@/features/reports/services/complianceService
 import { motion, AnimatePresence } from 'motion/react';
 import { hover, tap } from '@/features/reports/components/motion';
 import { calculateMacros } from '@/shared/utils/profileCalculations';
+import { analytics } from '@/shared/utils/analytics';
 
 function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: number }) {
   const [displayValue, setDisplayValue] = useState(0);
@@ -70,6 +71,12 @@ export function OnboardingPage() {
   const [aiStatus, setAiStatus] = useState(0);
   
   const [results, setResults] = useState<any>(null);
+
+  useEffect(() => {
+    if (step === 0 && !editProfileMode) {
+      analytics.trackEvent('Onboarding Started');
+    }
+  }, [step, editProfileMode]);
 
   useEffect(() => {
     if (step === 7) {
@@ -198,6 +205,12 @@ export function OnboardingPage() {
         setEditProfileMode(false);
         navigate('/profile');
       } else {
+        analytics.trackEvent('Onboarding Completed', {
+          gender,
+          activity_level: activity,
+          tdee: results.tdee,
+          protein_target: results.proteinMid
+        });
         navigate('/goal');
       }
     } catch (e) {

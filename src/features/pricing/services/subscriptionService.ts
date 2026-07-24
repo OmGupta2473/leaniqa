@@ -39,5 +39,9 @@ export const subscriptionService = {
   async restorePurchases() {
     console.log('Restoring purchases placeholder');
     return { success: true };
+  },
+  async cancelSubscription() {
+    console.log('Canceling subscription placeholder');
+    return { success: true };
   }
 };

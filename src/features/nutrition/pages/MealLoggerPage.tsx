@@ -21,6 +21,7 @@ import { useVisualViewport, useKeyboardOpen } from "@/shared/hooks/useVisualView
 import { lookupCachedMeal } from '../constants/data';
 import { haptics } from '@/shared/utils/haptics';
 import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
+import { analytics } from '@/shared/utils/analytics';
 
 const getDeterministicFallback = (text: string) => {
   const normalizedText = text.toLowerCase();
@@ -457,6 +458,18 @@ export function MealLoggerPage() {
       const newRemainingKcal = Math.max(0, dailyTargetKcal - newEatenKcal);
       const newRemainingProtein = Math.max(0, proteinTarget - newEatenProtein);
 
+      analytics.trackEvent('Meal Logged', {
+        calories: data.calories,
+        protein: data.protein,
+        fromCache: !!data?._fromCache
+      });
+
+      if (data?._errorMessage) {
+        analytics.trackEvent('AI Parse Failure', { error: data._errorMessage, input: text });
+      } else if (!data?._fromCache) {
+        analytics.trackEvent('AI Parse Success', { confidence: data?.confidence, calories: data.calories });
+      }
+
       console.group('Meal Parsing Audit: ' + text);
       console.log('User Input:', text);
       console.log('Parsed Food:', foodsDetected);
@@ -495,6 +508,7 @@ export function MealLoggerPage() {
       console.error('[addMealMutation] onError fired — mutationFn threw unexpectedly:', err);
       console.error('Complete Error Stack:', err.stack || err);
       const errorMessage = typeof err === 'object' ? JSON.stringify(err, null, 2) : String(err);
+      analytics.trackEvent('AI Parse Failure', { error: errorMessage, type: 'mutation_error' });
       addChatMessage({ role: 'ai', text: `⚠️ Error occurred: ${errorMessage}` });
       setLoading(false);
     },
