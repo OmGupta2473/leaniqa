@@ -15,6 +15,7 @@ import { weightService } from '@/features/progress/services/weightService';
 import { analytics } from '@/shared/utils/analytics';
 import { useEffect } from 'react';
 import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
+import { WeeklyReportSkeleton } from '@/shared/components/Skeletons';
 
 function getLocalDateString(d: Date) {
   const year = d.getFullYear();
@@ -26,7 +27,7 @@ function getLocalDateString(d: Date) {
 // -- AI Logic (Deterministic) --
 
 function generateCoachData(days: DailyActivityData[], loggedCount: number) {
-  if (loggedCount < 3) return null;
+  if (loggedCount < 7) return null;
 
   const activeDays = days.filter(d => d.caloriesConsumed > 0 || d.complianceScore > 0);
   
@@ -357,11 +358,7 @@ export function WeeklyReportPage() {
         </div>
       );
     }
-    return (
-      <div className="min-h-screen bg-[#0A0A0A] pb-[100px] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-[#D4FF00] animate-spin" />
-      </div>
-    );
+    return <WeeklyReportSkeleton />;
   }
 
   return (
@@ -377,22 +374,25 @@ export function WeeklyReportPage() {
           <div className="w-8"></div>
         </div>
 
-        {loggedDaysCount < 3 ? (
+        {loggedDaysCount < 7 ? (
           <motion.div initial={{opacity: 0, scale: 0.95}} animate={{opacity: 1, scale: 1}} className="flex flex-col items-center justify-center py-20 text-center">
             <div className="w-24 h-24 mb-6 relative flex items-center justify-center">
                <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
                  <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="8" />
-                 <circle cx="50" cy="50" r="46" fill="none" stroke="#D4FF00" strokeWidth="8" strokeDasharray="289" strokeDashoffset={289 - (289 * (loggedDaysCount/3))} strokeLinecap="round" className="transition-all duration-1000 ease-out" />
+                 <circle cx="50" cy="50" r="46" fill="none" stroke="#D4FF00" strokeWidth="8" strokeDasharray="289" strokeDashoffset={289 - (289 * (loggedDaysCount/7))} strokeLinecap="round" className="transition-all duration-1000 ease-out" />
                </svg>
-               <div className="absolute inset-0 flex items-center justify-center text-[24px] font-bold text-white">{loggedDaysCount}/3</div>
+               <div className="absolute inset-0 flex items-center justify-center text-[24px] font-bold text-white">{loggedDaysCount}/7</div>
             </div>
-            <div className="text-[18px] font-semibold text-white mb-2 tracking-tight">3 Days to Unlock</div>
-            <div className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed mb-6 max-w-[240px] leading-relaxed">
-              Log your meals for at least 3 days this week to generate accurate insights.
+            <div className="text-[18px] font-semibold text-white mb-2 tracking-tight">Complete 7 days to unlock your first report.</div>
+            <div className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed mb-6 max-w-[240px]">
+              Keep logging your meals daily to generate accurate, personalized insights.
             </div>
-            <div className="bg-[rgba(212,255,0,0.1)] border border-[rgba(212,255,0,0.2)] text-[#D4FF00] px-4 py-2 rounded-full text-[12px] font-semibold uppercase tracking-wider">
-              {loggedDaysCount} logged so far
-            </div>
+            <button 
+              onClick={() => navigate('/dashboard')}
+              className="bg-[rgba(212,255,0,0.1)] hover:bg-[rgba(212,255,0,0.2)] border border-[rgba(212,255,0,0.2)] text-[#D4FF00] px-6 py-3 rounded-full text-[14px] font-bold tracking-wide transition-colors"
+            >
+              Continue Tracking
+            </button>
           </motion.div>
         ) : (
           <motion.div variants={containerVariants} initial="hidden" animate="show">

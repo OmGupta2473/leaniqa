@@ -9,18 +9,22 @@ import {
   isDailyGoalMet, 
   toUtcDay 
 } from "@/shared/utils/streaks";
-import { Flame, ChevronLeft, X, Trophy } from "lucide-react";
+import { Flame, ChevronLeft, X, Trophy, AlertTriangle, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/shared/utils/utils";
 import { haptics } from '@/shared/utils/haptics';
+import { EmptyState } from '@/shared/components/EmptyState';
+import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
+import { AwardsSkeleton } from '@/shared/components/Skeletons';
 
 const SPRING_TRANSITION: any = { type: 'spring' as const, stiffness: 400, damping: 30 };
 const SMOOTH_TRANSITION: any = { duration: 0.4, ease: [0.16, 1, 0.3, 1] };
 
 export function AwardsPage() {
   const navigate = useNavigate();
+  const { isOnline } = useNetworkConnectivity();
   
-  const { data: metrics = [] } = useQuery({ 
+  const { data: metrics = [], isLoading } = useQuery({ 
     queryKey: ["dailyMetrics"], 
     queryFn: () => reportService.getDailyMetrics() 
   });
@@ -71,6 +75,24 @@ export function AwardsPage() {
     hidden: { opacity: 0, scale: 0.9, y: 15 },
     show: { opacity: 1, scale: 1, y: 0, transition: SPRING_TRANSITION }
   };
+
+  if (isLoading) {
+    if (!isOnline) {
+      return (
+        <div className="min-h-screen bg-[#000000] pb-[100px] flex flex-col items-center justify-center px-6 text-center">
+          <AlertTriangle className="w-12 h-12 text-[rgba(255,255,255,0.2)] mb-4" />
+          <h2 className="text-[18px] font-semibold text-white mb-2">You're offline</h2>
+          <p className="text-[14px] text-[rgba(255,255,255,0.6)]">
+            Connect to the internet to load your awards for the first time.
+          </p>
+          <button onClick={() => navigate('/dashboard')} className="mt-8 text-[#D4FF00] font-medium text-[15px]">
+            Return to Dashboard
+          </button>
+        </div>
+      );
+    }
+    return <AwardsSkeleton />;
+  }
 
   return (
     <div className="page-enter pt-[calc(env(safe-area-inset-top)+20px)] pb-[calc(100px+env(safe-area-inset-bottom))] min-h-[100dvh] bg-[#000000] px-5 overflow-x-hidden selection:bg-[#D4FF00] selection:text-black">
@@ -173,60 +195,73 @@ export function AwardsPage() {
         <div className="h-[1px] flex-1 bg-gradient-to-r from-[rgba(255,255,255,0.1)] to-transparent ml-4"></div>
       </div>
 
-      <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        {dailyAwards.map((award) => (
-          <motion.div 
-            key={award.id} 
-            variants={itemVariants}
-            onClick={() => {
-              if (award.earned) haptics.success();
-              else haptics.tap();
-              setSelectedAward(award);
-            }}
-            className={cn(
-              "relative rounded-[24px] p-5 flex flex-col items-center text-center cursor-pointer transition-all duration-300",
-              "hover:scale-[1.03] active:scale-[0.97]",
-              award.earned 
-                ? "bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] shadow-lg" 
-                : "bg-[rgba(255,255,255,0.01)] border border-[rgba(255,255,255,0.03)] opacity-60 grayscale-[80%]"
-            )}
-            style={award.earned ? {
-              boxShadow: `0 10px 30px ${award.primaryColor}15, inset 0 1px 0 rgba(255,255,255,0.05)`,
-              border: `1px solid ${award.primaryColor}40`
-            } : {}}
-          >
-            {/* Ambient background glow for earned awards */}
-            {award.earned && (
-              <div 
-                className="absolute inset-0 rounded-[24px] opacity-20 blur-xl pointer-events-none"
-                style={{ background: award.primaryColor }}
-              />
-            )}
-            
-            <div 
-              className="w-16 h-16 rounded-[18px] flex items-center justify-center text-[34px] mb-4 relative z-10 transition-transform duration-500"
-              style={{ 
-                background: award.earned 
-                  ? `linear-gradient(135deg, ${award.primaryColor}20, ${award.primaryColor}05)` 
-                  : 'rgba(255,255,255,0.05)',
-                border: award.earned ? `1px solid ${award.primaryColor}30` : '1px solid rgba(255,255,255,0.05)',
-                filter: award.earned ? 'none' : 'brightness(0.7)' 
+      <motion.div variants={containerVariants} initial="hidden" animate="show" className={dailyAwards.length === 0 ? "" : "grid grid-cols-2 gap-4 sm:grid-cols-3"}>
+        {dailyAwards.length === 0 ? (
+          <div className="col-span-full mt-4">
+            <EmptyState
+              icon={Trophy}
+              title="Your first badge is waiting."
+              description="Keep tracking your daily goals to start unlocking exclusive milestone badges."
+              ctaText="Start Your Journey"
+              onCtaClick={() => navigate('/dashboard')}
+              className="py-12"
+            />
+          </div>
+        ) : (
+          dailyAwards.map((award) => (
+            <motion.div 
+              key={award.id} 
+              variants={itemVariants}
+              onClick={() => {
+                if (award.earned) haptics.success();
+                else haptics.tap();
+                setSelectedAward(award);
               }}
+              className={cn(
+                "relative rounded-[24px] p-5 flex flex-col items-center text-center cursor-pointer transition-all duration-300",
+                "hover:scale-[1.03] active:scale-[0.97]",
+                award.earned 
+                  ? "bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] shadow-lg" 
+                  : "bg-[rgba(255,255,255,0.01)] border border-[rgba(255,255,255,0.03)] opacity-60 grayscale-[80%]"
+              )}
+              style={award.earned ? {
+                boxShadow: `0 10px 30px ${award.primaryColor}15, inset 0 1px 0 rgba(255,255,255,0.05)`,
+                border: `1px solid ${award.primaryColor}40`
+              } : {}}
             >
-              <span className="relative z-10 drop-shadow-lg">{award.symbol || award.symbolText || '🏆'}</span>
-            </div>
-            
-            <div className="text-[14px] font-bold text-white leading-tight mb-1 tracking-tight relative z-10">{award.name}</div>
-            <div className="text-[12px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.5)] font-medium mb-3 relative z-10">{award.streakRequired} Days</div>
-            
-            {award.earned && (
+              {/* Ambient background glow for earned awards */}
+              {award.earned && (
+                <div 
+                  className="absolute inset-0 rounded-[24px] opacity-20 blur-xl pointer-events-none"
+                  style={{ background: award.primaryColor }}
+                />
+              )}
+              
               <div 
-                className="absolute bottom-0 left-0 right-0 h-1 rounded-b-[24px] opacity-70"
-                style={{ background: `linear-gradient(90deg, transparent, ${award.primaryColor}, transparent)` }}
-              />
-            )}
-          </motion.div>
-        ))}
+                className="w-16 h-16 rounded-[18px] flex items-center justify-center text-[34px] mb-4 relative z-10 transition-transform duration-500"
+                style={{ 
+                  background: award.earned 
+                    ? `linear-gradient(135deg, ${award.primaryColor}20, ${award.primaryColor}05)` 
+                    : 'rgba(255,255,255,0.05)',
+                  border: award.earned ? `1px solid ${award.primaryColor}30` : '1px solid rgba(255,255,255,0.05)',
+                  filter: award.earned ? 'none' : 'brightness(0.7)' 
+                }}
+              >
+                <span className="relative z-10 drop-shadow-lg">{award.symbol || award.symbolText || '🏆'}</span>
+              </div>
+              
+              <div className="text-[14px] font-bold text-white leading-tight mb-1 tracking-tight relative z-10">{award.name}</div>
+              <div className="text-[12px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.5)] font-medium mb-3 relative z-10">{award.streakRequired} Days</div>
+              
+              {award.earned && (
+                <div 
+                  className="absolute bottom-0 left-0 right-0 h-1 rounded-b-[24px] opacity-70"
+                  style={{ background: `linear-gradient(90deg, transparent, ${award.primaryColor}, transparent)` }}
+                />
+              )}
+            </motion.div>
+          ))
+        )}
       </motion.div>
 
       {/* Immersive Modal Overlay */}

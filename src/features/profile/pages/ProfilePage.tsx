@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileService } from '../services/profileService';
 import { useState } from 'react';
-import { ChevronLeft, LogOut, Trash2, AlertTriangle, User, Flame, Droplet, CheckCircle2, Crown, CreditCard as CreditCardIcon, Sparkles, ArrowRight, Zap } from 'lucide-react';
+import { ChevronLeft, LogOut, Trash2, AlertTriangle, User, Flame, Droplet, CheckCircle2, Crown, CreditCard as CreditCardIcon, Sparkles, ArrowRight, Zap, Loader2 } from 'lucide-react';
 import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
 import { motion, AnimatePresence } from 'motion/react';
 import { authService } from '@/features/auth/services/authService';
@@ -12,6 +12,8 @@ import { haptics } from '@/shared/utils/haptics';
 import { subscriptionService } from '@/features/pricing/services/subscriptionService';
 import { TransformationSection } from '@/features/transformation/components/TransformationSection';
 import { analytics } from '@/shared/utils/analytics';
+import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
+import { ProfileSkeleton } from '@/shared/components/Skeletons';
 
 function displayVal(val: any) {
   return val === undefined || val === null || isNaN(val) ? '—' : val;
@@ -19,11 +21,12 @@ function displayVal(val: any) {
 
 export function ProfilePage() {
   const navigate = useNavigate();
+  const { isOnline } = useNetworkConnectivity();
   const queryClient = useQueryClient();
   const [showResetModal, setShowResetModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
+  const { data: profile, isLoading } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
 
   const { profileData: calculated } = useCalculatedProfile();
@@ -87,6 +90,24 @@ export function ProfilePage() {
     } else {
       dateStr = estimatedCompletionDate as string;
     }
+  }
+
+  if (isLoading) {
+    if (!isOnline) {
+      return (
+        <div className="min-h-screen bg-[#0A0A0A] pb-[100px] flex flex-col items-center justify-center px-6 text-center">
+          <AlertTriangle className="w-12 h-12 text-[rgba(255,255,255,0.2)] mb-4" />
+          <h2 className="text-[18px] font-semibold text-white mb-2">You're offline</h2>
+          <p className="text-[14px] text-[rgba(255,255,255,0.6)]">
+            Connect to the internet to load your profile for the first time.
+          </p>
+          <button onClick={() => navigate('/dashboard')} className="mt-8 text-[#D4FF00] font-medium text-[15px]">
+            Return to Dashboard
+          </button>
+        </div>
+      );
+    }
+    return <ProfileSkeleton />;
   }
 
   return (

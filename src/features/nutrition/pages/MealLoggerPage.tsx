@@ -8,6 +8,7 @@ import { useNutritionStore } from "../store/nutritionStore";
 import {
   Send, Loader2, Dumbbell, Lightbulb, Sun, Sunrise, Moon,  Plus, X, ChevronLeft, ChevronRight, ArrowRight, ChevronDown, 
  } from "lucide-react";
+import { EmptyState } from '@/shared/components/EmptyState';
 import { cn } from "@/shared/utils/utils";
 import { SmoothInput } from "@/shared/components/SmoothInput";
 
@@ -22,6 +23,8 @@ import { lookupCachedMeal } from '../constants/data';
 import { haptics } from '@/shared/utils/haptics';
 import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
 import { analytics } from '@/shared/utils/analytics';
+import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
+import { MealLoggerSkeleton } from '@/shared/components/Skeletons';
 
 const getDeterministicFallback = (text: string) => {
   const normalizedText = text.toLowerCase();
@@ -101,8 +104,13 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
                   key={m.id || i} 
                   className="flex items-center justify-between group p-3 rounded-[16px] bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)] transition-colors"
                 >
-                  <div className="flex-1 pr-3">
+                  <div className="flex-1 pr-3 flex items-center gap-2">
                     <div className="text-[15px] font-medium text-[rgba(255,255,255,0.9)] capitalize break-words">{m.meal_text}</div>
+                    {m._localOnly && (
+                      <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1">
+                        Offline
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="text-[11px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-2.5 py-1 rounded-full font-bold tracking-wide">{m.calories} KCAL</span>
@@ -226,7 +234,8 @@ export function MealLoggerPage() {
 
   const { data: goal } = useQuery({ queryKey: ["goal"], queryFn: () => profileService.getGoal() });
   const { profileData: onboardingData } = useCalculatedProfile();
-  const { data: meals = [] } = useQuery({ queryKey: ["meals", "date", dateKeyStr], queryFn: () => mealService.getMealsForDate(selectedDate) });
+  const { data: meals = [], isLoading } = useQuery({ queryKey: ["meals", "date", dateKeyStr], queryFn: () => mealService.getMealsForDate(selectedDate) });
+  const { isOnline } = useNetworkConnectivity();
 
   const eatenKcal = meals.reduce((acc, m) => acc + m.calories, 0);
   const eatenProtein = meals.reduce((acc, m) => acc + m.protein, 0);
@@ -270,25 +279,41 @@ export function MealLoggerPage() {
       return id;
     },
     onMutate: async (id) => {
+      const now = new Date();
+      const isToday = selectedDate.getFullYear() === now.getFullYear() && 
+                      selectedDate.getMonth() === now.getMonth() && 
+                      selectedDate.getDate() === now.getDate();
+
       await queryClient.cancelQueries({ queryKey: ["meals", "date", dateKeyStr] });
+      if (isToday) {
+        await queryClient.cancelQueries({ queryKey: ["meals", "today"] });
+      }
+      
       const previousMeals = queryClient.getQueryData<any[]>(["meals", "date", dateKeyStr]);
+      const previousTodayMeals = queryClient.getQueryData<any[]>(["meals", "today"]);
       
       const newMeals = previousMeals ? previousMeals.filter((m: any) => m.id !== id) : [];
-      
       queryClient.setQueryData(["meals", "date", dateKeyStr], newMeals);
+
+      if (isToday && previousTodayMeals) {
+        queryClient.setQueryData(["meals", "today"], previousTodayMeals.filter((m: any) => m.id !== id));
+      }
       
       console.log('Remaining Meals:', newMeals.length);
       const newKcal = newMeals.reduce((s, m) => s + m.calories, 0);
       const newPro = newMeals.reduce((s, m) => s + m.protein, 0);
       console.log('Recalculated Daily Totals:', { calories: newKcal, protein: newPro });
       
-      return { previousMeals };
+      return { previousMeals, previousTodayMeals, isToday };
     },
     onError: (err, id, context) => {
       console.error('Delete failed, rolling back:', err);
       console.groupEnd();
       if (context?.previousMeals) {
         queryClient.setQueryData(["meals", "date", dateKeyStr], context.previousMeals);
+      }
+      if (context?.isToday && context?.previousTodayMeals) {
+        queryClient.setQueryData(["meals", "today"], context.previousTodayMeals);
       }
     },
     onSettled: () => {
@@ -347,32 +372,37 @@ export function MealLoggerPage() {
 
       // STEP 2: AI with retry
       let lastError: Error | null = null;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-          if (sessionError || !session?.access_token) {
-            if (attempt === 0) { await supabase.auth.refreshSession(); } else { throw new Error('Session expired'); }
+
+      if (typeof window !== 'undefined' && !navigator.onLine) {
+        lastError = new Error('No internet connection');
+      } else {
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError || !session?.access_token) {
+              if (attempt === 0) { await supabase.auth.refreshSession(); } else { throw new Error('Session expired'); }
+            }
+            const { data: { session: freshSession } } = await supabase.auth.getSession();
+            if (!freshSession?.access_token) throw new Error('No valid session');
+            const { data, error } = await supabase.functions.invoke('parse-meal', { body: { text, remainingCalories, remainingProtein, mealType: selectedMealSlot }, headers: { Authorization: `Bearer ${freshSession.access_token}` } });
+            if (error) {
+              const status = (error as any)?.context?.status ?? 0;
+              const msg = String(error.message ?? '');
+              console.error(`[parse-meal] attempt ${attempt + 1}: status=${status} msg=${msg}`);
+              if (status === 401 || status === 403) { if (attempt < 2) { await supabase.auth.refreshSession(); lastError = new Error('Auth — retrying'); continue; } throw new Error('Auth failed'); }
+              if (status === 429) throw new Error('Daily AI limit reached');
+              if (status >= 500 || msg.includes('fetch') || msg.includes('Network')) { lastError = new Error('Server unavailable'); if (attempt < 2) { await new Promise(r => setTimeout(r, 1200 * (attempt + 1))); continue; } throw new Error('AI unavailable'); }
+              throw new Error(msg || 'AI failed');
+            }
+            if (!data || typeof data.calories !== 'number') { lastError = new Error('Invalid response'); if (attempt < 2) continue; throw new Error('Invalid AI data'); }
+            await mealService.addMeal({ meal_text: text, calories: Math.round(data.calories), protein: Math.round(data.protein), fat: Math.round(data.fat), carbs: Math.round(data.carbs), meal_time: getMealTime().toISOString(), tip: data.foods_detected?.join(', ') || text, meal_slot: selectedMealSlot || undefined });
+            return data;
+          } catch (err: any) {
+            console.error(`[parse-meal] attempt ${attempt + 1} error:`, err.message);
+            lastError = err as Error;
+            if (attempt < 2 && (err.message.includes('retrying') || err.message.includes('unavailable') || err.message.includes('Auth —'))) continue;
+            break;
           }
-          const { data: { session: freshSession } } = await supabase.auth.getSession();
-          if (!freshSession?.access_token) throw new Error('No valid session');
-          const { data, error } = await supabase.functions.invoke('parse-meal', { body: { text, remainingCalories, remainingProtein, mealType: selectedMealSlot }, headers: { Authorization: `Bearer ${freshSession.access_token}` } });
-          if (error) {
-            const status = (error as any)?.context?.status ?? 0;
-            const msg = String(error.message ?? '');
-            console.error(`[parse-meal] attempt ${attempt + 1}: status=${status} msg=${msg}`);
-            if (status === 401 || status === 403) { if (attempt < 2) { await supabase.auth.refreshSession(); lastError = new Error('Auth — retrying'); continue; } throw new Error('Auth failed'); }
-            if (status === 429) throw new Error('Daily AI limit reached');
-            if (status >= 500 || msg.includes('fetch') || msg.includes('Network')) { lastError = new Error('Server unavailable'); if (attempt < 2) { await new Promise(r => setTimeout(r, 1200 * (attempt + 1))); continue; } throw new Error('AI unavailable'); }
-            throw new Error(msg || 'AI failed');
-          }
-          if (!data || typeof data.calories !== 'number') { lastError = new Error('Invalid response'); if (attempt < 2) continue; throw new Error('Invalid AI data'); }
-          await mealService.addMeal({ meal_text: text, calories: Math.round(data.calories), protein: Math.round(data.protein), fat: Math.round(data.fat), carbs: Math.round(data.carbs), meal_time: getMealTime().toISOString(), tip: data.foods_detected?.join(', ') || text, meal_slot: selectedMealSlot || undefined });
-          return data;
-        } catch (err: any) {
-          console.error(`[parse-meal] attempt ${attempt + 1} error:`, err.message);
-          lastError = err as Error;
-          if (attempt < 2 && (err.message.includes('retrying') || err.message.includes('unavailable') || err.message.includes('Auth —'))) continue;
-          break;
         }
       }
 
@@ -449,8 +479,18 @@ export function MealLoggerPage() {
       // ── END STEP 3 ─────────────────────────────────────────────────────────────
     },
     onMutate: async (text: string) => {
+      const now = new Date();
+      const isToday = selectedDate.getFullYear() === now.getFullYear() && 
+                      selectedDate.getMonth() === now.getMonth() && 
+                      selectedDate.getDate() === now.getDate();
+
       await queryClient.cancelQueries({ queryKey: ["meals", "date", dateKeyStr] });
+      if (isToday) {
+        await queryClient.cancelQueries({ queryKey: ["meals", "today"] });
+      }
+      
       const previousMeals = queryClient.getQueryData(["meals", "date", dateKeyStr]);
+      const previousTodayMeals = queryClient.getQueryData(["meals", "today"]);
       
       const estimate = getDeterministicFallback(text);
       const optimisticMeal = {
@@ -469,7 +509,14 @@ export function MealLoggerPage() {
         return [...old, optimisticMeal];
       });
 
-      return { previousMeals };
+      if (isToday) {
+        queryClient.setQueryData(["meals", "today"], (old: any) => {
+          if (!old) return [optimisticMeal];
+          return [...old, optimisticMeal];
+        });
+      }
+
+      return { previousMeals, previousTodayMeals, isToday };
     },
     onSuccess: (data, text) => {
       haptics.success();
@@ -535,8 +582,14 @@ export function MealLoggerPage() {
       addChatMessage({ role: 'ai', text: responseText + confidenceTag, data });
       setLoading(false);
     },
-    onError: (err: any) => {
+    onError: (err: any, variables, context: any) => {
       console.error('[addMealMutation] onError fired — mutationFn threw unexpectedly:', err);
+      if (context?.previousMeals) {
+        queryClient.setQueryData(["meals", "date", dateKeyStr], context.previousMeals);
+      }
+      if (context?.isToday && context?.previousTodayMeals) {
+        queryClient.setQueryData(["meals", "today"], context.previousTodayMeals);
+      }
       console.error('Complete Error Stack:', err.stack || err);
       const errorMessage = typeof err === 'object' ? JSON.stringify(err, null, 2) : String(err);
       analytics.trackEvent('AI Parse Failure', { error: errorMessage, type: 'mutation_error' });
@@ -566,6 +619,21 @@ export function MealLoggerPage() {
     setLoading(true);
     addMealMutation.mutate(text);
   }, [input, loading, selectedMealSlot, addChatMessage, addMealMutation]);
+
+  if (isLoading) {
+    if (!isOnline) {
+      return (
+        <div className="min-h-screen bg-[#0A0A0A] pb-[100px] flex flex-col items-center justify-center px-6 text-center">
+          <AlertTriangle className="w-12 h-12 text-[rgba(255,255,255,0.2)] mb-4" />
+          <h2 className="text-[18px] font-semibold text-white mb-2">You're offline</h2>
+          <p className="text-[14px] text-[rgba(255,255,255,0.6)]">
+            Connect to the internet to load your meals for the first time.
+          </p>
+        </div>
+      );
+    }
+    return <MealLoggerSkeleton />;
+  }
 
   return (
     <>
@@ -666,7 +734,12 @@ export function MealLoggerPage() {
         <div className="text-[12px] font-semibold uppercase tracking-widest text-[rgba(235,235,245,0.5)] mb-3 px-1">Meal Log</div>
         
         {meals.length === 0 && (
-          <div className="text-[14px] font-medium text-center text-[rgba(235,235,245,0.5)] my-8 py-8 rounded-[24px] border border-dashed border-[rgba(255,255,255,0.1)]">No meals logged for this day.</div>
+          <EmptyState
+            icon={Lightbulb}
+            title="No meals logged yet"
+            description="Your daily meal log is empty. Tap the '+' button below to add your first meal."
+            className="my-8 py-10"
+          />
         )}
 
         <MealSlotRow slot="breakfast" icon={<Sunrise size={20} />} label="Breakfast" timeRange="6 am – 12 pm" meals={breakfastMeals} onDelete={handleDeleteMeal} />

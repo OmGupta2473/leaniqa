@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDashboardStore } from '@/features/dashboard/store/dashboardStore';
-import { Target, Scale, TrendingDown, TrendingUp } from 'lucide-react';
+import { Target, Scale, TrendingDown, TrendingUp, LineChart, Loader2, AlertTriangle, ChevronLeft } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { calculateProjections } from '@/shared/utils/projectionEngine';
@@ -9,6 +10,9 @@ import { weightService } from '../services/weightService';
 import { complianceService } from '@/features/reports/services/complianceService';
 import { motion } from "motion/react";
 import { cn } from "@/shared/utils/utils";
+import { EmptyState } from '@/shared/components/EmptyState';
+import { useNetworkConnectivity } from "@/shared/hooks/useNetworkConnectivity";
+import { ProgressSkeleton } from '@/shared/components/Skeletons';
 
 function getLocalDateString(d: Date) {
   const year = d.getFullYear();
@@ -26,12 +30,14 @@ export function ProgressPage() {
   const showAdvanced = useDashboardStore(s => s.temporaryPreferences.showAdvanced || false);
   const setShowAdvanced = (val: boolean) => useDashboardStore.getState().setTemporaryPreferences({ showAdvanced: val });
   
+  const navigate = useNavigate();
+  const { isOnline } = useNetworkConnectivity();
   const queryClient = useQueryClient();
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
   const { data: complianceScores } = useQuery({ queryKey: ['complianceScores'], queryFn: () => complianceService.getScores() });
   const complianceScore = complianceScores?.weeklyAverage || 80;
-  const { data: weightLogs = [] } = useQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
+  const { data: weightLogs = [], isLoading } = useQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
 
   const currentWeight = weightLogs.length > 0 ? weightLogs[weightLogs.length - 1].weight : profile?.weight || 80;
 
@@ -58,14 +64,24 @@ export function ProgressPage() {
   
   const addWeightMutation = useMutation({
     mutationFn: async (val: number) => {
+      let updates: any = {};
       if (showAdvanced) {
-        const updates: any = {};
         if (waist) updates.waist = parseFloat(waist);
         if (neck) updates.neck = parseFloat(neck);
         if (hip) updates.hip = parseFloat(hip);
-        if (Object.keys(updates).length > 0) {
-          await profileService.updateProfile(updates);
-        }
+      }
+
+      if (typeof window !== 'undefined' && !navigator.onLine) {
+        const { offlineSyncService } = await import('@/shared/services/offlineSyncService');
+        offlineSyncService.enqueue({
+          type: 'ADD_WEIGHT',
+          payload: { weight: val, date: getLocalDateString(new Date()), updates, showAdvanced }
+        });
+        return { weight: val, date: getLocalDateString(new Date()), _localOnly: true };
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await profileService.updateProfile(updates);
       }
       return weightService.addWeightLog({
         weight: val,
@@ -80,6 +96,7 @@ export function ProgressPage() {
         weight: val,
         date: getLocalDateString(new Date()),
         id: 'opt-' + Date.now(),
+        _localOnly: typeof window !== 'undefined' && !navigator.onLine
       };
       
       queryClient.setQueryData(['weightLogs'], (old: any) => {
@@ -166,6 +183,24 @@ export function ProgressPage() {
       weight: single.weight,
       timestamp: single.timestamp - 86400000
     });
+  }
+
+  if (isLoading) {
+    if (!isOnline) {
+      return (
+        <div className="min-h-screen bg-[#0A0A0A] pb-[100px] flex flex-col items-center justify-center px-6 text-center">
+          <AlertTriangle className="w-12 h-12 text-[rgba(255,255,255,0.2)] mb-4" />
+          <h2 className="text-[18px] font-semibold text-white mb-2">You're offline</h2>
+          <p className="text-[14px] text-[rgba(255,255,255,0.6)]">
+            Connect to the internet to load your progress for the first time.
+          </p>
+          <button onClick={() => navigate('/dashboard')} className="mt-8 text-[#D4FF00] font-medium text-[15px]">
+            Return to Dashboard
+          </button>
+        </div>
+      );
+    }
+    return <ProgressSkeleton />;
   }
 
   return (
@@ -294,8 +329,13 @@ export function ProgressPage() {
             </ResponsiveContainer>
           </div>
         ) : (
-          <div className="h-[180px] flex items-center justify-center text-[13px] text-[rgba(255,255,255,0.35)]">
-            Log your weight to see trends.
+          <div className="mt-4">
+            <EmptyState
+              icon={LineChart}
+              title="No weight logged yet"
+              description="Log your morning weight consistently to start unlocking trends and timeline projections."
+              className="py-10"
+            />
           </div>
         )}
       </div>

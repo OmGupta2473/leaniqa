@@ -10,6 +10,7 @@ import { ScrollHandler } from '@/shared/components/ScrollHandler';
 import { ScreenSkeleton } from '@/shared/components/ScreenSkeleton';
 import { RouteMetadata } from '@/shared/components/RouteMetadata';
 import { AnalyticsObserver } from '@/shared/components/AnalyticsObserver';
+import { DashboardSkeleton, MealLoggerSkeleton, ProgressSkeleton, WeeklyReportSkeleton, ProfileSkeleton, NutritionDetailSkeleton, AwardsSkeleton, GoalSkeleton } from '@/shared/components/Skeletons';
 
 const DashboardPage = lazy(() => import('@/features/dashboard/pages/DashboardPage').then(module => ({ default: module.DashboardPage })));
 const MealLoggerPage = lazy(() => import('@/features/nutrition/pages/MealLoggerPage').then(module => ({ default: module.MealLoggerPage })));
@@ -81,16 +82,16 @@ export const routes: RouteObject[] = [
             element: <AppLayout />,
             children: [
               { path: '/onboarding', element: <Suspense fallback={<ScreenSkeleton />}><OnboardingPage /></Suspense>, handle: { title: 'Welcome', description: 'Get started with LeanIQA.' } },
-              { path: '/goal', element: <Suspense fallback={<ScreenSkeleton />}><GoalSetterPage /></Suspense>, handle: { title: 'Set Goal', description: 'Set your nutrition and body goals.' } },
-              { path: '/dashboard', element: <Suspense fallback={<ScreenSkeleton />}><DashboardPage /></Suspense>, handle: { title: 'Dashboard', description: 'Your daily nutrition and progress overview.' } },
-              { path: '/meals', element: <Suspense fallback={<ScreenSkeleton />}><MealLoggerPage /></Suspense>, handle: { title: 'Log Meal', description: 'Log your meals and track your macros.' } },
-              { path: '/progress', element: <Suspense fallback={<ScreenSkeleton />}><ProgressPage /></Suspense>, handle: { title: 'Progress', description: 'Track your long-term body transformation.' } },
-              { path: '/activity', element: <Suspense fallback={<ScreenSkeleton />}><WeeklyReportPage /></Suspense>, handle: { title: 'Activity', description: 'Weekly compliance and activity report.' } },
-              { path: '/profile', element: <Suspense fallback={<ScreenSkeleton />}><ProfilePage /></Suspense>, handle: { title: 'Profile', description: 'Manage your LeanIQA profile.' } },
+              { path: '/goal', element: <Suspense fallback={<GoalSkeleton />}><GoalSetterPage /></Suspense>, handle: { title: 'Set Goal', description: 'Set your nutrition and body goals.' } },
+              { path: '/dashboard', element: <Suspense fallback={<DashboardSkeleton />}><DashboardPage /></Suspense>, handle: { title: 'Dashboard', description: 'Your daily nutrition and progress overview.' } },
+              { path: '/meals', element: <Suspense fallback={<MealLoggerSkeleton />}><MealLoggerPage /></Suspense>, handle: { title: 'Log Meal', description: 'Log your meals and track your macros.' } },
+              { path: '/progress', element: <Suspense fallback={<ProgressSkeleton />}><ProgressPage /></Suspense>, handle: { title: 'Progress', description: 'Track your long-term body transformation.' } },
+              { path: '/activity', element: <Suspense fallback={<WeeklyReportSkeleton />}><WeeklyReportPage /></Suspense>, handle: { title: 'Activity', description: 'Weekly compliance and activity report.' } },
+              { path: '/profile', element: <Suspense fallback={<ProfileSkeleton />}><ProfilePage /></Suspense>, handle: { title: 'Profile', description: 'Manage your LeanIQA profile.' } },
               { path: '/pricing', element: <Suspense fallback={<ScreenSkeleton />}><PricingPage /></Suspense>, handle: { title: 'Pricing', description: 'Choose a subscription plan.' } },
-              { path: '/awards', element: <Suspense fallback={<ScreenSkeleton />}><AwardsPage /></Suspense>, handle: { title: 'Awards', description: 'View your earned achievements.' } },
-              { path: '/calorie', element: <Suspense fallback={<ScreenSkeleton />}><CalorieDetailPage /></Suspense>, handle: { title: 'Calorie Detail', description: 'Detailed breakdown of your calorie intake.' } },
-              { path: '/protein', element: <Suspense fallback={<ScreenSkeleton />}><ProteinDetailPage /></Suspense>, handle: { title: 'Protein Detail', description: 'Detailed breakdown of your protein intake.' } }
+              { path: '/awards', element: <Suspense fallback={<AwardsSkeleton />}><AwardsPage /></Suspense>, handle: { title: 'Awards', description: 'View your earned achievements.' } },
+              { path: '/calorie', element: <Suspense fallback={<NutritionDetailSkeleton />}><CalorieDetailPage /></Suspense>, handle: { title: 'Calorie Detail', description: 'Detailed breakdown of your calorie intake.' } },
+              { path: '/protein', element: <Suspense fallback={<NutritionDetailSkeleton />}><ProteinDetailPage /></Suspense>, handle: { title: 'Protein Detail', description: 'Detailed breakdown of your protein intake.' } }
             ]
           }
         ]
