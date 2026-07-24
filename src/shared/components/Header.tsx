@@ -61,12 +61,12 @@ export function Header() {
     >
       <div className="flex items-center gap-3">
         {showBack && (
-          <button 
+          <button aria-label="Go back" 
             onClick={() => navigate(-1)}
             className="flex items-center justify-center cursor-pointer border-none bg-transparent p-0 transition-colors duration-150 ease-in-out"
             style={{
-              width: '28px',
-              height: '28px',
+              width: '44px',
+              height: '44px',
               color: 'rgba(255,255,255,0.6)',
             }}
             onMouseEnter={(e) => e.currentTarget.style.color = '#fff'}
@@ -101,7 +101,7 @@ export function Header() {
         {hasCompletedOnboarding === false && (
           <button
             onClick={() => authService.logout()}
-            className="text-[12px] cursor-pointer bg-transparent border-none transition-colors"
+            className="text-[12px] cursor-pointer min-h-[44px] min-w-[44px] bg-transparent border-none transition-colors"
             style={{ color: 'rgba(255,255,255,0.55)' }}
             onMouseEnter={(e) => e.currentTarget.style.color = '#FF4D1C'}
             onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.55)'}

@@ -1,0 +1,6 @@
+s/<input type="text" autoFocus/<input aria-label="First name" type="text" autoFocus/
+s/type="number" autoFocus value={age}/aria-label="Age" type="number" autoFocus value={age}/
+s/type="number" autoFocus value={height}/aria-label="Height in centimeters" type="number" autoFocus value={height}/
+s/type="number" autoFocus value={heightFt}/aria-label="Height feet" type="number" autoFocus value={heightFt}/
+s/type="number" value={heightIn}/aria-label="Height inches" type="number" value={heightIn}/
+s/type="number" autoFocus value={weight}/aria-label="Weight" type="number" autoFocus value={weight}/

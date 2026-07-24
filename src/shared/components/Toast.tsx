@@ -97,6 +97,8 @@ function ToastMessage({ toast, dismiss }: { toast: ToastItem; dismiss: () => voi
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      role={toast.type === 'error' ? 'alert' : 'status'}
+      aria-live="polite"
       className="pointer-events-auto flex items-center gap-3 px-4 py-3 bg-[rgba(30,30,30,0.85)] backdrop-blur-xl border border-[rgba(255,255,255,0.1)] rounded-[20px] shadow-2xl max-w-[90vw] sm:max-w-md w-max"
     >
       {icons[toast.type]}
@@ -110,14 +112,14 @@ function ToastMessage({ toast, dismiss }: { toast: ToastItem; dismiss: () => voi
             toast.action!.onClick();
             dismiss();
           }}
-          className="text-[13px] font-semibold text-[#D4FF00] hover:text-white transition-colors pl-2 shrink-0"
+          className="text-[13px] font-semibold text-[#D4FF00] hover:text-white transition-colors pl-2 shrink-0 min-h-[44px] min-w-[44px]"
         >
           {toast.action.label}
         </button>
       )}
       
       {!toast.action && (
-        <button onClick={dismiss} className="p-1 hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-colors shrink-0 opacity-50 hover:opacity-100">
+        <button aria-label="Dismiss message" onClick={dismiss} className="p-1 hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-colors shrink-0 opacity-50 hover:opacity-100 min-h-[44px] min-w-[44px] flex items-center justify-center">
           <X className="w-4 h-4 text-white" />
         </button>
       )}

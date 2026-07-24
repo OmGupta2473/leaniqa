@@ -367,7 +367,7 @@ export function WeeklyReportPage() {
         
         {/* Header */}
         <div className="flex items-center justify-between mb-10 sticky top-[env(safe-area-inset-top)] z-30">
-          <button onClick={() => navigate("/dashboard")} className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.03)] flex items-center justify-center transition-colors hover:bg-[rgba(255,255,255,0.1)]">
+          <button onClick={() => navigate("/dashboard")} aria-label="Back to dashboard" className="w-[44px] h-[44px] rounded-full bg-[rgba(255,255,255,0.03)] flex items-center justify-center transition-colors hover:bg-[rgba(255,255,255,0.1)]">
             <ChevronLeft size={20} className="text-white" />
           </button>
           <h1 className="text-[22px] font-semibold tracking-tight text-white tracking-tight">Weekly Report</h1>

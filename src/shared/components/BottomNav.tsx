@@ -26,7 +26,7 @@ export function BottomNav() {
 
   return (
     <Profiler id="BottomNav" onRender={onRenderCallback}>
-      <div className="w-full flex justify-center pb-[calc(20px+env(safe-area-inset-bottom))] px-5 pointer-events-none fixed bottom-0 z-50">
+      <nav aria-label="Bottom Navigation" className="w-full flex justify-center pb-[calc(20px+env(safe-area-inset-bottom))] px-5 pointer-events-none fixed bottom-0 z-50">
         <div 
           className="flex items-center justify-between px-2 py-2 w-full max-w-[400px] pointer-events-auto rounded-[28px]"
           style={{
@@ -41,6 +41,8 @@ export function BottomNav() {
             <NavLink
               key={item.id}
               to={item.id}
+              aria-label={item.label}
+              title={item.label}
               onClick={(e) => {
                 if (!hasCompletedOnboarding) {
                   e.preventDefault();
@@ -48,7 +50,7 @@ export function BottomNav() {
                   haptics.tap();
                 }
               }}
-              className="relative flex items-center justify-center h-[46px] rounded-full outline-none"
+              className="relative flex items-center justify-center h-[46px] min-w-[46px] rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[#D4FF00]"
               style={{ textDecoration: 'none', WebkitTapHighlightColor: 'transparent' }}
             >
               {({ isActive }) => {
@@ -120,7 +122,7 @@ export function BottomNav() {
             </NavLink>
           ))}
         </div>
-      </div>
+      </nav>
     </Profiler>
   );
 }
