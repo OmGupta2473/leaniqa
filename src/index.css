@@ -1747,3 +1747,7 @@ input[type='number'] {
   outline: 2px solid #D4FF00;
   outline-offset: 2px;
 }
+
+.outline-none:focus-visible {
+  outline: none !important;
+}
