@@ -2,6 +2,7 @@ import { useChatStore } from '@/app/store';
 import { useUserStore } from '@/features/profile/store/userStore';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { createPortal } from 'react-dom';
 import { profileService } from '../services/profileService';
 import { useState } from 'react';
 import { ChevronLeft, LogOut, Trash2, AlertTriangle, User, Flame, Droplet, CheckCircle2, Crown, CreditCard as CreditCardIcon, Sparkles, ArrowRight, Zap, Loader2 } from 'lucide-react';
@@ -429,8 +430,8 @@ export function ProfilePage() {
       </div>
 
       <AnimatePresence>
-        {showResetModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        {showResetModal && createPortal(
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -472,7 +473,7 @@ export function ProfilePage() {
               </div>
             </motion.div>
           </div>
-        )}
+        , document.body)}
       </AnimatePresence>
     </div>
   );

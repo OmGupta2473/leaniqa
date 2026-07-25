@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2, ChevronRight, X, Info } from 'lucide-react';
 import { cn } from '@/shared/utils/utils';
@@ -125,9 +126,8 @@ interface BodyFatPreviewModalProps {
 function BodyFatPreviewModal({ option, gender, onClose, onSelect }: BodyFatPreviewModalProps) {
   if (!option) return null;
   
-  return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+  return createPortal(
+      <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -176,8 +176,8 @@ function BodyFatPreviewModal({ option, gender, onClose, onSelect }: BodyFatPrevi
             Select This Body
           </button>
         </motion.div>
-      </div>
-    </AnimatePresence>
+      </div>,
+      document.body
   );
 }
 
@@ -268,14 +268,16 @@ export function BodyFatSelector({ gender, estimatedBf, value, onChange, maxBf }:
         ))}
       </div>
       
-      {previewOption && (
-        <BodyFatPreviewModal
-          option={previewOption}
-          gender={gender}
-          onClose={() => setPreviewOption(null)}
-          onSelect={() => onChange(previewOption.mid)}
-        />
-      )}
+      <AnimatePresence>
+        {previewOption && (
+          <BodyFatPreviewModal
+            option={previewOption}
+            gender={gender}
+            onClose={() => setPreviewOption(null)}
+            onSelect={() => onChange(previewOption.mid)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
