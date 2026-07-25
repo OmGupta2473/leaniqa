@@ -294,17 +294,17 @@ export function MealLoggerPage() {
 
       await queryClient.cancelQueries({ queryKey: ["meals", "date", dateKeyStr] });
       if (isToday) {
-        await queryClient.cancelQueries({ queryKey: ["meals", "today"] });
+        await queryClient.cancelQueries({ queryKey: ["meals"] });
       }
       
       const previousMeals = queryClient.getQueryData<any[]>(["meals", "date", dateKeyStr]);
-      const previousTodayMeals = queryClient.getQueryData<any[]>(["meals", "today"]);
+      const previousTodayMeals = queryClient.getQueryData<any[]>(["meals"]);
       
       const newMeals = previousMeals ? previousMeals.filter((m: any) => m.id !== id) : [];
       queryClient.setQueryData(["meals", "date", dateKeyStr], newMeals);
 
       if (isToday && previousTodayMeals) {
-        queryClient.setQueryData(["meals", "today"], previousTodayMeals.filter((m: any) => m.id !== id));
+        queryClient.setQueryData(["meals"], previousTodayMeals.filter((m: any) => m.id !== id));
       }
       
       console.log('Remaining Meals:', newMeals.length);
@@ -321,7 +321,7 @@ export function MealLoggerPage() {
         queryClient.setQueryData(["meals", "date", dateKeyStr], context.previousMeals);
       }
       if (context?.isToday && context?.previousTodayMeals) {
-        queryClient.setQueryData(["meals", "today"], context.previousTodayMeals);
+        queryClient.setQueryData(["meals"], context.previousTodayMeals);
       }
     },
     onSettled: () => {
@@ -494,11 +494,11 @@ export function MealLoggerPage() {
 
       await queryClient.cancelQueries({ queryKey: ["meals", "date", dateKeyStr] });
       if (isToday) {
-        await queryClient.cancelQueries({ queryKey: ["meals", "today"] });
+        await queryClient.cancelQueries({ queryKey: ["meals"] });
       }
       
       const previousMeals = queryClient.getQueryData(["meals", "date", dateKeyStr]);
-      const previousTodayMeals = queryClient.getQueryData(["meals", "today"]);
+      const previousTodayMeals = queryClient.getQueryData(["meals"]);
       
       const estimate = getDeterministicFallback(text);
       const optimisticMeal = {
@@ -518,7 +518,7 @@ export function MealLoggerPage() {
       });
 
       if (isToday) {
-        queryClient.setQueryData(["meals", "today"], (old: any) => {
+        queryClient.setQueryData(["meals"], (old: any) => {
           if (!old) return [optimisticMeal];
           return [...old, optimisticMeal];
         });
@@ -596,7 +596,7 @@ export function MealLoggerPage() {
         queryClient.setQueryData(["meals", "date", dateKeyStr], context.previousMeals);
       }
       if (context?.isToday && context?.previousTodayMeals) {
-        queryClient.setQueryData(["meals", "today"], context.previousTodayMeals);
+        queryClient.setQueryData(["meals"], context.previousTodayMeals);
       }
       console.error('Complete Error Stack:', err.stack || err);
       const errorMessage = typeof err === 'object' ? JSON.stringify(err, null, 2) : String(err);
