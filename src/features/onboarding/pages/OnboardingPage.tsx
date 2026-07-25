@@ -305,33 +305,38 @@ export function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[#0A0A0B] text-white flex flex-col relative overflow-hidden font-sans">
+    <div className="flex-1 min-h-full w-full bg-[#0A0A0B] text-white flex flex-col relative overflow-hidden font-sans">
         
       {/* Background glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[120vh] bg-[radial-gradient(ellipse_at_center,rgba(212,255,0,0.03)_0%,rgba(0,0,0,0)_60%)] pointer-events-none" />
 
       {/* Progress Indicator */}
       {step > 0 && step !== 7 && (
-        <div className="fixed top-6 left-0 w-full px-8 z-50 flex items-center justify-center gap-2">
-           <button 
-             onClick={() => setStep(step === 8 ? 6 : step - 1)}
-             className="absolute left-6 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors p-2"
-             aria-label="Go Back"
-           >
-             <ChevronLeft size={28} />
-           </button>
-           {step < 7 && [1,2,3,4,5,6].map(s => (
-             <motion.div 
-               key={s}
-               className={cn("h-1 rounded-full", step >= s ? "bg-[#D4FF00]" : "bg-zinc-800")}
-               animate={{ width: step === s ? 40 : 8 }}
-               transition={{ type: "spring" as any, stiffness: 300, damping: 30 }}
-             />
-           ))}
+        <div className="w-full px-4 sm:px-8 pt-2 pb-2 sm:pt-6 sm:pb-6 z-40 flex items-center shrink-0">
+           <div className="w-[48px] shrink-0 flex justify-start">
+             <button 
+               onClick={() => setStep(step === 8 ? 6 : step - 1)}
+               className="text-zinc-500 hover:text-white transition-colors p-2 flex items-center justify-center bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-full hover:bg-[rgba(255,255,255,0.05)]"
+               aria-label="Go Back"
+             >
+               <ChevronLeft size={24} />
+             </button>
+           </div>
+           <div className="flex gap-2 flex-1 justify-center">
+             {step < 7 && [1,2,3,4,5,6].map(s => (
+               <motion.div 
+                 key={s}
+                 className={cn("h-1 rounded-full", step >= s ? "bg-[#D4FF00]" : "bg-zinc-800")}
+                 animate={{ width: step === s ? 40 : 8 }}
+                 transition={{ type: "spring" as any, stiffness: 300, damping: 30 }}
+               />
+             ))}
+           </div>
+           <div className="w-[48px] shrink-0" /> {/* Spacer */}
         </div>
       )}
 
-      <div className="flex-1 flex flex-col justify-center items-center px-6 relative z-10 w-full max-w-xl mx-auto min-h-screen">
+      <div className="flex-1 flex flex-col justify-center items-center px-6 relative z-10 w-full max-w-xl mx-auto">
         <AnimatePresence mode="wait" custom={direction}>
             {step === 0 && (
                 <motion.div key="welcome" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="text-center w-full">
