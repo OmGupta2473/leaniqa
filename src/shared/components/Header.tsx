@@ -50,7 +50,7 @@ export function Header() {
       initial={{ y: -8, opacity: 0 }} 
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.4, ease: [0.16,1,0.3,1] }}
-      className="px-5 flex items-center justify-between shrink-0 z-10"
+      className="px-5 flex items-center justify-between shrink-0 z-50 sticky top-0 w-full"
       style={{
         height: '52px',
         background: 'rgba(8,8,9,0.88)',
