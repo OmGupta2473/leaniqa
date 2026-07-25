@@ -26,18 +26,17 @@ export function AppLayout({ children }: AppLayoutProps) {
       </aside>
 
       {/* ── Main content ── */}
-      <main className="flex-1 flex flex-col min-w-0 max-w-full">
-        <Header />
-        
+      <main className="flex-1 flex flex-col min-w-0 max-w-full relative">
         {children || (
           <div 
-            className="app-scroll flex-1 overflow-y-auto scroll-smooth" 
+            className="app-scroll flex-1 overflow-y-auto scroll-smooth flex flex-col relative" 
             style={{ 
               overscrollBehaviorY: 'contain',
               paddingBottom: isKeyboardOpen ? `${Math.max(keyboardOffset, 100)}px` : 'calc(100px + env(safe-area-inset-bottom))' 
             }}
           >
-            <div className="flex flex-col min-h-full w-full">
+            <Header />
+            <div className="flex flex-col flex-1 w-full">
               <Outlet />
             </div>
           </div>
