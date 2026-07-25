@@ -17,7 +17,18 @@ import { ProfileSkeleton } from '@/shared/components/Skeletons';
 import { useToast } from '@/shared/components/Toast';
 
 function displayVal(val: any) {
-  return val === undefined || val === null || isNaN(val) ? '—' : val;
+  if (val === undefined || val === null || val === '') return '—';
+  if (typeof val === 'number') {
+    if (isNaN(val)) return '—';
+    return Number.isInteger(val) ? val : parseFloat(val.toFixed(1));
+  }
+  if (typeof val === 'string') {
+    const num = Number(val);
+    if (!isNaN(num) && val.trim() !== '') {
+      return Number.isInteger(num) ? num : parseFloat(num.toFixed(1));
+    }
+  }
+  return val;
 }
 
 export function ProfilePage() {
