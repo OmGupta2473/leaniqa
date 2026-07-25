@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import { reportService } from "@/features/reports/services/reportService";
 import { 
@@ -266,13 +267,13 @@ export function AwardsPage() {
 
       {/* Immersive Modal Overlay */}
       <AnimatePresence>
-        {selectedAward && (
+        {selectedAward && createPortal(
           <motion.div 
             initial={{ opacity: 0, backdropFilter: "blur(0px)" }} 
             animate={{ opacity: 1, backdropFilter: "blur(20px)" }} 
             exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
             transition={{ duration: 0.4 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-5 bg-black/60"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-5 bg-black/60"
             onClick={() => {
               haptics.tap();
               setSelectedAward(null);
@@ -386,7 +387,7 @@ export function AwardsPage() {
               )}
             </motion.div>
           </motion.div>
-        )}
+        , document.body)}
       </AnimatePresence>
     </div>
   );

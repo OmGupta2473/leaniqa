@@ -1,5 +1,6 @@
 
 import React, { Profiler, useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { onRenderCallback, useRenderTracker } from '@/shared/utils/perfDebug';
 import { useNavigate } from "react-router-dom";
 import { useUserStore } from '@/features/profile/store/userStore';
@@ -505,7 +506,7 @@ export function GoalSetterPage() {
         </motion.button>
         
         <AnimatePresence>
-          {resetGoalConfirm && (
+          {resetGoalConfirm && createPortal(
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="fixed inset-0 bg-[rgba(0,0,0,0.85)] z-[100] flex items-center justify-center p-6"
@@ -539,7 +540,7 @@ export function GoalSetterPage() {
                 </div>
               </motion.div>
             </motion.div>
-          )}
+          , document.body)}
         </AnimatePresence>
       </motion.div>
     );
