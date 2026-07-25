@@ -69,12 +69,42 @@ export function OnboardingPage() {
   const activity = useUserStore(s => s.temporaryOnboardingValues.activity || "");
   const setActivity = (val: "Sedentary"|"Lightly Active"|"Moderately Active"|"Very Active"|"Athlete"|"") => useUserStore.getState().setTemporaryOnboardingValues({ activity: val });
   
-  const [step, setStep] = useState(0); // 0: Welcome, 1: Name, 2: Gender, 3: Age, 4: Height, 5: Weight, 6: Activity, 7: AI Analysis, 8: Results
+  const [step, setStepState] = useState(0);
+  const [direction, setDirection] = useState(1);
+  const setStep = (newStep: number) => {
+    setDirection(newStep > step ? 1 : -1);
+    setStepState(newStep);
+  }; // 0: Welcome, 1: Name, 2: Gender, 3: Age, 4: Height, 5: Weight, 6: Activity, 7: AI Analysis, 8: Results
 
   useEffect(() => {
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
+  }, [step]);
+
+  
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (step > 0 && step < 8 && !editProfileMode) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [step, editProfileMode]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && step > 0 && step < 7) {
+        setStep(step - 1);
+      } else if (e.key === 'ArrowLeft' && e.altKey && step > 0 && step < 7) {
+        e.preventDefault();
+        setStep(step - 1);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [step]);
 
   const [aiStatus, setAiStatus] = useState(0);
@@ -258,10 +288,20 @@ export function OnboardingPage() {
     );
   }
   
+  const prefersReducedMotion = typeof window !== 'undefined' ? window.matchMedia('(prefers-reduced-motion: reduce)').matches : false;
   const stepVariants = {
-    initial: { opacity: 0, y: 20, scale: 0.98 },
+    initial: (dir: number) => ({
+      opacity: 0,
+      y: prefersReducedMotion ? 0 : (dir > 0 ? 20 : -20),
+      scale: prefersReducedMotion ? 1 : 0.98
+    }),
     animate: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as any, stiffness: 300, damping: 25 } },
-    exit: { opacity: 0, y: -20, scale: 0.98, transition: { duration: 0.2 } }
+    exit: (dir: number) => ({
+      opacity: 0,
+      y: prefersReducedMotion ? 0 : (dir > 0 ? -20 : 20),
+      scale: prefersReducedMotion ? 1 : 0.98,
+      transition: { duration: 0.2 }
+    })
   };
 
   return (
@@ -271,18 +311,18 @@ export function OnboardingPage() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[120vh] bg-[radial-gradient(ellipse_at_center,rgba(212,255,0,0.03)_0%,rgba(0,0,0,0)_60%)] pointer-events-none" />
 
       {/* Progress Indicator */}
-      {step > 0 && step < 7 && (
+      {step > 0 && step !== 7 && (
         <div className="fixed top-6 left-0 w-full px-8 z-50 flex items-center justify-center gap-2">
            <button 
-             onClick={() => setStep(step - 1)}
-             className="absolute left-6 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors"
+             onClick={() => setStep(step === 8 ? 6 : step - 1)}
+             className="absolute left-6 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors p-2"
+             aria-label="Go Back"
            >
              <ChevronLeft size={28} />
            </button>
-           {[1,2,3,4,5,6].map(s => (
-
+           {step < 7 && [1,2,3,4,5,6].map(s => (
              <motion.div 
-               key={s} 
+               key={s}
                className={cn("h-1 rounded-full", step >= s ? "bg-[#D4FF00]" : "bg-zinc-800")}
                animate={{ width: step === s ? 40 : 8 }}
                transition={{ type: "spring" as any, stiffness: 300, damping: 30 }}
@@ -292,9 +332,9 @@ export function OnboardingPage() {
       )}
 
       <div className="flex-1 flex flex-col justify-center items-center px-6 relative z-10 w-full max-w-xl mx-auto min-h-screen">
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" custom={direction}>
             {step === 0 && (
-                <motion.div key="welcome" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="text-center w-full">
+                <motion.div key="welcome" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="text-center w-full">
                     <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight mb-4">Let's build your transformation.</h1>
                     <p className="text-zinc-400 text-lg mb-12 max-w-sm mx-auto">I'll ask a few quick questions to create your personalized AI plan.</p>
                     <motion.button 
@@ -309,7 +349,7 @@ export function OnboardingPage() {
             )}
 
             {step === 1 && (
-                <motion.div key="name" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="w-full">
+                <motion.div key="name" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="w-full">
                     <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-8 text-center">What should I call you?</h2>
                     <input aria-label="First name" 
                         type="text" 
@@ -343,7 +383,7 @@ export function OnboardingPage() {
             )}
 
             {step === 2 && (
-                <motion.div key="gender" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="w-full">
+                <motion.div key="gender" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="w-full">
                     <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-8 text-center">What's your gender?</h2>
                     <div className="grid grid-cols-2 gap-4">
                         {["Male", "Female"].map(g => (
@@ -362,11 +402,21 @@ export function OnboardingPage() {
                             </button>
                         ))}
                     </div>
+                                    <div className="mt-12 flex justify-center">
+                        <motion.button 
+                            disabled={!gender}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => setStep(3)}
+                            className="bg-[#D4FF00] text-black font-semibold rounded-full px-12 py-4 disabled:opacity-30 transition-opacity"
+                        >
+                            Continue
+                        </motion.button>
+                    </div>
                 </motion.div>
             )}
-
             {step === 3 && (
-                <motion.div key="age" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="w-full">
+                <motion.div key="age" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="w-full">
                     <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-8 text-center">How old are you?</h2>
                     <div className="flex items-center justify-center gap-4">
                         <input aria-label="Age" 
@@ -403,7 +453,7 @@ export function OnboardingPage() {
             )}
 
             {step === 4 && (
-                <motion.div key="height" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="w-full flex flex-col items-center">
+                <motion.div key="height" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="w-full flex flex-col items-center">
                     <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-8 text-center">How tall are you?</h2>
                     
                     <div className="bg-[rgba(255,255,255,0.05)] p-1 rounded-full flex gap-1 mb-8 relative">
@@ -488,7 +538,7 @@ export function OnboardingPage() {
             )}
 
             {step === 5 && (
-                <motion.div key="weight" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="w-full">
+                <motion.div key="weight" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="w-full">
                     <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-8 text-center">Current weight?</h2>
                     <div className="flex items-center justify-center gap-4">
                         <input aria-label="Weight" 
@@ -525,7 +575,7 @@ export function OnboardingPage() {
             )}
 
             {step === 6 && (
-                <motion.div key="activity" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="w-full">
+                <motion.div key="activity" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="w-full">
                     <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-8 text-center">How active are you?</h2>
                     <div className="flex flex-col gap-3">
                         {[
@@ -553,11 +603,21 @@ export function OnboardingPage() {
                             </button>
                         ))}
                     </div>
+                                    <div className="mt-12 flex justify-center">
+                        <motion.button 
+                            disabled={!activity}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => setStep(7)}
+                            className="bg-[#D4FF00] text-black font-semibold rounded-full px-12 py-4 disabled:opacity-30 transition-opacity"
+                        >
+                            Continue
+                        </motion.button>
+                    </div>
                 </motion.div>
             )}
-
             {step === 7 && (
-                <motion.div key="ai-analysis" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="w-full flex flex-col items-center justify-center">
+                <motion.div key="ai-analysis" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="w-full flex flex-col items-center justify-center">
                     <div className="relative w-32 h-32 mb-12">
                         <motion.div 
                             animate={{ rotate: 360, scale: [1, 1.05, 1] }} 
@@ -593,7 +653,7 @@ export function OnboardingPage() {
             )}
 
             {step === 8 && results && (
-                <motion.div key="results" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="w-full py-12">
+                <motion.div key="results" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="w-full py-12">
                     <motion.div 
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
