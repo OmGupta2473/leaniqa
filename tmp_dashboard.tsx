@@ -91,13 +91,12 @@ export function DashboardPage() {
   }, []);
 
   const {
-    data: allMeals,
+    data: meals,
     isError: isMealsError,
-    isLoading: isMealsLoading,
     refetch: refetchMeals,
   } = useQuery({
-    queryKey: ["meals"],
-    queryFn: () => mealService.getMeals({ days: 30 }),
+    queryKey: ["meals", "today"],
+    queryFn: () => mealService.getTodaysMeals(),
   });
 
   const name = profileData?.name || "User";
@@ -111,7 +110,7 @@ export function DashboardPage() {
   const currentBf = profileData?.currentBodyFatPct || 0;
   const targetBf = profileData?.targetBodyFatPct || 0;
 
-  if (isLoading || isMealsLoading) {
+  if (isLoading) {
     if (!isOnline) {
       return (
         <div className="min-h-[100dvh] bg-[#0A0A0A] flex flex-col items-center justify-center px-6 text-center">
@@ -126,10 +125,7 @@ export function DashboardPage() {
     return <DashboardSkeleton />;
   }
 
-  const now = new Date();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-  const todaysMeals = (allMeals || []).filter(m => m.meal_time >= startOfToday);
-  const isFirstTimeUser = (allMeals || []).length === 0 && metrics.length === 0;
+  const todaysMeals = meals || [];
   const eatenKcal = Math.round(todaysMeals.reduce((acc, m) => acc + m.calories, 0));
   const eatenProtein = Math.round(todaysMeals.reduce((acc, m) => acc + m.protein, 0));
   const eatenFat = Math.round(todaysMeals.reduce((acc, m) => acc + m.fat, 0));
@@ -192,12 +188,12 @@ export function DashboardPage() {
 
         {isMealsError && isOnline ? (
           <div className="rounded-[24px] border border-red-500/30 bg-red-500/10 p-5 flex flex-col items-center justify-center text-center backdrop-blur-xl">
-            <div className="text-red-400 font-medium mb-3">Unable to sync data</div>
+            <div className="text-red-400 font-medium mb-3">Unable to sync today's data</div>
             <button onClick={() => refetchMeals()} className="px-5 py-2.5 rounded-full bg-red-500/20 text-red-400 font-bold text-sm tracking-wide">
               Try Again
             </button>
           </div>
-        ) : isFirstTimeUser ? (
+        ) : todaysMeals.length === 0 ? (
           <EmptyState
             icon={Plus}
             title="Log your first meal"
