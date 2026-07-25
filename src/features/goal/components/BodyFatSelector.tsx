@@ -126,7 +126,7 @@ interface BodyFatPreviewModalProps {
 function BodyFatPreviewModal({ option, gender, onClose, onSelect }: BodyFatPreviewModalProps) {
   if (!option) return null;
   
-  return createPortal(
+  return (
       <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
         <motion.div 
           initial={{ opacity: 0 }}
@@ -176,8 +176,7 @@ function BodyFatPreviewModal({ option, gender, onClose, onSelect }: BodyFatPrevi
             Select This Body
           </button>
         </motion.div>
-      </div>,
-      document.body
+      </div>
   );
 }
 
@@ -268,16 +267,19 @@ export function BodyFatSelector({ gender, estimatedBf, value, onChange, maxBf }:
         ))}
       </div>
       
-      <AnimatePresence>
-        {previewOption && (
-          <BodyFatPreviewModal
-            option={previewOption}
-            gender={gender}
-            onClose={() => setPreviewOption(null)}
-            onSelect={() => onChange(previewOption.mid)}
-          />
-        )}
-      </AnimatePresence>
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {previewOption && (
+            <BodyFatPreviewModal
+              option={previewOption}
+              gender={gender}
+              onClose={() => setPreviewOption(null)}
+              onSelect={() => onChange(previewOption.mid)}
+            />
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }
