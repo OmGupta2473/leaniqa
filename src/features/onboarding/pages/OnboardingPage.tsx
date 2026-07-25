@@ -262,8 +262,9 @@ export function OnboardingPage() {
 
   const resetMutation = useMutation({
     mutationFn: async () => {
-      await profileService.resetProfile();
-      useUserStore.getState().resetAll();
+      await profileService.deleteProfile();
+      await profileService.deleteGoal();
+      useUserStore.getState().clearUserStore();
       queryClient.setQueryData(['profile'], null);
       queryClient.setQueryData(['goal'], null);
     },
