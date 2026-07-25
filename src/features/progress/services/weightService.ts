@@ -16,7 +16,7 @@ export const weightService = {
       
     if (error) {
       console.error('Error fetching weight logs:', error);
-      return [];
+      throw error;
     }
     return data || [];
   },

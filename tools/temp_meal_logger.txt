@@ -1,0 +1,50 @@
+import { useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
+import { useAppStore } from "@/app/store";
+import { useChatStore } from "@/app/store";
+import { useNutritionStore } from "../store/nutritionStore";
+import {
+  Send, Loader2, Dumbbell, Lightbulb, Sun, Sunrise, Moon, Plus, X,
+} from "lucide-react";
+import { cn } from "@/shared/utils/utils";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { mealService } from "../services/mealService";
+import { profileService } from "@/features/profile/services/profileService";
+import { complianceService } from "@/features/reports/services/complianceService";
+import { supabase } from "@/shared/utils/supabase";
+import { motion, AnimatePresence } from "motion/react";
+import { lookupCachedMeal } from '../constants/data';
+
+const getDeterministicFallback = (text: string) => {
+  const normalizedText = text.toLowerCase();
+  let calories = 300, protein = 10, fat = 10, carbs = 40;
+  let detected = [text];
+  const foodDb: Record<string, { calories: number; protein: number; fat: number; carbs: number }> = {
+    chicken: { calories: 250, protein: 30, fat: 10, carbs: 0 },
+    dal: { calories: 200, protein: 12, fat: 4, carbs: 30 },
+    chawal: { calories: 240, protein: 4, fat: 0, carbs: 53 },
+    rice: { calories: 240, protein: 4, fat: 0, carbs: 53 },
+    paneer: { calories: 350, protein: 20, fat: 28, carbs: 4 },
+    fish: { calories: 200, protein: 25, fat: 10, carbs: 0 },
+    idli: { calories: 150, protein: 4, fat: 0, carbs: 30 },
+    roti: { calories: 120, protein: 4, fat: 1, carbs: 25 },
+    egg: { calories: 140, protein: 12, fat: 10, carbs: 1 },
+    salad: { calories: 50, protein: 2, fat: 0, carbs: 10 },
+    chai: { calories: 100, protein: 2, fat: 3, carbs: 15 },
+    biscuit: { calories: 150, protein: 2, fat: 5, carbs: 20 },
+  };
+  let foundMatch = false;
+  for (const [key, macros] of Object.entries(foodDb)) {
+    if (normalizedText.includes(key)) {
+      if (!foundMatch) { calories = 0; protein = 0; fat = 0; carbs = 0; detected = []; foundMatch = true; }
+      calories += macros.calories; protein += macros.protein; fat += macros.fat; carbs += macros.carbs;
+      detected.push(key);
+    }
+  }
+  return { calories, protein, fat, carbs, confidence: foundMatch ? 80 : 30, foods_detected: detected, coaching_tip: "Stay consistent with your portions to hit your goals." };
+};
+
+// ── SLOT ROW — used in the persistent summary ─────────────────────────────
+function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: string; icon: React.ReactNode; label: string; timeRange: string; meals: any[], onDelete: (id: string) => void }) {
+  const kcal = meals.reduce((s, m) => s + m.calories, 0);
+  const pro = meals.reduce((s, m) => s + m.protein, 0);
+  return (

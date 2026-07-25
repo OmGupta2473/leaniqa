@@ -118,7 +118,7 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
                     <span className="text-[11px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-2.5 py-1 rounded-full font-bold tracking-wide">{m.calories} KCAL</span>
                     <span className="text-[11px] badge-lime px-2.5 py-1 font-bold rounded-full tracking-wide">{m.protein}G PRO</span>
                     {m.id && !m.id.toString().startsWith('opt-') && (
-                      <button aria-label="Delete meal" className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-[rgba(255,255,255,0.1)]" onClick={(e) => {
+                      <button aria-label="Delete meal" className="ml-2 min-w-[44px] min-h-[44px] rounded-full bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,77,28,0.2)] flex items-center justify-center text-[rgba(255,255,255,0.5)] hover:text-[#FF4D1C] transition-colors" onClick={(e) => {
                           e.stopPropagation();
                           toast({
                             type: 'warning',
@@ -129,7 +129,7 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
                               onClick: () => onDelete(m.id)
                             }
                           });
-                      }} className="ml-2 w-7 h-7 rounded-full bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,77,28,0.2)] flex items-center justify-center text-[rgba(255,255,255,0.5)] hover:text-[#FF4D1C] transition-colors">
+                      }}>
                         <X size={14} />
                       </button>
                     )}

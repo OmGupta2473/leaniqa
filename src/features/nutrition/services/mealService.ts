@@ -22,7 +22,7 @@ export const mealService = {
       
     if (error) {
       logError(new Error('Error fetching meals'), { error, userId, options });
-      return [];
+      throw error;
     }
     return data || [];
   },
@@ -47,7 +47,7 @@ export const mealService = {
       
     if (error) {
       logError(new Error('Error fetching todays meals'), { error, userId });
-      return [];
+      throw error;
     }
     return data || [];
   },
@@ -67,7 +67,7 @@ export const mealService = {
       
     if (error) {
       logError(new Error('Error fetching meals for date'), { error, userId, date: date.toISOString() });
-      return [];
+      throw error;
     }
     return data || [];
   },
@@ -145,7 +145,7 @@ export const mealService = {
       
     if (error) {
       logError(new Error('Error fetching meals by date'), { error, userId, dateStr });
-      return [];
+      throw error;
     }
     return data || [];
   }

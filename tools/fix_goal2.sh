@@ -1,0 +1,1 @@
+sed -i "s|import { useUserStore } from '@/features/profile/store/userStore';|import { useUserStore } from '@/features/profile/store/userStore';\nimport { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';|" src/features/goal/pages/GoalSetterPage.tsx
