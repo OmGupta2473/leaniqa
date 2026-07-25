@@ -1,4 +1,7 @@
 import { mealService } from '@/features/nutrition/services/mealService';
+import { profileService } from '@/features/profile/services/profileService';
+import { weightService } from '@/features/progress/services/weightService';
+import { queryClient } from '@/app/query/queryClient';
 
 const QUEUE_KEY = 'LEANIQA_OFFLINE_QUEUE';
 
@@ -60,15 +63,12 @@ export const offlineSyncService = {
         if (action.type === 'ADD_MEAL') {
           await mealService.addMeal(action.payload);
         } else if (action.type === 'SAVE_GOAL') {
-          const { profileService } = await import('@/features/profile/services/profileService');
           await profileService.upsertGoal(action.payload);
         } else if (action.type === 'DELETE_MEAL') {
           await mealService.deleteMeal(action.payload);
         } else if (action.type === 'ADD_WEIGHT') {
-          const { weightService } = await import('@/features/progress/services/weightService');
           if (action.payload.updates) {
-             const { profileService } = await import('@/features/profile/services/profileService');
-             await profileService.updateProfile(action.payload.updates);
+                await profileService.updateProfile(action.payload.updates);
           }
           await weightService.addWeightLog({ weight: action.payload.weight, date: action.payload.date }, action.payload.showAdvanced);
         }
@@ -89,10 +89,8 @@ export const offlineSyncService = {
     if (newQueue.length !== queue.length) {
       localStorage.setItem(QUEUE_KEY, JSON.stringify(newQueue));
       // Re-fetch meals to show synced data
-      import('@/app/query/queryClient').then(m => {
-        m.queryClient.invalidateQueries({ queryKey: ['meals'] });
-        m.queryClient.invalidateQueries({ queryKey: ['goal'] });
-      });
+      queryClient.invalidateQueries({ queryKey: ['meals'] });
+      queryClient.invalidateQueries({ queryKey: ['goal'] });
     }
 
     isSyncing = false;

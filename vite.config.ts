@@ -48,7 +48,7 @@ export default defineConfig(() => {
       rollupOptions: {
         output: {
           manualChunks: (id) => {
-            if (id.includes('node_modules/recharts')) {
+            if (id.includes('node_modules/recharts') || id.includes('node_modules/d3')) {
               return 'recharts';
             }
             if (id.includes('node_modules/framer-motion') || id.includes('node_modules/motion')) {
@@ -77,6 +77,15 @@ export default defineConfig(() => {
             }
             if (id.includes('node_modules/clsx') || id.includes('node_modules/tailwind-merge')) {
               return 'ui-utils';
+            }
+            if (id.includes('node_modules/@sentry')) {
+              return 'sentry';
+            }
+            if (id.includes('node_modules/posthog-js')) {
+              return 'posthog';
+            }
+            if (id.includes('node_modules/@google/genai')) {
+              return 'google-genai';
             }
           }
         }
