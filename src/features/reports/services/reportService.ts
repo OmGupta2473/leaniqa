@@ -13,7 +13,7 @@ export const reportService = {
       
     if (error) {
       console.error('Error fetching weekly reports:', error);
-      return [];
+      throw error;
     }
     return data || [];
   },
@@ -28,7 +28,7 @@ export const reportService = {
       
     if (error) {
       console.error('Error fetching daily metrics:', error);
-      return [];
+      throw error;
     }
     return data || [];
   },
@@ -61,7 +61,7 @@ export const reportService = {
 
     if (error && error.code !== 'PGRST116') {
       console.error('Error saving weekly report:', error);
-      return null;
+      throw error;
     }
     return data || payload;
   }

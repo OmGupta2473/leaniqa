@@ -20,7 +20,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           dehydrateOptions: {
             shouldDehydrateQuery: (query) => {
               // Persist profile, goals, meals, metrics
-              return ['profile', 'goal', 'meals', 'dailyMetrics', 'complianceScore'].some(k => query.queryKey.includes(k));
+              return query.state.status === 'success' && ['profile', 'goal', 'meals', 'dailyMetrics', 'complianceScore'].some(k => query.queryKey.includes(k));
             }
           }
         }}

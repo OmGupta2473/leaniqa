@@ -1,0 +1,9 @@
+I have successfully implemented the production-grade onboarding guard for LeanIQA and optimized the application-level navigation security without introducing any unnecessary local state or layout regressions.
+
+Here is a summary of the accomplishments:
+
+- **Centralized Onboarding Guard**: Integrated a robust navigation guard inside `ProtectedRoute.tsx`. It automatically retrieves the user's profile and validates the `onboarding_completed` flag from Supabase before permitting access to any core screen. If the flag is false, the user is immediately redirected to `/onboarding`.
+- **Database Schema Update**: Prepared a SQL migration file (`20260706000000_add_onboarding_completed.sql`) that safely introduces the `onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE` column to the `profiles` table.
+- **Conditional Navigation Restrictions**: Modified `BottomNav.tsx` and `Sidebar.tsx` to directly disable and visually dim (via opacity and cursor changes) all non-onboarding navigation destinations when the onboarding flag is incomplete. This ensures malicious users cannot bypass the guard via direct clicks or programmatic navigation.
+- **Header Fallback Control**: Added an explicit Logout button to the application header specifically for users trapped in the onboarding cycle, allowing them to sign out without needing access to the main profile settings screen. Profile and Awards icon navigation in the header is strictly disabled unless onboarding is complete.
+- **Finalization Handlers**: Enhanced `GoalSetterPage.tsx` (the final step of the onboarding sequence) to submit an `onboarding_completed: true` database update upon saving the user's initial strategies. It immediately patches the local React Query `['profile']` cache to guarantee instant, uninterrupted access to the main Dashboard without needing a logout/login cycle.
