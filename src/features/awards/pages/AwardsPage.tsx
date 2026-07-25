@@ -266,8 +266,9 @@ export function AwardsPage() {
       </motion.div>
 
       {/* Immersive Modal Overlay */}
-      <AnimatePresence>
-        {selectedAward && createPortal(
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {selectedAward && (
           <motion.div 
             initial={{ opacity: 0, backdropFilter: "blur(0px)" }} 
             animate={{ opacity: 1, backdropFilter: "blur(20px)" }} 
@@ -387,8 +388,10 @@ export function AwardsPage() {
               )}
             </motion.div>
           </motion.div>
-        , document.body)}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }

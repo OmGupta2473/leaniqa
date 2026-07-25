@@ -429,8 +429,9 @@ export function ProfilePage() {
         </button>
       </div>
 
-      <AnimatePresence>
-        {showResetModal && createPortal(
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {showResetModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0 }}
@@ -473,8 +474,10 @@ export function ProfilePage() {
               </div>
             </motion.div>
           </div>
-        , document.body)}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }
