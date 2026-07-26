@@ -383,7 +383,7 @@ export function OnboardingPage() {
 
       {/* Progress Indicator */}
       {step > 0 && step < 8 && (
-        <div className="fixed top-0 left-0 right-0 w-full px-4 sm:px-8 pt-8 pb-4 sm:pt-12 sm:pb-6 z-[100] flex items-center bg-[#0A0A0B] border-b border-[rgba(255,255,255,0.05)] shadow-md">
+        <div className="sticky top-0 w-full px-4 sm:px-8 py-3 sm:py-4 z-50 flex items-center bg-[#0A0A0B]/90 backdrop-blur-md border-b border-[rgba(255,255,255,0.05)] shadow-md">
            <div className="w-[48px] shrink-0 flex justify-start">
              <button 
                onClick={() => setStep(step === 9 ? (gender === 'Male' ? 7 : 6) : (step === 7 ? 6 : step - 1))}
@@ -416,7 +416,7 @@ export function OnboardingPage() {
         </div>
       )}
 
-      <div className={cn("flex-1 flex flex-col justify-center items-center px-6 relative z-10 w-full max-w-xl mx-auto", step > 0 && step < 8 ? "pt-24" : "")}>
+      <div className="flex-1 flex flex-col justify-center items-center px-6 relative z-10 w-full max-w-xl mx-auto py-8">
         <AnimatePresence mode="wait" custom={direction}>
             {step === 0 && (
                 <motion.div key="welcome" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="text-center w-full">
