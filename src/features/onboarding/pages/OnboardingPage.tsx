@@ -370,14 +370,14 @@ export function OnboardingPage() {
   };
 
   return (
-    <div className="flex-1 min-h-full w-full bg-[#0A0A0B] text-white flex flex-col relative overflow-hidden font-sans">
+    <div className="flex-1 min-h-full w-full bg-[#0A0A0B] text-white flex flex-col relative font-sans">
         
       {/* Background glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[120vh] bg-[radial-gradient(ellipse_at_center,rgba(212,255,0,0.03)_0%,rgba(0,0,0,0)_60%)] pointer-events-none" />
+      <div className="absolute inset-0 overflow-hidden pointer-events-none"><div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[120vh] bg-[radial-gradient(ellipse_at_center,rgba(212,255,0,0.03)_0%,rgba(0,0,0,0)_60%)]" /></div>
 
       {/* Progress Indicator */}
       {step > 0 && step < 8 && (
-        <div className="w-full px-4 sm:px-8 pt-8 pb-4 sm:pt-12 sm:pb-6 z-40 flex items-center shrink-0">
+        <div className="sticky top-0 w-full px-4 sm:px-8 pt-8 pb-4 sm:pt-12 sm:pb-6 z-50 flex items-center shrink-0 bg-[#0A0A0B]">
            <div className="w-[48px] shrink-0 flex justify-start">
              <button 
                onClick={() => setStep(step === 9 ? (gender === 'Male' ? 7 : 6) : (step === 7 ? 6 : step - 1))}
