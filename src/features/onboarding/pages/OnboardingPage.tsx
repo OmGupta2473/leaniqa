@@ -693,7 +693,7 @@ export function OnboardingPage() {
                             disabled={!activity}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            onClick={() => setStep(gender === 'Male' ? 7 : 8)}
+                            onClick={() => setStep(8)}
                             className="bg-[#D4FF00] text-black font-semibold rounded-full px-12 py-4 disabled:opacity-30 transition-opacity"
                         >
                             Continue
