@@ -27,6 +27,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* ── Main content ── */}
       <main className="flex-1 flex flex-col min-w-0 max-w-full relative">
+        {location.pathname !== '/onboarding' && <Header />}
         {children || (
           <div 
             className="app-scroll flex-1 overflow-y-auto scroll-smooth flex flex-col relative" 
@@ -35,7 +36,6 @@ export function AppLayout({ children }: AppLayoutProps) {
               paddingBottom: isKeyboardOpen ? `${Math.max(keyboardOffset, 100)}px` : 'calc(100px + env(safe-area-inset-bottom))' 
             }}
           >
-            <Header />
             <div className="flex flex-col flex-1 w-full">
               <Outlet />
             </div>
