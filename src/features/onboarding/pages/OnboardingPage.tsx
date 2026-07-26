@@ -734,7 +734,7 @@ export function OnboardingPage() {
                                     )}
                                 </div>
                                 <div className="p-3 text-center">
-                                    <span className="text-sm font-medium">{["Lean", "Athletic", "Fit", "Average", "Skinny Fat", "Overweight", "Obese"][p-1] || `Type ${p}`}</span>
+                                    <span className="text-sm font-medium">{["Athletic", "Fit", "Average fit", "Average", "Above average", "High body fat", "Obese"][p-1] || `Type ${p}`}</span>
                                 </div>
                             </button>
                         ))}
