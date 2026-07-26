@@ -361,7 +361,7 @@ export function DashboardPage() {
                     <span className="text-[14px] font-semibold text-[rgba(235,235,245,0.4)]">kg</span>
                   </div>
                   <div className="text-[12px] font-medium text-[rgba(235,235,245,0.5)] tracking-tight">
-                    Target: {targetWeightKg > 0 ? targetWeightKg.toFixed(2) : '--'} kg
+                    Target: {targetWeightKg ? Number(targetWeightKg).toFixed(1) : '--'} kg
                   </div>
                 </div>
               </motion.div>
