@@ -27,7 +27,22 @@ export const authService = {
       });
     }
 
-    return session.user.id;
+    // Verify the user actually exists in the database still
+    // This is important because in development, the database might be reset while the local session is still active
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      await this.logout();
+      window.location.href = '/login';
+      throw new AppError({
+        code: ErrorCodes.UNAUTHORIZED,
+        message: 'Your session is invalid or has expired. Please log in again.',
+        retryable: false,
+        status: 401,
+      });
+    }
+
+    return user.id;
   },
   
   async logout(): Promise<void> {
