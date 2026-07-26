@@ -703,8 +703,27 @@ export function OnboardingPage() {
             )}
                         {step === 7 && (
                 <motion.div key="physique" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="w-full">
-                    <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-2 text-center">Does this look similar to your current physique?</h2>
-                    <p className="text-center text-zinc-400 mb-8">Select the image that closest matches your body right now.</p>
+                    <div className="text-center mb-8">
+                        <div className="inline-flex items-center gap-2 bg-[rgba(212,255,0,0.1)] border border-[rgba(212,255,0,0.2)] px-4 py-2 rounded-full mb-6">
+                            <span className="text-xl">✨</span>
+                            <span className="text-[14px] font-semibold text-white">Estimated Body Fat: <span className="text-[#D4FF00]">{
+                                (() => {
+                                    const h = getComputedHeight();
+                                    const w = parseFloat(weight) || 80;
+                                    const a = parseFloat(age) || 30;
+                                    const g = gender || 'Male';
+                                    if (h > 0 && w > 0) {
+                                        const bmi = w / Math.pow(h / 100, 2);
+                                        const bf = g === 'Male' ? (1.20 * bmi) + (0.23 * a) - 16.2 : (1.20 * bmi) + (0.23 * a) - 5.4;
+                                        return Math.max(5, Math.round(bf)) + "%";
+                                    }
+                                    return "--%";
+                                })()
+                            }</span></span>
+                        </div>
+                        <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-2 text-center">Does this look similar to your current physique?</h2>
+                        <p className="text-center text-zinc-400">Select the image that closest matches your body right now.</p>
+                    </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-w-4xl mx-auto overflow-y-auto pb-8">
                         {[1, 2, 3, 4, 5, 6, 7, 8].map(p => (
                             <button
@@ -727,6 +746,39 @@ export function OnboardingPage() {
                                             (e.target as HTMLImageElement).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" fill="%23333"><rect width="100%" height="100%"/></svg>';
                                         }}
                                     />
+                                    {(() => {
+                                        const h = getComputedHeight();
+                                        const w = parseFloat(weight) || 80;
+                                        const a = parseFloat(age) || 30;
+                                        const g = gender || 'Male';
+                                        let isRec = false;
+                                        if (h > 0 && w > 0) {
+                                            const bmi = w / Math.pow(h / 100, 2);
+                                            const bf = g === 'Male' ? (1.20 * bmi) + (0.23 * a) - 16.2 : (1.20 * bmi) + (0.23 * a) - 5.4;
+                                            
+                                            const maleMids = [5, 10, 13.5, 17.5, 22.5, 27.5, 35, 45];
+                                            const femaleMids = [12, 17, 22, 27, 32.5, 37.5, 45, 55];
+                                            const mids = g === 'Male' ? maleMids : femaleMids;
+                                            
+                                            // Find closest mid
+                                            let closestIdx = 0;
+                                            let minDiff = Infinity;
+                                            for (let i = 0; i < mids.length; i++) {
+                                                const diff = Math.abs(mids[i] - bf);
+                                                if (diff < minDiff) {
+                                                    minDiff = diff;
+                                                    closestIdx = i;
+                                                }
+                                            }
+                                            isRec = (closestIdx + 1 === p);
+                                        }
+                                        if (!isRec) return null;
+                                        return (
+                                            <div className="absolute top-2 left-2 px-2 py-1 bg-[rgba(0,0,0,0.6)] backdrop-blur-md text-[#D4FF00] border border-[rgba(212,255,0,0.3)] text-[10px] font-bold uppercase tracking-wider rounded-full">
+                                                Estimate
+                                            </div>
+                                        );
+                                    })()}
                                     {physique === p && (
                                         <div className="absolute top-2 right-2 bg-[#D4FF00] text-black rounded-full p-1 shadow-lg">
                                             <CheckCircle2 size={16} />
