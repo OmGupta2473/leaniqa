@@ -82,6 +82,12 @@ export function OnboardingPage() {
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
+    // Scroll to top of both window and app-scroll container on step change
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const scrollContainer = document.querySelector('.app-scroll');
+    if (scrollContainer) {
+      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }, [step]);
 
   
@@ -377,7 +383,7 @@ export function OnboardingPage() {
 
       {/* Progress Indicator */}
       {step > 0 && step < 8 && (
-        <div className="sticky top-0 w-full px-4 sm:px-8 pt-8 pb-4 sm:pt-12 sm:pb-6 z-50 flex items-center shrink-0 bg-[#0A0A0B]">
+        <div className="fixed top-0 left-0 right-0 w-full px-4 sm:px-8 pt-8 pb-4 sm:pt-12 sm:pb-6 z-[100] flex items-center bg-[#0A0A0B] border-b border-[rgba(255,255,255,0.05)] shadow-md">
            <div className="w-[48px] shrink-0 flex justify-start">
              <button 
                onClick={() => setStep(step === 9 ? (gender === 'Male' ? 7 : 6) : (step === 7 ? 6 : step - 1))}
@@ -406,11 +412,11 @@ export function OnboardingPage() {
                <LogOut size={18} />
              </button>
            </div>
-           <div className="w-[48px] shrink-0" /> {/* Spacer */}
+           
         </div>
       )}
 
-      <div className="flex-1 flex flex-col justify-center items-center px-6 relative z-10 w-full max-w-xl mx-auto">
+      <div className={cn("flex-1 flex flex-col justify-center items-center px-6 relative z-10 w-full max-w-xl mx-auto", step > 0 && step < 8 ? "pt-24" : "")}>
         <AnimatePresence mode="wait" custom={direction}>
             {step === 0 && (
                 <motion.div key="welcome" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="text-center w-full">
@@ -728,7 +734,7 @@ export function OnboardingPage() {
                                     )}
                                 </div>
                                 <div className="p-3 text-center">
-                                    <span className="text-sm font-medium">Type {p}</span>
+                                    <span className="text-sm font-medium">{["Lean", "Athletic", "Fit", "Average", "Skinny Fat", "Overweight", "Obese"][p-1] || `Type ${p}`}</span>
                                 </div>
                             </button>
                         ))}
@@ -797,7 +803,7 @@ export function OnboardingPage() {
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: 0.6, type: "spring" as any, stiffness: 200 }}
-                            className="col-span-2 bg-[rgba(212,255,0,0.05)] border border-[rgba(212,255,0,0.2)] rounded-3xl p-6 flex items-center justify-between"
+                            className="col-span-2 bg-[rgba(212,255,0,0.05)] border border-[rgba(212,255,0,0.2)] rounded-3xl p-6 flex items-center"
                         >
                             <div>
                                 <div className="text-sm text-[rgba(212,255,0,0.7)] font-semibold uppercase tracking-wider mb-1">Maintenance Calories</div>
