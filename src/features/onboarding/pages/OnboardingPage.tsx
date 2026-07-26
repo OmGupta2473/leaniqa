@@ -112,6 +112,7 @@ export function OnboardingPage() {
   const [aiStatus, setAiStatus] = useState(0);
   
   const [results, setResults] = useState<any>(null);
+  const [physique, setPhysique] = useState<number | null>(null);
 
   useEffect(() => {
     if (step === 0 && !editProfileMode) {
@@ -375,8 +376,8 @@ export function OnboardingPage() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[120vh] bg-[radial-gradient(ellipse_at_center,rgba(212,255,0,0.03)_0%,rgba(0,0,0,0)_60%)] pointer-events-none" />
 
       {/* Progress Indicator */}
-      {step > 0 && step !== 8 && (
-        <div className="w-full px-4 sm:px-8 pt-4 pb-4 sm:pt-6 sm:pb-6 z-40 flex items-center shrink-0">
+      {step > 0 && step < 8 && (
+        <div className="w-full px-4 sm:px-8 pt-8 pb-4 sm:pt-12 sm:pb-6 z-40 flex items-center shrink-0">
            <div className="w-[48px] shrink-0 flex justify-start">
              <button 
                onClick={() => setStep(step === 9 ? (gender === 'Male' ? 7 : 6) : (step === 7 ? 6 : step - 1))}
