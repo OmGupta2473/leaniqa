@@ -47,6 +47,11 @@ export function useCalculatedProfile() {
         data.estimatedCompletionDate = goal.target_date 
           ? new Date(goal.target_date).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
           : calcG.targetDateStr;
+        
+        if (goal.macros) {
+            data.targetMacros = goal.macros;
+        }
+
       }
     }
     return data;
