@@ -119,7 +119,7 @@ export function OnboardingPage() {
   }, [step, editProfileMode]);
 
   useEffect(() => {
-    if (step === 7) {
+    if (step === 8) {
         // Run AI animation sequence
         const seq = async () => {
             await new Promise(r => setTimeout(r, 800));
@@ -155,7 +155,7 @@ export function OnboardingPage() {
               waterLitres: macros.waterLitres
             });
             
-            setStep(8);
+            setStep(9);
         };
         seq();
     }
@@ -374,11 +374,11 @@ export function OnboardingPage() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[120vh] bg-[radial-gradient(ellipse_at_center,rgba(212,255,0,0.03)_0%,rgba(0,0,0,0)_60%)] pointer-events-none" />
 
       {/* Progress Indicator */}
-      {step > 0 && step !== 7 && (
-        <div className="w-full px-4 sm:px-8 pt-2 pb-2 sm:pt-6 sm:pb-6 z-40 flex items-center shrink-0">
+      {step > 0 && step !== 8 && (
+        <div className="w-full px-4 sm:px-8 pt-4 pb-4 sm:pt-6 sm:pb-6 z-40 flex items-center shrink-0">
            <div className="w-[48px] shrink-0 flex justify-start">
              <button 
-               onClick={() => setStep(step === 8 ? 6 : step - 1)}
+               onClick={() => setStep(step === 9 ? (gender === 'Male' ? 7 : 6) : (step === 7 ? 6 : step - 1))}
                className="text-zinc-500 hover:text-white transition-colors p-2 flex items-center justify-center bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-full hover:bg-[rgba(255,255,255,0.05)]"
                aria-label="Go Back"
              >
@@ -386,7 +386,7 @@ export function OnboardingPage() {
              </button>
            </div>
            <div className="flex gap-2 flex-1 justify-center">
-             {step < 7 && [1,2,3,4,5,6].map(s => (
+             {step < 8 && [1,2,3,4,5,6, ...(gender === 'Male' ? [7] : [])].map(s => (
                <motion.div 
                  key={s}
                  className={cn("h-1 rounded-full", step >= s ? "bg-[#D4FF00]" : "bg-zinc-800")}
@@ -394,6 +394,15 @@ export function OnboardingPage() {
                  transition={{ type: "spring" as any, stiffness: 300, damping: 30 }}
                />
              ))}
+           </div>
+           <div className="w-[48px] shrink-0 flex justify-end">
+             <button 
+               onClick={() => authService.logout()}
+               className="text-[rgba(255,255,255,0.4)] hover:text-white transition-colors p-2 flex items-center justify-center bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-full hover:bg-[rgba(255,255,255,0.05)]"
+               aria-label="Logout"
+             >
+               <LogOut size={18} />
+             </button>
            </div>
            <div className="w-[48px] shrink-0" /> {/* Spacer */}
         </div>
@@ -656,7 +665,7 @@ export function OnboardingPage() {
                                 key={a.label}
                                 onClick={() => {
                                     setActivity(a.label as any);
-                                    setTimeout(() => setStep(7), 400);
+                                    setTimeout(() => setStep(gender === 'Male' ? 7 : 8), 400);
                                 }}
                                 className={cn(
                                     "p-5 rounded-2xl border transition-all duration-300 text-left flex items-center gap-4 group",
@@ -676,7 +685,7 @@ export function OnboardingPage() {
                             disabled={!activity}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            onClick={() => setStep(7)}
+                            onClick={() => setStep(gender === 'Male' ? 7 : 8)}
                             className="bg-[#D4FF00] text-black font-semibold rounded-full px-12 py-4 disabled:opacity-30 transition-opacity"
                         >
                             Continue
@@ -684,7 +693,56 @@ export function OnboardingPage() {
                     </div>
                 </motion.div>
             )}
-            {step === 7 && (
+                        {step === 7 && (
+                <motion.div key="physique" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="w-full">
+                    <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-2 text-center">Does this look similar to your current physique?</h2>
+                    <p className="text-center text-zinc-400 mb-8">Select the image that closest matches your body right now.</p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-w-4xl mx-auto overflow-y-auto pb-8">
+                        {[1, 2, 3, 4, 5, 6, 7].map(p => (
+                            <button
+                                key={p}
+                                onClick={() => {
+                                    setPhysique(p);
+                                    setTimeout(() => setStep(8), 400);
+                                }}
+                                className={cn(
+                                    "rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col group",
+                                    physique === p ? "bg-[rgba(212,255,0,0.1)] border-[#D4FF00]" : "bg-[rgba(255,255,255,0.02)] border-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.05)] hover:border-[rgba(255,255,255,0.1)]"
+                                )}
+                            >
+                                <div className="aspect-[3/4] w-full bg-zinc-900 relative">
+                                    <img 
+                                        src={`/male_physique_${p}.png`} 
+                                        alt={`Male Physique ${p}`} 
+                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                        onError={(e) => {
+                                            (e.target as HTMLImageElement).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" fill="%23333"><rect width="100%" height="100%"/></svg>';
+                                        }}
+                                    />
+                                    {physique === p && (
+                                        <div className="absolute top-2 right-2 bg-[#D4FF00] text-black rounded-full p-1 shadow-lg">
+                                            <CheckCircle2 size={16} />
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="p-3 text-center">
+                                    <span className="text-sm font-medium">Type {p}</span>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                    <div className="flex justify-center mt-6">
+                        <button
+                            onClick={() => setStep(8)}
+                            className="bg-white text-black px-8 py-3 rounded-full font-semibold"
+                        >
+                            Continue
+                        </button>
+                    </div>
+                </motion.div>
+            )}
+
+            {step === 8 && (
                 <motion.div key="ai-analysis" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="w-full flex flex-col items-center justify-center">
                     <div className="relative w-32 h-32 mb-12">
                         <motion.div 
@@ -720,7 +778,7 @@ export function OnboardingPage() {
                 </motion.div>
             )}
 
-            {step === 8 && results && (
+            {step === 9 && results && (
                 <motion.div key="results" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="w-full py-12">
                     <motion.div 
                         initial={{ opacity: 0, y: 20 }}
