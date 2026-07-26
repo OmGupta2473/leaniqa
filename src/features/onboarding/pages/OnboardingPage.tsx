@@ -386,7 +386,7 @@ export function OnboardingPage() {
         <div className="sticky top-0 w-full px-4 sm:px-8 py-3 sm:py-4 z-50 flex items-center bg-[#0A0A0B]/90 backdrop-blur-md border-b border-[rgba(255,255,255,0.05)] shadow-md">
            <div className="w-[48px] shrink-0 flex justify-start">
              <button 
-               onClick={() => setStep(step === 9 ? (gender === 'Male' ? 7 : 6) : (step === 7 ? 6 : step - 1))}
+               onClick={() => setStep(step === 9 ? 6 : (step === 8 ? 6 : step - 1))}
                className="text-zinc-500 hover:text-white transition-colors p-2 flex items-center justify-center bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-full hover:bg-[rgba(255,255,255,0.05)]"
                aria-label="Go Back"
              >
@@ -394,7 +394,7 @@ export function OnboardingPage() {
              </button>
            </div>
            <div className="flex gap-2 flex-1 justify-center">
-             {step < 8 && [1,2,3,4,5,6, ...(gender === 'Male' ? [7] : [])].map(s => (
+             {step < 8 && [1,2,3,4,5,6].map(s => (
                <motion.div 
                  key={s}
                  className={cn("h-1 rounded-full", step >= s ? "bg-[#D4FF00]" : "bg-zinc-800")}
@@ -673,7 +673,7 @@ export function OnboardingPage() {
                                 key={a.label}
                                 onClick={() => {
                                     setActivity(a.label as any);
-                                    setTimeout(() => setStep(gender === 'Male' ? 7 : 8), 400);
+                                    setTimeout(() => setStep(8), 400);
                                 }}
                                 className={cn(
                                     "p-5 rounded-2xl border transition-all duration-300 text-left flex items-center gap-4 group",
@@ -701,109 +701,7 @@ export function OnboardingPage() {
                     </div>
                 </motion.div>
             )}
-                        {step === 7 && (
-                <motion.div key="physique" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="w-full">
-                    <div className="text-center mb-8">
-                        <div className="inline-flex items-center gap-2 bg-[rgba(212,255,0,0.1)] border border-[rgba(212,255,0,0.2)] px-4 py-2 rounded-full mb-6">
-                            <span className="text-xl">✨</span>
-                            <span className="text-[14px] font-semibold text-white">Estimated Body Fat: <span className="text-[#D4FF00]">{
-                                (() => {
-                                    const h = getComputedHeight();
-                                    const w = parseFloat(weight) || 80;
-                                    const a = parseFloat(age) || 30;
-                                    const g = gender || 'Male';
-                                    if (h > 0 && w > 0) {
-                                        const bmi = w / Math.pow(h / 100, 2);
-                                        const bf = g === 'Male' ? (1.20 * bmi) + (0.23 * a) - 16.2 : (1.20 * bmi) + (0.23 * a) - 5.4;
-                                        return Math.max(5, Math.round(bf)) + "%";
-                                    }
-                                    return "--%";
-                                })()
-                            }</span></span>
-                        </div>
-                        <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-2 text-center">Does this look similar to your current physique?</h2>
-                        <p className="text-center text-zinc-400">Select the image that closest matches your body right now.</p>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-w-4xl mx-auto overflow-y-auto pb-8">
-                        {[1, 2, 3, 4, 5, 6, 7, 8].map(p => (
-                            <button
-                                key={p}
-                                onClick={() => {
-                                    setPhysique(p);
-                                    setTimeout(() => setStep(8), 400);
-                                }}
-                                className={cn(
-                                    "rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col group",
-                                    physique === p ? "bg-[rgba(212,255,0,0.1)] border-[#D4FF00]" : "bg-[rgba(255,255,255,0.02)] border-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.05)] hover:border-[rgba(255,255,255,0.1)]"
-                                )}
-                            >
-                                <div className="aspect-[3/4] w-full bg-zinc-900 relative">
-                                    <img 
-                                        src={`/male_physique_${p === 8 ? 7 : p}.png`} 
-                                        alt={`Male Physique ${p}`} 
-                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                        onError={(e) => {
-                                            (e.target as HTMLImageElement).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" fill="%23333"><rect width="100%" height="100%"/></svg>';
-                                        }}
-                                    />
-                                    {(() => {
-                                        const h = getComputedHeight();
-                                        const w = parseFloat(weight) || 80;
-                                        const a = parseFloat(age) || 30;
-                                        const g = gender || 'Male';
-                                        let isRec = false;
-                                        if (h > 0 && w > 0) {
-                                            const bmi = w / Math.pow(h / 100, 2);
-                                            const bf = g === 'Male' ? (1.20 * bmi) + (0.23 * a) - 16.2 : (1.20 * bmi) + (0.23 * a) - 5.4;
-                                            
-                                            const maleMids = [5, 10, 13.5, 17.5, 22.5, 27.5, 35, 45];
-                                            const femaleMids = [12, 17, 22, 27, 32.5, 37.5, 45, 55];
-                                            const mids = g === 'Male' ? maleMids : femaleMids;
-                                            
-                                            // Find closest mid
-                                            let closestIdx = 0;
-                                            let minDiff = Infinity;
-                                            for (let i = 0; i < mids.length; i++) {
-                                                const diff = Math.abs(mids[i] - bf);
-                                                if (diff < minDiff) {
-                                                    minDiff = diff;
-                                                    closestIdx = i;
-                                                }
-                                            }
-                                            isRec = (closestIdx + 1 === p);
-                                        }
-                                        if (!isRec) return null;
-                                        return (
-                                            <div className="absolute top-2 left-2 px-2 py-1 bg-[rgba(0,0,0,0.6)] backdrop-blur-md text-[#D4FF00] border border-[rgba(212,255,0,0.3)] text-[10px] font-bold uppercase tracking-wider rounded-full">
-                                                Estimate
-                                            </div>
-                                        );
-                                    })()}
-                                    {physique === p && (
-                                        <div className="absolute top-2 right-2 bg-[#D4FF00] text-black rounded-full p-1 shadow-lg">
-                                            <CheckCircle2 size={16} />
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="p-3 text-center flex flex-col items-center justify-center gap-0.5">
-                                    <span className="text-sm font-bold text-white">{["Under 8%", "8–12%", "12–15%", "15–20%", "20–25%", "25–30%", "30–40%", "Above 40%"][p-1] || ""}</span>
-                                    <span className="text-[13px] font-medium text-zinc-400">{["Essential fat", "Athletic", "Fit", "Average fit", "Average", "Above average", "High body fat", "Obese"][p-1] || ""}</span>
-                                </div>
-                            </button>
-                        ))}
-                    </div>
-                    <div className="flex justify-center mt-6">
-                        <button
-                            onClick={() => setStep(8)}
-                            className="bg-white text-black px-8 py-3 rounded-full font-semibold"
-                        >
-                            Continue
-                        </button>
-                    </div>
-                </motion.div>
-            )}
-
-            {step === 8 && (
+                        {step === 8 && (
                 <motion.div key="ai-analysis" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="w-full flex flex-col items-center justify-center">
                     <div className="relative w-32 h-32 mb-12">
                         <motion.div 
