@@ -706,7 +706,7 @@ export function OnboardingPage() {
                     <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-2 text-center">Does this look similar to your current physique?</h2>
                     <p className="text-center text-zinc-400 mb-8">Select the image that closest matches your body right now.</p>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-w-4xl mx-auto overflow-y-auto pb-8">
-                        {[1, 2, 3, 4, 5, 6, 7].map(p => (
+                        {[1, 2, 3, 4, 5, 6, 7, 8].map(p => (
                             <button
                                 key={p}
                                 onClick={() => {
@@ -720,7 +720,7 @@ export function OnboardingPage() {
                             >
                                 <div className="aspect-[3/4] w-full bg-zinc-900 relative">
                                     <img 
-                                        src={`/male_physique_${p}.png`} 
+                                        src={`/male_physique_${p === 8 ? 7 : p}.png`} 
                                         alt={`Male Physique ${p}`} 
                                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                         onError={(e) => {
@@ -733,8 +733,9 @@ export function OnboardingPage() {
                                         </div>
                                     )}
                                 </div>
-                                <div className="p-3 text-center">
-                                    <span className="text-sm font-medium">{["Athletic", "Fit", "Average fit", "Average", "Above average", "High body fat", "Obese"][p-1] || `Type ${p}`}</span>
+                                <div className="p-3 text-center flex flex-col items-center justify-center gap-0.5">
+                                    <span className="text-sm font-bold text-white">{["Under 8%", "8–12%", "12–15%", "15–20%", "20–25%", "25–30%", "30–40%", "Above 40%"][p-1] || ""}</span>
+                                    <span className="text-[13px] font-medium text-zinc-400">{["Essential fat", "Athletic", "Fit", "Average fit", "Average", "Above average", "High body fat", "Obese"][p-1] || ""}</span>
                                 </div>
                             </button>
                         ))}
