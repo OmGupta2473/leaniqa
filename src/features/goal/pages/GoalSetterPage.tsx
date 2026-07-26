@@ -623,9 +623,11 @@ export function GoalSetterPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 flex-1 content-start pb-20">
-                  {bfOptions.map(opt => {
+                  {bfOptions.map((opt, idx) => {
                     const isSelected = currentBfMid === opt.mid;
                     const isRec = recommendedCurrentOpt.mid === opt.mid;
+                    const p = idx + 1;
+                    const imgSrc = `/${gender.toLowerCase()}_physique_${p === 8 ? 7 : p}.png`;
                     return (
                       <motion.div
                         key={opt.range}
@@ -636,13 +638,21 @@ export function GoalSetterPage() {
                           setTimeout(() => setStep(2), 500); // Auto-advance
                         }}
                         className={cn(
-                          "relative rounded-3xl overflow-hidden cursor-pointer transition-all duration-300",
+                          "relative rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 group",
                           "bg-[#111113] border border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.15)]",
                           isSelected && "border-[#D4FF00] shadow-[0_0_30px_rgba(212,255,0,0.15)]"
                         )}
                       >
-                        <div className="aspect-[3/4] w-full relative">
-                          <BodyFatImagePlaceholder gender={gender} categoryRange={opt.range} className="rounded-none border-none" />
+                        <div className="aspect-[3/4] w-full bg-zinc-900 relative">
+                          {gender === 'Male' ? (
+                            <img
+                                 src={imgSrc}
+                                 alt={`${gender} Physique ${p}`}
+                                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                          ) : (
+                            <BodyFatImagePlaceholder gender={gender} categoryRange={opt.range} className="rounded-none border-none" />
+                          )}
                           <div className="absolute inset-0 bg-gradient-to-t from-[#111113] via-[rgba(17,17,19,0.5)] to-transparent pointer-events-none" />
                           {isRec && (
                             <div className="absolute top-3 left-3 px-2 py-1 bg-[rgba(0,0,0,0.6)] backdrop-blur-md text-[#D4FF00] border border-[rgba(212,255,0,0.3)] text-[10px] font-bold uppercase tracking-wider rounded-full">
@@ -678,6 +688,9 @@ export function GoalSetterPage() {
 
                 <div className="grid grid-cols-2 gap-4 flex-1 content-start pb-20">
                   {bfOptions.filter(opt => currentBfMid ? opt.mid <= currentBfMid : true).map(opt => {
+                    const idx = bfOptions.findIndex(o => o.range === opt.range);
+                    const p = idx + 1;
+                    const imgSrc = `/${gender.toLowerCase()}_physique_${p === 8 ? 7 : p}.png`;
                     const isSelected = targetBfMid === opt.mid;
                     return (
                       <motion.div
@@ -689,13 +702,21 @@ export function GoalSetterPage() {
                           setTimeout(() => setStep(3), 500); // Auto-advance to AI planning
                         }}
                         className={cn(
-                          "relative rounded-3xl overflow-hidden cursor-pointer transition-all duration-300",
+                          "relative rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 group",
                           "bg-[#111113] border border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.15)]",
                           isSelected && "border-[#D4FF00] shadow-[0_0_30px_rgba(212,255,0,0.15)]"
                         )}
                       >
-                        <div className="aspect-[3/4] w-full relative">
-                          <BodyFatImagePlaceholder gender={gender} categoryRange={opt.range} className="rounded-none border-none" />
+                        <div className="aspect-[3/4] w-full bg-zinc-900 relative">
+                          {gender === 'Male' ? (
+                            <img
+                                 src={imgSrc}
+                                 alt={`${gender} Physique ${p}`}
+                                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                          ) : (
+                            <BodyFatImagePlaceholder gender={gender} categoryRange={opt.range} className="rounded-none border-none" />
+                          )}
                           <div className="absolute inset-0 bg-gradient-to-t from-[#111113] via-[rgba(17,17,19,0.5)] to-transparent pointer-events-none" />
                           <div className="absolute bottom-4 left-4 right-4 text-left">
                             <div className={cn("text-[22px] font-bold tracking-tight leading-none mb-1", isSelected ? "text-[#D4FF00]" : "text-white")}>{opt.range}</div>
