@@ -52,8 +52,10 @@ export const useNutritionStore = create<NutritionState>()(
       setAiStatus: (aiStatus) => set({ aiStatus }),
 
       clearNutritionStore: () => set({
+        mealDrafts: {},
         selectedMealSlot: null,
         searchText: '',
+        mealFilters: {},
         aiParsingLoading: false,
         aiStatus: 'unknown',
       })

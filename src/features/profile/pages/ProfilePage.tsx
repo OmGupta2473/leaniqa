@@ -38,7 +38,6 @@ export function ProfilePage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showResetModal, setShowResetModal] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const { data: profile, isLoading } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
@@ -67,18 +66,6 @@ export function ProfilePage() {
     },
   });
 
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      await authService.logout();
-      queryClient.clear();
-      haptics.success();
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout failed:', error);
-      setIsLoggingOut(false);
-    }
-  };
 
   const {
     name, gender, age, activityLevel,
@@ -395,21 +382,11 @@ export function ProfilePage() {
           </button>
         )}
         <button 
-          onClick={handleLogout}
-          disabled={isLoggingOut}
-          className="flex items-center justify-center gap-2 w-full py-3.5 rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.7)] font-medium text-[15px] transition-colors hover:bg-[rgba(255,255,255,0.06)] disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={() => authService.logout()}
+          className="flex items-center justify-center gap-2 w-full py-3.5 rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.7)] font-medium text-[15px] transition-colors hover:bg-[rgba(255,255,255,0.06)]"
         >
-          {isLoggingOut ? (
-            <>
-              <div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full animate-spin" />
-              Signing out...
-            </>
-          ) : (
-            <>
-              <LogOut size={18} />
-              Sign Out
-            </>
-          )}
+          <LogOut size={18} />
+          Sign Out
         </button>
         <button 
           onClick={() => setShowResetModal(true)} 
