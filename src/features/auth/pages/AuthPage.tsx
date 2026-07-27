@@ -10,7 +10,7 @@ import { Logo } from "@/shared/components/Logo";
 // 5. If OAuth consent screen is in "Testing" mode, add your email as a test user.
 
 import { useState, FormEvent } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/shared/utils/supabase';
 import { Mail, Apple } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -29,6 +29,7 @@ const GoogleIcon = ({ className }: { className?: string }) => (
 );
 
 export function AuthPage() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const location = useLocation();
   const [email, setEmail] = useState('');
@@ -233,8 +234,8 @@ export function AuthPage() {
 
           {/* Footer */}
           <div className="flex justify-center gap-6 text-[12px] font-medium text-[rgba(255,255,255,0.3)] mt-8">
-            <button type="button" className="hover:text-[rgba(255,255,255,0.6)] transition-colors cursor-pointer min-h-[44px] min-w-[44px]">Privacy Policy</button>
-            <button type="button" className="hover:text-[rgba(255,255,255,0.6)] transition-colors cursor-pointer min-h-[44px] min-w-[44px]">Terms of Service</button>
+            <button onClick={() => navigate('/privacy')} type="button" className="hover:text-[rgba(255,255,255,0.6)] transition-colors cursor-pointer min-h-[44px] min-w-[44px]">Privacy Policy</button>
+            <button onClick={() => navigate('/terms')} type="button" className="hover:text-[rgba(255,255,255,0.6)] transition-colors cursor-pointer min-h-[44px] min-w-[44px]">Terms of Service</button>
           </div>
 
         </motion.div>
