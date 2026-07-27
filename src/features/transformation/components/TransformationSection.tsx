@@ -20,27 +20,7 @@ function displayVal(val: any) {
   return val;
 }
 
-const maleOptions = [
-  { range: 'Under 8%', mid: 5 },
-  { range: '8–12%', mid: 10 },
-  { range: '12–15%', mid: 13.5 },
-  { range: '15–20%', mid: 17.5 },
-  { range: '20–25%', mid: 22.5 },
-  { range: '25–30%', mid: 27.5 },
-  { range: '30–40%', mid: 35 },
-  { range: 'Above 40%', mid: 45 }
-];
-
-const femaleOptions = [
-  { range: '10–14%', mid: 12 },
-  { range: '14–20%', mid: 17 },
-  { range: '20–24%', mid: 22 },
-  { range: '24–31%', mid: 27.5 },
-  { range: '31–38%', mid: 34.5 },
-  { range: '38–45%', mid: 41.5 },
-  { range: '45–50%', mid: 47.5 },
-  { range: 'Above 50%', mid: 55 }
-];
+import { maleOptions, femaleOptions } from '@/shared/constants/bodyFatOptions';
 
 function BodyFatImagePlaceholder({ gender, categoryRange, className }: { gender: string, categoryRange: string, className?: string }) {
   return (
