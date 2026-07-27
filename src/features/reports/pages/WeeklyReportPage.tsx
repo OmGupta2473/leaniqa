@@ -1,5 +1,5 @@
-import { onRenderCallback, useRenderTracker } from '@/shared/utils/perfDebug';
-import React, { useState, useMemo, Profiler } from 'react';
+import { PerfProfiler } from '@/shared/utils/perfDebug';
+import React, { useState, useMemo} from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { profileService } from '@/features/profile/services/profileService';
 import { mealService } from '@/features/nutrition/services/mealService';
@@ -168,7 +168,6 @@ function generateCoachData(days: DailyActivityData[], loggedCount: number) {
 
 
 export function WeeklyReportPage() {
-  useRenderTracker('WeeklyReportPage');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -362,7 +361,7 @@ export function WeeklyReportPage() {
   }
 
   return (
-    <Profiler id="WeeklyReportPage" onRender={onRenderCallback}>
+    <PerfProfiler id="WeeklyReportPage">
       <div className="page-enter pt-[calc(env(safe-area-inset-top)+20px)] pb-[calc(100px+env(safe-area-inset-bottom))] min-h-[100dvh] bg-[#0A0A0A] px-4">
         
         {/* Header */}
@@ -629,6 +628,6 @@ export function WeeklyReportPage() {
           </motion.div>
         )}
       </div>
-    </Profiler>
+    </PerfProfiler>
   );
 }

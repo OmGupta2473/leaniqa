@@ -1,6 +1,6 @@
 import { Logo } from "@/shared/components/Logo";
-import React, { Profiler } from 'react';
-import { onRenderCallback, useRenderTracker } from '@/shared/utils/perfDebug';
+import React from 'react';
+import { PerfProfiler } from '@/shared/utils/perfDebug';
 import { authService } from '@/features/auth/services/authService';
 import { useCallback } from 'react';
 import { useUserStore } from "@/features/profile/store/userStore";
@@ -37,7 +37,7 @@ export function Sidebar({ className }: { className?: string }) {
   const { hasCompletedOnboarding } = useHasCompletedOnboarding();
 
   return (
-    <Profiler id="Sidebar" onRender={onRenderCallback}>
+    <PerfProfiler id="Sidebar">
       <nav aria-label="Main Navigation" 
       className={cn("flex flex-col h-full w-full overflow-hidden", className)}
       style={{
@@ -254,6 +254,6 @@ export function Sidebar({ className }: { className?: string }) {
         </button>
       </div>
     </nav>
-    </Profiler>
+    </PerfProfiler>
   );
 }

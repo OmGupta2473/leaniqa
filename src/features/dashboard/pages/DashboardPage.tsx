@@ -1,5 +1,5 @@
-import React, { Profiler, useEffect, useState, useRef, memo } from 'react';
-import { onRenderCallback, useRenderTracker } from '@/shared/utils/perfDebug';
+import React, { useEffect, useState, useRef, memo } from 'react';
+import { PerfProfiler } from '@/shared/utils/perfDebug';
 import { useAppStore } from "@/app/store";
 import { reportService } from "@/features/reports/services/reportService";
 import { calculateCurrentDailyStreak, isDailyGoalMet, toUtcDay } from "@/shared/utils/streaks";
@@ -76,7 +76,6 @@ const AnimatedNumber = memo(function AnimatedNumber({
 });
 
 export function DashboardPage() {
-  useRenderTracker('DashboardPage');
   const isOnline = useNetworkConnectivity();
 
   const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
@@ -166,7 +165,7 @@ export function DashboardPage() {
   const scoreOffset = scoreCircumference - (completionScore / 100) * scoreCircumference;
 
   return (
-    <Profiler id="DashboardPage" onRender={onRenderCallback}>
+    <PerfProfiler id="DashboardPage">
       <div className="page-enter px-4 pb-[calc(80px+env(safe-area-inset-bottom))] pt-6 space-y-4">
         
         {/* Header */}
@@ -431,6 +430,6 @@ export function DashboardPage() {
 
       </div>
       
-      </Profiler>
+      </PerfProfiler>
   );
 }
