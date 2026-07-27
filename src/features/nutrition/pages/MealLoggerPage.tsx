@@ -26,6 +26,7 @@ import { analytics } from '@/shared/utils/analytics';
 import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
 import { MealLoggerSkeleton } from '@/shared/components/Skeletons';
 import { useToast } from '@/shared/components/Toast';
+import { devLog } from '@/shared/utils/logger';
 
 const getDeterministicFallback = (text: string) => {
   const normalizedText = text.toLowerCase();
@@ -274,16 +275,16 @@ export function MealLoggerPage() {
   const deleteMealMutation = useMutation({
     mutationFn: async (id: string) => {
       console.group('Delete Meal Audit: ' + id);
-      console.log('Meal Selected:', id);
+      devLog('Meal Selected:', id);
       if (typeof window !== 'undefined' && !navigator.onLine) {
-        console.log('Offline: queueing delete meal');
+        devLog('Offline: queueing delete meal');
         const { offlineSyncService } = await import('@/shared/services/offlineSyncService');
         offlineSyncService.enqueue({ type: 'DELETE_MEAL', payload: id });
         return id;
       }
-      console.log('Delete Request sent to Database');
+      devLog('Delete Request sent to Database');
       await mealService.deleteMeal(id);
-      console.log('Database Delete Response: Success');
+      devLog('Database Delete Response: Success');
       return id;
     },
     onMutate: async (id) => {
@@ -307,10 +308,10 @@ export function MealLoggerPage() {
         queryClient.setQueryData(["meals"], previousTodayMeals.filter((m: any) => m.id !== id));
       }
       
-      console.log('Remaining Meals:', newMeals.length);
+      devLog('Remaining Meals:', newMeals.length);
       const newKcal = newMeals.reduce((s, m) => s + m.calories, 0);
       const newPro = newMeals.reduce((s, m) => s + m.protein, 0);
-      console.log('Recalculated Daily Totals:', { calories: newKcal, protein: newPro });
+      devLog('Recalculated Daily Totals:', { calories: newKcal, protein: newPro });
       
       return { previousMeals, previousTodayMeals, isToday };
     },
@@ -329,14 +330,14 @@ export function MealLoggerPage() {
         queryClient.invalidateQueries({ queryKey: ["meals"] }),
         queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] }),
         complianceService.recalculateDayScore(selectedDate.getFullYear() + '-' + String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + String(selectedDate.getDate()).padStart(2, '0')).then(() => {
-          console.log('Updated Dashboard & Progress Rings');
+          devLog('Updated Dashboard & Progress Rings');
           return Promise.all([
             queryClient.invalidateQueries({ queryKey: ["complianceScore"] }),
             queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] })
           ])
         }).catch(console.error)
       ]).then(() => {
-        console.log('Updated History & Reports');
+        devLog('Updated History & Reports');
         console.groupEnd();
       });
     }
@@ -356,17 +357,17 @@ export function MealLoggerPage() {
       const isCompoundMeal = COMPOUND_PATTERN.test(text) || COMMA_SPLIT.length > 1;
       
       // ── STEP 1: Cache lookup — only for simple single-food entries ────────────
-      console.log("=== MEAL LOGGING PIPELINE START ===");
-      console.log("User Input:", text);
+      devLog("=== MEAL LOGGING PIPELINE START ===");
+      devLog("User Input:", text);
       
       if (!isCompoundMeal) {
         const cachedResult = lookupCachedMeal(text);
         if (cachedResult && cachedResult.confidence >= 90) {
-          console.log("Nutrition Source Used: Cache");
-          console.log("Parsed Food Name:", text);
+          devLog("Nutrition Source Used: Cache");
+          devLog("Parsed Food Name:", text);
           
           
-          console.log("Nutrition Values Returned:", cachedResult);
+          devLog("Nutrition Values Returned:", cachedResult);
           try {
              await mealService.addMeal({ meal_text: text, calories: cachedResult.scaledCalories, protein: cachedResult.scaledProtein, fat: cachedResult.scaledFat, carbs: cachedResult.scaledCarbs, meal_time: getMealTime().toISOString(), tip: text, meal_slot: selectedMealSlot || undefined });
           } catch (e) {
@@ -376,7 +377,7 @@ export function MealLoggerPage() {
           return { calories: cachedResult.scaledCalories, protein: cachedResult.scaledProtein, fat: cachedResult.scaledFat, carbs: cachedResult.scaledCarbs, confidence: cachedResult.confidence, foods_detected: [text], coaching_tip: `Logged from nutritional database. ${Math.round(cachedResult.scaledCalories)} kcal · ${cachedResult.scaledProtein}g protein`, _fromCache: true };
         }
       }
-      console.log("Nutrition Source Used: AI / Function");
+      devLog("Nutrition Source Used: AI / Function");
 
       // STEP 2: AI with retry
       let lastError: Error | null = null;
@@ -456,7 +457,7 @@ export function MealLoggerPage() {
         // Save failed — log it but still return the estimate so onSuccess fires
         console.error('[meal-fallback] save to DB failed:', saveErr);
         if (typeof window !== 'undefined' && !navigator.onLine) {
-          console.log('[meal-fallback] offline: queueing meal for sync');
+          devLog('[meal-fallback] offline: queueing meal for sync');
           const { offlineSyncService } = await import('@/shared/services/offlineSyncService');
           offlineSyncService.enqueue({
             type: 'ADD_MEAL',
@@ -557,19 +558,19 @@ export function MealLoggerPage() {
       }
 
       console.group('Meal Parsing Audit: ' + text);
-      console.log('User Input:', text);
-      console.log('Parsed Food:', foodsDetected);
-      console.log('Final Nutrition:', {
+      devLog('User Input:', text);
+      devLog('Parsed Food:', foodsDetected);
+      devLog('Final Nutrition:', {
         calories: data.calories,
         protein: data.protein,
         fat: data.fat,
         carbs: data.carbs
       });
-      console.log('Updated Daily Totals:', {
+      devLog('Updated Daily Totals:', {
         calories: newEatenKcal,
         protein: newEatenProtein
       });
-      console.log('Remaining Targets:', {
+      devLog('Remaining Targets:', {
         calories: newRemainingKcal,
         protein: newRemainingProtein
       });

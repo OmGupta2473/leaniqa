@@ -4,6 +4,7 @@ import { AppProvider } from './app/providers/AppProvider';
 import { initCrashReporting, SentryErrorBoundary } from './shared/utils/logger';
 import { initAnalytics } from './shared/utils/analytics';
 import './index.css';
+import { devWarn } from '@/shared/utils/logger';
 
 // Initialize analytics and crash reporting before anything else
 initAnalytics();
@@ -28,7 +29,7 @@ const migrateLocalStorage = () => {
       }
     }
   } catch (e) {
-    console.warn('LocalStorage migration failed:', e);
+    devWarn('LocalStorage migration failed:', e);
   }
 };
 

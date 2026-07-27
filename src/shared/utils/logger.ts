@@ -146,3 +146,21 @@ export const logBreadcrumb = (category: string, message: string, data?: Record<s
 };
 
 export const SentryErrorBoundary = Sentry.ErrorBoundary;
+
+/**
+ * Log to console only in development mode.
+ */
+export const devLog = (...args: any[]) => {
+  if (import.meta.env.DEV) {
+    console.log(...args);
+  }
+};
+
+/**
+ * Log warning to console only in development mode.
+ */
+export const devWarn = (...args: any[]) => {
+  if (import.meta.env.DEV) {
+    console.warn(...args);
+  }
+};

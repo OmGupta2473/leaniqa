@@ -2,6 +2,7 @@ import { mealService } from '@/features/nutrition/services/mealService';
 import { profileService } from '@/features/profile/services/profileService';
 import { weightService } from '@/features/progress/services/weightService';
 import { queryClient } from '@/app/query/queryClient';
+import { devLog } from '@/shared/utils/logger';
 
 const QUEUE_KEY = 'LEANIQA_OFFLINE_QUEUE';
 
@@ -54,7 +55,7 @@ export const offlineSyncService = {
     if (isSyncing) return;
     isSyncing = true;
 
-    console.log(`Flushing offline queue (${queue.length} items), attempt ${retryAttempt + 1}`);
+    devLog(`Flushing offline queue (${queue.length} items), attempt ${retryAttempt + 1}`);
     const newQueue = [];
     let hadNetworkError = false;
 
@@ -99,7 +100,7 @@ export const offlineSyncService = {
         // Schedule next sync with exponential backoff
         retryAttempt++;
         const backoffMs = Math.min(1000 * (2 ** retryAttempt), 5 * 60 * 1000); // Max 5 mins
-        console.log(`Sync failed, retrying in ${backoffMs}ms`);
+        devLog(`Sync failed, retrying in ${backoffMs}ms`);
         if (syncTimeoutId) window.clearTimeout(syncTimeoutId);
         syncTimeoutId = window.setTimeout(() => this.flush(), backoffMs);
     } else if (!hadNetworkError) {

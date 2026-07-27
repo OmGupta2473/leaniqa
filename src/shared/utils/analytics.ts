@@ -1,4 +1,5 @@
 import posthog from 'posthog-js';
+import { devLog } from '@/shared/utils/logger';
 
 export type EventName = 
   | 'App Open'
@@ -34,7 +35,7 @@ export const initAnalytics = () => {
 
 export const analytics = {
   trackPageView: (url: string, title?: string) => {
-    console.log(`[Analytics] Page View: ${url} - ${title || 'Unknown Title'}`);
+    devLog(`[Analytics] Page View: ${url} - ${title || 'Unknown Title'}`);
     posthog.capture('$pageview', {
       $current_url: url,
       title: title || 'Unknown Title',
@@ -42,16 +43,16 @@ export const analytics = {
   },
   trackEvent: (eventName: EventName, properties?: Record<string, any>) => {
     const scrubbedProperties = properties ? scrubSensitiveData(properties) : undefined;
-    console.log(`[Analytics] Event: ${eventName}`, scrubbedProperties);
+    devLog(`[Analytics] Event: ${eventName}`, scrubbedProperties);
     posthog.capture(eventName, scrubbedProperties);
   },
   identifyUser: (userId: string, traits?: Record<string, any>) => {
     const scrubbedTraits = traits ? scrubSensitiveData(traits) : undefined;
-    console.log(`[Analytics] Identify: ${userId}`, scrubbedTraits);
+    devLog(`[Analytics] Identify: ${userId}`, scrubbedTraits);
     posthog.identify(userId, scrubbedTraits);
   },
   reset: () => {
-    console.log(`[Analytics] Reset User`);
+    devLog(`[Analytics] Reset User`);
     posthog.reset();
   }
 };
