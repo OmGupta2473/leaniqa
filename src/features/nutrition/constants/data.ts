@@ -1,3 +1,4 @@
+import { devLog } from '@/shared/utils/logger';
 export const IndianFoodsDB: Record<string, string> = {
   'dal chawal': '~620 kcal · 22g protein · 18g fat · 95g carbs — Good base meal, protein is moderate. Add a side of dahi to boost protein.',
   'roti': null,
@@ -223,12 +224,12 @@ export function lookupCachedMeal(text: string): (CachedMealMacros & { scaledCalo
     const result = scaleMacros(macros, quantity, extracted?.unit);
     
     console.group('Cache Lookup Audit: ' + text);
-    console.log('User Input:', text);
-    console.log('Parsed Food:', searchKey);
-    console.log('Parsed Quantity:', quantity);
-    console.log('Parsed Unit:', extracted?.unit || 'count');
-    console.log('Nutrition per Serving:', macros);
-    console.log('Final Nutrition:', result);
+    devLog('User Input:', text);
+    devLog('Parsed Food:', searchKey);
+    devLog('Parsed Quantity:', quantity);
+    devLog('Parsed Unit:', extracted?.unit || 'count');
+    devLog('Nutrition per Serving:', macros);
+    devLog('Final Nutrition:', result);
     console.groupEnd();
     
     return result; // Can be null if unit mismatch

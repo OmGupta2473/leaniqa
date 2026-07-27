@@ -2,6 +2,7 @@ import { supabase } from '@/shared/utils/supabase';
 import { DbProfile, DbGoal } from '@/shared/types/supabase';
 import { authService } from '@/features/auth/services/authService';
 import { AppError, ErrorCodes } from '@/shared/utils/errors';
+import { devLog } from '@/shared/utils/logger';
 
 export const profileService = {
   async getProfile(): Promise<DbProfile | null> {
@@ -82,7 +83,7 @@ export const profileService = {
         email: realEmail,
       };
       
-      console.log('Attempting profile upsert for user_id:', userId, 'Payload:', payload);
+      devLog('Attempting profile upsert for user_id:', userId, 'Payload:', payload);
 
       // Check if profile exists first
       const { data: existingProfile, error: fetchError } = await supabase
@@ -91,12 +92,12 @@ export const profileService = {
         .eq('id', userId)
         .maybeSingle();
 
-      console.log('Existing profile check:', existingProfile, 'Error:', fetchError);
+      devLog('Existing profile check:', existingProfile, 'Error:', fetchError);
 
       let data, error;
 
       if (existingProfile) {
-        console.log('Profile exists, performing update');
+        devLog('Profile exists, performing update');
         const updateRes = await supabase
           .from('profiles')
           .update(profileData)
@@ -106,7 +107,7 @@ export const profileService = {
         data = updateRes.data;
         error = updateRes.error;
       } else {
-        console.log('Profile does not exist, performing insert');
+        devLog('Profile does not exist, performing insert');
         const insertRes = await supabase
           .from('profiles')
           .insert(payload)
@@ -116,7 +117,7 @@ export const profileService = {
         error = insertRes.error;
       }
 
-      console.log('Upsert result:', data, 'Error:', error);
+      devLog('Upsert result:', data, 'Error:', error);
         
       if (error && error.code !== 'PGRST116') {
         console.error('upsertProfile error:', error);
@@ -196,7 +197,7 @@ export const profileService = {
         user_id: userId,
       };
 
-      console.log('Attempting goal upsert for user_id:', userId, 'Payload:', payload);
+      devLog('Attempting goal upsert for user_id:', userId, 'Payload:', payload);
 
       const { data: existingGoal, error: fetchError } = await supabase
         .from('goals')
@@ -204,12 +205,12 @@ export const profileService = {
         .eq('user_id', userId)
         .maybeSingle();
         
-      console.log('Existing goal check:', existingGoal, 'Error:', fetchError);
+      devLog('Existing goal check:', existingGoal, 'Error:', fetchError);
 
       let data, error;
 
       if (existingGoal) {
-        console.log('Goal exists, performing update');
+        devLog('Goal exists, performing update');
         const updateRes = await supabase
           .from('goals')
           .update(goalData)
@@ -219,7 +220,7 @@ export const profileService = {
         data = updateRes.data;
         error = updateRes.error;
       } else {
-        console.log('Goal does not exist, performing insert');
+        devLog('Goal does not exist, performing insert');
         const insertRes = await supabase
           .from('goals')
           .insert(payload)
@@ -229,7 +230,7 @@ export const profileService = {
         error = insertRes.error;
       }
 
-      console.log('Upsert goal result:', data, 'Error:', error);
+      devLog('Upsert goal result:', data, 'Error:', error);
         
       if (error && error.code !== 'PGRST116') {
         console.error('upsertGoal error:', error);

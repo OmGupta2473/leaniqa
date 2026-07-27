@@ -1,5 +1,6 @@
 import { supabase } from '@/shared/utils/supabase';
 import { authService } from '@/features/auth/services/authService';
+import { devLog } from '@/shared/utils/logger';
 
 export const subscriptionService = {
   async getSubscriptionStatus() {
@@ -27,21 +28,21 @@ export const subscriptionService = {
   },
 
   async activatePro(razorpayOrderId: string) {
-    console.log(`Activating pro via razorpay placeholder for order: ${razorpayOrderId}`);
+    devLog(`Activating pro via razorpay placeholder for order: ${razorpayOrderId}`);
     return { success: true };
   },
 
   async activatePremium() {
-    console.log('Activating premium via placeholder');
+    devLog('Activating premium via placeholder');
     return { success: true };
   },
 
   async restorePurchases() {
-    console.log('Restoring purchases placeholder');
+    devLog('Restoring purchases placeholder');
     return { success: true };
   },
   async cancelSubscription() {
-    console.log('Canceling subscription placeholder');
+    devLog('Canceling subscription placeholder');
     return { success: true };
   }
 };

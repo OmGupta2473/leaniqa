@@ -2,6 +2,7 @@ import { supabase } from '@/shared/utils/supabase';
 import { DbMealLog } from '@/shared/types/supabase';
 import { authService } from '@/features/auth/services/authService';
 import { logError } from '@/shared/utils/logger';
+import { devLog, devWarn } from '@/shared/utils/logger';
 
 export const mealService = {
   async getMeals(options?: { days?: number, limit?: number }): Promise<DbMealLog[]> {
@@ -85,7 +86,7 @@ export const mealService = {
     payload.fat = Math.round(payload.fat || 0);
     payload.carbs = Math.round(payload.carbs || 0);
     
-    console.log('--- SUPABASE INSERT PAYLOAD ---', payload);
+    devLog('--- SUPABASE INSERT PAYLOAD ---', payload);
     
     let res = await supabase
       .from('meal_logs')
@@ -95,7 +96,7 @@ export const mealService = {
       
     // If the error indicates a missing column (PGRST204 or PGRST205 or message includes column), try without meal_slot
     if (res.error && (res.error.code?.startsWith('PGRST20') || res.error.message?.toLowerCase().includes('column'))) {
-      console.warn('Column might be missing. Retrying without meal_slot.');
+      devWarn('Column might be missing. Retrying without meal_slot.');
       const fallbackPayload = { ...payload };
       delete (fallbackPayload as any).meal_slot;
       res = await supabase
@@ -109,7 +110,7 @@ export const mealService = {
       logError(new Error('Supabase insert error'), { error: res.error, payload });
       throw res.error;
     }
-    console.log('--- SUPABASE INSERT SUCCESS ---', res.data);
+    devLog('--- SUPABASE INSERT SUCCESS ---', res.data);
     return res.data || payload;
   },
   
