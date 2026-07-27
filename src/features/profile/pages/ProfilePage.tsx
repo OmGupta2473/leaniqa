@@ -12,6 +12,7 @@ import { authService } from '@/features/auth/services/authService';
 import { haptics } from '@/shared/utils/haptics';
 import { subscriptionService } from '@/features/pricing/services/subscriptionService';
 import { TransformationSection } from '@/features/transformation/components/TransformationSection';
+import { EditProfileModal } from '../components/EditProfileModal';
 import { analytics } from '@/shared/utils/analytics';
 import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
 import { ProfileSkeleton } from '@/shared/components/Skeletons';
@@ -38,6 +39,7 @@ export function ProfilePage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const { data: profile, isLoading } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
@@ -154,7 +156,7 @@ export function ProfilePage() {
             </div>
           </div>
           <button 
-            onClick={() => navigate('/onboarding/1')} 
+            onClick={() => setShowEditModal(true)} 
             className="btn-ghost"
             style={{ padding: '6px 12px', fontSize: '12px' }}
           >
@@ -446,6 +448,13 @@ export function ProfilePage() {
         </AnimatePresence>,
         document.body
       )}
+
+      <EditProfileModal 
+        isOpen={showEditModal} 
+        onClose={() => setShowEditModal(false)} 
+        profileData={profile} 
+        goalData={goal} 
+      />
     </div>
   );
 }
