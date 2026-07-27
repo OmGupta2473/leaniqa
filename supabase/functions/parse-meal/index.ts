@@ -128,7 +128,12 @@ serve(async (req) => {
     // Rate Limiting
     const endpoint = "parse-meal";
     const limit = parseInt(Deno.env.get("DAILY_AI_LIMIT") || "50", 10);
-    const today = new Date().toISOString().split("T")[0]; // UTC date for consistency
+    // Shift date by 5.5 hours to compute the boundary in IST (UTC+5:30)
+    // rather than UTC, so quotas reset at midnight IST for our India-first user base.
+    const now = new Date();
+    const istOffsetMs = 5.5 * 60 * 60 * 1000;
+    const istDate = new Date(now.getTime() + istOffsetMs);
+    const today = istDate.toISOString().split("T")[0];
     
     const { data: usageData, error: usageError } = await supabase
       .from("api_usage")
@@ -162,15 +167,19 @@ serve(async (req) => {
         release_version: Deno.env.get("RELEASE_VERSION") || "unknown"
       }));
       
-      const tomorrow = new Date();
-      tomorrow.setUTCHours(24, 0, 0, 0);
+      // Reset happens at midnight IST. We calculate tomorrow's midnight in IST,
+      // then shift back to UTC to give the client an accurate absolute timestamp.
+      const nowForReset = new Date();
+      const istTime = new Date(nowForReset.getTime() + (5.5 * 60 * 60 * 1000));
+      istTime.setUTCHours(24, 0, 0, 0);
+      const resetsAt = new Date(istTime.getTime() - (5.5 * 60 * 60 * 1000));
       
       return new Response(
         JSON.stringify({
           error: "Daily AI limit reached",
           limit: limit,
           used: currentUsage,
-          resets_at: tomorrow.toISOString(),
+          resets_at: resetsAt.toISOString(),
           _limitReached: true
         }),
         {
