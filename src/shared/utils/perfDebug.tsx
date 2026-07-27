@@ -1,4 +1,4 @@
-import React, { ProfilerOnRenderCallback, useEffect, useRef } from 'react';
+import React, { Profiler, ProfilerOnRenderCallback, useEffect, useRef } from 'react';
 
 // PERF DEBUG
 export const onRenderCallback: ProfilerOnRenderCallback = (
@@ -14,6 +14,13 @@ export const onRenderCallback: ProfilerOnRenderCallback = (
       console.log(`[PERF][${id}] ${phase} | actual: ${actualDuration.toFixed(2)}ms | base: ${baseDuration.toFixed(2)}ms | commit: ${commitTime}`);
     }
   }
+};
+
+export const PerfProfiler = ({ id, children }: { id: string, children: React.ReactNode }) => {
+  if (import.meta.env.DEV) {
+    return <Profiler id={id} onRender={onRenderCallback}>{children}</Profiler>;
+  }
+  return <>{children}</>;
 };
 
 export function useRenderTracker(componentName: string) {

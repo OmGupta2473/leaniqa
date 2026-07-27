@@ -1,5 +1,5 @@
-import React, { Profiler } from 'react';
-import { onRenderCallback, useRenderTracker } from '@/shared/utils/perfDebug';
+import React from 'react';
+import { PerfProfiler } from '@/shared/utils/perfDebug';
 import {
   LayoutDashboard,
   TrendingUp,
@@ -21,11 +21,10 @@ const navItems = [
 ];
 
 export function BottomNav() {
-  useRenderTracker('BottomNav');
   const { hasCompletedOnboarding } = useHasCompletedOnboarding();
 
   return (
-    <Profiler id="BottomNav" onRender={onRenderCallback}>
+    <PerfProfiler id="BottomNav">
       <nav aria-label="Bottom Navigation" className="w-full flex justify-center pb-[calc(20px+env(safe-area-inset-bottom))] px-5 pointer-events-none fixed bottom-0 z-50">
         <div 
           className="flex items-center justify-between px-2 py-2 w-full max-w-[400px] pointer-events-auto rounded-[28px]"
@@ -123,6 +122,6 @@ export function BottomNav() {
           ))}
         </div>
       </nav>
-    </Profiler>
+    </PerfProfiler>
   );
 }

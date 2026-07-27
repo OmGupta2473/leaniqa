@@ -1,7 +1,7 @@
 
-import React, { Profiler, useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { onRenderCallback, useRenderTracker } from '@/shared/utils/perfDebug';
+import { PerfProfiler } from '@/shared/utils/perfDebug';
 import { useNavigate } from "react-router-dom";
 import { useUserStore } from '@/features/profile/store/userStore';
 import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
@@ -88,7 +88,6 @@ function BodyFatImagePlaceholder({ gender, categoryRange, className }: { gender:
 }
 
 export function GoalSetterPage() {
-  useRenderTracker('GoalSetterPage');
   const navigate = useNavigate();
   const { profileData: onboardingData } = useCalculatedProfile();
   const setOnboardingData = useUserStore(s => s.setOnboardingData);
@@ -550,7 +549,7 @@ export function GoalSetterPage() {
   }
 
   return (
-    <Profiler id="GoalSetterPage" onRender={onRenderCallback}>
+    <PerfProfiler id="GoalSetterPage">
       <motion.div variants={pageVariants} initial="hidden" animate="visible" exit="exit" className="min-h-screen bg-black text-white relative flex flex-col overflow-x-hidden">
         
         {/* Back Button */}
@@ -1070,6 +1069,6 @@ export function GoalSetterPage() {
           </AnimatePresence>
         </div>
       </motion.div>
-    </Profiler>
+    </PerfProfiler>
   );
 }

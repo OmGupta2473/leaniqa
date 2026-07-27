@@ -1,5 +1,5 @@
-import React, { Profiler } from 'react';
-import { onRenderCallback, useRenderTracker } from '@/shared/utils/perfDebug';
+import React from 'react';
+import { PerfProfiler } from '@/shared/utils/perfDebug';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from '@/shared/components/Sidebar';
 import { BottomNav } from '@/shared/components/BottomNav';
@@ -12,13 +12,12 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
-  useRenderTracker('AppLayout');
   const isKeyboardOpen = useKeyboardOpen();
   const keyboardOffset = useVisualViewport();
   const location = useLocation();
 
   return (
-    <Profiler id="AppLayout" onRender={onRenderCallback}>
+    <PerfProfiler id="AppLayout">
     <div className="flex w-full min-h-screen bg-[var(--color-bg-base)]">
       {/* ── Desktop/tablet sidebar ── */}
       <aside className="hidden md:block w-[240px] flex-shrink-0">
@@ -50,7 +49,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         )}
       </main>
     </div>
-  </Profiler>
+  </PerfProfiler>
   );
 }
 

@@ -1,6 +1,6 @@
 import { Logo } from "@/shared/components/Logo";
-import React, { Profiler } from 'react';
-import { onRenderCallback, useRenderTracker } from '@/shared/utils/perfDebug';
+import React from 'react';
+import { PerfProfiler } from '@/shared/utils/perfDebug';
 import { authService } from '@/features/auth/services/authService';
 import { useAppStore } from '@/app/store';
 import { reportService } from '@/features/reports/services/reportService';
@@ -24,7 +24,6 @@ function getLocalDateString() {
 }
 
 export function Header() {
-  useRenderTracker('Header');
   const { data: metrics = [] } = useQuery({ queryKey: ['dailyMetrics'], queryFn: () => reportService.getDailyMetrics() });
   const earnedAwards = calculateEarnedAwards(metrics);
   const { isOnline } = useNetworkStatus();
