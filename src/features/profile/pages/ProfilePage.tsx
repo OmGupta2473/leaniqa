@@ -13,6 +13,7 @@ import { haptics } from '@/shared/utils/haptics';
 import { subscriptionService } from '@/features/pricing/services/subscriptionService';
 import { TransformationSection } from '@/features/transformation/components/TransformationSection';
 import { EditProfileModal } from '../components/EditProfileModal';
+import { EditNutritionModal } from '../components/EditNutritionModal';
 import { analytics } from '@/shared/utils/analytics';
 import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
 import { ProfileSkeleton } from '@/shared/components/Skeletons';
@@ -40,6 +41,7 @@ export function ProfilePage() {
   const queryClient = useQueryClient();
   const [showResetModal, setShowResetModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showNutritionModal, setShowNutritionModal] = useState(false);
 
   const { data: profile, isLoading } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
@@ -222,7 +224,16 @@ export function ProfilePage() {
 
       {/* Macros Section */}
       <div className="mb-12">
-        <div className="text-[22px] font-semibold tracking-tight text-white tracking-tight mb-3">Daily Nutrition Targets</div>
+        <div className="flex justify-between items-center mb-3">
+          <div className="text-[22px] font-semibold tracking-tight text-white tracking-tight">Daily Nutrition Targets</div>
+          <button 
+            onClick={() => setShowNutritionModal(true)} 
+            className="btn-ghost"
+            style={{ padding: '6px 12px', fontSize: '12px' }}
+          >
+            Edit
+          </button>
+        </div>
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div className="card-base p-4 flex flex-col items-center justify-center text-center">
             <div className="text-[11px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Calories</div>
@@ -231,7 +242,7 @@ export function ProfilePage() {
           <div className="card-base p-4 flex flex-col items-center justify-center text-center">
             <div className="text-[11px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Protein</div>
             <div className="text-[20px] font-bold text-[#FF4D1C]">
-              {targetMacros?.protein ? displayVal(targetMacros.protein) : `${displayVal(proteinMin)}–${displayVal(proteinMax)}`}
+              {displayVal(calculated.proteinMid)}
               <span className="text-[12px] font-medium text-[rgba(255,77,28,0.5)] ml-1">g</span>
             </div>
           </div>
@@ -454,6 +465,12 @@ export function ProfilePage() {
         onClose={() => setShowEditModal(false)} 
         profileData={profile} 
         goalData={goal} 
+      />
+
+      <EditNutritionModal
+        isOpen={showNutritionModal}
+        onClose={() => setShowNutritionModal(false)}
+        calculatedData={calculated}
       />
     </div>
   );
