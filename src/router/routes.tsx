@@ -27,6 +27,11 @@ const GoalSetterPage = lazy(() => import('@/features/goal/pages/GoalSetterPage')
 const LandingPage = lazy(() => import('@/LandingPage').then(module => ({ default: module.LandingPage })));
 const NotFoundPage = lazy(() => import('@/shared/components/NotFoundPage').then(module => ({ default: module.NotFoundPage })));
 
+
+const PrivacyPage = lazy(() => import('@/features/legal/pages/PrivacyPage').then(module => ({ default: module.PrivacyPage })));
+const TermsPage = lazy(() => import('@/features/legal/pages/TermsPage').then(module => ({ default: module.TermsPage })));
+const RefundPage = lazy(() => import('@/features/legal/pages/RefundPage').then(module => ({ default: module.RefundPage })));
+import { PublicLayout } from './layouts/PublicLayout';
 import { AppLoadingScreen } from '@/shared/components/AppLoadingScreen';
 
 function RootLayout() {
@@ -94,6 +99,15 @@ export const routes: RouteObject[] = [
               { path: '/protein', element: <Suspense fallback={<NutritionDetailSkeleton />}><ProteinDetailPage /></Suspense>, handle: { title: 'Protein Detail', description: 'Detailed breakdown of your protein intake.' } }
             ]
           }
+        ]
+      },
+
+      {
+        element: <PublicLayout />,
+        children: [
+          { path: '/privacy', element: <Suspense fallback={<ScreenSkeleton />}><PrivacyPage /></Suspense>, handle: { title: 'Privacy Policy' } },
+          { path: '/terms', element: <Suspense fallback={<ScreenSkeleton />}><TermsPage /></Suspense>, handle: { title: 'Terms of Service' } },
+          { path: '/refund', element: <Suspense fallback={<ScreenSkeleton />}><RefundPage /></Suspense>, handle: { title: 'Refund Policy' } }
         ]
       },
       {
