@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -48,5 +49,7 @@
     "workbox-window": "^7.4.1",
     "zustand": "^5.0.14"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "vitest": "^4.1.10"
+  }
 }
