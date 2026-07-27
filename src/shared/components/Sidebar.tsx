@@ -32,15 +32,7 @@ const navItems = [
 
 export function Sidebar({ className }: { className?: string }) {
   const navigate = useNavigate();
-  const clearUserStore = useUserStore(s => s.clearUserStore);
-  
-  const queryClient = useQueryClient();
-  const handleLogout = async () => {
-    
-    clearUserStore();
-    queryClient.clear();
-    await authService.logout();
-  };
+
 
   const { hasCompletedOnboarding } = useHasCompletedOnboarding();
 
@@ -231,7 +223,7 @@ export function Sidebar({ className }: { className?: string }) {
         </NavLink>
 
         <button
-          onClick={handleLogout}
+          onClick={() => authService.logout()}
           title="Logout"
           aria-label="Logout"
           className="group relative border-none bg-transparent"
