@@ -84,7 +84,8 @@ export const useUserStore = create<UserState>()(
       goalWizardCurrentBfMid: state.goalWizardCurrentBfMid,
       goalWizardTargetBfMid: state.goalWizardTargetBfMid,
       draftProfile: state.draftProfile,
-      profileEditState: state.profileEditState
+      profileEditState: state.profileEditState,
+      macroOverrides: state.macroOverrides
     }))
   )
 );

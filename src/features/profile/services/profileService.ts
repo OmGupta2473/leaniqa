@@ -95,26 +95,56 @@ export const profileService = {
       devLog('Existing profile check:', existingProfile, 'Error:', fetchError);
 
       let data, error;
+      
+      const performUpsert = async (payloadToUse: any, updatePayloadToUse: any) => {
+        if (existingProfile) {
+          const updateRes = await supabase
+            .from('profiles')
+            .update(updatePayloadToUse)
+            .eq('id', userId)
+            .select()
+            .maybeSingle();
+          return { data: updateRes.data, error: updateRes.error };
+        } else {
+          const insertRes = await supabase
+            .from('profiles')
+            .insert(payloadToUse)
+            .select()
+            .maybeSingle();
+          return { data: insertRes.data, error: insertRes.error };
+        }
+      };
 
-      if (existingProfile) {
-        devLog('Profile exists, performing update');
-        const updateRes = await supabase
-          .from('profiles')
-          .update(profileData)
-          .eq('id', userId)
-          .select()
-          .maybeSingle();
-        data = updateRes.data;
-        error = updateRes.error;
-      } else {
-        devLog('Profile does not exist, performing insert');
-        const insertRes = await supabase
-          .from('profiles')
-          .insert(payload)
-          .select()
-          .maybeSingle();
-        data = insertRes.data;
-        error = insertRes.error;
+      let res = await performUpsert(payload, profileData);
+      data = res.data;
+      error = res.error;
+
+      if (error && (error.message.includes('could not find the carbs_target') || error.message.includes('carbs_target') || error.message.includes('fat_target') || error.message.includes('water_target'))) {
+        devLog('Schema cache error detected, retrying without new columns');
+        const fallbackPayload = { ...payload };
+        delete fallbackPayload.carbs_target;
+        delete fallbackPayload.fat_target;
+        delete fallbackPayload.water_target;
+        
+        const fallbackUpdatePayload = { ...profileData };
+        delete fallbackUpdatePayload.carbs_target;
+        delete fallbackUpdatePayload.fat_target;
+        delete fallbackUpdatePayload.water_target;
+        
+        try {
+          const { useUserStore } = await import('@/features/profile/store/userStore');
+          useUserStore.getState().setMacroOverrides({
+            carbs_target: payload.carbs_target,
+            fat_target: payload.fat_target,
+            water_target: payload.water_target
+          });
+        } catch (e) {
+          console.error('Failed to store macro overrides', e);
+        }
+
+        res = await performUpsert(fallbackPayload, fallbackUpdatePayload);
+        data = res.data;
+        error = res.error;
       }
 
       devLog('Upsert result:', data, 'Error:', error);
