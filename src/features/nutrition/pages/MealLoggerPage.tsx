@@ -168,6 +168,7 @@ export function MealLoggerPage() {
   const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => profileService.getProfile() });
   const keyboardOffset = useVisualViewport();
   const isKeyboardOpen = useKeyboardOpen();
+  const isSubmittingRef = React.useRef(false);
 
   useEffect(() => {
     if (profile?.id) {
@@ -448,6 +449,7 @@ export function MealLoggerPage() {
       return { _errorMessage: errorContext, text };
     },
     onSuccess: (data, text) => {
+      isSubmittingRef.current = false;
       setLoading(false);
       
       if (data._errorMessage || (data.confidence && data.confidence < 80)) {
@@ -460,6 +462,7 @@ export function MealLoggerPage() {
       }
     },
     onError: (err: any, variables) => {
+      isSubmittingRef.current = false;
       console.error('[parseMealMutation] onError fired:', err);
       const errorMessage = typeof err === 'object' ? JSON.stringify(err, null, 2) : String(err);
       analytics.trackEvent('AI Parse Failure', { error: errorMessage, type: 'mutation_error' });
@@ -514,12 +517,10 @@ export function MealLoggerPage() {
   });
 
   const handleSend = React.useCallback(() => {
-    if (document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
-    if (import.meta.env.DEV) console.time('[PERF] MealLogger handleSend');
     const text = input.trim();
-    if (!text || loading || !selectedMealSlot) return;
+    if (!text || loading || isSubmittingRef.current || !selectedMealSlot) return;
+    isSubmittingRef.current = true;
+    if (import.meta.env.DEV) console.time('[PERF] MealLogger handleSend');
     setInput("");
     setPendingMeal(null);
     setFailedMealText(null);
@@ -907,7 +908,7 @@ export function MealLoggerPage() {
                       target.scrollIntoView({ behavior: 'smooth', block: 'end' });
                     }, 300);
                   }}
-                  disabled={loading || !selectedMealSlot}
+                  disabled={!selectedMealSlot}
                 />
                 <motion.button
                   whileHover={{ scale: 1.08 }}
@@ -917,10 +918,14 @@ export function MealLoggerPage() {
                     handleSend();
                   }}
                   disabled={loading || !selectedMealSlot || !input.trim()}
-                  className="w-[40px] h-[40px] rounded-full flex items-center justify-center shrink-0"
+                  className="w-[40px] h-[40px] rounded-full flex items-center justify-center shrink-0 transition-colors"
                   style={{ background: loading || !selectedMealSlot || !input.trim() ? 'rgba(212,255,0,0.3)' : '#D4FF00' }}
                 >
-                  <ArrowRight size={18} strokeWidth={2} color="#0A0A0A" />
+                  {loading ? (
+                    <Loader2 size={18} className="animate-spin text-black" />
+                  ) : (
+                    <ArrowRight size={18} strokeWidth={2} color="#0A0A0A" />
+                  )}
                 </motion.button>
               </div>
             </motion.div>
