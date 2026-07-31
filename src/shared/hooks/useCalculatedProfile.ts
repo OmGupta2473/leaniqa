@@ -7,6 +7,7 @@ export function useCalculatedProfile() {
   if (import.meta.env.DEV) console.time('[PERF] useCalculatedProfile');
   const { profile, goal, hasCompletedOnboarding, isLoading } = useHasCompletedOnboarding();
   const onboardingData = useUserStore(s => s.onboardingData);
+  const macroOverrides = useUserStore(s => s.macroOverrides) || {};
   
   const mergedData = useMemo(() => {
     const data = { ...onboardingData };
@@ -60,8 +61,9 @@ export function useCalculatedProfile() {
           fatPercentageMid = 0.30;
         }
 
-        let finalFat = profile.fat_target;
-        let finalCarbs = profile.carbs_target;
+        let finalFat = profile.fat_target ?? macroOverrides.fat_target;
+        let finalCarbs = profile.carbs_target ?? macroOverrides.carbs_target;
+        let finalWater = profile.water_target ?? macroOverrides.water_target;
 
         if (finalFat == null && finalCarbs == null) {
           finalFat = Math.round((calcG.dailyCalorieGoal * fatPercentageMid) / 9);
@@ -78,17 +80,17 @@ export function useCalculatedProfile() {
           carbs: finalCarbs
         };
         data.manualOverrides = {
-          carbs: profile.carbs_target != null,
-          fat: profile.fat_target != null,
-          water: profile.water_target != null
+          carbs: finalCarbs != null,
+          fat: finalFat != null,
+          water: finalWater != null
         };
-        if (profile.water_target) {
-          data.waterLitres = profile.water_target;
+        if (finalWater) {
+          data.waterLitres = finalWater;
         }
       }
     }
     return data;
-  }, [onboardingData, profile, goal]);
+  }, [onboardingData, profile, goal, macroOverrides]);
 
   if (import.meta.env.DEV) console.timeEnd('[PERF] useCalculatedProfile');
   return { profileData: mergedData, profile, goal, hasCompletedOnboarding, isLoading };
