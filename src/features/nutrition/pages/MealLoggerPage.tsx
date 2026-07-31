@@ -497,6 +497,9 @@ export function MealLoggerPage() {
       }
       
       addChatMessage({ role: 'ai', text: responseText, data });
+      setTimeout(() => {
+        setModalOpen(false);
+      }, 800);
     },
     onError: (err: any) => {
       console.error('[confirmMealMutation] onError:', err);
@@ -913,10 +916,8 @@ export function MealLoggerPage() {
                 <motion.button
                   whileHover={{ scale: 1.08 }}
                   whileTap={{ scale: 0.92 }}
-                  onPointerDown={(e) => {
-                    e.preventDefault();
-                    handleSend();
-                  }}
+                  onPointerDown={(e) => e.preventDefault()}
+                  onClick={() => handleSend()}
                   disabled={loading || !selectedMealSlot || !input.trim()}
                   className="w-[40px] h-[40px] rounded-full flex items-center justify-center shrink-0 transition-colors"
                   style={{ background: loading || !selectedMealSlot || !input.trim() ? 'rgba(212,255,0,0.3)' : '#D4FF00' }}
