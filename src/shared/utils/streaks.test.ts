@@ -40,9 +40,9 @@ describe('streaks', () => {
 
     const createMetric = (dateStr: string, met: boolean): DbDailyMetric => ({
       date: dateStr,
-      actual_calories: met ? 1500 : 2500,
+      actual_calories: met ? 1950 : 2500,
       target_calories: 2000,
-      actual_protein: met ? 150 : 100,
+      actual_protein: met ? 145 : 100,
       target_protein: 150,
       id: '1', user_id: '1', 
       score: 0, water: 0
