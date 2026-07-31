@@ -176,6 +176,9 @@ export function MealLoggerPage() {
   }, [profile?.id, initializeSession]);
 
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
+  const [pendingMeal, setPendingMeal] = useState<{ text: string; data: any } | null>(null);
+  const [failedMealText, setFailedMealText] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState<number>(0);
 
   const isToday = (d: Date) => {
     const today = new Date();
@@ -346,16 +349,13 @@ export function MealLoggerPage() {
     deleteMealMutation.mutate(id);
   };
 
-  const addMealMutation = useMutation({
+  const parseMealMutation = useMutation({
     mutationFn: async (text: string) => {
       // ── COMPOUND MEAL DETECTION ───────────────────────────────────────────────
-      // If the text describes multiple foods, skip the cache entirely and let the
-      // AI handle it. Cache is only for single-food entries like "2 eggs" or "100g chicken".
       const COMPOUND_PATTERN = /\b(with|and|aur|&|\+|along with|plus|sabzi|sabji|curry|masala)\b/i;
       const COMMA_SPLIT = text.split(',').filter(s => s.trim().length > 2);
       const isCompoundMeal = COMPOUND_PATTERN.test(text) || COMMA_SPLIT.length > 1;
       
-      // ── STEP 1: Cache lookup — only for simple single-food entries ────────────
       devLog("=== MEAL LOGGING PIPELINE START ===");
       devLog("User Input:", text);
       
@@ -363,40 +363,23 @@ export function MealLoggerPage() {
         const cachedResult = lookupCachedMeal(text);
         if (cachedResult && cachedResult.confidence >= 90) {
           devLog("Nutrition Source Used: Cache");
-          devLog("Parsed Food Name:", text);
-          
-          
-          devLog("Nutrition Values Returned:", cachedResult);
-          try {
-             await mealService.addMeal({ meal_text: text, calories: cachedResult.scaledCalories, protein: cachedResult.scaledProtein, fat: cachedResult.scaledFat, carbs: cachedResult.scaledCarbs, meal_time: getMealTime().toISOString(), tip: text, meal_slot: selectedMealSlot || undefined });
-          } catch (e) {
-             console.error("Complete Error Stack:", e);
-             throw e;
-          }
           return { calories: cachedResult.scaledCalories, protein: cachedResult.scaledProtein, fat: cachedResult.scaledFat, carbs: cachedResult.scaledCarbs, confidence: cachedResult.confidence, foods_detected: [text], coaching_tip: `Logged from nutritional database. ${Math.round(cachedResult.scaledCalories)} kcal · ${cachedResult.scaledProtein}g protein`, _fromCache: true };
         }
       }
       
       devLog("Nutrition Source Used: AI / Function");
-
-      // STEP 2: AI with retry
       let lastError: Error | null = null;
       let aiResponseDuration = 0;
       
       const reqStart = Date.now();
-      console.log(`[parse-meal] Request started for text: "${text}"`);
-
       if (typeof window !== 'undefined' && !navigator.onLine) {
         lastError = new Error('Network failure');
-        console.log(`[parse-meal] Offline detected immediately.`);
       } else {
         for (let attempt = 0; attempt < 3; attempt++) {
           try {
-            console.log(`[parse-meal] Attempt ${attempt + 1}: Checking session...`);
             const { data: { session }, error: sessionError } = await supabase.auth.getSession();
             if (sessionError || !session?.access_token) {
               if (attempt === 0) { 
-                console.log(`[parse-meal] Attempt 1: Session invalid. Refreshing session...`);
                 await supabase.auth.refreshSession(); 
               } else { 
                 throw new Error('Authentication failure'); 
@@ -406,17 +389,13 @@ export function MealLoggerPage() {
             const { data: { session: freshSession } } = await supabase.auth.getSession();
             if (!freshSession?.access_token) throw new Error('Authentication failure');
 
-            console.log(`[parse-meal] Attempt ${attempt + 1}: Edge Function invoked.`);
             const edgeStart = Date.now();
             const { data, error } = await supabase.functions.invoke('parse-meal', { body: { text, remainingCalories, remainingProtein, mealType: selectedMealSlot }, headers: { Authorization: `Bearer ${freshSession.access_token}` } });
             aiResponseDuration = Date.now() - edgeStart;
-            console.log(`[parse-meal] Attempt ${attempt + 1}: Response received in ${aiResponseDuration}ms.`);
 
             if (error) {
               const status = (error as any)?.context?.status ?? 0;
               const msg = String(error.message ?? '');
-              console.error(`[parse-meal] attempt ${attempt + 1}: status=${status} msg=${msg}`);
-
               if (status === 401 || status === 403) { 
                 if (attempt < 2) { await supabase.auth.refreshSession(); lastError = new Error('Auth — retrying'); continue; } 
                 throw new Error('Authentication failure'); 
@@ -441,18 +420,13 @@ export function MealLoggerPage() {
             }
 
             if (!data || typeof data.calories !== 'number') { 
-              console.error(`[parse-meal] attempt ${attempt + 1}: Invalid AI response data:`, data);
               lastError = new Error('Parsing error'); 
               if (attempt < 2) continue; 
               throw new Error('Invalid AI response'); 
             }
             
-            console.log(`[parse-meal] Success: confidence=${data.confidence}, calories=${data.calories}, protein=${data.protein}`);
-
-            await mealService.addMeal({ meal_text: text, calories: Math.round(data.calories), protein: Math.round(data.protein), fat: Math.round(data.fat), carbs: Math.round(data.carbs), meal_time: getMealTime().toISOString(), tip: data.foods_detected?.join(', ') || text, meal_slot: selectedMealSlot || undefined });
             return data;
           } catch (err: any) {
-            console.error(`[parse-meal] attempt ${attempt + 1} error:`, err.message);
             lastError = err as Error;
             if (attempt < 2 && (err.message.includes('retrying') || err.message.includes('unavailable') || err.message.includes('Auth —') || err.message.includes('Server error') || err.message.includes('timeout') || err.message.includes('Network failure') || err.message.includes('Parsing error'))) continue;
             break;
@@ -460,10 +434,6 @@ export function MealLoggerPage() {
         }
       }
 
-      // ── STEP 3: Guaranteed fallback — this block NEVER throws ─────────────────
-      // If we reach here, all AI retry attempts have failed.
-      // We ALWAYS return data so onSuccess fires, never onError.
-      
       const errorContext = (() => {
         const msg = lastError?.message ?? '';
         if (msg.includes('limit') || msg.includes('Rate limiting')) return 'Daily AI limit reached';
@@ -475,185 +445,59 @@ export function MealLoggerPage() {
         return msg || 'AI temporarily unavailable';
       })();
       
-      console.log(`[parse-meal] Final status: FAILED. Fallback reason: ${errorContext}. Total duration: ${Date.now() - reqStart}ms.`);
-
-      const lowConfCache = (() => {
-        try { return lookupCachedMeal(text); } catch { return null; }
-      })();
-      
-      const fallback = lowConfCache
-        ? {
-            calories: lowConfCache.scaledCalories,
-            protein: lowConfCache.scaledProtein,
-            fat: lowConfCache.scaledFat,
-            carbs: lowConfCache.scaledCarbs,
-            confidence: lowConfCache.confidence,
-          }
-        : getDeterministicFallback(text);
-
-      // Attempt to save — but NEVER let a save failure crash the function
-      try {
-        await mealService.addMeal({
-          meal_text: text,
-          calories: fallback.calories,
-          protein: fallback.protein,
-          fat: fallback.fat,
-          carbs: fallback.carbs,
-          meal_time: getMealTime().toISOString(),
-          tip: `Estimated: ${text}`,
-          meal_slot: selectedMealSlot || undefined,
-        });
-      } catch (saveErr) {
-        // Save failed — log it but still return the estimate so onSuccess fires
-        console.error('[meal-fallback] save to DB failed:', saveErr);
-        if (typeof window !== 'undefined' && !navigator.onLine) {
-          devLog('[meal-fallback] offline: queueing meal for sync');
-          const { offlineSyncService } = await import('@/shared/services/offlineSyncService');
-          offlineSyncService.enqueue({
-            type: 'ADD_MEAL',
-            payload: {
-              meal_text: text,
-              calories: fallback.calories,
-              protein: fallback.protein,
-              fat: fallback.fat,
-              carbs: fallback.carbs,
-              meal_time: getMealTime().toISOString(),
-              tip: `Estimated: ${text}`,
-              meal_slot: selectedMealSlot || undefined,
-            }
-          });
-        }
-        // Do NOT rethrow. The user gets their estimate displayed even if save failed.
-      }
-
-      return {
-        ...fallback,
-        foods_detected: [text],
-        coaching_tip: lowConfCache
-          ? `Database estimate — ${errorContext}.`
-          : `Rough estimate — ${errorContext}.`,
-        _errorMessage: errorContext,
-        _localOnly: typeof window !== 'undefined' && !navigator.onLine,
-      };
-      // ── END STEP 3 ─────────────────────────────────────────────────────────────
-    },
-    onMutate: async (text: string) => {
-      const now = new Date();
-      const isToday = selectedDate.getFullYear() === now.getFullYear() && 
-                      selectedDate.getMonth() === now.getMonth() && 
-                      selectedDate.getDate() === now.getDate();
-
-      await queryClient.cancelQueries({ queryKey: ["meals", "date", dateKeyStr] });
-      if (isToday) {
-        await queryClient.cancelQueries({ queryKey: ["meals"] });
-      }
-      
-      const previousMeals = queryClient.getQueryData(["meals", "date", dateKeyStr]);
-      const previousTodayMeals = queryClient.getQueryData(["meals"]);
-      
-      const estimate = getDeterministicFallback(text);
-      const optimisticMeal = {
-        id: 'opt-' + Date.now(),
-        meal_text: text,
-        calories: estimate.calories,
-        protein: estimate.protein,
-        fat: estimate.fat,
-        carbs: estimate.carbs,
-        meal_slot: selectedMealSlot || "lunch",
-        meal_time: getMealTime().toISOString()
-      };
-      
-      queryClient.setQueryData(["meals", "date", dateKeyStr], (old: any) => {
-        if (!old) return [optimisticMeal];
-        return [...old, optimisticMeal];
-      });
-
-      if (isToday) {
-        queryClient.setQueryData(["meals"], (old: any) => {
-          if (!old) return [optimisticMeal];
-          return [...old, optimisticMeal];
-        });
-      }
-
-      return { previousMeals, previousTodayMeals, isToday };
+      return { _errorMessage: errorContext, text };
     },
     onSuccess: (data, text) => {
+      setLoading(false);
+      
+      if (data._errorMessage || (data.confidence && data.confidence < 80)) {
+        analytics.trackEvent('AI Parse Failure', { error: data._errorMessage || 'Low confidence', input: text });
+        setFailedMealText(text);
+      } else {
+        setRetryCount(0);
+        analytics.trackEvent('AI Parse Success', { confidence: data.confidence, calories: data.calories });
+        setPendingMeal({ text, data });
+      }
+    },
+    onError: (err: any, variables) => {
+      console.error('[parseMealMutation] onError fired:', err);
+      const errorMessage = typeof err === 'object' ? JSON.stringify(err, null, 2) : String(err);
+      analytics.trackEvent('AI Parse Failure', { error: errorMessage, type: 'mutation_error' });
+      setFailedMealText(variables);
+      setLoading(false);
+    }
+  });
+
+  const confirmMealMutation = useMutation({
+    mutationFn: async ({ text, data }: { text: string, data: any }) => {
+      await mealService.addMeal({ 
+        meal_text: text, 
+        calories: Math.round(data.calories), 
+        protein: Math.round(data.protein), 
+        fat: Math.round(data.fat), 
+        carbs: Math.round(data.carbs), 
+        meal_time: getMealTime().toISOString(), 
+        tip: data.foods_detected?.join(', ') || text, 
+        meal_slot: selectedMealSlot || undefined 
+      });
+      return { text, data };
+    },
+    onSuccess: ({ text, data }) => {
+      setPendingMeal(null);
       haptics.success();
       haptics.success();
       const foodsDetected = Array.isArray(data?.foods_detected) && data?.foods_detected.length > 0 ? data.foods_detected.join(', ') : text;
       
-      const newEatenKcal = eatenKcal + Math.round(data.calories);
-      const newEatenProtein = eatenProtein + Math.round(data.protein);
-      
-      const newRemainingKcal = Math.max(0, dailyTargetKcal - newEatenKcal);
-      const newRemainingProtein = Math.max(0, proteinTarget - newEatenProtein);
-
-      analytics.trackEvent('Meal Logged', {
-        calories: data.calories,
-        protein: data.protein,
-        fromCache: !!data?._fromCache
-      });
-
-      if (data?._errorMessage) {
-        analytics.trackEvent('AI Parse Failure', { error: data._errorMessage, input: text });
-      } else if (!data?._fromCache) {
-        analytics.trackEvent('AI Parse Success', { confidence: data?.confidence, calories: data.calories });
-      }
-
-      if (data?._localOnly) {
-        queryClient.setQueryData(["meals", "date", dateKeyStr], (old: any) => {
-          if (!old) return old;
-          return old.map((m: any) => m.meal_text === text ? { ...m, calories: data.calories, protein: data.protein, fat: data.fat, carbs: data.carbs } : m);
-        });
-      }
-
-      console.group('Meal Parsing Audit: ' + text);
-      devLog('User Input:', text);
-      devLog('Parsed Food:', foodsDetected);
-      devLog('Final Nutrition:', {
-        calories: data.calories,
-        protein: data.protein,
-        fat: data.fat,
-        carbs: data.carbs
-      });
-      devLog('Updated Daily Totals:', {
-        calories: newEatenKcal,
-        protein: newEatenProtein
-      });
-      devLog('Remaining Targets:', {
-        calories: newRemainingKcal,
-        protein: newRemainingProtein
-      });
-      console.groupEnd();
-
       let responseText = `✓ Logged: ${foodsDetected}`;
-      if (data?._localOnly) {
-        responseText = `Saved locally — will sync when connection is restored.`;
-      } else if (data?._fromCache) {
+      if (data?._fromCache) {
         responseText = `✓ Logged: ${foodsDetected}`;
-      } else if (data?._errorMessage) {
-        responseText = `📊 Estimated: ${foodsDetected}`;
       }
       
-      const confidence = data?.confidence ?? 0;
-      const confidenceTag = (confidence >= 90 || data?._localOnly) ? '' : ` · ${confidence}% confidence`;
-      
-      addChatMessage({ role: 'ai', text: responseText + confidenceTag, data });
-      setLoading(false);
+      addChatMessage({ role: 'ai', text: responseText, data });
     },
-    onError: (err: any, variables, context: any) => {
-      console.error('[addMealMutation] onError fired — mutationFn threw unexpectedly:', err);
-      if (context?.previousMeals) {
-        queryClient.setQueryData(["meals", "date", dateKeyStr], context.previousMeals);
-      }
-      if (context?.isToday && context?.previousTodayMeals) {
-        queryClient.setQueryData(["meals"], context.previousTodayMeals);
-      }
-      console.error('Complete Error Stack:', err.stack || err);
-      const errorMessage = typeof err === 'object' ? JSON.stringify(err, null, 2) : String(err);
-      analytics.trackEvent('AI Parse Failure', { error: errorMessage, type: 'mutation_error' });
-      addChatMessage({ role: 'ai', text: `⚠️ Error occurred: ${errorMessage}` });
-      setLoading(false);
+    onError: (err: any) => {
+      console.error('[confirmMealMutation] onError:', err);
+      addChatMessage({ role: 'ai', text: `⚠️ Failed to save meal. Please try again.` });
     },
     onSettled: () => {
       Promise.all([
@@ -677,10 +521,13 @@ export function MealLoggerPage() {
     const text = input.trim();
     if (!text || loading || !selectedMealSlot) return;
     setInput("");
+    setPendingMeal(null);
+    setFailedMealText(null);
+    setRetryCount(0);
     addChatMessage({ role: "user", text });
     setLoading(true);
-    addMealMutation.mutate(text);
-  }, [input, loading, selectedMealSlot, addChatMessage, addMealMutation]);
+    parseMealMutation.mutate(text);
+  }, [input, loading, selectedMealSlot, addChatMessage, parseMealMutation]);
 
   if (isLoading) {
     if (!isOnline) {
@@ -969,6 +816,76 @@ export function MealLoggerPage() {
                       className="bg-[rgba(255,255,255,0.02)] border-[0.5px] border-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.85)] rounded-[24px] rounded-tl-sm max-w-[85%] self-start p-[10px_14px] flex items-center gap-[8px] text-[13px]"
                     >
                       <Loader2 size={16} className="animate-spin text-[#D4FF00]" /> Analyzing meal...
+                    </motion.div>
+                  )}
+                  {pendingMeal && !loading && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-[rgba(255,255,255,0.02)] border-[0.5px] border-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.85)] rounded-[24px] rounded-tl-sm max-w-[90%] self-start p-[12px_16px] text-[14px] leading-relaxed"
+                    >
+                      <div className="font-semibold text-white mb-2">Here is the estimated nutrition. Would you like to log this?</div>
+                      <div className="flex gap-[6px] flex-wrap mb-[12px]">
+                        <span className="text-[10px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">~{pendingMeal.data.calories} kcal</span>
+                        <span className="text-[10px] badge-lime px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{pendingMeal.data.protein}g pro</span>
+                        <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.6)] px-2 py-0.5 rounded-full font-semibold">{pendingMeal.data.fat}g fat</span>
+                        <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.6)] px-2 py-0.5 rounded-full font-semibold">{pendingMeal.data.carbs}g carb</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => confirmMealMutation.mutate(pendingMeal)}
+                          disabled={confirmMealMutation.isPending}
+                          className="flex-1 bg-[#D4FF00] text-black font-bold py-2 rounded-[12px] text-[13px]"
+                        >
+                          {confirmMealMutation.isPending ? 'Logging...' : 'Confirm'}
+                        </button>
+                        <button 
+                          onClick={() => setPendingMeal(null)}
+                          disabled={confirmMealMutation.isPending}
+                          className="flex-1 bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] text-white font-bold py-2 rounded-[12px] text-[13px] transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                  {failedMealText && !loading && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-[rgba(255,77,28,0.05)] border-[0.5px] border-[rgba(255,77,28,0.2)] text-[rgba(255,255,255,0.85)] rounded-[24px] rounded-tl-sm max-w-[90%] self-start p-[12px_16px] text-[14px] leading-relaxed"
+                    >
+                      {retryCount >= 2 ? (
+                        <>
+                          <div className="mb-3 text-[rgba(255,255,255,0.9)]">AI is currently unable to identify this meal confidently. Please try entering a more descriptive meal.</div>
+                          <div className="mb-3 text-[13px] text-[rgba(255,255,255,0.6)] italic">Example: "2 chapati + 150g paneer" instead of "{failedMealText}"</div>
+                          <button 
+                            onClick={() => {
+                              setFailedMealText(null);
+                              setRetryCount(0);
+                            }}
+                            className="bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] text-white font-bold py-2 px-4 rounded-[12px] text-[13px] transition-colors w-full"
+                          >
+                            Dismiss
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <div className="mb-3 text-[rgba(255,255,255,0.9)]">We couldn't confidently identify this meal. Nothing has been logged. Please try again.</div>
+                          <button 
+                            onClick={() => {
+                              const text = failedMealText;
+                              setFailedMealText(null);
+                              setRetryCount(prev => prev + 1);
+                              setLoading(true);
+                              parseMealMutation.mutate(text);
+                            }}
+                            className="bg-[#FF4D1C] hover:bg-[#FF4D1C]/80 text-white font-bold py-2 px-4 rounded-[12px] text-[13px] transition-colors w-full"
+                          >
+                            Retry
+                          </button>
+                        </>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
