@@ -12,6 +12,9 @@ export interface DbProfile {
   activity_level: 'Sedentary' | 'Light' | 'Moderate' | 'Active' | 'Very active';
   maintenance_kcal: number;
   protein_target: number;
+  carbs_target?: number;
+  fat_target?: number;
+  water_target?: number;
   created_at?: string;
 }
 

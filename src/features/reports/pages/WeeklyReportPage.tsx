@@ -1,3 +1,4 @@
+import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
 import { PerfProfiler } from '@/shared/utils/perfDebug';
 import React, { useState, useMemo} from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -180,11 +181,13 @@ export function WeeklyReportPage() {
   const { data: dailyMetrics = [], isLoading: metricsLoading } = useQuery({ queryKey: ['dailyMetrics'], queryFn: () => reportService.getDailyMetrics() });
   const { data: weightLogs = [] } = useQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() });
 
+  const { profileData: calculatedData } = useCalculatedProfile();
+
   const isLoading = profileLoading || goalLoading || mealsLoading || metricsLoading;
   const isOnline = useNetworkConnectivity();
 
-  const calorieGoal = profile?.maintenance_kcal && goal?.deficit_kcal !== undefined ? profile.maintenance_kcal - goal.deficit_kcal : 2000;
-  const proteinGoal = profile?.protein_target || 150;
+  const calorieGoal = calculatedData?.dailyCalorieGoal || 2000;
+  const proteinGoal = calculatedData?.targetMacros?.protein || 150;
   const today = new Date();
   
   const last7Days: DailyActivityData[] = useMemo(() => {
@@ -225,9 +228,9 @@ export function WeeklyReportPage() {
         proteinConsumed,
         proteinTarget: metric?.target_protein ?? proteinGoal,
         fatConsumed: dayMeals.reduce((a, m) => a + m.fat, 0),
-        fatTarget: 60,
+        fatTarget: calculatedData?.targetMacros?.fat ?? 60,
         carbsConsumed: dayMeals.reduce((a, m) => a + m.carbs, 0),
-        carbsTarget: 220,
+        carbsTarget: calculatedData?.targetMacros?.carbs ?? 220,
         complianceScore,
       };
     });

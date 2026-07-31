@@ -69,21 +69,20 @@ function SocialProofBar() {
   const percent = useAnimatedCounter(100,   1200, inView); 
 
   const stats = [
-    { value: `${(users / 1000).toFixed(0)}K+`, label: "ACTIVE USERS",             color: "#D4FF00", icon: Users },
-    { value: `${(score / 10).toFixed(1)}★`,     label: "USER RATING",              color: "#D4FF00", icon: Star },
-    { value: `${percent}%`,                     label: "PERSONALIZED PLANS",       color: "#D4FF00", icon: CheckCircle2 },
-    { value: "24/7",                            label: "AI COACH",                 color: "#D4FF00", icon: MessageSquare },
+    { value: `${(users / 1000).toFixed(0)}K+`, label: "TEAM LEAN",             color: "#D4FF00", icon: Users },
+    { value: `${(score / 10).toFixed(1)}★`,     label: "COMMUNITY RATING",              color: "#D4FF00", icon: Star },
+    { value: `${percent}%`,                     label: "NO MORE GUESSING",       color: "#D4FF00", icon: CheckCircle2 },
+    { value: "24/7",                            label: "ACCOUNTABILITY",                 color: "#D4FF00", icon: MessageSquare },
   ];
-
   return (
     <section ref={ref} className="py-16 sm:py-24 px-6 border-t border-zinc-900 bg-[#0A0A0B]">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-12 sm:mb-16">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white mb-4">
-            Trusted by <span style={{ color: "#D4FF00" }}>Thousands</span>. Built for <span style={{ color: "#D4FF00" }}>Results</span>.
+            Trusted by <span style={{ color: "#D4FF00" }}>Team Lean</span>. Built for <span style={{ color: "#D4FF00" }}>Discipline</span>.
           </h2>
           <p className="text-zinc-400 text-sm sm:text-base lg:text-lg max-w-2xl mx-auto">
-            LeanIQA is your AI-powered fitness companion for a smarter, healthier you.
+            LeaniQA is the friend that keeps you accountable to actually hit your protein and get lean.
           </p>
         </div>
 
@@ -125,8 +124,8 @@ function DisciplineAdvantage() {
     {
       icon: ClipboardList,
       other: {
-        title: "Passive food diary",
-        desc: "You log, it stores.",
+        title: "Just a food diary",
+        desc: "Leaves you on your own.",
         demo: (
           <div className="bg-[#18181A] rounded-xl border border-white/5 p-3 mt-3 shadow-inner">
              <div className="flex items-center gap-2 text-zinc-500 mb-4 text-xs bg-zinc-900/50 p-2 rounded-lg border border-white/5">
@@ -152,8 +151,8 @@ function DisciplineAdvantage() {
         )
       },
       leaniqa: {
-        title: "Active AI coaching",
-        desc: "It scores, adjusts, and coaches.",
+        title: "Ate biryani? Relax.",
+        desc: "We adjust the rest of your day.",
         demo: (
           <div className="bg-zinc-900/80 rounded-xl border border-white/5 p-3 mt-3 relative overflow-hidden shadow-xl shadow-[#D4FF00]/5">
              <div className="text-xs text-zinc-400 mb-2 flex items-center gap-1.5 font-medium">
@@ -198,8 +197,8 @@ function DisciplineAdvantage() {
     {
       icon: BarChart2,
       other: {
-        title: "Shows calories",
-        desc: "No context on whether it's enough.",
+        title: "Just counts calories",
+        desc: "Doesn't care about your consistency.",
         demo: (
           <div className="bg-[#18181A] rounded-xl border border-white/5 p-3 mt-3 shadow-inner">
             <div className="text-xs font-medium text-zinc-500 mb-4 pb-3 border-b border-white/5">Nutrition Overview</div>
@@ -233,8 +232,8 @@ function DisciplineAdvantage() {
         )
       },
       leaniqa: {
-        title: "Daily Score that matters",
-        desc: "Focus on compliance, not just calories.",
+        title: "Your Discipline Score",
+        desc: "Abs care about consistency, not motivation.",
         demo: (
           <div className="bg-zinc-900/80 rounded-xl border border-white/5 p-3 mt-3 shadow-xl shadow-[#D4FF00]/5">
              <div className="flex items-center gap-6">
@@ -296,8 +295,8 @@ function DisciplineAdvantage() {
     {
       icon: Calendar,
       other: {
-        title: "Generic goal",
-        desc: "Vague goal of losing weight someday.",
+        title: "Vague goals",
+        desc: "Hoping you get lean someday.",
         demo: (
           <div className="bg-[#18181A] rounded-xl border border-white/5 p-4 mt-3 shadow-inner">
              <div className="bg-zinc-900/50 p-4 rounded-lg border border-white/5">
@@ -317,8 +316,8 @@ function DisciplineAdvantage() {
         )
       },
       leaniqa: {
-        title: "Exact goal. Real timeline.",
-        desc: "Calculated from your real adherence.",
+        title: "Know when you'll get lean",
+        desc: "No guessing. A real timeline.",
         demo: (
           <div className="bg-zinc-900/80 rounded-xl border border-white/5 p-3 mt-3 shadow-xl shadow-[#D4FF00]/5">
              <div className="flex items-center justify-between mb-4 px-2">
@@ -368,16 +367,16 @@ function DisciplineAdvantage() {
           <Reveal>
             <div className="flex items-center justify-center gap-2 text-xs font-mono text-[#D4FF00] uppercase tracking-widest mb-4">
               <div className="w-1.5 h-1.5 rounded-full bg-[#D4FF00] shadow-[0_0_8px_#D4FF00]" />
-              WHY LEANIQA
+              STOP GUESSING
             </div>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white mb-6 leading-tight">
-              Most apps are food diaries.<br/>
-              Leaniqa is a <span className="text-[#D4FF00]">discipline engine.</span>
+              Discipline beats motivation.<br/>
+              <span className="text-[#D4FF00]">Every single time.</span>
             </h2>
             <p className="text-zinc-400 text-base sm:text-lg lg:text-xl max-w-2xl leading-relaxed mx-auto">
-              People don't fail transformations because they lack information.<br className="hidden sm:block"/>
-              They fail because rigid plans break when real life happens.<br className="hidden sm:block"/>
-              <span className="text-zinc-300 font-medium">Leaniqa is built around that reality.</span>
+              You already know how to lift. But abs are built in the kitchen.<br className="hidden sm:block"/>
+              Standard calorie trackers leave you guessing with Indian food.<br className="hidden sm:block"/>
+              <span className="text-zinc-300 font-medium">LeaniQA is built to fix exactly that.</span>
             </p>
           </Reveal>
         </div>
@@ -538,8 +537,8 @@ function HowItWorks() {
     {
       number: "01",
       icon: Target,
-      title: "Define Your Goal",
-      desc: "Input your weight, body fat %, and goal. LeanIQA calculates your deficit, macro targets, and a precise completion date.",
+      title: "Set Your Target",
+      desc: "Tell us where you are and where you want to be. We'll handle the math.",
       demo: (
         <div className="bg-zinc-900/50 rounded-xl p-3 border border-white/5 mt-3 group-hover:border-[#D4FF00]/30 transition-colors duration-500">
           <div className="flex items-center justify-between mb-2">
@@ -557,8 +556,8 @@ function HowItWorks() {
     {
       number: "02",
       icon: MessageSquare,
-      title: "Describe Any Meal Naturally",
-      desc: "Type '2 roti + dal + 100g paneer'. AI parses it instantly — no barcode scanning, no database hunting.",
+      title: "Just tell us what you ate",
+      desc: "Type '2 roti + dal + paneer'. We figure out the rest. No barcode scanning.",
       demo: (
         <div className="mt-3 flex flex-col gap-2">
           <div className="bg-[#D4FF00]/10 border border-[#D4FF00]/20 rounded-xl rounded-tr-sm p-2.5 text-xs text-[#D4FF00] self-end max-w-[90%] group-hover:bg-[#D4FF00]/20 transition-colors duration-500">
@@ -581,8 +580,8 @@ function HowItWorks() {
     {
       number: "03",
       icon: BarChart3,
-      title: "Your AI Coaches Every Decision",
-      desc: "Receive a Daily Score (0–100) based on compliance. The app recalibrates your remaining meals in real time.",
+      title: "Build the Discipline",
+      desc: "Focus on your Daily Score. If you slip up, we adjust your next meal. No guilt.",
       demo: (
         <div className="bg-zinc-900/50 rounded-xl p-3 border border-white/5 mt-3 group-hover:border-[#D4FF00]/30 transition-colors duration-500">
            <div className="flex items-center justify-between mb-1.5">
@@ -602,8 +601,8 @@ function HowItWorks() {
     {
       number: "04",
       icon: TrendingUp,
-      title: "See Your Body Change Week by Week",
-      desc: "Your physique timeline updates based on your actual adherence. Stay consistent, and your goal date moves closer.",
+      title: "Watch Your Body Change",
+      desc: "Your timeline updates based on your actual consistency. Put in the work, see the results.",
       demo: (
         <div className="bg-zinc-900/50 rounded-xl p-3 border border-white/5 mt-3 relative overflow-hidden group-hover:border-[#D4FF00]/30 transition-colors duration-500">
            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#D4FF00]/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
@@ -644,13 +643,13 @@ function HowItWorks() {
         <div className="text-center mb-20 max-w-2xl mx-auto">
           <Reveal>
             <p className="text-xs font-mono text-[#D4FF00] uppercase tracking-widest mb-2">
-              HOW IT WORKS
+              THE LEAN SYSTEM
             </p>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white mb-6">
-              Four simple steps to transform.
+              Protein first. Excuses later.
             </h2>
             <p className="text-zinc-400 text-sm sm:text-base lg:text-lg">
-              Everything is designed to reduce friction and increase accountability from day one.
+              Everything is designed to keep you accountable. No more guessing.
             </p>
           </Reveal>
         </div>
@@ -733,21 +732,21 @@ function HowItWorks() {
 function TestimonialStrip() {
   const testimonials = [
     {
-      quote: "I've tried every app. LeanIQA is the first one that made me feel accountable instead of guilty. The Daily Score changed how I think about food.",
+      quote: "I finally understood how little protein I was eating. LeaniQA doesn't make me feel guilty for eating home food, it just tells me how to fix it.",
       name: "Rahul M.",
-      detail: "Lost 9kg in 14 weeks · 🔥 Day 68 streak",
+      detail: "Office worker · 🔥 Day 68 streak",
       initials: "RM",
     },
     {
-      quote: "The timeline feature is what got me. Seeing an actual date — not 'a few months' — made the goal feel real for the first time.",
+      quote: "I stopped feeling guilty after eating one cheat meal. The app just adjusts the next day so my timeline stays on track. It's actually insane.",
       name: "Priya S.",
-      detail: "Lost 6kg in 10 weeks · 🔥 Day 41 streak",
+      detail: "College student · 🔥 Day 41 streak",
       initials: "PS",
     },
     {
-      quote: "Logging 'aloo paratha with curd' and getting precise macros back in two seconds is genuinely magical. No other app handles Indian food this well.",
+      quote: "I actually look forward to checking my Discipline Score. The gym did its job, now my diet is finally doing its part.",
       name: "Arjun K.",
-      detail: "Lost 12kg in 18 weeks · 🔥 Day 112 streak",
+      detail: "Gym beginner · 🔥 Day 112 streak",
       initials: "AK",
     },
   ];
@@ -758,10 +757,10 @@ function TestimonialStrip() {
         <Reveal>
           <div className="mb-12 sm:mb-16 max-w-3xl mx-auto text-center">
             <p className="text-xs font-mono text-[#D4FF00] uppercase tracking-widest mb-2">
-              Real results
+              Team Lean
             </p>
             <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-              People who finished their transformation.
+              People who finally got lean.
             </h2>
           </div>
         </Reveal>
@@ -806,6 +805,40 @@ function TestimonialStrip() {
 }
 
 
+
+function FounderStory() {
+  return (
+    <section className="py-16 sm:py-24 px-6 border-t border-zinc-900 bg-[#0A0A0B]">
+      <div className="max-w-3xl mx-auto">
+        <Reveal>
+          <div className="mb-8">
+            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white mb-6">
+              Built by someone who was tired of being skinny fat.
+            </h2>
+            <div className="w-12 h-1 bg-[#D4FF00] mb-8" />
+          </div>
+          <div className="space-y-6 text-zinc-300 text-base sm:text-lg leading-relaxed">
+            <p>
+              I used to hit the gym 5 days a week, lift heavy, and then go home to eat whatever was made. I thought training hard was enough.
+            </p>
+            <p>
+              It wasn't. I was stuck in this weird phase where I had muscle, but you couldn't tell because I was covered in a layer of fat. I was skinny fat, and I was frustrated.
+            </p>
+            <p>
+              The problem was my diet. I was eating randomly. I never hit my protein goal because I didn't even know what my protein goal was. And when I tried using calorie trackers, logging Indian food—like parathas, dal, and sabzi—was a nightmare.
+            </p>
+            <p>
+              I built LeaniQA because it was the app I wished existed. I didn't need a barcode scanner; I needed a friend who understood my meals and just told me how much protein I needed to eat for the rest of the day to stay on track.
+            </p>
+            <p className="text-white font-semibold">
+              The gym does its job. Let LeaniQA help your diet do its part.
+            </p>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
 /* ─────────────────────────────────────────────
    SHARED HELPERS
 ───────────────────────────────────────────── */
@@ -1796,7 +1829,7 @@ export function LandingPage() {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-[4rem] font-semibold tracking-tight leading-[1.1] lg:leading-[1.05] mb-4 sm:mb-6"
             >
-              Your body adapts every day. Your nutrition coach should too.
+              The gym builds muscle. Your diet reveals it.
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -1804,7 +1837,7 @@ export function LandingPage() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-base sm:text-lg lg:text-xl text-zinc-400 mb-10 sm:mb-10 leading-relaxed max-w-lg"
             >
-              Eat smarter. Stay consistent. Transform with confidence. The only system that uses AI to adapt to your life, not the other way around.
+              Stop guessing calories and protein. Make Indian meal tracking effortless. We help you build the discipline to actually get lean.
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -1821,7 +1854,7 @@ export function LandingPage() {
                 className="bg-[#D4FF00] text-black w-full sm:w-auto px-6 sm:px-8 py-4 font-semibold flex items-center justify-center gap-2 text-xs sm:text-sm uppercase tracking-wide rounded-full"
                 style={{ willChange: "transform" }}
               >
-                Start Your Journey
+                Start Getting Lean
                 <ArrowRight className="w-4 h-4 flex-shrink-0" />
               </motion.button>
               <InstallLeaniqa />
@@ -1869,6 +1902,7 @@ export function LandingPage() {
 
       <HowItWorks />
       <TestimonialStrip />
+      <FounderStory />
 
       {/* ── Pricing ── */}
       <section id="pricing" className="border-t border-zinc-900 bg-[#0A0A0B] py-16 sm:py-24 px-6">
@@ -1957,10 +1991,10 @@ export function LandingPage() {
         
         <div className="max-w-2xl mx-auto relative z-[100]">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold mb-6 tracking-tight leading-[1.1]">
-            The hardest part isn't losing fat. It's staying consistent.
+            Lean is earned.
           </h2>
           <p className="text-[#D4FF00] mb-10 text-lg sm:text-xl font-medium">
-            LeanIQA helps you do both.
+            Join Team Lean and start building discipline today.
           </p>
           <motion.button
             onClick={handleEnterApp}

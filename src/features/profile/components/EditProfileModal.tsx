@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createPortal } from 'react-dom';
 import { X, Loader2 } from 'lucide-react';
@@ -22,6 +22,16 @@ export function EditProfileModal({ isOpen, onClose, profileData, goalData }: Edi
   const [currentBf, setCurrentBf] = useState(String(goalData?.current_bf || ''));
   const [targetBf, setTargetBf] = useState(String(goalData?.target_bf || ''));
   const [activity, setActivity] = useState(profileData?.activity_level || 'Sedentary');
+
+  useEffect(() => {
+    if (isOpen) {
+      setWeight(String(profileData?.weight || ''));
+      setHeight(String(profileData?.height || ''));
+      setCurrentBf(String(goalData?.current_bf || ''));
+      setTargetBf(String(goalData?.target_bf || ''));
+      setActivity(profileData?.activity_level || 'Sedentary');
+    }
+  }, [isOpen, profileData, goalData]);
 
   const mutation = useMutation({
     mutationFn: async () => {

@@ -47,9 +47,35 @@ export function useCalculatedProfile() {
         data.estimatedCompletionDate = goal.target_date 
           ? new Date(goal.target_date).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
           : calcG.targetDateStr;
+          
+        let fatPercentageMid = 0.265;
+        const act = profile.activity_level as string;
+        if (act === 'Sedentary') {
+          fatPercentageMid = 0.25;
+        } else if (act === 'Moderately Active' || act === 'Moderate') {
+          fatPercentageMid = 0.275;
+        } else if (act === 'Very Active' || act === 'Active') {
+          fatPercentageMid = 0.285;
+        } else if (act === 'Athlete' || act === 'Very active') {
+          fatPercentageMid = 0.30;
+        }
+
+        const fatTarget = Math.round((calcG.dailyCalorieGoal * fatPercentageMid) / 9);
+        const carbTarget = Math.max(0, Math.round((calcG.dailyCalorieGoal - (profile.protein_target * 4) - (fatTarget * 9)) / 4));
         
-
-
+        data.targetMacros = {
+          protein: profile.protein_target,
+          fat: profile.fat_target ?? fatTarget,
+          carbs: profile.carbs_target ?? carbTarget
+        };
+        data.manualOverrides = {
+          carbs: profile.carbs_target != null,
+          fat: profile.fat_target != null,
+          water: profile.water_target != null
+        };
+        if (profile.water_target) {
+          data.waterLitres = profile.water_target;
+        }
       }
     }
     return data;

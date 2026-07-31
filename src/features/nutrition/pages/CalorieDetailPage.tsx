@@ -74,10 +74,7 @@ export function CalorieDetailPage() {
   const { data: goal } = useQuery({ queryKey: ["goal"], queryFn: () => profileService.getGoal() });
   const { data: meals = [], isLoading } = useQuery({ queryKey: ["meals", "month"], queryFn: () => mealService.getMeals({ days: 35, limit: 2000 }) });
 
-  const dailyCalorieGoal =
-    profile?.maintenance_kcal && goal?.deficit_kcal !== undefined
-      ? profile.maintenance_kcal - goal.deficit_kcal
-      : (onboardingData?.dailyCalorieGoal ?? 2000);
+  const dailyCalorieGoal = onboardingData?.dailyCalorieGoal ?? 2000;
 
   const todayStr = getLocalDateString();
   const todayMeals = meals.filter(m => {
