@@ -376,39 +376,85 @@ export function MealLoggerPage() {
           return { calories: cachedResult.scaledCalories, protein: cachedResult.scaledProtein, fat: cachedResult.scaledFat, carbs: cachedResult.scaledCarbs, confidence: cachedResult.confidence, foods_detected: [text], coaching_tip: `Logged from nutritional database. ${Math.round(cachedResult.scaledCalories)} kcal · ${cachedResult.scaledProtein}g protein`, _fromCache: true };
         }
       }
+      
       devLog("Nutrition Source Used: AI / Function");
 
       // STEP 2: AI with retry
       let lastError: Error | null = null;
+      let aiResponseDuration = 0;
+      
+      const reqStart = Date.now();
+      console.log(`[parse-meal] Request started for text: "${text}"`);
 
       if (typeof window !== 'undefined' && !navigator.onLine) {
-        lastError = new Error('No internet connection');
+        lastError = new Error('Network failure');
+        console.log(`[parse-meal] Offline detected immediately.`);
       } else {
         for (let attempt = 0; attempt < 3; attempt++) {
           try {
+            console.log(`[parse-meal] Attempt ${attempt + 1}: Checking session...`);
             const { data: { session }, error: sessionError } = await supabase.auth.getSession();
             if (sessionError || !session?.access_token) {
-              if (attempt === 0) { await supabase.auth.refreshSession(); } else { throw new Error('Session expired'); }
+              if (attempt === 0) { 
+                console.log(`[parse-meal] Attempt 1: Session invalid. Refreshing session...`);
+                await supabase.auth.refreshSession(); 
+              } else { 
+                throw new Error('Authentication failure'); 
+              }
             }
+
             const { data: { session: freshSession } } = await supabase.auth.getSession();
-            if (!freshSession?.access_token) throw new Error('No valid session');
+            if (!freshSession?.access_token) throw new Error('Authentication failure');
+
+            console.log(`[parse-meal] Attempt ${attempt + 1}: Edge Function invoked.`);
+            const edgeStart = Date.now();
             const { data, error } = await supabase.functions.invoke('parse-meal', { body: { text, remainingCalories, remainingProtein, mealType: selectedMealSlot }, headers: { Authorization: `Bearer ${freshSession.access_token}` } });
+            aiResponseDuration = Date.now() - edgeStart;
+            console.log(`[parse-meal] Attempt ${attempt + 1}: Response received in ${aiResponseDuration}ms.`);
+
             if (error) {
               const status = (error as any)?.context?.status ?? 0;
               const msg = String(error.message ?? '');
               console.error(`[parse-meal] attempt ${attempt + 1}: status=${status} msg=${msg}`);
-              if (status === 401 || status === 403) { if (attempt < 2) { await supabase.auth.refreshSession(); lastError = new Error('Auth — retrying'); continue; } throw new Error('Auth failed'); }
-              if (status === 429) throw new Error('Daily AI limit reached');
-              if (status >= 500 || msg.includes('fetch') || msg.includes('Network')) { lastError = new Error('Server unavailable'); if (attempt < 2) { await new Promise(r => setTimeout(r, 1200 * (attempt + 1))); continue; } throw new Error('AI unavailable'); }
-              throw new Error(msg || 'AI failed');
+
+              if (status === 401 || status === 403) { 
+                if (attempt < 2) { await supabase.auth.refreshSession(); lastError = new Error('Auth — retrying'); continue; } 
+                throw new Error('Authentication failure'); 
+              }
+              if (status === 429) throw new Error('Rate limiting');
+              if (status === 504 || msg.includes('timeout')) {
+                lastError = new Error('AI timeout');
+                if (attempt < 2) { await new Promise(r => setTimeout(r, 1200 * (attempt + 1))); continue; }
+                throw new Error('AI timeout');
+              }
+              if (msg.includes('fetch') || msg.includes('Network') || msg.includes('Failed to fetch')) { 
+                lastError = new Error('Network failure'); 
+                if (attempt < 2) { await new Promise(r => setTimeout(r, 1200 * (attempt + 1))); continue; } 
+                throw new Error('Network failure'); 
+              }
+              if (status >= 500) { 
+                lastError = new Error('Server error'); 
+                if (attempt < 2) { await new Promise(r => setTimeout(r, 1200 * (attempt + 1))); continue; } 
+                throw new Error('Server error'); 
+              }
+              throw new Error(msg || 'AI unavailable');
             }
-            if (!data || typeof data.calories !== 'number') { lastError = new Error('Invalid response'); if (attempt < 2) continue; throw new Error('Invalid AI data'); }
+
+            if (!data || typeof data.calories !== 'number') { 
+              console.error(`[parse-meal] attempt ${attempt + 1}: Invalid AI response data:`, data);
+              lastError = new Error('Parsing error'); 
+              if (attempt < 2) continue; 
+              throw new Error('Invalid AI response'); 
+            }
+            
+            console.log(`[parse-meal] Success: confidence=${data.confidence}, calories=${data.calories}, protein=${data.protein}`);
+
             await mealService.addMeal({ meal_text: text, calories: Math.round(data.calories), protein: Math.round(data.protein), fat: Math.round(data.fat), carbs: Math.round(data.carbs), meal_time: getMealTime().toISOString(), tip: data.foods_detected?.join(', ') || text, meal_slot: selectedMealSlot || undefined });
             return data;
           } catch (err: any) {
             console.error(`[parse-meal] attempt ${attempt + 1} error:`, err.message);
             lastError = err as Error;
-            if (attempt < 2 && (err.message.includes('retrying') || err.message.includes('unavailable') || err.message.includes('Auth —'))) continue;
+            if (attempt < 2 && (err.message.includes('retrying') || err.message.includes('unavailable') || err.message.includes('Auth —') || err.message.includes('Server error') || err.message.includes('timeout') || err.message.includes('Network failure') || err.message.includes('Parsing error'))) continue;
             break;
           }
         }
@@ -420,11 +466,16 @@ export function MealLoggerPage() {
       
       const errorContext = (() => {
         const msg = lastError?.message ?? '';
-        if (msg.includes('limit')) return 'Daily AI limit reached';
-        if (msg.includes('log out') || msg.includes('session')) return 'Session expired';
-        if (msg.includes('Network') || msg.includes('fetch')) return 'No internet connection';
-        return 'AI temporarily unavailable';
+        if (msg.includes('limit') || msg.includes('Rate limiting')) return 'Daily AI limit reached';
+        if (msg.includes('log out') || msg.includes('session') || msg.includes('Authentication failure')) return 'Session expired';
+        if (msg.includes('Network') || msg.includes('fetch') || msg.includes('Network failure')) return 'No internet connection';
+        if (msg.includes('AI timeout')) return 'AI took too long to respond';
+        if (msg.includes('Server error')) return 'Server error';
+        if (msg.includes('Invalid AI response') || msg.includes('Parsing error')) return 'AI returned invalid data';
+        return msg || 'AI temporarily unavailable';
       })();
+      
+      console.log(`[parse-meal] Final status: FAILED. Fallback reason: ${errorContext}. Total duration: ${Date.now() - reqStart}ms.`);
 
       const lowConfCache = (() => {
         try { return lookupCachedMeal(text); } catch { return null; }

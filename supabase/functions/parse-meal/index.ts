@@ -34,21 +34,8 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 function getCorsHeaders(req: Request) {
-  const origin = req.headers.get("Origin") || "";
-  const allowedOriginEnv = Deno.env.get("ALLOWED_ORIGIN") || "https://leaniqa.com";
-  
-  let allowedOrigin = "";
-  if (
-    origin === allowedOriginEnv ||
-    origin === "https://app.leaniqa.com" ||
-    origin.startsWith("http://localhost:") ||
-    origin.endsWith(".vercel.app")
-  ) {
-    allowedOrigin = origin;
-  }
-
   return {
-    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Origin": req.headers.get("Origin") || "*",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   };
 }
@@ -262,6 +249,7 @@ Respond with valid JSON only.`;
           },
         });
         
+        console.log(`[parse-meal] AI request started (attempt ${attempts})`);
         const response = await Promise.race([
           aiPromise,
           new Promise<never>((_, reject) => {
@@ -270,6 +258,7 @@ Respond with valid JSON only.`;
             });
           })
         ]);
+        console.log(`[parse-meal] AI request completed in ${Date.now() - aiStart}ms (attempt ${attempts})`);
 
         const aiLatency = Date.now() - aiStart;
         
