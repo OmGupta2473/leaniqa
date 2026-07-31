@@ -74,7 +74,7 @@ export function ProteinDetailPage() {
   const { data: goal } = useQuery({ queryKey: ["goal"], queryFn: () => profileService.getGoal() });
   const { data: meals = [], isLoading } = useQuery({ queryKey: ["meals", "month"], queryFn: () => mealService.getMeals({ days: 35, limit: 2000 }) });
 
-  const target_protein = profile?.protein_target ?? onboardingData?.proteinMid ?? 150;
+  const target_protein = onboardingData?.targetMacros?.protein ?? 150;
 
   const todayStr = getLocalDateString();
   const todayMeals = meals.filter(m => {

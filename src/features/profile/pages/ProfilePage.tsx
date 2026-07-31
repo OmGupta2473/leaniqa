@@ -242,7 +242,7 @@ export function ProfilePage() {
           <div className="card-base p-4 flex flex-col items-center justify-center text-center">
             <div className="text-[11px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Protein</div>
             <div className="text-[20px] font-bold text-[#FF4D1C]">
-              {displayVal(calculated.proteinMid)}
+              {displayVal(targetMacros?.protein || calculated.proteinMid)}
               <span className="text-[12px] font-medium text-[rgba(255,77,28,0.5)] ml-1">g</span>
             </div>
           </div>

@@ -253,10 +253,10 @@ export function MealLoggerPage() {
   const lunchMeals = meals.filter(m => m.meal_slot === "lunch");
   const dinnerMeals = meals.filter(m => m.meal_slot === "dinner");
 
-  const dailyTargetKcal = (profile?.maintenance_kcal && goal?.deficit_kcal !== undefined ? profile.maintenance_kcal - goal.deficit_kcal : onboardingData?.dailyCalorieGoal) || 0;
-  const proteinTarget = (profile?.protein_target ?? onboardingData?.proteinMid) || 0;
-  const fatTarget = onboardingData?.fatMid || 0;
-  const carbsTarget = onboardingData?.carbMid || 0;
+  const dailyTargetKcal = onboardingData?.dailyCalorieGoal || 0;
+  const proteinTarget = onboardingData?.targetMacros?.protein || 0;
+  const fatTarget = onboardingData?.targetMacros?.fat || 0;
+  const carbsTarget = onboardingData?.targetMacros?.carbs || 0;
   const remainingCalories = dailyTargetKcal - eatenKcal;
   const remainingProtein = proteinTarget - eatenProtein;
   const caloriePercent = Math.min(100, (eatenKcal / dailyTargetKcal) * 100);

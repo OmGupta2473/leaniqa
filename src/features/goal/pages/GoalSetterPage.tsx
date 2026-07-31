@@ -428,9 +428,7 @@ export function GoalSetterPage() {
 
   if (goal && step === 0) {
     const activeGoal = goal;
-    const dailyKcal = profile?.maintenance_kcal && goal?.deficit_kcal !== undefined 
-      ? profile.maintenance_kcal - goal.deficit_kcal 
-      : (activeGoal as any)?.dailyCalorieGoal;
+    const dailyKcal = onboardingData?.dailyCalorieGoal || 2000;// 
 
     return (
       <motion.div 

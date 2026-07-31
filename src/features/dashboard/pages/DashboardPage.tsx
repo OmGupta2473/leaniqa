@@ -100,10 +100,10 @@ export function DashboardPage() {
   });
 
   const name = profileData?.name || "User";
-  const proteinTarget = Math.round(profileData?.proteinMid || 0);
+  const proteinTarget = Math.round(profileData?.targetMacros?.protein || 0);
   const dailyTargetKcal = Math.round(profileData?.dailyCalorieGoal || 0);
-  const fatTarget = Math.round(profileData?.fatMid || 0);
-  const carbsTarget = Math.round(profileData?.carbMid || 0);
+  const fatTarget = Math.round(profileData?.targetMacros?.fat || 0);
+  const carbsTarget = Math.round(profileData?.targetMacros?.carbs || 0);
 
   const weightKg = profileData?.weightKg || 0;
   const targetWeightKg = profileData?.targetWeightKg || 0;
