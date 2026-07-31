@@ -102,8 +102,8 @@ export function EditNutritionModal({ isOpen, onClose, calculatedData }: EditNutr
 
       await profileService.upsertProfile({
         protein_target: targetPro,
-        carbs_target: targetCarbs,
-        fat_target: targetFat,
+        carbs_target: manualOverride ? targetCarbs : null,
+        fat_target: manualOverride ? targetFat : null,
         water_target: targetWater
       });
 

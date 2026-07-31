@@ -61,9 +61,13 @@ export function useCalculatedProfile() {
           fatPercentageMid = 0.30;
         }
 
-        let finalFat = profile.fat_target ?? macroOverrides.fat_target;
-        let finalCarbs = profile.carbs_target ?? macroOverrides.carbs_target;
-        let finalWater = profile.water_target ?? macroOverrides.water_target;
+        const isCarbsOverridden = (profile.carbs_target != null) || (macroOverrides.carbs_target != null);
+        const isFatOverridden = (profile.fat_target != null) || (macroOverrides.fat_target != null);
+        const isWaterOverridden = (profile.water_target != null) || (macroOverrides.water_target != null);
+
+        let finalFat = isFatOverridden ? (profile.fat_target ?? macroOverrides.fat_target) : null;
+        let finalCarbs = isCarbsOverridden ? (profile.carbs_target ?? macroOverrides.carbs_target) : null;
+        let finalWater = isWaterOverridden ? (profile.water_target ?? macroOverrides.water_target) : null;
 
         if (finalFat == null && finalCarbs == null) {
           finalFat = Math.round((calcG.dailyCalorieGoal * fatPercentageMid) / 9);
@@ -80,9 +84,9 @@ export function useCalculatedProfile() {
           carbs: finalCarbs
         };
         data.manualOverrides = {
-          carbs: finalCarbs != null,
-          fat: finalFat != null,
-          water: finalWater != null
+          carbs: isCarbsOverridden,
+          fat: isFatOverridden,
+          water: isWaterOverridden
         };
         if (finalWater) {
           data.waterLitres = finalWater;
