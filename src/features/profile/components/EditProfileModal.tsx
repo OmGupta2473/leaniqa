@@ -53,8 +53,8 @@ export function EditProfileModal({ isOpen, onClose, profileData, goalData }: Edi
         weight: w,
         height: h,
         activity_level: act as any,
-        maintenance_kcal: macros.tdee,
-        protein_target: macros.proteinMid
+        maintenance_kcal: macros.tdee
+        // Removed: protein_target: macros.proteinMid so we don't blow away manual overrides
       });
 
       await profileService.upsertGoal({

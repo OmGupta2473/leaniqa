@@ -60,13 +60,22 @@ export function useCalculatedProfile() {
           fatPercentageMid = 0.30;
         }
 
-        const fatTarget = Math.round((calcG.dailyCalorieGoal * fatPercentageMid) / 9);
-        const carbTarget = Math.max(0, Math.round((calcG.dailyCalorieGoal - (profile.protein_target * 4) - (fatTarget * 9)) / 4));
-        
+        let finalFat = profile.fat_target;
+        let finalCarbs = profile.carbs_target;
+
+        if (finalFat == null && finalCarbs == null) {
+          finalFat = Math.round((calcG.dailyCalorieGoal * fatPercentageMid) / 9);
+          finalCarbs = Math.max(0, Math.round((calcG.dailyCalorieGoal - (profile.protein_target * 4) - (finalFat * 9)) / 4));
+        } else if (finalFat != null && finalCarbs == null) {
+          finalCarbs = Math.max(0, Math.round((calcG.dailyCalorieGoal - (profile.protein_target * 4) - (finalFat * 9)) / 4));
+        } else if (finalFat == null && finalCarbs != null) {
+          finalFat = Math.max(0, Math.round((calcG.dailyCalorieGoal - (profile.protein_target * 4) - (finalCarbs * 4)) / 9));
+        }
+
         data.targetMacros = {
           protein: profile.protein_target,
-          fat: profile.fat_target ?? fatTarget,
-          carbs: profile.carbs_target ?? carbTarget
+          fat: finalFat,
+          carbs: finalCarbs
         };
         data.manualOverrides = {
           carbs: profile.carbs_target != null,
