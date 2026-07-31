@@ -98,6 +98,9 @@ export const profileService = {
       
       const performUpsert = async (payloadToUse: any, updatePayloadToUse: any) => {
         if (existingProfile) {
+          if (Object.keys(updatePayloadToUse).length === 0) {
+            return { data: existingProfile, error: null };
+          }
           const updateRes = await supabase
             .from('profiles')
             .update(updatePayloadToUse)
@@ -133,11 +136,14 @@ export const profileService = {
         
         try {
           const { useUserStore } = await import('@/features/profile/store/userStore');
-          useUserStore.getState().setMacroOverrides({
-            carbs_target: payload.carbs_target,
-            fat_target: payload.fat_target,
-            water_target: payload.water_target
-          });
+          const overridesToUpdate: any = {};
+          if ('carbs_target' in payload) overridesToUpdate.carbs_target = payload.carbs_target;
+          if ('fat_target' in payload) overridesToUpdate.fat_target = payload.fat_target;
+          if ('water_target' in payload) overridesToUpdate.water_target = payload.water_target;
+          
+          if (Object.keys(overridesToUpdate).length > 0) {
+            useUserStore.getState().setMacroOverrides(overridesToUpdate);
+          }
         } catch (e) {
           console.error('Failed to store macro overrides', e);
         }
