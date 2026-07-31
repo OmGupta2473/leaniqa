@@ -88,7 +88,7 @@ export function useCalculatedProfile() {
           fat: isFatOverridden,
           water: isWaterOverridden
         };
-        if (finalWater) {
+        if (finalWater !== null) {
           data.waterLitres = finalWater;
         }
       }

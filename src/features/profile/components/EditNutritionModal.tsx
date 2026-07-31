@@ -97,19 +97,40 @@ export function EditNutritionModal({ isOpen, onClose, calculatedData }: EditNutr
         throw new Error("Please enter a valid water goal (0-20L)");
       }
 
-      const tdee = calculatedData?.tdee || 0;
-      const deficit = tdee - targetCals;
+      const profilePayload: any = {};
+      const goalPayload: any = {};
 
-      await profileService.upsertProfile({
-        protein_target: targetPro,
-        carbs_target: manualOverride ? targetCarbs : null,
-        fat_target: manualOverride ? targetFat : null,
-        water_target: targetWater
-      });
+      // Only update if changed
+      const originalCals = calculatedData?.dailyCalorieGoal;
+      if (originalCals !== targetCals) {
+        const tdee = calculatedData?.tdee || 0;
+        goalPayload.deficit_kcal = tdee - targetCals;
+      }
 
-      await profileService.upsertGoal({
-        deficit_kcal: deficit
-      });
+      const originalPro = calculatedData?.targetMacros?.protein || calculatedData?.proteinMid;
+      if (originalPro !== targetPro) {
+        profilePayload.protein_target = targetPro;
+      }
+
+      const originalCarbs = calculatedData?.targetMacros?.carbs;
+      const originalFat = calculatedData?.targetMacros?.fat;
+      
+      // If manualOverride is active, and carbs/fat changed, save them
+      if (manualOverride && (originalCarbs !== targetCarbs || originalFat !== targetFat)) {
+        profilePayload.carbs_target = targetCarbs;
+        profilePayload.fat_target = targetFat;
+      }
+
+      // Always include water_target to ensure it saves
+      profilePayload.water_target = targetWater;
+
+      if (Object.keys(profilePayload).length > 0) {
+        await profileService.upsertProfile(profilePayload);
+      }
+
+      if (Object.keys(goalPayload).length > 0) {
+        await profileService.upsertGoal(goalPayload);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
