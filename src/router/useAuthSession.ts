@@ -21,7 +21,7 @@ export function useAuthSession() {
           email: localSession.user.email,
         });
         analytics.identifyUser(localSession.user.id);
-        useMultiAccountStore.getState().addOrUpdateAccount(localSession);
+        useMultiAccountStore.getState().updateSession(localSession);
       } else {
         clearCrashReportingUser();
       }

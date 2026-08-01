@@ -39,7 +39,11 @@ export function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [showEmailSuggestion, setShowEmailSuggestion] = useState(false);
   const { accounts, activeAccountId } = useMultiAccountStore();
-  const [showSavedAccounts, setShowSavedAccounts] = useState(Object.keys(accounts).length > 0);
+  const [showSavedAccounts, setShowSavedAccounts] = useState(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('mode') === 'add_account') return false;
+    return Object.keys(accounts).length > 0;
+  });
   const [switchingTo, setSwitchingTo] = useState<string | null>(null);
   const [isOtpSent, setIsOtpSent] = useState(false);
 
@@ -221,6 +225,16 @@ export function AuthPage() {
           ) : (
             <div className="w-full">
               <div className="space-y-4">
+                {Object.keys(accounts).length > 0 && (
+                  <motion.button 
+                      whileHover={{ opacity: 0.8 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setShowSavedAccounts(true)}
+                      className="text-[14px] text-white/70 hover:text-white font-medium mb-4 flex items-center justify-center w-full"
+                  >
+                      ← Back to saved accounts
+                  </motion.button>
+                )}
                 <motion.button 
                     whileHover={hover.subtle}
                     whileTap={tap.scale}

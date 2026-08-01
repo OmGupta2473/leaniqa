@@ -86,6 +86,12 @@ export const authService = {
     }
   },
 
+
+  async prepareAddAccount(): Promise<void> {
+    await supabase.auth.signOut();
+    this.clearCaches();
+    // Intentionally do NOT remove anything from multiAccountStore
+  },
   async switchAccount(accountId: string): Promise<void> {
     const multiAccountStore = useMultiAccountStore.getState();
     const account = multiAccountStore.accounts[accountId];

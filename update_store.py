@@ -1,4 +1,10 @@
-import { create } from 'zustand';
+with open('src/app/store/multiAccountStore.ts', 'r') as f:
+    content = f.read()
+
+# We need to change the store to support activeAccountId without forcing the account into the saved accounts list.
+# Actually, the user wants the ability to log in, NOT save it in the switcher, but still use it.
+# So `activeAccountId` will track the current user. `accounts` will track the *saved* accounts.
+new_store = """import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Session } from '@supabase/supabase-js';
 import { createPersistConfig } from '@/shared/utils/store';
@@ -94,3 +100,7 @@ export const useMultiAccountStore = create<MultiAccountState>()(
     }))
   )
 );
+"""
+with open('src/app/store/multiAccountStore.ts', 'w') as f:
+    f.write(new_store)
+
