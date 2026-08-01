@@ -26,7 +26,7 @@ export const initCrashReporting = () => {
     tracesSampleRate: 1.0,
 
     // Set `tracePropagationTargets` to control for which URLs distributed tracing should be enabled
-    tracePropagationTargets: ['localhost', /^https:\/\//],
+    tracePropagationTargets: ['localhost', /^\/(?!\/)/],
 
     // Capture React routing navigation, console logs, etc.
     integrations: [
