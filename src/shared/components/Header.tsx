@@ -14,6 +14,8 @@ import { useEffect, useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useHasCompletedOnboarding } from '@/shared/hooks/useHasCompletedOnboarding';
 import { motion } from 'motion/react';
+import { AccountSwitcher } from '@/features/auth/components/AccountSwitcher';
+import { useLongPress } from '@/shared/hooks/useLongPress';
 
 function getLocalDateString() {
   const d = new Date();
@@ -28,6 +30,7 @@ export function Header() {
   const earnedAwards = calculateEarnedAwards(metrics);
   const { isOnline } = useNetworkStatus();
   const [session, setSession] = useState(null);
+  const [showAccountSwitcher, setShowAccountSwitcher] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -138,21 +141,29 @@ export function Header() {
           )}
         </div>
         <div 
-          className="rounded-full flex items-center justify-center text-[12px] font-medium"
-          onClick={() => {
-            if (hasCompletedOnboarding !== false) navigate('/profile');
-          }}
+          className="rounded-full flex items-center justify-center text-[12px] font-medium select-none"
+          {...useLongPress(
+            () => {
+              if (hasCompletedOnboarding !== false) setShowAccountSwitcher(true);
+            },
+            () => {
+              if (hasCompletedOnboarding !== false) navigate('/profile');
+            }
+          )}
           style={{ 
             cursor: hasCompletedOnboarding === false ? 'not-allowed' : 'pointer',
             background: 'rgba(212,255,0,0.12)',
             color: '#D4FF00',
             width: '32px',
-            height: '32px'
+            height: '32px',
+            WebkitUserSelect: 'none',
+            userSelect: 'none'
           }}
         >
           {profile?.name ? profile.name.substring(0, 2).toUpperCase() : 'ME'}
         </div>
       </div>
+      <AccountSwitcher isOpen={showAccountSwitcher} onClose={() => setShowAccountSwitcher(false)} />
     </motion.div>
   );
 }

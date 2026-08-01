@@ -9,7 +9,10 @@ import { Logo } from "@/shared/components/Logo";
 //    Redirect URLs: http://localhost:3000/** (note the /** wildcard)
 // 5. If OAuth consent screen is in "Testing" mode, add your email as a test user.
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
+import { useMultiAccountStore } from '@/app/store/multiAccountStore';
+import { Check, X, Loader2, Plus, LogOut } from 'lucide-react';
+import { authService } from '@/features/auth/services/authService';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/shared/utils/supabase';
 import { Mail, Apple } from 'lucide-react';
@@ -35,7 +38,33 @@ export function AuthPage() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [showEmailSuggestion, setShowEmailSuggestion] = useState(false);
+  const { accounts, activeAccountId } = useMultiAccountStore();
+  const [showSavedAccounts, setShowSavedAccounts] = useState(Object.keys(accounts).length > 0);
+  const [switchingTo, setSwitchingTo] = useState<string | null>(null);
   const [isOtpSent, setIsOtpSent] = useState(false);
+
+  
+  const handleSwitchAccount = async (id: string) => {
+    setSwitchingTo(id);
+    try {
+      await authService.switchAccount(id);
+      window.location.href = getRedirectUrl();
+    } catch (e) {
+      console.error('Failed to switch account:', e);
+      toast({ type: 'error', message: 'Session expired. Please log in again.' });
+      useMultiAccountStore.getState().removeAccount(id);
+    } finally {
+      setSwitchingTo(null);
+    }
+  };
+
+  const handleRemoveSavedAccount = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    useMultiAccountStore.getState().removeAccount(id);
+    if (Object.keys(useMultiAccountStore.getState().accounts).length === 0) {
+      setShowSavedAccounts(false);
+    }
+  };
 
   const getRedirectUrl = () => {
     let nextPath = '';
@@ -134,104 +163,162 @@ export function AuthPage() {
             <h1 className="text-[28px] font-semibold tracking-tight">LeanIQA</h1>
           </div>
 
-          <div className="space-y-4">
-            <motion.button 
-                whileHover={hover.subtle}
-                whileTap={tap.scale}
-                onClick={() => handleOAuthLogin('google')}
-                disabled={loading}
-                className="btn-ghost w-full"
-            >
-                <GoogleIcon className="w-5 h-5 shrink-0" /> Continue with Google
-            </motion.button>
-            
-            <motion.button 
-                whileHover={hover.subtle}
-                whileTap={tap.scale}
-                onClick={() => toast({ type: 'info', message: 'This feature is currently unavailable.' })}
-                disabled={loading}
-                className="btn-ghost w-full opacity-50 cursor-not-allowed"
-            >
-                <Apple className="w-5 h-5 shrink-0" fill="currentColor" strokeWidth={0} /> Continue with Apple
-            </motion.button>
-          </div>
-
-          {showEmailSuggestion && (
+          
+          {showSavedAccounts && Object.keys(accounts).length > 0 ? (
             <motion.div 
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              className="mt-5 border border-[rgba(212,255,0,0.25)] bg-[rgba(212,255,0,0.1)] text-[#D4FF00] p-3 rounded-[20px] text-[14px] text-center font-medium"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-4"
             >
-              Having trouble with Google? Try email sign-in below.
-            </motion.div>
-          )}
-
-          {/* Divider */}
-          <div className="flex items-center gap-4 my-8">
-            <div className="flex-1 h-[0.5px] bg-[rgba(255,255,255,0.18)]"></div>
-            <div className="text-[11px] font-semibold text-[rgba(255,255,255,0.18)] uppercase tracking-wide whitespace-nowrap">OR CONTINUE WITH</div>
-            <div className="flex-1 h-[0.5px] bg-[rgba(255,255,255,0.18)]"></div>
-          </div>
-
-          <form onSubmit={handleEmailLogin} className="space-y-4">
-            {!isOtpSent ? (
-                <>
-                  <div>
-                      <label htmlFor="email-input" className="sr-only">Email address</label>
-                      <input
-                        id="email-input"
-                        type="email"
-                        placeholder="Enter your email"
-                        aria-label="Email address"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        onFocus={(e) => {
-                          const target = e.target;
-                          setTimeout(() => {
-                            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                          }, 300);
-                        }}
-                        disabled={loading}
-                        className="input-apple min-h-[44px]"
-                        required
-                      />
-                  </div>
-                  <motion.button 
-                      whileHover={hover.glow}
-                      whileTap={tap.scale}
-                      type="submit" 
-                      disabled={loading || !email}
-                      className="btn-primary w-full disabled:opacity-50"
-                  >
-                      {loading ? 'Sending link...' : 'Continue with Email'}
-                  </motion.button>
-                </>
-            ) : (
-              <motion.div 
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="text-center space-y-4 py-2"
+              <div className="bg-[rgba(28,28,30,0.6)] backdrop-blur-xl border border-[rgba(255,255,255,0.08)] rounded-[24px] overflow-hidden">
+                <div className="p-4 border-b border-white/5">
+                  <h2 className="text-[15px] font-semibold text-white/90">Saved Accounts</h2>
+                </div>
+                <div className="p-2 max-h-[300px] overflow-y-auto">
+                  {Object.values(accounts).map(account => (
+                    <button
+                      key={account.id}
+                      onClick={() => handleSwitchAccount(account.id)}
+                      disabled={!!switchingTo}
+                      className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-white/5 transition-colors text-left"
+                    >
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <div className="w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-lg bg-white/5 text-white/70 overflow-hidden">
+                          {account.avatar_url ? (
+                            <img src={account.avatar_url} alt={account.name} className="w-full h-full object-cover" />
+                          ) : (
+                            account.name ? account.name.substring(0, 2).toUpperCase() : 'ME'
+                          )}
+                        </div>
+                        <div className="flex flex-col truncate">
+                          <span className="text-[15px] font-medium text-white truncate">{account.name || 'User'}</span>
+                          <span className="text-[13px] text-white/50 truncate">{account.email}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {switchingTo === account.id && <Loader2 size={18} className="animate-spin text-white/50" />}
+                        {switchingTo !== account.id && (
+                          <div
+                            onClick={(e) => handleRemoveSavedAccount(e, account.id)}
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-white/30 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                          >
+                            <LogOut size={16} />
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <button
+                onClick={() => setShowSavedAccounts(false)}
+                className="btn-ghost w-full"
               >
-                  <div className="w-16 h-16 rounded-full bg-[rgba(212,255,0,0.1)] flex items-center justify-center mx-auto border border-[rgba(212,255,0,0.2)]">
-                    <Mail className="w-8 h-8 text-[#D4FF00]" />
-                  </div>
-                  <div>
-                      <h3 className="text-[22px] font-bold text-white mb-2 tracking-tight">Check your inbox</h3>
-                      <p className="text-[15px] text-[rgba(255,255,255,0.55)] leading-relaxed">
-                        We sent a secure link to <br/><span className="text-white break-all">{email}</span>
-                      </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => { setIsOtpSent(false); }}
-                    className="text-[14px] text-[#D4FF00] font-semibold hover:opacity-80 transition-opacity mt-4 bg-[rgba(212,255,0,0.1)] px-5 py-2.5 min-h-[44px] rounded-full"
-                  >
-                    Use a different email
-                  </button>
-              </motion.div>
-            )}
-          </form>
+                Log into another account
+              </button>
+            </motion.div>
+          ) : (
+            <div className="w-full">
+              <div className="space-y-4">
+                <motion.button 
+                    whileHover={hover.subtle}
+                    whileTap={tap.scale}
+                    onClick={() => handleOAuthLogin('google')}
+                    disabled={loading}
+                    className="btn-ghost w-full"
+                >
+                    <GoogleIcon className="w-5 h-5 shrink-0" /> Continue with Google
+                </motion.button>
+                
+                <motion.button 
+                    whileHover={hover.subtle}
+                    whileTap={tap.scale}
+                    onClick={() => toast({ type: 'info', message: 'This feature is currently unavailable.' })}
+                    disabled={loading}
+                    className="btn-ghost w-full opacity-50 cursor-not-allowed"
+                >
+                    <Apple className="w-5 h-5 shrink-0" fill="currentColor" strokeWidth={0} /> Continue with Apple
+                </motion.button>
+              </div>
 
+              {showEmailSuggestion && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="mt-5 border border-[rgba(212,255,0,0.25)] bg-[rgba(212,255,0,0.1)] text-[#D4FF00] p-3 rounded-[20px] text-[14px] text-center font-medium"
+                >
+                  Having trouble with Google? Try email sign-in below.
+                </motion.div>
+              )}
+
+              {/* Divider */}
+              <div className="flex items-center gap-4 my-8">
+                <div className="flex-1 h-[0.5px] bg-[rgba(255,255,255,0.18)]"></div>
+                <div className="text-[11px] font-semibold text-[rgba(255,255,255,0.18)] uppercase tracking-wide whitespace-nowrap">OR CONTINUE WITH</div>
+                <div className="flex-1 h-[0.5px] bg-[rgba(255,255,255,0.18)]"></div>
+              </div>
+
+              <form onSubmit={handleEmailLogin} className="space-y-4">
+                {!isOtpSent ? (
+                    <>
+                      <div>
+                          <label htmlFor="email-input" className="sr-only">Email address</label>
+                          <input
+                            id="email-input"
+                            type="email"
+                            placeholder="Enter your email"
+                            aria-label="Email address"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            onFocus={(e) => {
+                              const target = e.target as HTMLInputElement;
+                              setTimeout(() => {
+                                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                              }, 300);
+                            }}
+                            disabled={loading}
+                            className="input-apple min-h-[44px]"
+                            required
+                          />
+                      </div>
+                      <motion.button 
+                          whileHover={hover.glow}
+                          whileTap={tap.scale}
+                          type="submit" 
+                          disabled={loading || !email}
+                          className="btn-primary w-full disabled:opacity-50"
+                      >
+                          {loading ? 'Sending link...' : 'Continue with Email'}
+                      </motion.button>
+                    </>
+                ) : (
+                  <motion.div 
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="text-center space-y-4 py-2"
+                  >
+                      <div className="w-16 h-16 rounded-full bg-[rgba(212,255,0,0.1)] flex items-center justify-center mx-auto border border-[rgba(212,255,0,0.2)]">
+                        <Mail className="w-8 h-8 text-[#D4FF00]" />
+                      </div>
+                      <div>
+                          <h3 className="text-[22px] font-bold text-white mb-2 tracking-tight">Check your inbox</h3>
+                          <p className="text-[15px] text-[rgba(255,255,255,0.55)] leading-relaxed">
+                            We sent a secure link to <br/><span className="text-white break-all">{email}</span>
+                          </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setIsOtpSent(false); }}
+                        className="text-[14px] text-[#D4FF00] font-semibold hover:opacity-80 transition-opacity mt-4 bg-[rgba(212,255,0,0.1)] px-5 py-2.5 min-h-[44px] rounded-full"
+                      >
+                        Use a different email
+                      </button>
+                  </motion.div>
+                )}
+              </form>
+            </div>
+          )}
           {/* Footer */}
           <div className="flex justify-center gap-6 text-[12px] font-medium text-[rgba(255,255,255,0.3)] mt-8">
             <button onClick={() => navigate('/privacy')} type="button" className="hover:text-[rgba(255,255,255,0.6)] transition-colors cursor-pointer min-h-[44px] min-w-[44px]">Privacy Policy</button>
