@@ -38,20 +38,18 @@ export function AccountSwitcher({ isOpen, onClose }: AccountSwitcherProps) {
     }
   };
 
-  const handleAddAccount = () => {
+  const handleAddAccount = async () => {
     onClose();
-    navigate('/login');
+    await authService.prepareAddAccount();
+    window.location.href = '/login?mode=add_account';
   };
 
   const handleRemoveAccount = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (savedAccounts.length === 1) {
-      await authService.logout(true);
-      window.location.href = '/login';
-      return;
-    }
     
+    // Just remove the account from the store if it's not the active one
     if (id === activeAccountId) {
+      // If they remove the currently active account, log them out
       await authService.logout(false);
       window.location.href = '/login';
     } else {
