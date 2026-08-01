@@ -179,6 +179,7 @@ export function MealLoggerPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const [pendingMeal, setPendingMeal] = useState<{ text: string; data: any } | null>(null);
   const [failedMealText, setFailedMealText] = useState<string | null>(null);
+  const [failedMealError, setFailedMealError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState<number>(0);
 
   const isToday = (d: Date) => {
@@ -396,40 +397,62 @@ export function MealLoggerPage() {
 
             if (error) {
               const status = (error as any)?.context?.status ?? 0;
+              const responseBody = (error as any)?.context?.body ?? data ?? null;
               const msg = String(error.message ?? '');
-              if (status === 401 || status === 403) { 
-                if (attempt < 2) { await supabase.auth.refreshSession(); lastError = new Error('Auth — retrying'); continue; } 
-                throw new Error('Authentication failure'); 
+              
+              if (import.meta.env.DEV) {
+                 console.error('[MealLogger] Edge Function Error:', { status, message: msg, error, responseBody });
               }
-              if (status === 429) throw new Error('Rate limiting');
+              
+              if (status === 401 || status === 403) { 
+                if (attempt < 2) { await supabase.auth.refreshSession(); lastError = new Error('Auth — retrying'); continue; }
+                throw new Error('Authentication failure');
+              }
+              if (status === 429) throw new Error('Daily AI limit reached');
               if (status === 504 || msg.includes('timeout')) {
-                lastError = new Error('AI timeout');
+                lastError = new Error('AI took too long to respond');
                 if (attempt < 2) { await new Promise(r => setTimeout(r, 1200 * (attempt + 1))); continue; }
-                throw new Error('AI timeout');
+                throw new Error('AI took too long to respond');
               }
               if (msg.includes('fetch') || msg.includes('Network') || msg.includes('Failed to fetch')) { 
-                lastError = new Error('Network failure'); 
-                if (attempt < 2) { await new Promise(r => setTimeout(r, 1200 * (attempt + 1))); continue; } 
-                throw new Error('Network failure'); 
+                lastError = new Error('No internet connection');
+                if (attempt < 2) { await new Promise(r => setTimeout(r, 1200 * (attempt + 1))); continue; }
+                throw new Error('No internet connection');
               }
               if (status >= 500) { 
-                lastError = new Error('Server error'); 
-                if (attempt < 2) { await new Promise(r => setTimeout(r, 1200 * (attempt + 1))); continue; } 
-                throw new Error('Server error'); 
+                lastError = new Error('Server error');
+                if (attempt < 2) { await new Promise(r => setTimeout(r, 1200 * (attempt + 1))); continue; }
+                
+                let detailedMessage = 'Server error';
+                try {
+                  const parsed = typeof responseBody === 'string' ? JSON.parse(responseBody) : responseBody;
+                  if (parsed?.error) detailedMessage = parsed.error;
+                } catch (e) {}
+                throw new Error(detailedMessage);
               }
-              throw new Error(msg || 'AI unavailable');
+              
+              let detailedMessage = msg || 'AI temporarily unavailable';
+              try {
+                const parsed = typeof responseBody === 'string' ? JSON.parse(responseBody) : responseBody;
+                if (parsed?.error) detailedMessage = parsed.error;
+              } catch (e) {}
+              throw new Error(detailedMessage);
             }
 
             if (!data || typeof data.calories !== 'number') { 
-              lastError = new Error('Parsing error'); 
-              if (attempt < 2) continue; 
-              throw new Error('Invalid AI response'); 
+              if (import.meta.env.DEV) {
+                console.error('[MealLogger] Parsing Error - Invalid AI response data:', data);
+              }
+              lastError = new Error('AI returned invalid data');
+              if (attempt < 2) continue;
+              throw new Error('AI returned invalid data');
             }
             
             return data;
           } catch (err: any) {
             lastError = err as Error;
-            if (attempt < 2 && (err.message.includes('retrying') || err.message.includes('unavailable') || err.message.includes('Auth —') || err.message.includes('Server error') || err.message.includes('timeout') || err.message.includes('Network failure') || err.message.includes('Parsing error'))) continue;
+            const retryableErrors = ['retrying', 'unavailable', 'Auth —', 'Server error', 'timeout', 'too long', 'Network', 'internet', 'invalid data'];
+            if (attempt < 2 && retryableErrors.some(retryMsg => err.message.includes(retryMsg))) continue;
             break;
           }
         }
@@ -437,12 +460,6 @@ export function MealLoggerPage() {
 
       const errorContext = (() => {
         const msg = lastError?.message ?? '';
-        if (msg.includes('limit') || msg.includes('Rate limiting')) return 'Daily AI limit reached';
-        if (msg.includes('log out') || msg.includes('session') || msg.includes('Authentication failure')) return 'Session expired';
-        if (msg.includes('Network') || msg.includes('fetch') || msg.includes('Network failure')) return 'No internet connection';
-        if (msg.includes('AI timeout')) return 'AI took too long to respond';
-        if (msg.includes('Server error')) return 'Server error';
-        if (msg.includes('Invalid AI response') || msg.includes('Parsing error')) return 'AI returned invalid data';
         return msg || 'AI temporarily unavailable';
       })();
       
@@ -452,9 +469,14 @@ export function MealLoggerPage() {
       isSubmittingRef.current = false;
       setLoading(false);
       
-      if (data._errorMessage || (data.confidence && data.confidence < 80)) {
-        analytics.trackEvent('AI Parse Failure', { error: data._errorMessage || 'Low confidence', input: text });
+      if (data._errorMessage) {
+        analytics.trackEvent('AI Parse Failure', { error: data._errorMessage, input: text });
+        setFailedMealError(data._errorMessage);
+        setFailedMealText(null);
+      } else if (data.confidence && data.confidence < 80) {
+        analytics.trackEvent('AI Parse Failure', { error: 'Low confidence', input: text });
         setFailedMealText(text);
+        setFailedMealError(null);
       } else {
         setRetryCount(0);
         analytics.trackEvent('AI Parse Success', { confidence: data.confidence, calories: data.calories });
@@ -464,9 +486,13 @@ export function MealLoggerPage() {
     onError: (err: any, variables) => {
       isSubmittingRef.current = false;
       console.error('[parseMealMutation] onError fired:', err);
-      const errorMessage = typeof err === 'object' ? JSON.stringify(err, null, 2) : String(err);
+      let errorMessage = 'An unexpected error occurred';
+      if (err instanceof Error) errorMessage = err.message;
+      else if (typeof err === 'string') errorMessage = err;
+      
       analytics.trackEvent('AI Parse Failure', { error: errorMessage, type: 'mutation_error' });
-      setFailedMealText(variables);
+      setFailedMealError(errorMessage);
+      setFailedMealText(null);
       setLoading(false);
     }
   });
@@ -527,6 +553,7 @@ export function MealLoggerPage() {
     setInput("");
     setPendingMeal(null);
     setFailedMealText(null);
+    setFailedMealError(null);
     setRetryCount(0);
     addChatMessage({ role: "user", text });
     setLoading(true);
@@ -853,6 +880,27 @@ export function MealLoggerPage() {
                       </div>
                     </motion.div>
                   )}
+                                    {failedMealError && !loading && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-[rgba(255,77,28,0.05)] border-[0.5px] border-[rgba(255,77,28,0.2)] text-[rgba(255,255,255,0.85)] rounded-[24px] rounded-tl-sm max-w-[90%] self-start p-[12px_16px] text-[14px] leading-relaxed"
+                    >
+                      <div className="mb-3 text-[rgba(255,255,255,0.9)]">
+                        <strong>Error:</strong> {failedMealError}
+                      </div>
+                      <button 
+                        onClick={() => {
+                          setFailedMealError(null);
+                          setFailedMealText(null);
+                          setRetryCount(0);
+                        }}
+                        className="bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] text-white font-bold py-2 px-4 rounded-[12px] text-[13px] transition-colors w-full"
+                      >
+                        Dismiss
+                      </button>
+                    </motion.div>
+                  )}
                   {failedMealText && !loading && (
                     <motion.div 
                       initial={{ opacity: 0, y: 8 }}
@@ -866,6 +914,7 @@ export function MealLoggerPage() {
                           <button 
                             onClick={() => {
                               setFailedMealText(null);
+                              setFailedMealError(null);
                               setRetryCount(0);
                             }}
                             className="bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] text-white font-bold py-2 px-4 rounded-[12px] text-[13px] transition-colors w-full"
