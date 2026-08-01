@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Check, Plus, LogOut, X, Loader2 } from 'lucide-react';
 import { useMultiAccountStore } from '@/app/store/multiAccountStore';
@@ -58,7 +59,8 @@ export function AccountSwitcher({ isOpen, onClose }: AccountSwitcherProps) {
     }
   };
 
-  return (
+  if (typeof document === 'undefined') return null;
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
@@ -168,6 +170,7 @@ export function AccountSwitcher({ isOpen, onClose }: AccountSwitcherProps) {
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
