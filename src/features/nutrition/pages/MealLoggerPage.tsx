@@ -397,7 +397,18 @@ export function MealLoggerPage() {
 
             if (error) {
               const status = (error as any)?.context?.status ?? 0;
-              const responseBody = (error as any)?.context?.body ?? data ?? null;
+              let responseBody: any = data ?? null;
+              
+              if (error.name === 'FunctionsHttpError' && (error as any)?.context?.json) {
+                try {
+                  responseBody = await (error as any).context.clone().json();
+                } catch (e) {
+                  try {
+                    responseBody = await (error as any).context.clone().text();
+                  } catch (e2) {}
+                }
+              }
+
               const msg = String(error.message ?? '');
               
               if (import.meta.env.DEV) {
@@ -427,6 +438,8 @@ export function MealLoggerPage() {
                 try {
                   const parsed = typeof responseBody === 'string' ? JSON.parse(responseBody) : responseBody;
                   if (parsed?.error) detailedMessage = parsed.error;
+                  else if (typeof responseBody === 'string') detailedMessage = responseBody;
+                  else if (responseBody) detailedMessage = JSON.stringify(responseBody);
                 } catch (e) {}
                 throw new Error(detailedMessage);
               }
@@ -435,6 +448,8 @@ export function MealLoggerPage() {
               try {
                 const parsed = typeof responseBody === 'string' ? JSON.parse(responseBody) : responseBody;
                 if (parsed?.error) detailedMessage = parsed.error;
+                else if (typeof responseBody === 'string') detailedMessage = responseBody;
+                else if (responseBody) detailedMessage = JSON.stringify(responseBody);
               } catch (e) {}
               throw new Error(detailedMessage);
             }
