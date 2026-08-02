@@ -11,7 +11,7 @@ export default defineConfig(() => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['LQ.png'],
+        includeAssets: ['LQ-64.png', 'LQ-192.png', 'LQ-512.png', 'LQ.png'],
         manifest: {
           name: 'LeanIQA',
           short_name: 'LeanIQA',
@@ -21,20 +21,25 @@ export default defineConfig(() => {
           display: 'standalone',
           icons: [
             {
-              src: 'LQ.png',
+              src: 'LQ-192.png',
               sizes: '192x192',
               type: 'image/png'
             },
             {
-              src: 'LQ.png',
+              src: 'LQ-512.png',
               sizes: '512x512',
               type: 'image/png'
             },
             {
-              src: 'LQ.png',
+              src: 'LQ-512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any maskable'
+            },
+            {
+              src: 'LQ.png',
+              sizes: '1254x1254',
+              type: 'image/png'
             }
           ]
         },
