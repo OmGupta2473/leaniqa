@@ -105,21 +105,21 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.05 }}
                   key={m.id || i} 
-                  className="flex items-center justify-between group p-3 rounded-[16px] bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)] transition-colors"
+                  className="flex items-center justify-between group p-2.5 sm:p-3 rounded-[16px] bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)] transition-colors gap-2"
                 >
-                  <div className="flex-1 pr-3 flex items-center gap-2">
-                    <div className="text-[15px] font-medium text-[rgba(255,255,255,0.9)] capitalize break-words">{m.meal_text}</div>
+                  <div className="flex-1 min-w-0 pr-1 flex items-center gap-2">
+                    <div className="text-[14px] font-medium text-[rgba(255,255,255,0.9)] capitalize truncate">{m.meal_text}</div>
                     {m._localOnly && (
-                      <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1">
+                      <span className="text-[9px] bg-[rgba(255,255,255,0.1)] text-white px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 shrink-0">
                         Offline
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-[11px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-2.5 py-1 rounded-full font-bold tracking-wide">{m.calories} KCAL</span>
-                    <span className="text-[11px] badge-lime px-2.5 py-1 font-bold rounded-full tracking-wide">{m.protein}G PRO</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-[10px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-2 py-1 rounded-full font-bold tracking-wide whitespace-nowrap">{m.calories} KCAL</span>
+                    <span className="text-[10px] badge-lime px-2 py-1 font-bold rounded-full tracking-wide whitespace-nowrap">{m.protein}G PRO</span>
                     {m.id && !m.id.toString().startsWith('opt-') && (
-                      <button aria-label="Delete meal" className="ml-2 min-w-[44px] min-h-[44px] rounded-full bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,77,28,0.2)] flex items-center justify-center text-[rgba(255,255,255,0.5)] hover:text-[#FF4D1C] transition-colors" onClick={(e) => {
+                      <button aria-label="Delete meal" className="ml-1 w-7 h-7 shrink-0 rounded-full bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,77,28,0.2)] flex items-center justify-center text-[rgba(255,255,255,0.5)] hover:text-[#FF4D1C] transition-colors" onClick={(e) => {
                           e.stopPropagation();
                           toast({
                             type: 'warning',
