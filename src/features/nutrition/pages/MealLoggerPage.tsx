@@ -108,7 +108,7 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
                   className="flex items-center justify-between group p-2.5 sm:p-3 rounded-[16px] bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)] transition-colors gap-2"
                 >
                   <div className="flex-1 min-w-0 pr-1 flex flex-col justify-center items-start gap-1">
-                    <div className="text-[13px] leading-snug font-medium text-[rgba(255,255,255,0.9)] capitalize break-words">{m.meal_text}</div>
+                    <div className="text-[13px] leading-tight font-medium text-[rgba(255,255,255,0.9)] capitalize break-words whitespace-normal break-all sm:break-normal">{m.meal_text}</div>
                     {m._localOnly && (
                       <span className="text-[9px] bg-[rgba(255,255,255,0.1)] text-white px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 shrink-0">
                         Offline
