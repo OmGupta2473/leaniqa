@@ -1,13 +1,13 @@
 import { useCallback, useRef, useState } from 'react';
 
 export function useLongPress(
-    onLongPress: (e: any) => void = () => {},
-    onClick: (e: any) => void = () => {},
+    onLongPress: (e?: any) => void = () => {},
+    onClick: (e?: any) => void = () => {},
     { shouldPreventDefault = true, delay = 500 }: { shouldPreventDefault?: boolean; delay?: number; } = {}
 ) {
     const [longPressTriggered, setLongPressTriggered] = useState(false);
-    const timeout = useRef<NodeJS.Timeout>();
-    const target = useRef<EventTarget>();
+    const timeout = useRef<any>(null);
+    const target = useRef<any>(null);
 
     const start = useCallback(
         (event: any) => {

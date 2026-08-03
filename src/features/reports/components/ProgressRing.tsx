@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { computeRingGeometry } from '../shared/utils/ringMath';
+import { computeRingGeometry } from '@/shared/utils/ringMath';
 import { motion } from 'motion/react';
 
 interface ProgressRingProps {

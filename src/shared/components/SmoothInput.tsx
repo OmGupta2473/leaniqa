@@ -1,6 +1,6 @@
 import React, { ComponentPropsWithoutRef, useEffect, useRef, useState } from "react";
 import { motion, useMotionValue, useReducedMotion, useSpring } from "motion/react";
-import { cn } from "../shared/utils/utils";
+import { cn } from "@/shared/utils/utils";
 
 const inputWrapperClassName = cn(
   "relative w-full"

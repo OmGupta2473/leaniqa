@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { computeRingGeometry } from '../shared/utils/ringMath';
+import { computeRingGeometry } from '@/shared/utils/ringMath';
 import { motion } from 'motion/react';
 
 export const MicroRing = memo(function MicroRing({ current, goal, size = 28, strokeWidth = 3, color }: { current: number; goal: number; size?: number; strokeWidth?: number; color: string }) {

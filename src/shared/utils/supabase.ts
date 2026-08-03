@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { devLog } from '../shared/utils/logger';
+import { devLog } from '@/shared/utils/logger';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;

@@ -1,21 +1,21 @@
-import { Logo } from "../shared/components/Logo";
+import { Logo } from "@/shared/components/Logo";
 import React from 'react';
-import { PerfProfiler } from '../shared/utils/perfDebug';
-import { authService } from '../features/auth/services/authService';
-import { useAppStore } from '../app/store';
-import { reportService } from '../features/reports/services/reportService';
-import { calculateEarnedAwards } from '../shared/utils/streaks';
+import { PerfProfiler } from '@/shared/utils/perfDebug';
+import { authService } from '@/features/auth/services/authService';
+import { useAppStore } from '@/app/store';
+import { reportService } from '@/features/reports/services/reportService';
+import { calculateEarnedAwards } from '@/shared/utils/streaks';
 import { useQuery } from '@tanstack/react-query';
-import { profileService } from '../features/profile/services/profileService';
-import { supabase } from '../shared/utils/supabase';
-import { useNetworkStatus } from '../shared/utils/utils';
+import { profileService } from '@/features/profile/services/profileService';
+import { supabase } from '@/shared/utils/supabase';
+import { useNetworkStatus } from '@/shared/utils/utils';
 import { WifiOff, ChevronLeft } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useHasCompletedOnboarding } from '../shared/hooks/useHasCompletedOnboarding';
+import { useHasCompletedOnboarding } from '@/shared/hooks/useHasCompletedOnboarding';
 import { motion } from 'motion/react';
-import { AccountSwitcher } from '../features/auth/components/AccountSwitcher';
-import { useLongPress } from '../shared/hooks/useLongPress';
+import { AccountSwitcher } from '@/features/auth/components/AccountSwitcher';
+import { useLongPress } from '@/shared/hooks/useLongPress';
 
 function getLocalDateString() {
   const d = new Date();

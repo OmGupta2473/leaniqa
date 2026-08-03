@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useScrollLock } from '../shared/hooks/useScrollLock';
-import { slideUpVariants } from '../features/reports/components/motion';
+import { useScrollLock } from '@/shared/hooks/useScrollLock';
+import { slideUpVariants } from '@/features/reports/components/motion';
 
 interface BottomSheetProps {
   isOpen: boolean;

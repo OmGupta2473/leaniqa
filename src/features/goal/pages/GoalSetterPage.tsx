@@ -1,27 +1,27 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { PerfProfiler } from '../shared/utils/perfDebug';
+import { PerfProfiler } from '@/shared/utils/perfDebug';
 import { useNavigate } from "react-router-dom";
-import { useUserStore } from '../features/profile/store/userStore';
-import { useCalculatedProfile } from '../shared/hooks/useCalculatedProfile';
-import { useAppStore } from '../app/store';
-import { cn } from '../shared/utils/utils';
+import { useUserStore } from '@/features/profile/store/userStore';
+import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
+import { useAppStore } from '@/app/store';
+import { cn } from '@/shared/utils/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { profileService } from '../features/profile/services/profileService';
-import { complianceService } from '../features/reports/services/complianceService';
+import { profileService } from '@/features/profile/services/profileService';
+import { complianceService } from '@/features/reports/services/complianceService';
 import { CheckCircle2, AlertTriangle, ArrowRight, ChevronLeft, ChevronRight, Activity, Zap, Flame, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { pageVariants, itemVariants, hover, tap } from '../features/reports/components/motion';
-import { ScreenSkeleton } from '../shared/components/ScreenSkeleton';
-import { calculateBodyComposition, calculateGoalStats, estimateBodyFatPercentage } from '../shared/utils/profileCalculations';
-import { haptics } from '../shared/utils/haptics';
-import { analytics } from '../shared/utils/analytics';
-import { useNetworkConnectivity } from '../shared/hooks/useNetworkConnectivity';
-import { GoalSkeleton } from '../shared/components/Skeletons';
-import { useToast } from '../shared/components/Toast';
+import { pageVariants, itemVariants, hover, tap } from '@/features/reports/components/motion';
+import { ScreenSkeleton } from '@/shared/components/ScreenSkeleton';
+import { calculateBodyComposition, calculateGoalStats, estimateBodyFatPercentage } from '@/shared/utils/profileCalculations';
+import { haptics } from '@/shared/utils/haptics';
+import { analytics } from '@/shared/utils/analytics';
+import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
+import { GoalSkeleton } from '@/shared/components/Skeletons';
+import { useToast } from '@/shared/components/Toast';
 
-import { maleOptions, femaleOptions } from '../shared/constants/bodyFatOptions';
+import { maleOptions, femaleOptions } from '@/shared/constants/bodyFatOptions';
 
 function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: number }) {
   const [displayValue, setDisplayValue] = useState(0);
@@ -299,7 +299,7 @@ export function GoalSetterPage() {
     mutationFn: async (strategyData: any) => {
       if (typeof window !== 'undefined' && !navigator.onLine) {
         // Enqueue for offline
-        const { offlineSyncService } = await import('../shared/services/offlineSyncService');
+        const { offlineSyncService } = await import('@/shared/services/offlineSyncService');
         offlineSyncService.enqueue({
           type: 'SAVE_GOAL',
           payload: strategyData

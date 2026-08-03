@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import { ReactNode } from 'react';
-import { useKeyboardOpen, useVisualViewport } from '../shared/hooks/useVisualViewport';
+import { useKeyboardOpen, useVisualViewport } from '@/shared/hooks/useVisualViewport';
 
 interface AuthLayoutProps {
   children?: ReactNode;

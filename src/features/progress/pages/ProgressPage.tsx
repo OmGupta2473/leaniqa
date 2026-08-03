@@ -1,18 +1,18 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDashboardStore } from '../features/dashboard/store/dashboardStore';
+import { useDashboardStore } from '@/features/dashboard/store/dashboardStore';
 import { Target, Scale, TrendingDown, TrendingUp, LineChart, Loader2, AlertTriangle, ChevronLeft } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { calculateProjections } from '../shared/utils/projectionEngine';
-import { profileService } from '../features/profile/services/profileService';
+import { calculateProjections } from '@/shared/utils/projectionEngine';
+import { profileService } from '@/features/profile/services/profileService';
 import { weightService } from '../services/weightService';
-import { complianceService } from '../features/reports/services/complianceService';
+import { complianceService } from '@/features/reports/services/complianceService';
 import { motion } from "motion/react";
-import { cn } from "../shared/utils/utils";
-import { EmptyState } from '../shared/components/EmptyState';
-import { useNetworkConnectivity } from "../shared/hooks/useNetworkConnectivity";
-import { ProgressSkeleton } from '../shared/components/Skeletons';
+import { cn } from "@/shared/utils/utils";
+import { EmptyState } from '@/shared/components/EmptyState';
+import { useNetworkConnectivity } from "@/shared/hooks/useNetworkConnectivity";
+import { ProgressSkeleton } from '@/shared/components/Skeletons';
 
 function getLocalDateString(d: Date) {
   const year = d.getFullYear();
@@ -72,7 +72,7 @@ export function ProgressPage() {
       }
 
       if (typeof window !== 'undefined' && !navigator.onLine) {
-        const { offlineSyncService } = await import('../shared/services/offlineSyncService');
+        const { offlineSyncService } = await import('@/shared/services/offlineSyncService');
         offlineSyncService.enqueue({
           type: 'ADD_WEIGHT',
           payload: { weight: val, date: getLocalDateString(new Date()), updates, showAdvanced }

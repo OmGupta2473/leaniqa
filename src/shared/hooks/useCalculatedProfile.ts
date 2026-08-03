@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useHasCompletedOnboarding } from './useHasCompletedOnboarding';
-import { useUserStore } from '../features/profile/store/userStore';
+import { useUserStore } from '@/features/profile/store/userStore';
 import { calculateMacros, calculateGoalStats } from '../utils/profileCalculations';
 
 export function useCalculatedProfile() {

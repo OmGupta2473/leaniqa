@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2, ChevronRight, X, Info } from 'lucide-react';
-import { cn } from '../shared/utils/utils';
-import { haptics } from '../shared/utils/haptics';
+import { cn } from '@/shared/utils/utils';
+import { haptics } from '@/shared/utils/haptics';
 
-import { BodyFatOption, maleOptions, femaleOptions } from '../shared/constants/bodyFatOptions';
+import { BodyFatOption, maleOptions, femaleOptions } from '@/shared/constants/bodyFatOptions';
 
 interface BodyFatImagePlaceholderProps {
   gender: string;

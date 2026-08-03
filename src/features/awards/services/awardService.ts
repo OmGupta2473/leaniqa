@@ -1,7 +1,7 @@
-import { supabase } from '../shared/utils/supabase';
-import { authService } from '../features/auth/services/authService';
-import { DbUserStreak, DbUserAward, DbDailyMetric } from '../shared/types/supabase';
-import { calculateCurrentDailyStreak, calculateBestDailyStreak, AWARDS_CATALOG } from '../shared/utils/streaks';
+import { supabase } from '@/shared/utils/supabase';
+import { authService } from '@/features/auth/services/authService';
+import { DbUserStreak, DbUserAward, DbDailyMetric } from '@/shared/types/supabase';
+import { calculateCurrentDailyStreak, calculateBestDailyStreak, AWARDS_CATALOG } from '@/shared/utils/streaks';
 
 export const awardService = {
   async syncStreaksAndAwards(metrics: DbDailyMetric[]): Promise<void> {

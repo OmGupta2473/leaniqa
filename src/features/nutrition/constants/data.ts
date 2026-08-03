@@ -1,4 +1,4 @@
-import { devLog } from '../shared/utils/logger';
+import { devLog } from '@/shared/utils/logger';
 export const IndianFoodsDB: Record<string, string> = {
   'dal chawal': '~620 kcal · 22g protein · 18g fat · 95g carbs — Good base meal, protein is moderate. Add a side of dahi to boost protein.',
   'roti': null,
