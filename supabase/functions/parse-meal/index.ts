@@ -18,6 +18,7 @@ const MealSchema = z.object({
   protein: z.number(),
   fat: z.number(),
   carbs: z.number(),
+  fiber: z.number().default(0),
   confidence: z.number(),
   foods_detected: z.array(z.string()),
   coaching_tip: z.string(),
@@ -87,14 +88,14 @@ function normalizeInput(input: string): string {
 // ----------------------------------------------------------------------------
 // Stage 2 & 3 - Knowledge Base & Rule-Based Parser
 // ----------------------------------------------------------------------------
-const KnowledgeBase: Record<string, { calories: number, protein: number, fat: number, carbs: number, serving: string, perUnit?: boolean, unitWeight?: number }> = {
-  "roti": { calories: 120, protein: 4, fat: 3, carbs: 20, serving: "1 piece (40g)", perUnit: true, unitWeight: 40 },
-  "rice": { calories: 130, protein: 3, fat: 0.5, carbs: 28, serving: "100g (cooked)", perUnit: false },
-  "dal": { calories: 150, protein: 8, fat: 4, carbs: 20, serving: "1 bowl (200g)", perUnit: false },
-  "paneer": { calories: 265, protein: 18, fat: 20, carbs: 3, serving: "100g", perUnit: false },
-  "milk": { calories: 60, protein: 3.2, fat: 3, carbs: 5, serving: "100ml", perUnit: false },
+const KnowledgeBase: Record<string, { calories: number, protein: number, fat: number, carbs: number, fiber: number, serving: string, perUnit?: boolean, unitWeight?: number }> = {
+  "roti": { calories: 120, protein: 4, fat: 3, carbs: 20, fiber: 2, serving: "1 piece (40g)", perUnit: true, unitWeight: 40 },
+  "rice": { calories: 130, protein: 3, fat: 0.5, carbs: 28, fiber: 0.4, serving: "100g (cooked)", perUnit: false },
+  "dal": { calories: 150, protein: 8, fat: 4, carbs: 20, fiber: 6, serving: "1 bowl (200g)", perUnit: false },
+  "paneer": { calories: 265, protein: 18, fat: 20, carbs: 3, fiber: 0, serving: "100g", perUnit: false },
+  "milk": { calories: 60, protein: 3.2, fat: 3, carbs: 5, fiber: 0, serving: "100ml", perUnit: false },
   "egg": { calories: 70, protein: 6, fat: 5, carbs: 0.5, serving: "1 large (50g)", perUnit: true, unitWeight: 50 },
-  "chicken breast": { calories: 165, protein: 31, fat: 3.6, carbs: 0, serving: "100g", perUnit: false },
+  "chicken breast": { calories: 165, protein: 31, fat: 3.6, carbs: 0, fiber: 0, serving: "100g", perUnit: false },
   "apple": { calories: 52, protein: 0.3, fat: 0.2, carbs: 14, serving: "100g", perUnit: false },
   "banana": { calories: 89, protein: 1.1, fat: 0.3, carbs: 23, serving: "100g", perUnit: false },
   "poha": { calories: 180, protein: 4, fat: 5, carbs: 30, serving: "1 bowl (150g)", perUnit: false },
@@ -117,6 +118,7 @@ class KnowledgeBaseParser implements MealParser {
     let totalProtein = 0;
     let totalFat = 0;
     let totalCarbs = 0;
+    let totalFiber = 0;
     const foodsDetected: string[] = [];
 
     for (const part of parts) {
@@ -160,6 +162,7 @@ class KnowledgeBaseParser implements MealParser {
         protein: Math.round(totalProtein),
         fat: Math.round(totalFat),
         carbs: Math.round(totalCarbs),
+      fiber: Math.round(totalFiber * 10) / 10,
         confidence: 99,
         foods_detected: foodsDetected,
         coaching_tip: "Great, simple and tracked accurately!"
@@ -191,6 +194,7 @@ Format:
   "protein": number,
   "fat": number,
   "carbs": number,
+  "fiber": number,
   "confidence": number, // 0-100
   "foods_detected": string[],
   "coaching_tip": string
@@ -253,6 +257,8 @@ class GeminiParser implements MealParser {
     try {
       const ai = new GoogleGenAI({ apiKey: context.geminiApiKey });
       const prompt = `You are a precise nutrition expert for Indian and international foods. Analyze this meal: "${context.originalText}". Meal type: ${context.mealType || 'unspecified'}. The user has ${context.remainingCalories ?? 'unknown'} kcal remaining today and needs ${context.remainingProtein ?? 'unknown'}g more protein. User's goal: ${context.userGoal}.
+
+Always return Fiber as a core macronutrient in the JSON.
 Instructions:
 1. Identify each food item and its exact quantity from the text. Never default to 100g unless explicitly specified in grams.
 2. Apply quantity scaling strictly. Final nutrition MUST be: Serving Nutrition * Quantity.
@@ -314,6 +320,7 @@ class NutritionValidator {
     if (data.protein < 0) data.protein = 0;
     if (data.fat < 0) data.fat = 0;
     if (data.carbs < 0) data.carbs = 0;
+    if (data.fiber < 0 || isNaN(data.fiber) || data.fiber === undefined) data.fiber = 0;
     
     // Validate macros against calories (roughly)
     const macroCalories = (data.protein * 4) + (data.carbs * 4) + (data.fat * 9);

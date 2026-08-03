@@ -930,6 +930,12 @@ export function GoalSetterPage() {
                         {customCarbs}
                       </div>
                     </div>
+                    <div className="flex justify-between items-center mt-4">
+                      <span className="text-[15px] text-[rgba(255,255,255,0.6)]">Fiber (g)</span>
+                      <div className="bg-[rgba(0,0,0,0.2)] rounded-xl px-4 py-2 w-24 text-right text-[15px] font-semibold text-[rgba(255,255,255,0.6)]">
+                        {customFiber}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -1019,6 +1025,10 @@ export function GoalSetterPage() {
                       <div>
                         <div className="text-[20px] font-bold text-[#378ADD] mb-1">{customCarbs}</div>
                         <div className="text-[11px] text-[rgba(255,255,255,0.5)] uppercase tracking-wider font-semibold">Carb</div>
+                      </div>
+                      <div>
+                        <div className="text-[20px] font-bold text-[#FFB84D] mb-1">{customFiber}</div>
+                        <div className="text-[11px] text-[rgba(255,255,255,0.5)] uppercase tracking-wider font-semibold">Fib</div>
                       </div>
                     </div>
                     

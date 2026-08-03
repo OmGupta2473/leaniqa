@@ -85,6 +85,7 @@ export const mealService = {
     payload.protein = Math.round(payload.protein || 0);
     payload.fat = Math.round(payload.fat || 0);
     payload.carbs = Math.round(payload.carbs || 0);
+    payload.fiber = Math.round(payload.fiber || 0);
     
     // Deduplication check: prevent identical meals logged within the last 2 minutes
     const twoMinsAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();

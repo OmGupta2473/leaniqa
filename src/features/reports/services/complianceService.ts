@@ -36,9 +36,12 @@ export const complianceService = {
       meals.forEach((m: any) => actualCalories += m.calories);
       let actualProtein = 0;
       meals.forEach((m: any) => actualProtein += m.protein);
+      let actualFiber = 0;
+      meals.forEach((m: any) => actualFiber += (m.fiber || 0));
       
       const targetCalories = (profile.maintenance_kcal || 2200) - (goal?.deficit_kcal ?? 400);
       const targetProtein = profile.protein_target || 150;
+      const targetFiber = profile.fiber_target || 20;
       
       const score = calculateDailyScore({
         targetCalories,
@@ -46,6 +49,8 @@ export const complianceService = {
         targetProtein,
         actualProtein,
         hasWeightLogged,
+        targetFiber,
+        actualFiber,
         
       });
       
@@ -55,6 +60,8 @@ export const complianceService = {
         actual_calories: actualCalories,
         target_protein: targetProtein,
         actual_protein: actualProtein,
+        target_fiber: targetFiber,
+        actual_fiber: actualFiber,
         water: 0,
         score
       };
@@ -107,9 +114,12 @@ export const complianceService = {
       meals.forEach((m: any) => actualCalories += m.calories);
       let actualProtein = 0;
       meals.forEach((m: any) => actualProtein += m.protein);
+      let actualFiber = 0;
+      meals.forEach((m: any) => actualFiber += (m.fiber || 0));
       
       const targetCalories = (profile.maintenance_kcal || 2200) - (goal?.deficit_kcal ?? 400);
       const targetProtein = profile.protein_target || 150;
+      const targetFiber = profile.fiber_target || 20;
       
       const score = calculateDailyScore({
         targetCalories,
@@ -117,7 +127,8 @@ export const complianceService = {
         targetProtein,
         actualProtein,
         hasWeightLogged,
-        
+        targetFiber,
+        actualFiber
       });
       
       const metricPayload = {
@@ -126,6 +137,8 @@ export const complianceService = {
         actual_calories: actualCalories,
         target_protein: targetProtein,
         actual_protein: actualProtein,
+        target_fiber: targetFiber,
+        actual_fiber: actualFiber,
         water: 0,
         score
       };

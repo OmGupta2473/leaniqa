@@ -20,9 +20,9 @@ export function MealDistributionChart({ color }: MealDistributionChartProps) {
 
   const distribution = useMemo(() => {
     const dist = {
-      breakfast: { calories: 0, protein: 0, fat: 0, carbs: 0 },
-      lunch: { calories: 0, protein: 0, fat: 0, carbs: 0 },
-      dinner: { calories: 0, protein: 0, fat: 0, carbs: 0 },
+      breakfast: { calories: 0, protein: 0, fat: 0, carbs: 0, fiber: 0 },
+      lunch: { calories: 0, protein: 0, fat: 0, carbs: 0, fiber: 0 },
+      dinner: { calories: 0, protein: 0, fat: 0, carbs: 0, fiber: 0 },
     };
     meals.forEach(m => {
       const type = (m.meal_slot || 'breakfast').toLowerCase();
@@ -31,6 +31,7 @@ export function MealDistributionChart({ color }: MealDistributionChartProps) {
         dist[type as keyof typeof dist].protein += m.protein;
         dist[type as keyof typeof dist].fat += m.fat;
         dist[type as keyof typeof dist].carbs += m.carbs;
+        dist[type as keyof typeof dist].fiber += (m.fiber || 0);
       }
     });
     return dist;
@@ -113,6 +114,7 @@ export function MealDistributionChart({ color }: MealDistributionChartProps) {
                   <span>P: {Math.round(slot.data.protein)}g</span>
                   <span>F: {Math.round(slot.data.fat)}g</span>
                   <span>C: {Math.round(slot.data.carbs)}g</span>
+                  <span>Fb: {Math.round(slot.data.fiber)}g</span>
                 </div>
               )}
             </div>

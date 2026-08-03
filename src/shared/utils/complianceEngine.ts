@@ -4,23 +4,35 @@ export interface DailyData {
   targetProtein: number;
   actualProtein: number;
   hasWeightLogged: boolean;
+  targetFiber?: number;
+  actualFiber?: number;
 }
 
 export function calculateDailyScore(data: DailyData): number {
-  const { targetCalories, actualCalories, targetProtein, actualProtein, hasWeightLogged } = data;
+  const { targetCalories, actualCalories, targetProtein, actualProtein, hasWeightLogged, targetFiber, actualFiber } = data;
 
-  // Calories = 50%
-  // 100% if kcals = target. Scales down linearly to 0 if off by 100% or more.
+  // With Fiber: Calories 40%, Protein 25%, Fiber 15%, Weight 20%
+  // Without Fiber (fallback): Calories 50%, Protein 30%, Weight 20%
+  const useFiber = targetFiber !== undefined && targetFiber > 0;
+  const calWeight = useFiber ? 40 : 50;
+  const proWeight = useFiber ? 25 : 30;
+  const fibWeight = useFiber ? 15 : 0;
+  const weightWeight = 20;
+
   const calDiff = targetCalories > 0 ? Math.abs(actualCalories - targetCalories) / targetCalories : 0;
   const calRatio = actualCalories === 0 ? 0 : Math.max(0, 1 - calDiff);
-  const calScore = calRatio * 50;
+  const calScore = calRatio * calWeight;
 
-  // Protein = 30%
   const proRatio = targetProtein > 0 ? Math.min(actualProtein / targetProtein, 1) : 0;
-  const proScore = actualProtein === 0 ? 0 : proRatio * 30;
+  const proScore = actualProtein === 0 ? 0 : proRatio * proWeight;
 
-  // Weight Tracking = 20%
-  const weightScore = hasWeightLogged ? 20 : 0;
+  let fibScore = 0;
+  if (useFiber) {
+    const fibRatio = Math.min((actualFiber || 0) / targetFiber, 1);
+    fibScore = (actualFiber === 0) ? 0 : fibRatio * fibWeight;
+  }
 
-  return Math.round(calScore + proScore + weightScore);
+  const weightScore = hasWeightLogged ? weightWeight : 0;
+
+  return Math.round(calScore + proScore + fibScore + weightScore);
 }
