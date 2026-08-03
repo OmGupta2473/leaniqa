@@ -172,10 +172,15 @@ class GroqParser implements MealParser {
     if (!context.groqApiKey) return null;
     
     console.log(`[parse-meal] GroqParser started`);
-    try {
-      const prompt = `Analyze this meal: "${context.originalText}". 
+    let attempt = 0;
+    const maxAttempts = 2;
+
+    while (attempt < maxAttempts) {
+      attempt++;
+      try {
+        const prompt = `Analyze this meal: "${context.originalText}". 
 Meal type: ${context.mealType}. 
-Generate structured JSON only. Never generate conversational text.
+Generate structured JSON only. Never generate conversational text or markdown blocks.
 Format:
 {
   "calories": number,
@@ -187,42 +192,50 @@ Format:
   "coaching_tip": string
 }`;
 
-      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${context.groqApiKey}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          messages: [{ role: "user", content: prompt }],
-          response_format: { type: "json_object" },
-          temperature: 0.1
-        })
-      });
-      
-      if (!res.ok) {
-        throw new Error(`Groq Error: ${res.status}`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${context.groqApiKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            messages: [{ role: "user", content: prompt }],
+            response_format: { type: "json_object" },
+            temperature: 0.1
+          }),
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+
+        if (!res.ok) {
+          throw new Error(`Groq Error: ${res.status}`);
+        }
+        
+        const json = await res.json();
+        const content = json.choices[0]?.message?.content;
+        if (!content) return null;
+        
+        const parsed = JSON.parse(content);
+        const data = MealSchema.parse(parsed);
+        
+        if (data.confidence >= 80) { // Slightly lower threshold to prevent unnecessary Gemini fallbacks
+          console.log(`[parse-meal] GroqParser succeeded with confidence ${data.confidence}`);
+          return data;
+        } else {
+          console.log(`[parse-meal] GroqParser low confidence (${data.confidence}), skipping`);
+          return null; // Fallback
+        }
+      } catch (err: any) {
+        console.error(`[parse-meal] GroqParser error on attempt ${attempt}:`, err.message || err);
+        if (attempt >= maxAttempts) return null;
       }
-      
-      const json = await res.json();
-      const content = json.choices[0]?.message?.content;
-      if (!content) return null;
-      
-      const parsed = JSON.parse(content);
-      const data = MealSchema.parse(parsed);
-      
-      if (data.confidence >= 90) {
-        console.log(`[parse-meal] GroqParser succeeded with confidence ${data.confidence}`);
-        return data;
-      } else {
-        console.log(`[parse-meal] GroqParser low confidence (${data.confidence}), skipping`);
-        return null; // Fallback
-      }
-    } catch (err) {
-      console.error(`[parse-meal] GroqParser error`, err);
-      return null;
     }
+    return null;
   }
 }
 
