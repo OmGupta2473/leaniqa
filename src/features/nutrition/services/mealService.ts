@@ -86,6 +86,22 @@ export const mealService = {
     payload.fat = Math.round(payload.fat || 0);
     payload.carbs = Math.round(payload.carbs || 0);
     
+    // Deduplication check: prevent identical meals logged within the last 2 minutes
+    const twoMinsAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+    const { data: recentMeals } = await supabase
+      .from('meal_logs')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('meal_text', payload.meal_text)
+      .eq('calories', payload.calories)
+      .gte('created_at', twoMinsAgo)
+      .limit(1);
+
+    if (recentMeals && recentMeals.length > 0) {
+      devLog('Duplicate meal detected (retries), skipping insert');
+      return { ...payload, id: recentMeals[0].id } as DbMealLog;
+    }
+    
     devLog('--- SUPABASE INSERT PAYLOAD ---', payload);
     
     let res = await supabase
