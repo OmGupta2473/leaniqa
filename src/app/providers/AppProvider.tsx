@@ -1,8 +1,8 @@
 import { ReactNode, StrictMode } from 'react';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
-import { queryClient } from '@/app/query/queryClient';
-import { ToastProvider } from '@/shared/components/Toast';
+import { queryClient } from '../query/queryClient';
+import { ToastProvider } from '../shared/components/Toast';
 
 const persister = createSyncStoragePersister({
   storage: typeof window !== 'undefined' ? window.localStorage : undefined,

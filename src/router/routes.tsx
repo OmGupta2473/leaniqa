@@ -5,35 +5,35 @@ import { GuestRoute } from './GuestRoute';
 import { RootRedirect } from './RootRedirect';
 import { AppLayout } from './layouts/AppLayout';
 import { AuthLayout } from './layouts/AuthLayout';
-import { RouteErrorBoundary } from '@/shared/components/RouteErrorBoundary';
-import { ScrollHandler } from '@/shared/components/ScrollHandler';
-import { ScreenSkeleton } from '@/shared/components/ScreenSkeleton';
-import { RouteMetadata } from '@/shared/components/RouteMetadata';
-import { SaveAccountPrompt } from '@/shared/components/SaveAccountPrompt';
-import { AnalyticsObserver } from '@/shared/components/AnalyticsObserver';
-import { DashboardSkeleton, MealLoggerSkeleton, ProgressSkeleton, WeeklyReportSkeleton, ProfileSkeleton, NutritionDetailSkeleton, AwardsSkeleton, GoalSkeleton } from '@/shared/components/Skeletons';
+import { RouteErrorBoundary } from '../shared/components/RouteErrorBoundary';
+import { ScrollHandler } from '../shared/components/ScrollHandler';
+import { ScreenSkeleton } from '../shared/components/ScreenSkeleton';
+import { RouteMetadata } from '../shared/components/RouteMetadata';
+import { SaveAccountPrompt } from '../shared/components/SaveAccountPrompt';
+import { AnalyticsObserver } from '../shared/components/AnalyticsObserver';
+import { DashboardSkeleton, MealLoggerSkeleton, ProgressSkeleton, WeeklyReportSkeleton, ProfileSkeleton, NutritionDetailSkeleton, AwardsSkeleton, GoalSkeleton } from '../shared/components/Skeletons';
 
-const DashboardPage = lazy(() => import('@/features/dashboard/pages/DashboardPage').then(module => ({ default: module.DashboardPage })));
-const MealLoggerPage = lazy(() => import('@/features/nutrition/pages/MealLoggerPage').then(module => ({ default: module.MealLoggerPage })));
-const ProgressPage = lazy(() => import('@/features/progress/pages/ProgressPage').then(module => ({ default: module.ProgressPage })));
-const WeeklyReportPage = lazy(() => import('@/features/reports/pages/WeeklyReportPage').then(module => ({ default: module.WeeklyReportPage })));
-const PricingPage = lazy(() => import('@/features/pricing/pages/PricingPage').then(module => ({ default: module.PricingPage })));
-const ProfilePage = lazy(() => import('@/features/profile/pages/ProfilePage').then(module => ({ default: module.ProfilePage })));
-const CalorieDetailPage = lazy(() => import('@/features/nutrition/pages/CalorieDetailPage').then(module => ({ default: module.CalorieDetailPage })));
-const ProteinDetailPage = lazy(() => import('@/features/nutrition/pages/ProteinDetailPage').then(module => ({ default: module.ProteinDetailPage })));
-const AwardsPage = lazy(() => import('@/features/awards/pages/AwardsPage').then(module => ({ default: module.AwardsPage })));
-const AuthPage = lazy(() => import('@/features/auth/pages/AuthPage').then(module => ({ default: module.AuthPage })));
-const OnboardingPage = lazy(() => import('@/features/onboarding/pages/OnboardingPage').then(module => ({ default: module.OnboardingPage })));
-const GoalSetterPage = lazy(() => import('@/features/goal/pages/GoalSetterPage').then(module => ({ default: module.GoalSetterPage })));
-const LandingPage = lazy(() => import('@/LandingPage').then(module => ({ default: module.LandingPage })));
-const NotFoundPage = lazy(() => import('@/shared/components/NotFoundPage').then(module => ({ default: module.NotFoundPage })));
+const DashboardPage = lazy(() => import('../features/dashboard/pages/DashboardPage').then(module => ({ default: module.DashboardPage })));
+const MealLoggerPage = lazy(() => import('../features/nutrition/pages/MealLoggerPage').then(module => ({ default: module.MealLoggerPage })));
+const ProgressPage = lazy(() => import('../features/progress/pages/ProgressPage').then(module => ({ default: module.ProgressPage })));
+const WeeklyReportPage = lazy(() => import('../features/reports/pages/WeeklyReportPage').then(module => ({ default: module.WeeklyReportPage })));
+const PricingPage = lazy(() => import('../features/pricing/pages/PricingPage').then(module => ({ default: module.PricingPage })));
+const ProfilePage = lazy(() => import('../features/profile/pages/ProfilePage').then(module => ({ default: module.ProfilePage })));
+const CalorieDetailPage = lazy(() => import('../features/nutrition/pages/CalorieDetailPage').then(module => ({ default: module.CalorieDetailPage })));
+const ProteinDetailPage = lazy(() => import('../features/nutrition/pages/ProteinDetailPage').then(module => ({ default: module.ProteinDetailPage })));
+const AwardsPage = lazy(() => import('../features/awards/pages/AwardsPage').then(module => ({ default: module.AwardsPage })));
+const AuthPage = lazy(() => import('../features/auth/pages/AuthPage').then(module => ({ default: module.AuthPage })));
+const OnboardingPage = lazy(() => import('../features/onboarding/pages/OnboardingPage').then(module => ({ default: module.OnboardingPage })));
+const GoalSetterPage = lazy(() => import('../features/goal/pages/GoalSetterPage').then(module => ({ default: module.GoalSetterPage })));
+const LandingPage = lazy(() => import('../LandingPage').then(module => ({ default: module.LandingPage })));
+const NotFoundPage = lazy(() => import('../shared/components/NotFoundPage').then(module => ({ default: module.NotFoundPage })));
 
 
-const PrivacyPage = lazy(() => import('@/features/legal/pages/PrivacyPage').then(module => ({ default: module.PrivacyPage })));
-const TermsPage = lazy(() => import('@/features/legal/pages/TermsPage').then(module => ({ default: module.TermsPage })));
-const RefundPage = lazy(() => import('@/features/legal/pages/RefundPage').then(module => ({ default: module.RefundPage })));
+const PrivacyPage = lazy(() => import('../features/legal/pages/PrivacyPage').then(module => ({ default: module.PrivacyPage })));
+const TermsPage = lazy(() => import('../features/legal/pages/TermsPage').then(module => ({ default: module.TermsPage })));
+const RefundPage = lazy(() => import('../features/legal/pages/RefundPage').then(module => ({ default: module.RefundPage })));
 import { PublicLayout } from './layouts/PublicLayout';
-import { AppLoadingScreen } from '@/shared/components/AppLoadingScreen';
+import { AppLoadingScreen } from '../shared/components/AppLoadingScreen';
 
 function RootLayout() {
   return (

@@ -1,4 +1,4 @@
-import { DbDailyMetric } from '@/shared/types/supabase';
+import { DbDailyMetric } from '../shared/types/supabase';
 
 export interface Award {
   id: string;

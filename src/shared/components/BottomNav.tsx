@@ -1,5 +1,5 @@
 import React from 'react';
-import { PerfProfiler } from '@/shared/utils/perfDebug';
+import { PerfProfiler } from '../shared/utils/perfDebug';
 import {
   LayoutDashboard,
   TrendingUp,
@@ -8,9 +8,9 @@ import {
   Plus
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
-import { useHasCompletedOnboarding } from '@/shared/hooks/useHasCompletedOnboarding';
+import { useHasCompletedOnboarding } from '../shared/hooks/useHasCompletedOnboarding';
 import { motion, AnimatePresence } from "motion/react";
-import { haptics } from "@/shared/utils/haptics";
+import { haptics } from "../shared/utils/haptics";
 
 const navItems = [
   { id: "/goal", icon: Target, label: "Goal" },

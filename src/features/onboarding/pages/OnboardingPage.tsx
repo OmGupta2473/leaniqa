@@ -1,19 +1,19 @@
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from 'react';
-import { useUserStore } from '@/features/profile/store/userStore';
-import { useAppStore } from '@/app/store';
-import { cn } from '@/shared/utils/utils';
+import { useUserStore } from '../features/profile/store/userStore';
+import { useAppStore } from '../app/store';
+import { cn } from '../shared/utils/utils';
 import { CheckCircle2, ArrowRight, ChevronLeft, LogOut } from 'lucide-react';
-import { authService } from '@/features/auth/services/authService';
+import { authService } from '../features/auth/services/authService';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { profileService } from '@/features/profile/services/profileService';
-import { complianceService } from '@/features/reports/services/complianceService';
+import { profileService } from '../features/profile/services/profileService';
+import { complianceService } from '../features/reports/services/complianceService';
 import { motion, AnimatePresence } from 'motion/react';
-import { hover, tap } from '@/features/reports/components/motion';
-import { calculateMacros } from '@/shared/utils/profileCalculations';
-import { analytics } from '@/shared/utils/analytics';
-import { useToast } from '@/shared/components/Toast';
+import { hover, tap } from '../features/reports/components/motion';
+import { calculateMacros } from '../shared/utils/profileCalculations';
+import { analytics } from '../shared/utils/analytics';
+import { useToast } from '../shared/components/Toast';
 
 function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: number }) {
   const [displayValue, setDisplayValue] = useState(0);

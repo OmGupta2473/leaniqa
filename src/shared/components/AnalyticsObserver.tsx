@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation, useMatches } from 'react-router-dom';
-import { analytics } from '@/shared/utils/analytics';
+import { analytics } from '../shared/utils/analytics';
 
 export function AnalyticsObserver() {
   const location = useLocation();

@@ -1,10 +1,10 @@
 import { CheckCircle2, Shield, Clock, CreditCard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { haptics } from '@/shared/utils/haptics';
-import { analytics } from '@/shared/utils/analytics';
+import { haptics } from '../shared/utils/haptics';
+import { analytics } from '../shared/utils/analytics';
 import { useEffect } from 'react';
-import { useToast } from '@/shared/components/Toast';
+import { useToast } from '../shared/components/Toast';
 
 export function PricingPage() {
   const navigate = useNavigate();

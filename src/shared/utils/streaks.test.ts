@@ -4,7 +4,7 @@ import {
   calculateCurrentDailyStreak,
   calculateBestDailyStreak
 } from './streaks';
-import type { DbDailyMetric } from '@/shared/types/supabase';
+import type { DbDailyMetric } from '../shared/types/supabase';
 
 describe('streaks', () => {
   describe('toUtcDay', () => {

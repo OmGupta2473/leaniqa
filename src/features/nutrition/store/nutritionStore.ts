@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { createPersistConfig } from '@/shared/utils/store';
+import { createPersistConfig } from '../shared/utils/store';
 
 export interface NutritionState {
   // Meal Drafts & Edits

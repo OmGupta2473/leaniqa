@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { mealService } from '@/features/nutrition/services/mealService';
+import { mealService } from '../features/nutrition/services/mealService';
 
 interface MealDistributionChartProps {
   color: string;

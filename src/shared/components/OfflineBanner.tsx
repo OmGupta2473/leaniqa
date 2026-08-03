@@ -1,4 +1,4 @@
-import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
+import { useNetworkConnectivity } from '../shared/hooks/useNetworkConnectivity';
 import { WifiOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 

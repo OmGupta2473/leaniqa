@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
+import { useCalculatedProfile } from '../shared/hooks/useCalculatedProfile';
 import { ArrowRight, Clock, Target, Zap } from 'lucide-react';
-import { cn } from '@/shared/utils/utils';
+import { cn } from '../shared/utils/utils';
 import { useNavigate } from 'react-router-dom';
 
 function displayVal(val: any) {
@@ -20,7 +20,7 @@ function displayVal(val: any) {
   return val;
 }
 
-import { maleOptions, femaleOptions } from '@/shared/constants/bodyFatOptions';
+import { maleOptions, femaleOptions } from '../shared/constants/bodyFatOptions';
 
 function BodyFatImagePlaceholder({ gender, categoryRange, className }: { gender: string, categoryRange: string, className?: string }) {
   return (

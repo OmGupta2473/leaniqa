@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Check, Plus, LogOut, X, Loader2 } from 'lucide-react';
-import { useMultiAccountStore } from '@/app/store/multiAccountStore';
+import { useMultiAccountStore } from '../app/store/multiAccountStore';
 import { authService } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
 

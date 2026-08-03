@@ -150,6 +150,7 @@ class KnowledgeBaseParser implements MealParser {
       totalProtein += kbInfo.protein * multiplier;
       totalFat += kbInfo.fat * multiplier;
       totalCarbs += kbInfo.carbs * multiplier;
+      totalFiber += (kbInfo.fiber || 0) * multiplier;
       
       const detectedName = quantityStr ? `${quantityStr}${unit || ''} ${food}` : (kbInfo.perUnit ? `1 ${food}` : `1 serving ${food}`);
       foodsDetected.push(detectedName);
@@ -165,6 +166,7 @@ class KnowledgeBaseParser implements MealParser {
       fiber: Math.round(totalFiber * 10) / 10,
         confidence: 99,
         foods_detected: foodsDetected,
+        fiber: totalFiber,
         coaching_tip: "Great, simple and tracked accurately!"
       };
     }
@@ -283,6 +285,7 @@ Respond with valid JSON only.`;
               protein: { type: Type.NUMBER },
               fat: { type: Type.NUMBER },
               carbs: { type: Type.NUMBER },
+              fiber: { type: Type.NUMBER },
               confidence: { type: Type.NUMBER },
               foods_detected: {
                 type: Type.ARRAY,

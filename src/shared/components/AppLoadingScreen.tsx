@@ -1,5 +1,5 @@
-import { useAuthSession } from '@/router/useAuthSession';
-import { useHasCompletedOnboarding } from '@/shared/hooks/useHasCompletedOnboarding';
+import { useAuthSession } from '../router/useAuthSession';
+import { useHasCompletedOnboarding } from '../shared/hooks/useHasCompletedOnboarding';
 import { SplashScreen } from './SplashScreen';
 
 export function AppLoadingScreen() {
