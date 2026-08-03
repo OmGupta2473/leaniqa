@@ -172,13 +172,8 @@ class GroqParser implements MealParser {
     if (!context.groqApiKey) return null;
     
     console.log(`[parse-meal] GroqParser started`);
-    let attempt = 0;
-    const maxAttempts = 2;
-
-    while (attempt < maxAttempts) {
-      attempt++;
-      try {
-        const prompt = `Analyze this meal: "${context.originalText}". 
+    try {
+      const prompt = `Analyze this meal: "${context.originalText}". 
 Meal type: ${context.mealType}. 
 Generate structured JSON only. Never generate conversational text or markdown blocks.
 Format:
@@ -192,50 +187,50 @@ Format:
   "coaching_tip": string
 }`;
 
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3500);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
 
-        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${context.groqApiKey}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            model: "llama-3.3-70b-versatile",
-            messages: [{ role: "user", content: prompt }],
-            response_format: { type: "json_object" },
-            temperature: 0.1
-          }),
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${context.groqApiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          messages: [{ role: "user", content: prompt }],
+          response_format: { type: "json_object" },
+          temperature: 0.1
+        }),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
 
-        if (!res.ok) {
-          throw new Error(`Groq Error: ${res.status}`);
-        }
-        
-        const json = await res.json();
-        const content = json.choices[0]?.message?.content;
-        if (!content) return null;
-        
-        const parsed = JSON.parse(content);
-        const data = MealSchema.parse(parsed);
-        
-        if (data.confidence >= 80) { // Slightly lower threshold to prevent unnecessary Gemini fallbacks
-          console.log(`[parse-meal] GroqParser succeeded with confidence ${data.confidence}`);
-          return data;
-        } else {
-          console.log(`[parse-meal] GroqParser low confidence (${data.confidence}), skipping`);
-          return null; // Fallback
-        }
-      } catch (err: any) {
-        console.error(`[parse-meal] GroqParser error on attempt ${attempt}:`, err.message || err);
-        if (attempt >= maxAttempts) return null;
+      if (!res.ok) {
+        throw new Error(`Groq API Error: ${res.status}`);
       }
+      
+      const json = await res.json();
+      const content = json.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error("Groq API returned empty response");
+      }
+      
+      const parsed = JSON.parse(content);
+      const data = MealSchema.parse(parsed);
+      
+      if (data.confidence >= 80) { // Slightly lower threshold to prevent unnecessary Gemini fallbacks
+        console.log(`[parse-meal] GroqParser succeeded with confidence ${data.confidence}`);
+        return data;
+      } else {
+        console.log(`[parse-meal] GroqParser low confidence (${data.confidence}), skipping`);
+        return null; // Genuine uncertainty -> Fallback to Gemini
+      }
+    } catch (err: any) {
+      console.error(`[parse-meal] GroqParser error:`, err.message || err);
+      throw err; // Propagate error so we DON'T fallback to Gemini on failure
     }
-    return null;
   }
 }
 
@@ -296,9 +291,9 @@ Respond with valid JSON only.`;
 
       const parsed = JSON.parse(response.text || "{}");
       return MealSchema.parse(parsed);
-    } catch (err) {
-      console.error(`[parse-meal] GeminiParser error`, err);
-      return null;
+    } catch (err: any) {
+      console.error(`[parse-meal] GeminiParser error:`, err.message || err);
+      throw err; // Propagate error for proper reporting
     }
   }
 }
@@ -308,27 +303,29 @@ Respond with valid JSON only.`;
 // ----------------------------------------------------------------------------
 class NutritionValidator {
   validate(data: MealResult): MealResult {
-    // Validate calories
-    if (data.calories < 0) data.calories = 0;
-    if (data.calories > 10000) data.calories = 10000;
-    
-    // Validate macros against calories (roughly)
-    const macroCalories = (data.protein * 4) + (data.carbs * 4) + (data.fat * 9);
-    if (macroCalories > data.calories * 1.5 || macroCalories < data.calories * 0.5) {
-      // Adjust calories if completely mismatched
-      if (macroCalories > 0) {
-        data.calories = Math.round(macroCalories);
-      }
-    }
-    
     // Ensure no negative values
     if (data.protein < 0) data.protein = 0;
     if (data.fat < 0) data.fat = 0;
     if (data.carbs < 0) data.carbs = 0;
     
+    // Validate macros against calories (roughly)
+    const macroCalories = (data.protein * 4) + (data.carbs * 4) + (data.fat * 9);
+    if (macroCalories > data.calories * 1.5 || macroCalories < data.calories * 0.5) {
+      // Adjust calories if completely mismatched
+      data.calories = Math.round(macroCalories);
+    }
+    
+    // Validate reasonable limits (reject if too high)
+    if (data.calories > 10000 || data.protein > 500 || data.fat > 500 || data.carbs > 1000) {
+      throw new Error("Parsed nutrition values exceed reasonable limits");
+    }
+    
     return data;
   }
 }
+
+// In-memory cache for edge function reuse
+const memoryCache = new Map<string, MealResult>();
 
 // ----------------------------------------------------------------------------
 // Main Handler
@@ -419,24 +416,38 @@ serve(async (req) => {
     // Stage 8 - Intelligent Caching (Optional, using Supabase table 'meal_parse_cache')
     // Fallback to in-memory for this instance
     const cacheKey = `${context.normalizedText}_${mealType}`;
+    
+    if (memoryCache.has(cacheKey)) {
+      console.log(`[parse-meal] Memory cache hit for: ${context.normalizedText}`);
+      return new Response(JSON.stringify(memoryCache.get(cacheKey)), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // In a real system, we'd query `meal_parse_cache` here. For simplicity, we'll try to query it.
     // We wrap it in a try-catch so it doesn't fail if the table doesn't exist.
     try {
-      const { data: cacheData } = await supabase
+      const { data: cacheData, error: cacheErr } = await supabase
         .from('meal_parse_cache')
         .select('*')
         .eq('normalized_text', context.normalizedText)
         .eq('meal_type', mealType)
+        .limit(1)
         .maybeSingle();
         
+      if (cacheErr) {
+        console.error(`[parse-meal] Cache read error:`, cacheErr);
+      }
+
       if (cacheData && cacheData.result) {
         console.log(`[parse-meal] Cache hit for: ${context.normalizedText}`);
+        memoryCache.set(cacheKey, cacheData.result);
         return new Response(JSON.stringify(cacheData.result), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
     } catch (e) {
-      // ignore missing cache table
+      console.error(`[parse-meal] Cache exception:`, e);
     }
 
     let data: MealResult | null = null;
@@ -476,6 +487,14 @@ serve(async (req) => {
     data = validator.validate(data);
 
     // Save to Cache
+    memoryCache.set(cacheKey, data);
+    
+    // Prevent memory leak (simple LRU logic)
+    if (memoryCache.size > 1000) {
+      const firstKey = memoryCache.keys().next().value;
+      if (firstKey) memoryCache.delete(firstKey);
+    }
+
     try {
       await supabase.from('meal_parse_cache').insert({
         normalized_text: context.normalizedText,
