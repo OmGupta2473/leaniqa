@@ -45,11 +45,36 @@ export interface MealParser {
 // Stage 1 - Normalization
 // ----------------------------------------------------------------------------
 function normalizeInput(input: string): string {
+  // 1. Lowercase and trim
   let s = input.toLowerCase().trim();
-  s = s.replace(/chapati|chappati|phulka/g, "roti");
-  s = s.replace(/soyabean/g, "soya");
-  s = s.replace(/paneer curry|paneer sabji|paneer sabzi/g, "paneer");
-  s = s.replace(/egg curry|egg bhurji/g, "egg");
+  
+  // 2. Remove punctuation (keep numbers, letters, spaces)
+  s = s.replace(/[^\w\s\.]/g, ' ');
+  
+  // 3. Normalize multiple spaces
+  s = s.replace(/\s+/g, ' ').trim();
+
+  // 4. Normalize units and spacing (e.g., "100 g" -> "100g", "2 pcs" -> "2 piece")
+  s = s.replace(/(\d+)\s*(g|gm|gms|grams|gram)\b/g, '$1g');
+  s = s.replace(/(\d+)\s*(ml|mls|milliliter|milliliters)\b/g, '$1ml');
+  s = s.replace(/(\d+)\s*(pc|pcs|piece|pieces|pic)\b/g, '$1 piece');
+  s = s.replace(/(\d+)\s*(bowl|bowls|katori|plate|plates)\b/g, '$1 bowl');
+  s = s.replace(/(\d+)\s*(cup|cups)\b/g, '$1 cup');
+
+  // 5. Plurals & Aliases (Hindi/Hinglish)
+  s = s.replace(/\b(chapatis?|chappatis?|phulkas?|rotis?)\b/g, "roti");
+  s = s.replace(/\b(soyabeans?|soya chunks?|nutrela)\b/g, "soya");
+  s = s.replace(/\b(paneer curry|paneer sabji|paneer sabzi|shahi paneer|matar paneer|kadai paneer)\b/g, "paneer");
+  s = s.replace(/\b(egg curry|egg bhurji|anda bhurji|anda curry|andas?|eggs?)\b/g, "egg");
+  s = s.replace(/\b(chawal|rices?)\b/g, "rice");
+  s = s.replace(/\b(dudh|milks?)\b/g, "milk");
+  s = s.replace(/\b(apples?|seb)\b/g, "apple");
+  s = s.replace(/\b(bananas?|kelas?)\b/g, "banana");
+  s = s.replace(/\b(dals?|daal)\b/g, "dal");
+  
+  // Clean up any double spaces created
+  s = s.replace(/\s+/g, ' ').trim();
+  
   return s;
 }
 
