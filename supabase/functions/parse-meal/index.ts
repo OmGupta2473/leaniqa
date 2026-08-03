@@ -81,19 +81,19 @@ function normalizeInput(input: string): string {
 // ----------------------------------------------------------------------------
 // Stage 2 & 3 - Knowledge Base & Rule-Based Parser
 // ----------------------------------------------------------------------------
-const KnowledgeBase: Record<string, { calories: number, protein: number, fat: number, carbs: number, serving: string, perUnit?: boolean }> = {
-  "roti": { calories: 120, protein: 4, fat: 3, carbs: 20, serving: "1 piece (40g)", perUnit: true },
+const KnowledgeBase: Record<string, { calories: number, protein: number, fat: number, carbs: number, serving: string, perUnit?: boolean, unitWeight?: number }> = {
+  "roti": { calories: 120, protein: 4, fat: 3, carbs: 20, serving: "1 piece (40g)", perUnit: true, unitWeight: 40 },
   "rice": { calories: 130, protein: 3, fat: 0.5, carbs: 28, serving: "100g (cooked)", perUnit: false },
   "dal": { calories: 150, protein: 8, fat: 4, carbs: 20, serving: "1 bowl (200g)", perUnit: false },
   "paneer": { calories: 265, protein: 18, fat: 20, carbs: 3, serving: "100g", perUnit: false },
   "milk": { calories: 60, protein: 3.2, fat: 3, carbs: 5, serving: "100ml", perUnit: false },
-  "egg": { calories: 70, protein: 6, fat: 5, carbs: 0.5, serving: "1 large (50g)", perUnit: true },
+  "egg": { calories: 70, protein: 6, fat: 5, carbs: 0.5, serving: "1 large (50g)", perUnit: true, unitWeight: 50 },
   "chicken breast": { calories: 165, protein: 31, fat: 3.6, carbs: 0, serving: "100g", perUnit: false },
   "apple": { calories: 52, protein: 0.3, fat: 0.2, carbs: 14, serving: "100g", perUnit: false },
   "banana": { calories: 89, protein: 1.1, fat: 0.3, carbs: 23, serving: "100g", perUnit: false },
   "poha": { calories: 180, protein: 4, fat: 5, carbs: 30, serving: "1 bowl (150g)", perUnit: false },
-  "idli": { calories: 40, protein: 1.5, fat: 0.2, carbs: 8, serving: "1 piece (40g)", perUnit: true },
-  "dosa": { calories: 130, protein: 3, fat: 4, carbs: 20, serving: "1 plain (100g)", perUnit: true },
+  "idli": { calories: 40, protein: 1.5, fat: 0.2, carbs: 8, serving: "1 piece (40g)", perUnit: true, unitWeight: 40 },
+  "dosa": { calories: 130, protein: 3, fat: 4, carbs: 20, serving: "1 plain (100g)", perUnit: true, unitWeight: 100 },
   "sambar": { calories: 150, protein: 6, fat: 5, carbs: 20, serving: "1 bowl", perUnit: false },
   "upma": { calories: 200, protein: 5, fat: 7, carbs: 28, serving: "1 bowl", perUnit: false },
   "oats": { calories: 389, protein: 16.9, fat: 6.9, carbs: 66, serving: "100g", perUnit: false },
@@ -104,41 +104,62 @@ const KnowledgeBase: Record<string, { calories: number, protein: number, fat: nu
 
 class KnowledgeBaseParser implements MealParser {
   async parse(context: ParseContext): Promise<MealResult | null> {
-    const match = context.normalizedText.match(/^(\d+(?:\.\d+)?)\s*(g|ml|bowl|piece|cup)?\s+(.+)$/);
-    if (match) {
-      const quantity = parseFloat(match[1]);
+    // Split combined inputs like "2 roti and 1 bowl dal" or "100g paneer + 2 roti"
+    const parts = context.normalizedText.split(/\s+(?:and|\+|&|,)\s+/);
+    
+    let totalCalories = 0;
+    let totalProtein = 0;
+    let totalFat = 0;
+    let totalCarbs = 0;
+    const foodsDetected: string[] = [];
+
+    for (const part of parts) {
+      // Optional quantity and unit
+      const match = part.match(/^(?:(\d+(?:\.\d+)?)\s*(g|ml|bowl|piece|cup)?\s*(?:of\s+)?)?(.+)$/);
+      if (!match) return null; // Let Groq handle unrecognized formats
+
+      const quantityStr = match[1];
+      const quantity = quantityStr ? parseFloat(quantityStr) : 1;
       const unit = match[2];
       const food = match[3].trim();
       
       const kbInfo = KnowledgeBase[food];
-      if (kbInfo) {
-        let multiplier = 0;
-        if (kbInfo.perUnit) {
-          if (!unit || unit === 'piece') multiplier = quantity;
-          else if (unit === 'g') multiplier = quantity / (food === 'roti' || food === 'idli' ? 40 : 50);
-        } else {
-          if (unit === 'g' || unit === 'ml') multiplier = quantity / 100;
-          else if (unit === 'bowl' || unit === 'cup') multiplier = quantity;
-          else if (!unit) {
-            // Implicit 1 = 1 serving
-            multiplier = quantity;
-          }
-        }
-        
-        if (multiplier > 0 && multiplier < 100) {
-          console.log(`[parse-meal] KnowledgeBaseParser matched: ${food}`);
-          return {
-            calories: Math.round(kbInfo.calories * multiplier),
-            protein: Math.round(kbInfo.protein * multiplier),
-            fat: Math.round(kbInfo.fat * multiplier),
-            carbs: Math.round(kbInfo.carbs * multiplier),
-            confidence: 99,
-            foods_detected: [`${match[1]}${unit || ''} ${food}`],
-            coaching_tip: "Great, simple and tracked accurately!"
-          };
-        }
+      if (!kbInfo) return null; // Let Groq handle unknown foods
+
+      let multiplier = 0;
+      if (kbInfo.perUnit) {
+        if (!unit || unit === 'piece') multiplier = quantity;
+        else if (unit === 'g') multiplier = quantity / (kbInfo.unitWeight || 50);
+      } else {
+        if (unit === 'g' || unit === 'ml') multiplier = quantity / 100;
+        else if (unit === 'bowl' || unit === 'cup') multiplier = quantity;
+        else if (!unit) multiplier = quantity; // Implicit 1 = 1 serving
       }
+      
+      if (multiplier <= 0 || multiplier >= 100) return null; // Let Groq handle edge cases
+
+      totalCalories += kbInfo.calories * multiplier;
+      totalProtein += kbInfo.protein * multiplier;
+      totalFat += kbInfo.fat * multiplier;
+      totalCarbs += kbInfo.carbs * multiplier;
+      
+      const detectedName = quantityStr ? `${quantityStr}${unit || ''} ${food}` : (kbInfo.perUnit ? `1 ${food}` : `1 serving ${food}`);
+      foodsDetected.push(detectedName);
     }
+
+    if (foodsDetected.length > 0) {
+      console.log(`[parse-meal] KnowledgeBaseParser matched: ${foodsDetected.join(', ')}`);
+      return {
+        calories: Math.round(totalCalories),
+        protein: Math.round(totalProtein),
+        fat: Math.round(totalFat),
+        carbs: Math.round(totalCarbs),
+        confidence: 99,
+        foods_detected: foodsDetected,
+        coaching_tip: "Great, simple and tracked accurately!"
+      };
+    }
+    
     return null;
   }
 }
