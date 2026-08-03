@@ -297,6 +297,7 @@ Respond with valid JSON only.`;
               "protein",
               "fat",
               "carbs",
+              "fiber",
               "confidence",
               "foods_detected",
               "coaching_tip"
