@@ -1,17 +1,17 @@
-import { useChatStore } from '../app/store/chatStore';
-import { useMultiAccountStore } from '../app/store/multiAccountStore';
-import { useAuthStore } from '../app/store/authStore';
-import { useUserStore } from '../features/profile/store/userStore';
-import { useAppStore } from '../app/store/appStore';
-import { useAwardStore } from '../features/awards/store/awardStore';
-import { useDashboardStore } from '../features/dashboard/store/dashboardStore';
-import { useNutritionStore } from '../features/nutrition/store/nutritionStore';
-import { useReportStore } from '../features/reports/store/reportStore';
-import { queryClient } from '../app/query/queryClient';
+import { useChatStore } from '@/app/store/chatStore';
+import { useMultiAccountStore } from '@/app/store/multiAccountStore';
+import { useAuthStore } from '@/app/store/authStore';
+import { useUserStore } from '@/features/profile/store/userStore';
+import { useAppStore } from '@/app/store/appStore';
+import { useAwardStore } from '@/features/awards/store/awardStore';
+import { useDashboardStore } from '@/features/dashboard/store/dashboardStore';
+import { useNutritionStore } from '@/features/nutrition/store/nutritionStore';
+import { useReportStore } from '@/features/reports/store/reportStore';
+import { queryClient } from '@/app/query/queryClient';
 
-import { supabase } from '../shared/utils/supabase';
-import { AppError, ErrorCodes } from '../shared/utils/errors';
-import { analytics } from '../shared/utils/analytics';
+import { supabase } from '@/shared/utils/supabase';
+import { AppError, ErrorCodes } from '@/shared/utils/errors';
+import { analytics } from '@/shared/utils/analytics';
 
 export const authService = {
   async getUserId(): Promise<string> {

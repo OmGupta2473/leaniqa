@@ -1,11 +1,11 @@
 import React from 'react';
-import { PerfProfiler } from '../shared/utils/perfDebug';
+import { PerfProfiler } from '@/shared/utils/perfDebug';
 import { Outlet, useLocation } from 'react-router-dom';
-import { Sidebar } from '../shared/components/Sidebar';
-import { BottomNav } from '../shared/components/BottomNav';
-import { Header } from '../shared/components/Header';
+import { Sidebar } from '@/shared/components/Sidebar';
+import { BottomNav } from '@/shared/components/BottomNav';
+import { Header } from '@/shared/components/Header';
 import { ReactNode } from 'react';
-import { useKeyboardOpen, useVisualViewport } from '../shared/hooks/useVisualViewport';
+import { useKeyboardOpen, useVisualViewport } from '@/shared/hooks/useVisualViewport';
 
 interface AppLayoutProps {
   children?: ReactNode;

@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'motion/react';
 
-import { Logo } from '../shared/components/Logo';
+import { Logo } from '@/shared/components/Logo';
 
 interface SplashScreenProps {
   isLoading: boolean;

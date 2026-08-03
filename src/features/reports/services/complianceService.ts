@@ -1,12 +1,12 @@
-import { queryClient } from '../app/query/queryClient';
-import { supabase } from '../shared/utils/supabase';
-import { calculateDailyScore } from '../shared/utils/complianceEngine';
-import { mealService } from '../features/nutrition/services/mealService';
-import { weightService } from '../features/progress/services/weightService';
-import { profileService } from '../features/profile/services/profileService';
+import { queryClient } from '@/app/query/queryClient';
+import { supabase } from '@/shared/utils/supabase';
+import { calculateDailyScore } from '@/shared/utils/complianceEngine';
+import { mealService } from '@/features/nutrition/services/mealService';
+import { weightService } from '@/features/progress/services/weightService';
+import { profileService } from '@/features/profile/services/profileService';
 import { reportService } from './reportService';
-import { authService } from '../features/auth/services/authService';
-import { DbDailyMetric } from '../shared/types/supabase';
+import { authService } from '@/features/auth/services/authService';
+import { DbDailyMetric } from '@/shared/types/supabase';
 
 function getLocalDateString() {
   const d = new Date();
@@ -83,7 +83,7 @@ export const complianceService = {
       
       try {
         const allMetrics = await reportService.getDailyMetrics();
-        const { awardService } = await import('../features/awards/services/awardService');
+        const { awardService } = await import('@/features/awards/services/awardService');
         await awardService.syncStreaksAndAwards(allMetrics);
       } catch (err) {
         console.error('Error syncing awards:', err);
@@ -161,7 +161,7 @@ export const complianceService = {
       
       try {
         const allMetrics = await reportService.getDailyMetrics();
-        const { awardService } = await import('../features/awards/services/awardService');
+        const { awardService } = await import('@/features/awards/services/awardService');
         await awardService.syncStreaksAndAwards(allMetrics);
       } catch (err) {
         console.error('Error syncing awards:', err);

@@ -1,7 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthSession } from './useAuthSession';
-import { ScreenSkeleton } from '../shared/components/ScreenSkeleton';
-import { useHasCompletedOnboarding } from '../shared/hooks/useHasCompletedOnboarding';
+import { ScreenSkeleton } from '@/shared/components/ScreenSkeleton';
+import { useHasCompletedOnboarding } from '@/shared/hooks/useHasCompletedOnboarding';
 
 export function ProtectedRoute() {
   const { session, loading: authLoading } = useAuthSession();

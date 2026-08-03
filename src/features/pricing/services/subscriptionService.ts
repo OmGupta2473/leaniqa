@@ -1,6 +1,6 @@
-import { supabase } from '../shared/utils/supabase';
-import { authService } from '../features/auth/services/authService';
-import { devLog } from '../shared/utils/logger';
+import { supabase } from '@/shared/utils/supabase';
+import { authService } from '@/features/auth/services/authService';
+import { devLog } from '@/shared/utils/logger';
 
 export const subscriptionService = {
   async getSubscriptionStatus() {

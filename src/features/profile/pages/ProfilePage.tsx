@@ -1,23 +1,23 @@
-import { useChatStore } from '../app/store';
-import { useUserStore } from '../features/profile/store/userStore';
+import { useChatStore } from '@/app/store';
+import { useUserStore } from '@/features/profile/store/userStore';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createPortal } from 'react-dom';
 import { profileService } from '../services/profileService';
 import { useState } from 'react';
 import { ChevronLeft, LogOut, Trash2, AlertTriangle, User, Flame, Droplet, CheckCircle2, Crown, CreditCard as CreditCardIcon, Sparkles, ArrowRight, Zap, Loader2 } from 'lucide-react';
-import { useCalculatedProfile } from '../shared/hooks/useCalculatedProfile';
+import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
 import { motion, AnimatePresence } from 'motion/react';
-import { authService } from '../features/auth/services/authService';
-import { haptics } from '../shared/utils/haptics';
-import { subscriptionService } from '../features/pricing/services/subscriptionService';
-import { TransformationSection } from '../features/transformation/components/TransformationSection';
+import { authService } from '@/features/auth/services/authService';
+import { haptics } from '@/shared/utils/haptics';
+import { subscriptionService } from '@/features/pricing/services/subscriptionService';
+import { TransformationSection } from '@/features/transformation/components/TransformationSection';
 import { EditProfileModal } from '../components/EditProfileModal';
 import { EditNutritionModal } from '../components/EditNutritionModal';
-import { analytics } from '../shared/utils/analytics';
-import { useNetworkConnectivity } from '../shared/hooks/useNetworkConnectivity';
-import { ProfileSkeleton } from '../shared/components/Skeletons';
-import { useToast } from '../shared/components/Toast';
+import { analytics } from '@/shared/utils/analytics';
+import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
+import { ProfileSkeleton } from '@/shared/components/Skeletons';
+import { useToast } from '@/shared/components/Toast';
 
 function displayVal(val: any) {
   if (val === undefined || val === null || val === '') return '—';

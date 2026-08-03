@@ -1,8 +1,8 @@
-import { mealService } from '../features/nutrition/services/mealService';
-import { profileService } from '../features/profile/services/profileService';
-import { weightService } from '../features/progress/services/weightService';
-import { queryClient } from '../app/query/queryClient';
-import { devLog } from '../shared/utils/logger';
+import { mealService } from '@/features/nutrition/services/mealService';
+import { profileService } from '@/features/profile/services/profileService';
+import { weightService } from '@/features/progress/services/weightService';
+import { queryClient } from '@/app/query/queryClient';
+import { devLog } from '@/shared/utils/logger';
 
 const QUEUE_KEY = 'LEANIQA_OFFLINE_QUEUE';
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useAuthSession } from '../router/useAuthSession';
-import { useMultiAccountStore } from '../app/store/multiAccountStore';
+import { useAuthSession } from '@/router/useAuthSession';
+import { useMultiAccountStore } from '@/app/store/multiAccountStore';
 
 export function SaveAccountPrompt() {
   const { session } = useAuthSession();

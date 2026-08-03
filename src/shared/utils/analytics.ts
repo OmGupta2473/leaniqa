@@ -1,5 +1,5 @@
 import posthog from 'posthog-js';
-import { devLog } from '../shared/utils/logger';
+import { devLog } from '@/shared/utils/logger';
 
 export type EventName = 
   | 'App Open'

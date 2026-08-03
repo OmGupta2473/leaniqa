@@ -2,21 +2,21 @@ import { useNavigate } from "react-router-dom";
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
-import { reportService } from "../features/reports/services/reportService";
+import { reportService } from "@/features/reports/services/reportService";
 import { 
   calculateEarnedAwards, 
   calculateBestDailyStreak, 
   calculateCurrentDailyStreak, 
   isDailyGoalMet, 
   toUtcDay 
-} from "../shared/utils/streaks";
+} from "@/shared/utils/streaks";
 import { Flame, ChevronLeft, X, Trophy, AlertTriangle, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { cn } from "../shared/utils/utils";
-import { haptics } from '../shared/utils/haptics';
-import { EmptyState } from '../shared/components/EmptyState';
-import { useNetworkConnectivity } from '../shared/hooks/useNetworkConnectivity';
-import { AwardsSkeleton } from '../shared/components/Skeletons';
+import { cn } from "@/shared/utils/utils";
+import { haptics } from '@/shared/utils/haptics';
+import { EmptyState } from '@/shared/components/EmptyState';
+import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
+import { AwardsSkeleton } from '@/shared/components/Skeletons';
 
 const SPRING_TRANSITION: any = { type: 'spring' as const, stiffness: 400, damping: 30 };
 const SMOOTH_TRANSITION: any = { duration: 0.4, ease: [0.16, 1, 0.3, 1] };
@@ -32,12 +32,12 @@ export function AwardsPage() {
   
   const { data: dbUserStreak } = useQuery({ 
     queryKey: ["userStreak"], 
-    queryFn: () => import('../features/awards/services/awardService').then(m => m.awardService.getUserStreak()) 
+    queryFn: () => import('@/features/awards/services/awardService').then(m => m.awardService.getUserStreak()) 
   });
   
   const { data: dbUserAwards = [] } = useQuery({ 
     queryKey: ["userAwards"], 
-    queryFn: () => import('../features/awards/services/awardService').then(m => m.awardService.getUserAwards()) 
+    queryFn: () => import('@/features/awards/services/awardService').then(m => m.awardService.getUserAwards()) 
   });
 
   const currentStreak = dbUserStreak?.current_streak ?? calculateCurrentDailyStreak(metrics);

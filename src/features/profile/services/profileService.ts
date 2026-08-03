@@ -1,8 +1,8 @@
-import { supabase } from '../shared/utils/supabase';
-import { DbProfile, DbGoal } from '../shared/types/supabase';
-import { authService } from '../features/auth/services/authService';
-import { AppError, ErrorCodes } from '../shared/utils/errors';
-import { devLog } from '../shared/utils/logger';
+import { supabase } from '@/shared/utils/supabase';
+import { DbProfile, DbGoal } from '@/shared/types/supabase';
+import { authService } from '@/features/auth/services/authService';
+import { AppError, ErrorCodes } from '@/shared/utils/errors';
+import { devLog } from '@/shared/utils/logger';
 
 export const profileService = {
   async getProfile(): Promise<DbProfile | null> {
@@ -135,7 +135,7 @@ export const profileService = {
         delete fallbackUpdatePayload.water_target;
         
         try {
-          const { useUserStore } = await import('../features/profile/store/userStore');
+          const { useUserStore } = await import('@/features/profile/store/userStore');
           const overridesToUpdate: any = {};
           if ('carbs_target' in payload) overridesToUpdate.carbs_target = payload.carbs_target;
           if ('fat_target' in payload) overridesToUpdate.fat_target = payload.fat_target;

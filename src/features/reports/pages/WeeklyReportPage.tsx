@@ -1,22 +1,22 @@
-import { useCalculatedProfile } from '../shared/hooks/useCalculatedProfile';
-import { PerfProfiler } from '../shared/utils/perfDebug';
+import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
+import { PerfProfiler } from '@/shared/utils/perfDebug';
 import React, { useState, useMemo} from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { profileService } from '../features/profile/services/profileService';
-import { mealService } from '../features/nutrition/services/mealService';
+import { profileService } from '@/features/profile/services/profileService';
+import { mealService } from '@/features/nutrition/services/mealService';
 import { reportService } from '../services/reportService';
 import { ChevronLeft, CheckCircle2, TrendingUp, AlertTriangle, Loader2, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { DailyActivityData } from '../shared/types/activity';
-import { cn } from "../shared/utils/utils";
+import { DailyActivityData } from '@/shared/types/activity';
+import { cn } from "@/shared/utils/utils";
 import { useNavigate } from 'react-router-dom';
-import { haptics } from '../shared/utils/haptics';
-import { calculateDailyScore } from '../shared/utils/complianceEngine';
-import { weightService } from '../features/progress/services/weightService';
-import { analytics } from '../shared/utils/analytics';
+import { haptics } from '@/shared/utils/haptics';
+import { calculateDailyScore } from '@/shared/utils/complianceEngine';
+import { weightService } from '@/features/progress/services/weightService';
+import { analytics } from '@/shared/utils/analytics';
 import { useEffect } from 'react';
-import { useNetworkConnectivity } from '../shared/hooks/useNetworkConnectivity';
-import { WeeklyReportSkeleton } from '../shared/components/Skeletons';
+import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
+import { WeeklyReportSkeleton } from '@/shared/components/Skeletons';
 
 function getLocalDateString(d: Date) {
   const year = d.getFullYear();

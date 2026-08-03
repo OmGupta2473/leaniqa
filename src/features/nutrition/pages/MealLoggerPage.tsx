@@ -1,32 +1,32 @@
 import React from 'react';
-import { PerfProfiler } from '../shared/utils/perfDebug';
+import { PerfProfiler } from '@/shared/utils/perfDebug';
 import {  useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
 import { createPortal } from "react-dom";
-import { useAppStore } from "../app/store";
-import { useChatStore } from "../app/store";
+import { useAppStore } from "@/app/store";
+import { useChatStore } from "@/app/store";
 import { useNutritionStore } from "../store/nutritionStore";
 import {
   Send, Loader2, Dumbbell, Lightbulb, Sun, Sunrise, Moon,  Plus, X, ChevronLeft, ChevronRight, ArrowRight, ChevronDown, 
  AlertTriangle } from "lucide-react";
-import { EmptyState } from '../shared/components/EmptyState';
-import { cn } from "../shared/utils/utils";
-import { SmoothInput } from "../shared/components/SmoothInput";
+import { EmptyState } from '@/shared/components/EmptyState';
+import { cn } from "@/shared/utils/utils";
+import { SmoothInput } from "@/shared/components/SmoothInput";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { mealService } from "../services/mealService";
-import { profileService } from "../features/profile/services/profileService";
-import { complianceService } from "../features/reports/services/complianceService";
-import { supabase } from "../shared/utils/supabase";
+import { profileService } from "@/features/profile/services/profileService";
+import { complianceService } from "@/features/reports/services/complianceService";
+import { supabase } from "@/shared/utils/supabase";
 import { motion, AnimatePresence } from "motion/react";
-import { useVisualViewport, useKeyboardOpen } from "../shared/hooks/useVisualViewport";
+import { useVisualViewport, useKeyboardOpen } from "@/shared/hooks/useVisualViewport";
 import { lookupCachedMeal } from '../constants/data';
-import { haptics } from '../shared/utils/haptics';
-import { useCalculatedProfile } from '../shared/hooks/useCalculatedProfile';
-import { analytics } from '../shared/utils/analytics';
-import { useNetworkConnectivity } from '../shared/hooks/useNetworkConnectivity';
-import { MealLoggerSkeleton } from '../shared/components/Skeletons';
-import { useToast } from '../shared/components/Toast';
-import { devLog } from '../shared/utils/logger';
+import { haptics } from '@/shared/utils/haptics';
+import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
+import { analytics } from '@/shared/utils/analytics';
+import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
+import { MealLoggerSkeleton } from '@/shared/components/Skeletons';
+import { useToast } from '@/shared/components/Toast';
+import { devLog } from '@/shared/utils/logger';
 
 const getDeterministicFallback = (text: string) => {
   const normalizedText = text.toLowerCase();
@@ -286,7 +286,7 @@ export function MealLoggerPage() {
       devLog('Meal Selected:', id);
       if (typeof window !== 'undefined' && !navigator.onLine) {
         devLog('Offline: queueing delete meal');
-        const { offlineSyncService } = await import('../shared/services/offlineSyncService');
+        const { offlineSyncService } = await import('@/shared/services/offlineSyncService');
         offlineSyncService.enqueue({ type: 'DELETE_MEAL', payload: id });
         return id;
       }

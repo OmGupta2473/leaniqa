@@ -1,18 +1,18 @@
 import React, { useEffect, useState, useRef, memo } from 'react';
-import { PerfProfiler } from '../shared/utils/perfDebug';
-import { useAppStore } from "../app/store";
-import { reportService } from "../features/reports/services/reportService";
-import { calculateCurrentDailyStreak, isDailyGoalMet, toUtcDay } from "../shared/utils/streaks";
+import { PerfProfiler } from '@/shared/utils/perfDebug';
+import { useAppStore } from "@/app/store";
+import { reportService } from "@/features/reports/services/reportService";
+import { calculateCurrentDailyStreak, isDailyGoalMet, toUtcDay } from "@/shared/utils/streaks";
 import { Target, Footprints, Flame, Sparkles, ChevronRight, Activity, TrendingDown, TrendingUp, Plus, Droplet, Wheat, Dna, Star } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useCalculatedProfile } from "../shared/hooks/useCalculatedProfile";
-import { mealService } from "../features/nutrition/services/mealService";
-import { useNetworkConnectivity } from "../shared/hooks/useNetworkConnectivity";
-import { EmptyState } from "../shared/components/EmptyState";
+import { useCalculatedProfile } from "@/shared/hooks/useCalculatedProfile";
+import { mealService } from "@/features/nutrition/services/mealService";
+import { useNetworkConnectivity } from "@/shared/hooks/useNetworkConnectivity";
+import { EmptyState } from "@/shared/components/EmptyState";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router-dom";
 
-import { DashboardSkeleton } from "../shared/components/Skeletons";
+import { DashboardSkeleton } from "@/shared/components/Skeletons";
 
 const AnimatedNumber = memo(function AnimatedNumber({
   value,

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Session } from '@supabase/supabase-js';
-import { createPersistConfig } from '../shared/utils/store';
+import { createPersistConfig } from '@/shared/utils/store';
 
 export interface SavedAccount {
   id: string;

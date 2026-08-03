@@ -1,7 +1,7 @@
-import { supabase } from '../shared/utils/supabase';
-import { authService } from '../features/auth/services/authService';
-import { DbWaterLog } from '../shared/types/supabase';
-import { complianceService } from '../features/reports/services/complianceService';
+import { supabase } from '@/shared/utils/supabase';
+import { authService } from '@/features/auth/services/authService';
+import { DbWaterLog } from '@/shared/types/supabase';
+import { complianceService } from '@/features/reports/services/complianceService';
 
 export const waterService = {
   async getWaterLogs(): Promise<DbWaterLog[]> {
