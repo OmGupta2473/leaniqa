@@ -83,7 +83,10 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
         <div className="flex items-center gap-5 text-right">
           <div>
             <div className="text-[16px] font-bold text-white tracking-tight">{kcal} <span className="text-[12px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">kcal</span></div>
-            <div className="text-[13px] font-semibold text-[#378ADD] mt-0.5">{pro}<span className="text-[10px] font-medium opacity-70 uppercase tracking-wider">g pro</span></div>
+            <div className="flex gap-2 justify-end mt-0.5">
+              <div className="text-[13px] font-semibold text-[#378ADD]">{pro}<span className="text-[10px] font-medium opacity-70 uppercase tracking-wider">g pro</span></div>
+              <div className="text-[13px] font-semibold text-[#FFB84D]">{fib}<span className="text-[10px] font-medium opacity-70 uppercase tracking-wider">g fib</span></div>
+            </div>
           </div>
           <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ type: "spring", stiffness: 300, damping: 24 }}>
             <ChevronDown size={20} className="text-[rgba(255,255,255,0.4)]" />

@@ -52,8 +52,7 @@ function generateCoachData(days: DailyActivityData[], loggedCount: number) {
     }
   });
 
-  const avgProtein = activeDays.reduce((a, b) => a + b.proteinConsumed,
-        fiberConsumed, 0) / loggedCount;
+  const avgProtein = activeDays.reduce((a, b) => a + b.proteinConsumed, 0) / loggedCount;
   const avgCompliance = activeDays.reduce((a, b) => a + b.complianceScore, 0) / loggedCount;
   
   const getLocalDay = (dateStr: string) => {
