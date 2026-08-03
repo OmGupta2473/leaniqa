@@ -1,18 +1,18 @@
 import { useNavigate } from "react-router-dom";
 import React, { useMemo, useEffect, useState, useRef, memo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { profileService } from "@/features/profile/services/profileService";
+import { profileService } from "../features/profile/services/profileService";
 import { mealService } from "../services/mealService";
-import { useCalculatedProfile } from "@/shared/hooks/useCalculatedProfile";
-import { useUserStore } from "@/features/profile/store/userStore";
-import { reportService } from "@/features/reports/services/reportService";
+import { useCalculatedProfile } from "../shared/hooks/useCalculatedProfile";
+import { useUserStore } from "../features/profile/store/userStore";
+import { reportService } from "../features/reports/services/reportService";
 import { DailyHistoryChart } from "../components/DailyHistoryChart";
 import { ChevronLeft, Utensils, AlertTriangle, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
-import { cn } from "@/shared/utils/utils";
-import { EmptyState } from '@/shared/components/EmptyState';
-import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
-import { NutritionDetailSkeleton } from '@/shared/components/Skeletons';
+import { cn } from "../shared/utils/utils";
+import { EmptyState } from '../shared/components/EmptyState';
+import { useNetworkConnectivity } from '../shared/hooks/useNetworkConnectivity';
+import { NutritionDetailSkeleton } from '../shared/components/Skeletons';
 
 const AnimatedNumber = memo(function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: number }) {
   const [displayValue, setDisplayValue] = useState(0);

@@ -1,9 +1,9 @@
-import { queryClient } from '@/app/query/queryClient';
-import { supabase } from '@/shared/utils/supabase';
-import { DbWeightLog } from '@/shared/types/supabase';
-import { authService } from '@/features/auth/services/authService';
-import { profileService } from '@/features/profile/services/profileService';
-import { calculateBodyFat } from '@/shared/utils/navyMethod';
+import { queryClient } from '../app/query/queryClient';
+import { supabase } from '../shared/utils/supabase';
+import { DbWeightLog } from '../shared/types/supabase';
+import { authService } from '../features/auth/services/authService';
+import { profileService } from '../features/profile/services/profileService';
+import { calculateBodyFat } from '../shared/utils/navyMethod';
 
 export const weightService = {
   async getWeightLogs(): Promise<DbWeightLog[]> {

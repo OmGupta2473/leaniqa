@@ -1,5 +1,5 @@
 import React from 'react';
-import { cn } from '@/shared/utils/utils';
+import { cn } from '../shared/utils/utils';
 
 export function DashboardSkeleton() {
   return (

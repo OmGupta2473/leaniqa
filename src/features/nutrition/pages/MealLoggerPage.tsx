@@ -1,32 +1,32 @@
 import React from 'react';
-import { PerfProfiler } from '@/shared/utils/perfDebug';
+import { PerfProfiler } from '../shared/utils/perfDebug';
 import {  useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
 import { createPortal } from "react-dom";
-import { useAppStore } from "@/app/store";
-import { useChatStore } from "@/app/store";
+import { useAppStore } from "../app/store";
+import { useChatStore } from "../app/store";
 import { useNutritionStore } from "../store/nutritionStore";
 import {
   Send, Loader2, Dumbbell, Lightbulb, Sun, Sunrise, Moon,  Plus, X, ChevronLeft, ChevronRight, ArrowRight, ChevronDown, 
  AlertTriangle } from "lucide-react";
-import { EmptyState } from '@/shared/components/EmptyState';
-import { cn } from "@/shared/utils/utils";
-import { SmoothInput } from "@/shared/components/SmoothInput";
+import { EmptyState } from '../shared/components/EmptyState';
+import { cn } from "../shared/utils/utils";
+import { SmoothInput } from "../shared/components/SmoothInput";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { mealService } from "../services/mealService";
-import { profileService } from "@/features/profile/services/profileService";
-import { complianceService } from "@/features/reports/services/complianceService";
-import { supabase } from "@/shared/utils/supabase";
+import { profileService } from "../features/profile/services/profileService";
+import { complianceService } from "../features/reports/services/complianceService";
+import { supabase } from "../shared/utils/supabase";
 import { motion, AnimatePresence } from "motion/react";
-import { useVisualViewport, useKeyboardOpen } from "@/shared/hooks/useVisualViewport";
+import { useVisualViewport, useKeyboardOpen } from "../shared/hooks/useVisualViewport";
 import { lookupCachedMeal } from '../constants/data';
-import { haptics } from '@/shared/utils/haptics';
-import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
-import { analytics } from '@/shared/utils/analytics';
-import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
-import { MealLoggerSkeleton } from '@/shared/components/Skeletons';
-import { useToast } from '@/shared/components/Toast';
-import { devLog } from '@/shared/utils/logger';
+import { haptics } from '../shared/utils/haptics';
+import { useCalculatedProfile } from '../shared/hooks/useCalculatedProfile';
+import { analytics } from '../shared/utils/analytics';
+import { useNetworkConnectivity } from '../shared/hooks/useNetworkConnectivity';
+import { MealLoggerSkeleton } from '../shared/components/Skeletons';
+import { useToast } from '../shared/components/Toast';
+import { devLog } from '../shared/utils/logger';
 
 const getDeterministicFallback = (text: string) => {
   const normalizedText = text.toLowerCase();
@@ -83,10 +83,7 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
         <div className="flex items-center gap-5 text-right">
           <div>
             <div className="text-[16px] font-bold text-white tracking-tight">{kcal} <span className="text-[12px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">kcal</span></div>
-            <div className="flex gap-2 justify-end mt-0.5">
-              <div className="text-[13px] font-semibold text-[#378ADD]">{pro}<span className="text-[10px] font-medium opacity-70 uppercase tracking-wider">g pro</span></div>
-              <div className="text-[13px] font-semibold text-[#FFB84D]">{fib}<span className="text-[10px] font-medium opacity-70 uppercase tracking-wider">g fib</span></div>
-            </div>
+            <div className="text-[13px] font-semibold text-[#378ADD] mt-0.5">{pro}<span className="text-[10px] font-medium opacity-70 uppercase tracking-wider">g pro</span></div>
           </div>
           <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ type: "spring", stiffness: 300, damping: 24 }}>
             <ChevronDown size={20} className="text-[rgba(255,255,255,0.4)]" />
@@ -122,7 +119,6 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
                   <div className="flex items-center gap-1 shrink-0">
                     <span className="text-[8.5px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-1.5 py-0.5 rounded-full font-bold tracking-wide whitespace-nowrap">{m.calories} KCAL</span>
                     <span className="text-[8.5px] badge-lime px-1.5 py-0.5 font-bold rounded-full tracking-wide whitespace-nowrap">{m.protein}G PRO</span>
-                    <span className="text-[8.5px] bg-[rgba(255,184,77,0.12)] text-[#FFB84D] px-1.5 py-0.5 font-bold rounded-full tracking-wide whitespace-nowrap">{m.fiber || 0}G FIB</span>
                     {m.id && !m.id.toString().startsWith('opt-') && (
                       <button aria-label="Delete meal" className="ml-0.5 w-6 h-6 shrink-0 rounded-full bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,77,28,0.2)] flex items-center justify-center text-[rgba(255,255,255,0.5)] hover:text-[#FF4D1C] transition-colors" onClick={(e) => {
                           e.stopPropagation();
@@ -259,6 +255,9 @@ export function MealLoggerPage() {
   const eatenProtein = meals.reduce((acc, m) => acc + m.protein, 0);
   const eatenFat = meals.reduce((acc, m) => acc + m.fat, 0);
   const eatenCarbs = meals.reduce((acc, m) => acc + m.carbs, 0);
+  const eatenFiber = meals.reduce((acc, m) => acc + (m.fiber || 0), 0);
+  const profileData = onboardingData;
+  const fiberTarget = profileData?.fiberMin || 20;
   const breakfastMeals = meals.filter(m => m.meal_slot === "breakfast");
   const lunchMeals = meals.filter(m => m.meal_slot === "lunch");
   const dinnerMeals = meals.filter(m => m.meal_slot === "dinner");
@@ -287,7 +286,7 @@ export function MealLoggerPage() {
       devLog('Meal Selected:', id);
       if (typeof window !== 'undefined' && !navigator.onLine) {
         devLog('Offline: queueing delete meal');
-        const { offlineSyncService } = await import('@/shared/services/offlineSyncService');
+        const { offlineSyncService } = await import('../shared/services/offlineSyncService');
         offlineSyncService.enqueue({ type: 'DELETE_MEAL', payload: id });
         return id;
       }
@@ -526,7 +525,8 @@ export function MealLoggerPage() {
         calories: Math.round(data.calories), 
         protein: Math.round(data.protein), 
         fat: Math.round(data.fat), 
-        carbs: Math.round(data.carbs), 
+        carbs: Math.round(data.carbs),
+         fiber: Math.round(data.fiber || 0), 
         meal_time: getMealTime().toISOString(), 
         tip: data.foods_detected?.join(', ') || text, 
         meal_slot: selectedMealSlot || undefined 
@@ -654,6 +654,7 @@ export function MealLoggerPage() {
           </div>
         </div>
 
+        
         {/* Calorie bar */}
         <div className="mb-4">
           <div className="flex justify-between mb-1.5 items-end">
@@ -666,7 +667,7 @@ export function MealLoggerPage() {
         </div>
 
         {/* Protein bar */}
-        <div>
+        <div className="mb-4">
           <div className="flex justify-between mb-1.5 items-end">
             <span className="text-[13px] font-medium text-[rgba(235,235,245,0.5)]">Protein</span>
             <span className="text-[14px] font-bold text-white tracking-tight">{eatenProtein}g <span className="text-[11px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">/ {proteinTarget}g</span></span>
@@ -675,13 +676,49 @@ export function MealLoggerPage() {
             <div className="h-full w-full rounded-full bg-[#378ADD] origin-left transition-transform duration-1000 ease-out will-change-transform" style={{ transform: `translateX(-${100 - proteinPercent}%)` }}></div>
           </div>
         </div>
+        
+        {/* Fat bar */}
+        <div className="mb-4">
+          <div className="flex justify-between mb-1.5 items-end">
+            <span className="text-[13px] font-medium text-[rgba(235,235,245,0.5)]">Fat</span>
+            <span className="text-[14px] font-bold text-white tracking-tight">{eatenFat}g <span className="text-[11px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">/ {fatTarget}g</span></span>
+          </div>
+          <div className="h-2 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden shadow-inner">
+            <div className="h-full w-full rounded-full bg-white origin-left transition-transform duration-1000 ease-out will-change-transform" style={{ transform: `translateX(-${Math.max(0, 100 - (eatenFat / fatTarget) * 100)}%)` }}></div>
+          </div>
+        </div>
+        
+        {/* Carbs bar */}
+        <div className="mb-4">
+          <div className="flex justify-between mb-1.5 items-end">
+            <span className="text-[13px] font-medium text-[rgba(235,235,245,0.5)]">Carbs</span>
+            <span className="text-[14px] font-bold text-white tracking-tight">{eatenCarbs}g <span className="text-[11px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">/ {carbsTarget}g</span></span>
+          </div>
+          <div className="h-2 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden shadow-inner">
+            <div className="h-full w-full rounded-full bg-[rgba(255,255,255,0.6)] origin-left transition-transform duration-1000 ease-out will-change-transform" style={{ transform: `translateX(-${Math.max(0, 100 - (eatenCarbs / carbsTarget) * 100)}%)` }}></div>
+          </div>
+        </div>
 
-        {/* Macros row */}
-        <div className="grid grid-cols-4 gap-2 mt-5 pt-4 border-t border-[rgba(255,255,255,0.06)]">
+        {/* Fiber bar */}
+        <div>
+          <div className="flex justify-between mb-1.5 items-end">
+            <span className="text-[13px] font-medium text-[rgba(235,235,245,0.5)]">Fiber</span>
+            <span className="text-[14px] font-bold text-white tracking-tight">{eatenFiber}g <span className="text-[11px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">/ {fiberTarget}g</span></span>
+          </div>
+          <div className="h-2 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden shadow-inner">
+            <div className="h-full w-full rounded-full bg-[#FFB84D] origin-left transition-transform duration-1000 ease-out will-change-transform" style={{ transform: `translateX(-${Math.max(0, 100 - (eatenFiber / fiberTarget) * 100)}%)` }}></div>
+          </div>
+        </div>
+
+
+                {/* Macros row */}
+        <div className="grid grid-cols-5 gap-2 mt-5 pt-4 border-t border-[rgba(255,255,255,0.06)]">
           {[{ label: 'Kcal', val: eatenKcal, target: dailyTargetKcal, unit: '', color: '#FF4D1C' }, 
-            { label: 'Protein', val: eatenProtein, target: proteinTarget, unit: 'g', color: '#378ADD' }, 
-            { label: 'Fat', val: eatenFat, target: fatTarget, unit: 'g', color: 'white' }, 
-            { label: 'Carbs', val: eatenCarbs, target: carbsTarget, unit: 'g', color: 'white' }].map(item => (
+             { label: 'Pro', val: eatenProtein, target: proteinTarget, unit: 'g', color: '#378ADD' }, 
+             { label: 'Fat', val: eatenFat, target: fatTarget, unit: 'g', color: 'white' }, 
+             { label: 'Carbs', val: eatenCarbs, target: carbsTarget, unit: 'g', color: 'white' },
+             { label: 'Fiber', val: eatenFiber, target: fiberTarget, unit: 'g', color: '#FFB84D' }
+             ].map(item => (
             <div key={item.label} className="text-center flex flex-col items-center">
               <div className="text-[16px] font-bold tracking-tight" style={{ color: item.color }}>
                 {item.val}<span className="text-[12px]">{item.unit}</span>

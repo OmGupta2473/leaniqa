@@ -1,10 +1,10 @@
-import { useChatStore } from '@/app/store/chatStore';
+import { useChatStore } from '../app/store/chatStore';
 import { useEffect } from 'react';
-import { supabase } from '@/shared/utils/supabase';
-import { useMultiAccountStore } from '@/app/store/multiAccountStore';
-import { useAuthStore } from '@/app/store/authStore';
-import { setCrashReportingUser, clearCrashReportingUser } from '@/shared/utils/logger';
-import { analytics } from '@/shared/utils/analytics';
+import { supabase } from '../shared/utils/supabase';
+import { useMultiAccountStore } from '../app/store/multiAccountStore';
+import { useAuthStore } from '../app/store/authStore';
+import { setCrashReportingUser, clearCrashReportingUser } from '../shared/utils/logger';
+import { analytics } from '../shared/utils/analytics';
 
 export function useAuthSession() {
   const { session, loading, initialized, setSession, setLoading, setInitialized } = useAuthStore();

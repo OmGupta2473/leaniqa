@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { useMultiAccountStore } from '@/app/store/multiAccountStore';
+import { useMultiAccountStore } from '../app/store/multiAccountStore';
 import { useEffect } from 'react';
-import { useAuthStore } from '@/app/store/authStore';
-import { profileService } from '@/features/profile/services/profileService';
-import { useAuthSession } from '@/router/useAuthSession';
+import { useAuthStore } from '../app/store/authStore';
+import { profileService } from '../features/profile/services/profileService';
+import { useAuthSession } from '../router/useAuthSession';
 
 export function useHasCompletedOnboarding() {
   const { session } = useAuthSession();

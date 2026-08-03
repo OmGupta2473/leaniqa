@@ -3,8 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createPortal } from 'react-dom';
 import { X, Loader2 } from 'lucide-react';
 import { profileService } from '../services/profileService';
-import { haptics } from '@/shared/utils/haptics';
-import { cn } from '@/shared/utils/utils';
+import { haptics } from '../shared/utils/haptics';
+import { cn } from '../shared/utils/utils';
 
 interface EditNutritionModalProps {
   isOpen: boolean;

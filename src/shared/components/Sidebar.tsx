@@ -1,11 +1,11 @@
-import { Logo } from "@/shared/components/Logo";
+import { Logo } from "../shared/components/Logo";
 import React from 'react';
-import { PerfProfiler } from '@/shared/utils/perfDebug';
-import { authService } from '@/features/auth/services/authService';
+import { PerfProfiler } from '../shared/utils/perfDebug';
+import { authService } from '../features/auth/services/authService';
 import { useCallback } from 'react';
-import { useUserStore } from "@/features/profile/store/userStore";
-import { useAppStore } from "@/app/store";
-import { cn } from "@/shared/utils/utils";
+import { useUserStore } from "../features/profile/store/userStore";
+import { useAppStore } from "../app/store";
+import { cn } from "../shared/utils/utils";
 import {
   LayoutDashboard,
   MessageSquare,
@@ -16,10 +16,10 @@ import {
   Target,
   User,
 } from "lucide-react";
-import { supabase } from "@/shared/utils/supabase";
+import { supabase } from "../shared/utils/supabase";
 import { useQueryClient } from "@tanstack/react-query";
 import { NavLink, useNavigate } from "react-router-dom";
-import { useHasCompletedOnboarding } from '@/shared/hooks/useHasCompletedOnboarding';
+import { useHasCompletedOnboarding } from '../shared/hooks/useHasCompletedOnboarding';
 import { motion, AnimatePresence } from 'motion/react';
 
 const navItems = [

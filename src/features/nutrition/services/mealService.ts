@@ -1,8 +1,8 @@
-import { supabase } from '@/shared/utils/supabase';
-import { DbMealLog } from '@/shared/types/supabase';
-import { authService } from '@/features/auth/services/authService';
-import { logError } from '@/shared/utils/logger';
-import { devLog, devWarn } from '@/shared/utils/logger';
+import { supabase } from '../shared/utils/supabase';
+import { DbMealLog } from '../shared/types/supabase';
+import { authService } from '../features/auth/services/authService';
+import { logError } from '../shared/utils/logger';
+import { devLog, devWarn } from '../shared/utils/logger';
 
 export const mealService = {
   async getMeals(options?: { days?: number, limit?: number }): Promise<DbMealLog[]> {

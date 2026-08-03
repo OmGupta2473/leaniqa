@@ -1,18 +1,18 @@
 import React, { useEffect, useState, useRef, memo } from 'react';
-import { PerfProfiler } from '@/shared/utils/perfDebug';
-import { useAppStore } from "@/app/store";
-import { reportService } from "@/features/reports/services/reportService";
-import { calculateCurrentDailyStreak, isDailyGoalMet, toUtcDay } from "@/shared/utils/streaks";
+import { PerfProfiler } from '../shared/utils/perfDebug';
+import { useAppStore } from "../app/store";
+import { reportService } from "../features/reports/services/reportService";
+import { calculateCurrentDailyStreak, isDailyGoalMet, toUtcDay } from "../shared/utils/streaks";
 import { Target, Footprints, Flame, Sparkles, ChevronRight, Activity, TrendingDown, TrendingUp, Plus, Droplet, Wheat, Dna, Star } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useCalculatedProfile } from "@/shared/hooks/useCalculatedProfile";
-import { mealService } from "@/features/nutrition/services/mealService";
-import { useNetworkConnectivity } from "@/shared/hooks/useNetworkConnectivity";
-import { EmptyState } from "@/shared/components/EmptyState";
+import { useCalculatedProfile } from "../shared/hooks/useCalculatedProfile";
+import { mealService } from "../features/nutrition/services/mealService";
+import { useNetworkConnectivity } from "../shared/hooks/useNetworkConnectivity";
+import { EmptyState } from "../shared/components/EmptyState";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router-dom";
 
-import { DashboardSkeleton } from "@/shared/components/Skeletons";
+import { DashboardSkeleton } from "../shared/components/Skeletons";
 
 const AnimatedNumber = memo(function AnimatedNumber({
   value,
@@ -322,7 +322,7 @@ export function DashboardPage() {
                   </div>
                 </div>
 
-                {/* Carbs */}
+                                {/* Carbs */}
                 <div>
                   <div className="flex justify-between items-center mb-3">
                     <div className="flex items-center gap-3">
@@ -336,13 +336,17 @@ export function DashboardPage() {
                       <span className="text-[rgba(235,235,245,0.4)]"> / {carbsTarget}g</span>
                     </div>
                   </div>
+                  <div className="w-full h-2 rounded-full bg-[rgba(255,255,255,0.05)] overflow-hidden shadow-inner">
+                    <div className="h-full bg-[rgba(255,255,255,0.6)] rounded-full" style={{ width: mounted ? `${carbPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.5s" }} />
+                  </div>
+                </div>
 
                 {/* Fiber */}
                 <div>
                   <div className="flex justify-between items-center mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-[12px] bg-[rgba(255,255,255,0.1)] flex items-center justify-center">
-                         <Wheat size={16} className="text-white" />
+                      <div className="w-8 h-8 rounded-[12px] bg-[rgba(255,184,77,0.1)] flex items-center justify-center">
+                         <Wheat size={16} className="text-[#FFB84D]" />
                       </div>
                       <span className="text-[15px] font-bold text-white tracking-tight">Fiber</span>
                     </div>
@@ -352,12 +356,7 @@ export function DashboardPage() {
                     </div>
                   </div>
                   <div className="w-full h-2 rounded-full bg-[rgba(255,255,255,0.05)] overflow-hidden shadow-inner">
-                    <div className="h-full bg-white rounded-full" style={{ width: mounted ? `${fiberPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.6s" }} />
-                  </div>
-                </div>
-
-                  <div className="w-full h-2 rounded-full bg-[rgba(255,255,255,0.05)] overflow-hidden shadow-inner">
-                    <div className="h-full bg-white rounded-full" style={{ width: mounted ? `${carbPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.5s" }} />
+                    <div className="h-full bg-[#FFB84D] rounded-full" style={{ width: mounted ? `${fiberPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.6s" }} />
                   </div>
                 </div>
               </div>

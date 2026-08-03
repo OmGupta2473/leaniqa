@@ -1,4 +1,4 @@
-import { Logo } from "@/shared/components/Logo";
+import { Logo } from "../shared/components/Logo";
 // OAUTH SETUP REQUIRED:
 // 1. Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client ID
 // 2. Authorized JavaScript origins: http://localhost:3000 (dev) + https://leaniqa.com (prod)
@@ -10,16 +10,16 @@ import { Logo } from "@/shared/components/Logo";
 // 5. If OAuth consent screen is in "Testing" mode, add your email as a test user.
 
 import { useState, FormEvent, useEffect } from 'react';
-import { useMultiAccountStore } from '@/app/store/multiAccountStore';
+import { useMultiAccountStore } from '../app/store/multiAccountStore';
 import { Check, X, Loader2, Plus, LogOut } from 'lucide-react';
-import { authService } from '@/features/auth/services/authService';
+import { authService } from '../features/auth/services/authService';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { supabase } from '@/shared/utils/supabase';
+import { supabase } from '../shared/utils/supabase';
 import { Mail, Apple } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { pageVariants, hover, tap } from '@/features/reports/components/motion';
-import { haptics } from '@/shared/utils/haptics';
-import { useToast } from '@/shared/components/Toast';
+import { pageVariants, hover, tap } from '../features/reports/components/motion';
+import { haptics } from '../shared/utils/haptics';
+import { useToast } from '../shared/components/Toast';
 
 // SVG Icons
 const GoogleIcon = ({ className }: { className?: string }) => (

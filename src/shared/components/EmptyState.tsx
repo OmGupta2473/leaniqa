@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { LucideIcon } from 'lucide-react';
-import { cn } from '@/shared/utils/utils';
+import { cn } from '../shared/utils/utils';
 
 interface EmptyStateProps {
   icon: LucideIcon;
