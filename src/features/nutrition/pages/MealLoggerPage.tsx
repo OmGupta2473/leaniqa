@@ -332,7 +332,6 @@ export function MealLoggerPage() {
     onSettled: () => {
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ["meals"] }),
-        queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] }),
         queryClient.invalidateQueries({ queryKey: ["userStreak"] }),
         queryClient.invalidateQueries({ queryKey: ["userAwards"] }),
         complianceService.recalculateDayScore(selectedDate.getFullYear() + '-' + String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + String(selectedDate.getDate()).padStart(2, '0')).then(() => {
@@ -382,19 +381,20 @@ export function MealLoggerPage() {
         for (let attempt = 0; attempt < 3; attempt++) {
           try {
             const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            let currentSession = session;
             if (sessionError || !session?.access_token) {
               if (attempt === 0) { 
-                await supabase.auth.refreshSession(); 
+                const { data: refreshData } = await supabase.auth.refreshSession(); 
+                currentSession = refreshData.session;
               } else { 
                 throw new Error('Authentication failure'); 
               }
             }
 
-            const { data: { session: freshSession } } = await supabase.auth.getSession();
-            if (!freshSession?.access_token) throw new Error('Authentication failure');
+            if (!currentSession?.access_token) throw new Error('Authentication failure');
 
             const edgeStart = Date.now();
-            const { data, error } = await supabase.functions.invoke('parse-meal', { body: { text, remainingCalories, remainingProtein, mealType: selectedMealSlot }, headers: { Authorization: `Bearer ${freshSession.access_token}` } });
+            const { data, error } = await supabase.functions.invoke('parse-meal', { body: { text, remainingCalories, remainingProtein, mealType: selectedMealSlot }, headers: { Authorization: `Bearer ${currentSession.access_token}` } });
             aiResponseDuration = Date.now() - edgeStart;
 
             if (error) {
@@ -551,7 +551,6 @@ export function MealLoggerPage() {
     onSettled: () => {
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ["meals"] }),
-        queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] }),
         queryClient.invalidateQueries({ queryKey: ["userStreak"] }),
         queryClient.invalidateQueries({ queryKey: ["userAwards"] }),
         complianceService.recalculateDayScore(selectedDate.getFullYear() + '-' + String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + String(selectedDate.getDate()).padStart(2, '0')).then(() => 

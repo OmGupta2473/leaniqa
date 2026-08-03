@@ -75,6 +75,12 @@ function normalizeInput(input: string): string {
   // Clean up any double spaces created
   s = s.replace(/\s+/g, ' ').trim();
   
+  console.log(JSON.stringify({
+    level: "info",
+    stage: "Normalization",
+    original: input,
+    normalized: s
+  }));
   return s;
 }
 
@@ -228,8 +234,7 @@ Format:
         return null; // Genuine uncertainty -> Fallback to Gemini
       }
     } catch (err: any) {
-      console.error(`[parse-meal] GroqParser error:`, err.message || err);
-      throw err; // Propagate error so we DON'T fallback to Gemini on failure
+      throw err;
     }
   }
 }
@@ -292,8 +297,7 @@ Respond with valid JSON only.`;
       const parsed = JSON.parse(response.text || "{}");
       return MealSchema.parse(parsed);
     } catch (err: any) {
-      console.error(`[parse-meal] GeminiParser error:`, err.message || err);
-      throw err; // Propagate error for proper reporting
+      throw err;
     }
   }
 }
@@ -415,10 +419,18 @@ serve(async (req) => {
 
     // Stage 8 - Intelligent Caching (Optional, using Supabase table 'meal_parse_cache')
     // Fallback to in-memory for this instance
+    const cacheStart = Date.now();
     const cacheKey = `${context.normalizedText}_${mealType}`;
     
     if (memoryCache.has(cacheKey)) {
-      console.log(`[parse-meal] Memory cache hit for: ${context.normalizedText}`);
+      console.log(JSON.stringify({
+        level: "info",
+        request_id: requestId,
+        stage: "MemoryCache",
+        event: "hit",
+        latency_ms: Date.now() - cacheStart,
+        text: context.normalizedText
+      }));
       return new Response(JSON.stringify(memoryCache.get(cacheKey)), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -436,18 +448,48 @@ serve(async (req) => {
         .maybeSingle();
         
       if (cacheErr) {
-        console.error(`[parse-meal] Cache read error:`, cacheErr);
+        console.error(JSON.stringify({
+          level: "error",
+          request_id: requestId,
+          stage: "DBCache",
+          event: "error",
+          latency_ms: Date.now() - cacheStart,
+          error: cacheErr
+        }));
       }
 
       if (cacheData && cacheData.result) {
-        console.log(`[parse-meal] Cache hit for: ${context.normalizedText}`);
+        console.log(JSON.stringify({
+          level: "info",
+          request_id: requestId,
+          stage: "DBCache",
+          event: "hit",
+          latency_ms: Date.now() - cacheStart,
+          text: context.normalizedText
+        }));
         memoryCache.set(cacheKey, cacheData.result);
         return new Response(JSON.stringify(cacheData.result), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      } else {
+        console.log(JSON.stringify({
+          level: "info",
+          request_id: requestId,
+          stage: "DBCache",
+          event: "miss",
+          latency_ms: Date.now() - cacheStart,
+          text: context.normalizedText
+        }));
       }
-    } catch (e) {
-      console.error(`[parse-meal] Cache exception:`, e);
+    } catch (e: any) {
+      console.error(JSON.stringify({
+          level: "error",
+          request_id: requestId,
+          stage: "DBCache",
+          event: "exception",
+          latency_ms: Date.now() - cacheStart,
+          error: e.message || String(e)
+      }));
     }
 
     let data: MealResult | null = null;
@@ -462,7 +504,19 @@ serve(async (req) => {
 
     for (const { name, parser } of parsers) {
       const pStart = Date.now();
-      data = await parser.parse(context);
+      try {
+        data = await parser.parse(context);
+      } catch (err: any) {
+        console.error(JSON.stringify({
+          level: "error",
+          request_id: requestId,
+          stage: name,
+          event: "parse_error",
+          latency_ms: Date.now() - pStart,
+          error: err.message || String(err)
+        }));
+        data = null;
+      }
       
       console.log(JSON.stringify({
         level: "info",
@@ -483,10 +537,19 @@ serve(async (req) => {
     }
 
     // Stage 7 - Nutrition Validation
+    const valStart = Date.now();
     const validator = new NutritionValidator();
     data = validator.validate(data);
+    console.log(JSON.stringify({
+        level: "info",
+        request_id: requestId,
+        stage: "Validation",
+        latency_ms: Date.now() - valStart,
+        success: true
+    }));
 
     // Save to Cache
+    const saveStart = Date.now();
     memoryCache.set(cacheKey, data);
     
     // Prevent memory leak (simple LRU logic)
@@ -501,19 +564,50 @@ serve(async (req) => {
         meal_type: mealType,
         result: data
       });
-    } catch (e) {
-      // ignore
+      console.log(JSON.stringify({
+          level: "info",
+          request_id: requestId,
+          stage: "Persistence",
+          event: "cache_saved",
+          latency_ms: Date.now() - saveStart
+      }));
+    } catch (e: any) {
+      console.error(JSON.stringify({
+          level: "error",
+          request_id: requestId,
+          stage: "Persistence",
+          event: "cache_save_error",
+          latency_ms: Date.now() - saveStart,
+          error: e.message || String(e)
+      }));
     }
 
     // Increment Usage
+    const incStart = Date.now();
     if (parserUsed === 'Groq' || parserUsed === 'Gemini') {
       const { error: incrementError } = await supabase.rpc("increment_api_usage", {
         p_user_id: user.id,
         p_endpoint: endpoint,
         p_date: today
       });
+
       if (incrementError) {
-        console.error("Database Write Failure:", incrementError.message);
+        console.error(JSON.stringify({
+            level: "error",
+            request_id: requestId,
+            stage: "UsageTracking",
+            event: "increment_error",
+            latency_ms: Date.now() - incStart,
+            error: incrementError.message
+        }));
+      } else {
+        console.log(JSON.stringify({
+            level: "info",
+            request_id: requestId,
+            stage: "UsageTracking",
+            event: "increment_success",
+            latency_ms: Date.now() - incStart
+        }));
       }
     }
 
