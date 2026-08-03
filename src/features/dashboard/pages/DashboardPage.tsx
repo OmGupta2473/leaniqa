@@ -285,8 +285,8 @@ export function DashboardPage() {
 
               <div className="flex flex-col gap-7">
                 {/* Protein */}
-                <div>
-                  <div className="flex justify-between items-center mb-3">
+                <div className="flex flex-col gap-3">
+                  <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-[12px] bg-[rgba(55,138,221,0.1)] flex items-center justify-center">
                          <Dna size={16} className="text-[#378ADD]" />
@@ -304,8 +304,8 @@ export function DashboardPage() {
                 </div>
 
                 {/* Fat */}
-                <div>
-                  <div className="flex justify-between items-center mb-3">
+                <div className="flex flex-col gap-3">
+                  <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-[12px] bg-[rgba(255,255,255,0.1)] flex items-center justify-center">
                          <Droplet size={16} className="text-white" />
@@ -321,10 +321,10 @@ export function DashboardPage() {
                     <div className="h-full bg-white rounded-full" style={{ width: mounted ? `${fatPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.4s" }} />
                   </div>
                 </div>
-
-                                {/* Carbs */}
-                <div>
-                  <div className="flex justify-between items-center mb-3">
+                
+                {/* Carbs */}
+                <div className="flex flex-col gap-3">
+                  <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-[12px] bg-[rgba(255,255,255,0.1)] flex items-center justify-center">
                          <Wheat size={16} className="text-white" />
@@ -337,13 +337,13 @@ export function DashboardPage() {
                     </div>
                   </div>
                   <div className="w-full h-2 rounded-full bg-[rgba(255,255,255,0.05)] overflow-hidden shadow-inner">
-                    <div className="h-full bg-[rgba(255,255,255,0.6)] rounded-full" style={{ width: mounted ? `${carbPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.5s" }} />
+                    <div className="h-full bg-[rgba(255,255,255,0.8)] rounded-full" style={{ width: mounted ? `${carbPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.5s" }} />
                   </div>
                 </div>
 
                 {/* Fiber */}
-                <div>
-                  <div className="flex justify-between items-center mb-3">
+                <div className="flex flex-col gap-3">
+                  <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-[12px] bg-[rgba(255,184,77,0.1)] flex items-center justify-center">
                          <Leaf size={16} className="text-[#FFB84D]" />
@@ -361,7 +361,6 @@ export function DashboardPage() {
                 </div>
               </div>
             </motion.div>
-
             {/* Weight Progress & Next Meal Row */}
             <div className="grid grid-cols-2 gap-4">
               {/* Weight Progress */}
