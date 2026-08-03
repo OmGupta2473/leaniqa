@@ -175,7 +175,10 @@ class KnowledgeBaseParser implements MealParser {
 // ----------------------------------------------------------------------------
 class GroqParser implements MealParser {
   async parse(context: ParseContext): Promise<MealResult | null> {
-    if (!context.groqApiKey) return null;
+    if (!context.groqApiKey) {
+      console.error("[parse-meal] GROQ_API_KEY is missing from environment variables.");
+      throw new Error("Server configuration error: GROQ_API_KEY is not configured. Please add it to Supabase Dashboard -> Edge Functions -> Secrets.");
+    }
     
     console.log(`[parse-meal] GroqParser started`);
     try {
@@ -515,6 +518,9 @@ serve(async (req) => {
           latency_ms: Date.now() - pStart,
           error: err.message || String(err)
         }));
+        if (err.message?.includes("Server configuration error")) {
+          throw err;
+        }
         data = null;
       }
       
