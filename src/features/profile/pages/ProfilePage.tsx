@@ -217,10 +217,6 @@ export function ProfilePage() {
             <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Fat</span>
             <span className="text-[14px] font-medium text-white">{displayVal(fatMin)}–{displayVal(fatMax)} g</span>
           </div>
-          <div className="flex justify-between items-center py-3.5 px-4 border-t border-[rgba(255,255,255,0.06)]">
-            <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Fiber</span>
-            <span className="text-[14px] font-medium text-white">{displayVal(calculated.fiberMin)}–{displayVal(calculated.fiberMax)} g</span>
-          </div>
         </div>
       </div>
 
@@ -251,7 +247,7 @@ export function ProfilePage() {
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <div className="card-base p-4 flex flex-col items-center justify-center text-center">
             <div className="text-[11px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Carbs</div>
             <div className="text-[16px] font-bold text-white">
@@ -267,12 +263,6 @@ export function ProfilePage() {
           <div className="card-base p-4 flex flex-col items-center justify-center text-center">
             <div className="text-[11px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Water</div>
             <div className="text-[16px] font-bold text-[#378ADD]">{displayVal(waterLitres)} L</div>
-          </div>
-          <div className="card-base p-4 flex flex-col items-center justify-center text-center">
-            <div className="text-[11px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Fiber</div>
-            <div className="text-[16px] font-bold text-white">
-              {targetMacros?.fiber ? displayVal(targetMacros.fiber) : `${displayVal(calculated.fiberMin)}–${displayVal(calculated.fiberMax)}`}
-            </div>
           </div>
         </div>
       </div>

@@ -63,7 +63,6 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
   const { toast } = useToast();
   const kcal = meals.reduce((s, m) => s + m.calories, 0);
   const pro = meals.reduce((s, m) => s + m.protein, 0);
-  const fib = meals.reduce((s, m) => s + (m.fiber || 0), 0);
   return (
     <PerfProfiler id="MealLoggerPage">
       <motion.div 
@@ -119,7 +118,6 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
                   <div className="flex items-center gap-1 shrink-0">
                     <span className="text-[8.5px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-1.5 py-0.5 rounded-full font-bold tracking-wide whitespace-nowrap">{m.calories} KCAL</span>
                     <span className="text-[8.5px] badge-lime px-1.5 py-0.5 font-bold rounded-full tracking-wide whitespace-nowrap">{m.protein}G PRO</span>
-                    
                     {m.id && !m.id.toString().startsWith('opt-') && (
                       <button aria-label="Delete meal" className="ml-0.5 w-6 h-6 shrink-0 rounded-full bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,77,28,0.2)] flex items-center justify-center text-[rgba(255,255,255,0.5)] hover:text-[#FF4D1C] transition-colors" onClick={(e) => {
                           e.stopPropagation();
@@ -256,9 +254,6 @@ export function MealLoggerPage() {
   const eatenProtein = meals.reduce((acc, m) => acc + m.protein, 0);
   const eatenFat = meals.reduce((acc, m) => acc + m.fat, 0);
   const eatenCarbs = meals.reduce((acc, m) => acc + m.carbs, 0);
-  const eatenFiber = meals.reduce((acc, m) => acc + (m.fiber || 0), 0);
-  const profileData = onboardingData;
-  const fiberTarget = profileData?.fiberMin || 20;
   const breakfastMeals = meals.filter(m => m.meal_slot === "breakfast");
   const lunchMeals = meals.filter(m => m.meal_slot === "lunch");
   const dinnerMeals = meals.filter(m => m.meal_slot === "dinner");
@@ -371,7 +366,7 @@ export function MealLoggerPage() {
         const cachedResult = lookupCachedMeal(text);
         if (cachedResult && cachedResult.confidence >= 90) {
           devLog("Nutrition Source Used: Cache");
-          return { calories: cachedResult.scaledCalories, protein: cachedResult.scaledProtein, fat: cachedResult.scaledFat, carbs: cachedResult.scaledCarbs, fiber: (cachedResult as any).scaledFiber || 0, confidence: cachedResult.confidence, foods_detected: [text], coaching_tip: `Logged from nutritional database. ${Math.round(cachedResult.scaledCalories)} kcal · ${cachedResult.scaledProtein}g protein`, _fromCache: true };
+          return { calories: cachedResult.scaledCalories, protein: cachedResult.scaledProtein, fat: cachedResult.scaledFat, carbs: cachedResult.scaledCarbs, confidence: cachedResult.confidence, foods_detected: [text], coaching_tip: `Logged from nutritional database. ${Math.round(cachedResult.scaledCalories)} kcal · ${cachedResult.scaledProtein}g protein`, _fromCache: true };
         }
       }
       
@@ -526,8 +521,7 @@ export function MealLoggerPage() {
         calories: Math.round(data.calories), 
         protein: Math.round(data.protein), 
         fat: Math.round(data.fat), 
-        carbs: Math.round(data.carbs),
-         fiber: Math.round(data.fiber || 0), 
+        carbs: Math.round(data.carbs), 
         meal_time: getMealTime().toISOString(), 
         tip: data.foods_detected?.join(', ') || text, 
         meal_slot: selectedMealSlot || undefined 
@@ -655,7 +649,6 @@ export function MealLoggerPage() {
           </div>
         </div>
 
-        
         {/* Calorie bar */}
         <div className="mb-4">
           <div className="flex justify-between mb-1.5 items-end">
@@ -668,7 +661,7 @@ export function MealLoggerPage() {
         </div>
 
         {/* Protein bar */}
-        <div className="mb-4">
+        <div>
           <div className="flex justify-between mb-1.5 items-end">
             <span className="text-[13px] font-medium text-[rgba(235,235,245,0.5)]">Protein</span>
             <span className="text-[14px] font-bold text-white tracking-tight">{eatenProtein}g <span className="text-[11px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">/ {proteinTarget}g</span></span>
@@ -677,51 +670,15 @@ export function MealLoggerPage() {
             <div className="h-full w-full rounded-full bg-[#378ADD] origin-left transition-transform duration-1000 ease-out will-change-transform" style={{ transform: `translateX(-${100 - proteinPercent}%)` }}></div>
           </div>
         </div>
-        
-        {/* Fat bar */}
-        <div className="mb-4">
-          <div className="flex justify-between mb-1.5 items-end">
-            <span className="text-[13px] font-medium text-[rgba(235,235,245,0.5)]">Fat</span>
-            <span className="text-[14px] font-bold text-white tracking-tight">{eatenFat}g <span className="text-[11px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">/ {fatTarget}g</span></span>
-          </div>
-          <div className="h-2 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden shadow-inner">
-            <div className="h-full w-full rounded-full bg-white origin-left transition-transform duration-1000 ease-out will-change-transform" style={{ transform: `translateX(-${Math.max(0, 100 - (eatenFat / fatTarget) * 100)}%)` }}></div>
-          </div>
-        </div>
-        
-        {/* Carbs bar */}
-        <div className="mb-4">
-          <div className="flex justify-between mb-1.5 items-end">
-            <span className="text-[13px] font-medium text-[rgba(235,235,245,0.5)]">Carbs</span>
-            <span className="text-[14px] font-bold text-white tracking-tight">{eatenCarbs}g <span className="text-[11px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">/ {carbsTarget}g</span></span>
-          </div>
-          <div className="h-2 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden shadow-inner">
-            <div className="h-full w-full rounded-full bg-[rgba(255,255,255,0.6)] origin-left transition-transform duration-1000 ease-out will-change-transform" style={{ transform: `translateX(-${Math.max(0, 100 - (eatenCarbs / carbsTarget) * 100)}%)` }}></div>
-          </div>
-        </div>
 
-        {/* Fiber bar */}
-        <div>
-          <div className="flex justify-between mb-1.5 items-end">
-            <span className="text-[13px] font-medium text-[rgba(235,235,245,0.5)]">Fiber</span>
-            <span className="text-[14px] font-bold text-white tracking-tight">{eatenFiber}g <span className="text-[11px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">/ {fiberTarget}g</span></span>
-          </div>
-          <div className="h-2 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden shadow-inner">
-            <div className="h-full w-full rounded-full bg-[#FFB84D] origin-left transition-transform duration-1000 ease-out will-change-transform" style={{ transform: `translateX(-${Math.max(0, 100 - (eatenFiber / fiberTarget) * 100)}%)` }}></div>
-          </div>
-        </div>
-
-
-                {/* Macros row */}
-        <div className="grid grid-cols-5 gap-1 items-center mt-5 pt-4 border-t border-[rgba(255,255,255,0.06)] px-1">
+        {/* Macros row */}
+        <div className="grid grid-cols-4 gap-2 mt-5 pt-4 border-t border-[rgba(255,255,255,0.06)]">
           {[{ label: 'Kcal', val: eatenKcal, target: dailyTargetKcal, unit: '', color: '#FF4D1C' }, 
-             { label: 'Pro', val: eatenProtein, target: proteinTarget, unit: 'g', color: '#378ADD' }, 
-             { label: 'Fat', val: eatenFat, target: fatTarget, unit: 'g', color: 'white' }, 
-             { label: 'Carbs', val: eatenCarbs, target: carbsTarget, unit: 'g', color: 'white' },
-             { label: 'Fiber', val: eatenFiber, target: fiberTarget, unit: 'g', color: '#FFB84D' }
-             ].map(item => (
+            { label: 'Protein', val: eatenProtein, target: proteinTarget, unit: 'g', color: '#378ADD' }, 
+            { label: 'Fat', val: eatenFat, target: fatTarget, unit: 'g', color: 'white' }, 
+            { label: 'Carbs', val: eatenCarbs, target: carbsTarget, unit: 'g', color: 'white' }].map(item => (
             <div key={item.label} className="text-center flex flex-col items-center">
-              <div className="text-[15px] font-bold tracking-tight" style={{ color: item.color }}>
+              <div className="text-[16px] font-bold tracking-tight" style={{ color: item.color }}>
                 {item.val}<span className="text-[12px]">{item.unit}</span>
               </div>
               <div className="text-[10px] text-[rgba(235,235,245,0.5)] uppercase tracking-widest mt-0.5 font-medium">{item.label}</div>
@@ -890,7 +847,6 @@ export function MealLoggerPage() {
                             <span className="text-[10px] badge-lime px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{msg.data.protein}g pro</span>
                             <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.6)] px-2 py-0.5 rounded-full font-semibold">{msg.data.fat}g fat</span>
                             <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.6)] px-2 py-0.5 rounded-full font-semibold">{msg.data.carbs}g carb</span>
-                            <span className="text-[10px] bg-[rgba(255,184,77,0.12)] text-[#FFB84D] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{msg.data.fiber || 0}g fib</span>
                           </div>
                         )}
                         {msg.data?.coaching_tip && (
@@ -923,8 +879,6 @@ export function MealLoggerPage() {
                         <span className="text-[10px] badge-lime px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{pendingMeal.data.protein}g pro</span>
                         <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.6)] px-2 py-0.5 rounded-full font-semibold">{pendingMeal.data.fat}g fat</span>
                         <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.6)] px-2 py-0.5 rounded-full font-semibold">{pendingMeal.data.carbs}g carb</span>
-                        <span className="text-[10px] bg-[rgba(255,184,77,0.12)] text-[#FFB84D] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{pendingMeal.data.fiber || 0}g fib</span>
-                        
                       </div>
                       <div className="flex gap-2">
                         <button 

@@ -28,7 +28,6 @@ export interface CachedMealMacros {
   protein: number;
   fat: number;
   carbs: number;
-  fiber?: number;
   confidence: number;
   per100g?: boolean;
   pieceWeightGrams?: number;
@@ -221,7 +220,6 @@ export function lookupCachedMeal(text: string): (CachedMealMacros & { scaledCalo
       scaledProtein: Math.round(macros.protein * multiplier * 10) / 10,
       scaledFat: Math.round(macros.fat * multiplier * 10) / 10,
       scaledCarbs: Math.round(macros.carbs * multiplier * 10) / 10,
-      scaledFiber: Math.round((macros.fiber || 0) * multiplier * 10) / 10,
     };
   };
 

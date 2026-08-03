@@ -206,7 +206,6 @@ export function WeeklyReportPage() {
       
       const caloriesConsumed = dayMeals.reduce((a, m) => a + m.calories, 0);
       const proteinConsumed = dayMeals.reduce((a, m) => a + m.protein, 0);
-      const fiberConsumed = dayMeals.reduce((a, m) => a + (m.fiber || 0), 0);
       
       let complianceScore = metric?.score ?? 0;
       
@@ -218,8 +217,6 @@ export function WeeklyReportPage() {
            actualCalories: caloriesConsumed,
            targetProtein: metric?.target_protein ?? proteinGoal,
            actualProtein: proteinConsumed,
-           targetFiber: metric?.target_fiber ?? 20,
-           actualFiber: fiberConsumed,
            hasWeightLogged
          });
       }
@@ -245,7 +242,6 @@ export function WeeklyReportPage() {
   const avgCompliance = loggedDaysCount > 0 ? Math.round(activeDays.reduce((a, b) => a + b.complianceScore, 0) / loggedDaysCount) : 0;
   const avgCalories = loggedDaysCount > 0 ? Math.round(activeDays.reduce((a, b) => a + b.caloriesConsumed, 0) / loggedDaysCount) : 0;
   const avgProtein = loggedDaysCount > 0 ? Math.round(activeDays.reduce((a, b) => a + b.proteinConsumed, 0) / loggedDaysCount) : 0;
-  const avgFiber = loggedDaysCount > 0 ? Math.round(activeDays.reduce((a, b) => a + ((b as any).fiberConsumed || 0), 0) / loggedDaysCount) : 0;
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [insights, setInsights] = useState<{title: string, body: string, type: 'positive' | 'warning' | 'negative'}[] | null>(null);
@@ -419,10 +415,6 @@ export function WeeklyReportPage() {
                 <motion.div variants={itemVariants} className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-[24px] p-6 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-2xl flex-1 flex flex-col justify-center">
                   <div className="text-[11px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.5)] mb-1 font-semibold">Avg Protein</div>
                   <div className="text-[24px] font-bold text-white tracking-tight">{avgProtein} <span className="text-[13px] text-[rgba(235,235,245,0.5)] font-normal">g</span></div>
-                </motion.div>
-                <motion.div variants={itemVariants} className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-[24px] p-6 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-2xl flex-1 flex flex-col justify-center">
-                  <div className="text-[11px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.5)] mb-1 font-semibold">Avg Fiber</div>
-                  <div className="text-[24px] font-bold text-white tracking-tight">{avgFiber} <span className="text-[13px] text-[rgba(235,235,245,0.5)] font-normal">g</span></div>
                 </motion.div>
               </div>
             </div>
