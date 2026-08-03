@@ -63,6 +63,7 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
   const { toast } = useToast();
   const kcal = meals.reduce((s, m) => s + m.calories, 0);
   const pro = meals.reduce((s, m) => s + m.protein, 0);
+  const fib = meals.reduce((s, m) => s + (m.fiber || 0), 0);
   return (
     <PerfProfiler id="MealLoggerPage">
       <motion.div 
@@ -118,6 +119,7 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
                   <div className="flex items-center gap-1 shrink-0">
                     <span className="text-[8.5px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-1.5 py-0.5 rounded-full font-bold tracking-wide whitespace-nowrap">{m.calories} KCAL</span>
                     <span className="text-[8.5px] badge-lime px-1.5 py-0.5 font-bold rounded-full tracking-wide whitespace-nowrap">{m.protein}G PRO</span>
+                    <span className="text-[8.5px] bg-[rgba(255,184,77,0.12)] text-[#FFB84D] px-1.5 py-0.5 font-bold rounded-full tracking-wide whitespace-nowrap">{m.fiber || 0}G FIB</span>
                     {m.id && !m.id.toString().startsWith('opt-') && (
                       <button aria-label="Delete meal" className="ml-0.5 w-6 h-6 shrink-0 rounded-full bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,77,28,0.2)] flex items-center justify-center text-[rgba(255,255,255,0.5)] hover:text-[#FF4D1C] transition-colors" onClick={(e) => {
                           e.stopPropagation();
@@ -366,7 +368,7 @@ export function MealLoggerPage() {
         const cachedResult = lookupCachedMeal(text);
         if (cachedResult && cachedResult.confidence >= 90) {
           devLog("Nutrition Source Used: Cache");
-          return { calories: cachedResult.scaledCalories, protein: cachedResult.scaledProtein, fat: cachedResult.scaledFat, carbs: cachedResult.scaledCarbs, confidence: cachedResult.confidence, foods_detected: [text], coaching_tip: `Logged from nutritional database. ${Math.round(cachedResult.scaledCalories)} kcal · ${cachedResult.scaledProtein}g protein`, _fromCache: true };
+          return { calories: cachedResult.scaledCalories, protein: cachedResult.scaledProtein, fat: cachedResult.scaledFat, carbs: cachedResult.scaledCarbs, fiber: (cachedResult as any).scaledFiber || 0, confidence: cachedResult.confidence, foods_detected: [text], coaching_tip: `Logged from nutritional database. ${Math.round(cachedResult.scaledCalories)} kcal · ${cachedResult.scaledProtein}g protein`, _fromCache: true };
         }
       }
       

@@ -15,6 +15,7 @@ export interface DbProfile {
   carbs_target?: number;
   fat_target?: number;
   water_target?: number;
+  fiber_target?: number;
   created_at?: string;
 }
 
@@ -38,6 +39,7 @@ export interface DbMealLog {
   protein: number;
   fat: number;
   carbs: number;
+  fiber: number;
   meal_time: string;
   tip?: string;
   meal_slot?: 'breakfast' | 'lunch' | 'dinner';
@@ -59,6 +61,8 @@ export interface DbDailyMetric {
   actual_calories: number;
   target_protein: number;
   actual_protein: number;
+  target_fiber?: number;
+  actual_fiber?: number;
   water: number;
   score: number;
 }

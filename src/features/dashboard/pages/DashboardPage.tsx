@@ -133,6 +133,7 @@ export function DashboardPage() {
   const eatenProtein = Math.round(todaysMeals.reduce((acc, m) => acc + m.protein, 0));
   const eatenFat = Math.round(todaysMeals.reduce((acc, m) => acc + m.fat, 0));
   const eatenCarbs = Math.round(todaysMeals.reduce((acc, m) => acc + m.carbs, 0));
+  const eatenFiber = Math.round(todaysMeals.reduce((acc, m) => acc + (m.fiber || 0), 0));
 
   const remainingKcal = dailyTargetKcal ? dailyTargetKcal - eatenKcal : 0;
   const remainingProtein = proteinTarget ? proteinTarget - eatenProtein : 0;
@@ -147,6 +148,8 @@ export function DashboardPage() {
   const proPct = proteinTarget ? Math.min(eatenProtein / proteinTarget, 1) : 0;
   const fatPct = fatTarget ? Math.min(eatenFat / fatTarget, 1) : 0;
   const carbPct = carbsTarget ? Math.min(eatenCarbs / carbsTarget, 1) : 0;
+  const fiberTarget = profileData?.fiberMin || 20;
+  const fiberPct = fiberTarget ? Math.min(eatenFiber / fiberTarget, 1) : 0;
 
   const completionScore = dailyTargetKcal ? Math.round(((calPct + proPct + fatPct + carbPct) / 4) * 100) : 0;
 
@@ -333,6 +336,26 @@ export function DashboardPage() {
                       <span className="text-[rgba(235,235,245,0.4)]"> / {carbsTarget}g</span>
                     </div>
                   </div>
+
+                {/* Fiber */}
+                <div>
+                  <div className="flex justify-between items-center mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-[12px] bg-[rgba(255,255,255,0.1)] flex items-center justify-center">
+                         <Wheat size={16} className="text-white" />
+                      </div>
+                      <span className="text-[15px] font-bold text-white tracking-tight">Fiber</span>
+                    </div>
+                    <div className="text-[15px] font-bold tracking-tight">
+                      <span className="text-white">{eatenFiber}</span>
+                      <span className="text-[rgba(235,235,245,0.4)]"> / {fiberTarget}g</span>
+                    </div>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-[rgba(255,255,255,0.05)] overflow-hidden shadow-inner">
+                    <div className="h-full bg-white rounded-full" style={{ width: mounted ? `${fiberPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.6s" }} />
+                  </div>
+                </div>
+
                   <div className="w-full h-2 rounded-full bg-[rgba(255,255,255,0.05)] overflow-hidden shadow-inner">
                     <div className="h-full bg-white rounded-full" style={{ width: mounted ? `${carbPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.5s" }} />
                   </div>
