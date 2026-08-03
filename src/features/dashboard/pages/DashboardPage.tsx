@@ -3,7 +3,7 @@ import { PerfProfiler } from '@/shared/utils/perfDebug';
 import { useAppStore } from "@/app/store";
 import { reportService } from "@/features/reports/services/reportService";
 import { calculateCurrentDailyStreak, isDailyGoalMet, toUtcDay } from "@/shared/utils/streaks";
-import { Target, Footprints, Flame, Sparkles, ChevronRight, Activity, TrendingDown, TrendingUp, Plus, Droplet, Wheat, Dna, Star } from "lucide-react";
+import { Target, Footprints, Flame, Sparkles, ChevronRight, Activity, TrendingDown, TrendingUp, Plus, Droplet, Wheat, Dna, Star, Leaf } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useCalculatedProfile } from "@/shared/hooks/useCalculatedProfile";
 import { mealService } from "@/features/nutrition/services/mealService";
@@ -346,7 +346,7 @@ export function DashboardPage() {
                   <div className="flex justify-between items-center mb-3">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-[12px] bg-[rgba(255,184,77,0.1)] flex items-center justify-center">
-                         <Wheat size={16} className="text-[#FFB84D]" />
+                         <Leaf size={16} className="text-[#FFB84D]" />
                       </div>
                       <span className="text-[15px] font-bold text-white tracking-tight">Fiber</span>
                     </div>

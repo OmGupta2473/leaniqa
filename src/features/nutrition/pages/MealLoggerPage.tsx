@@ -119,6 +119,7 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
                   <div className="flex items-center gap-1 shrink-0">
                     <span className="text-[8.5px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-1.5 py-0.5 rounded-full font-bold tracking-wide whitespace-nowrap">{m.calories} KCAL</span>
                     <span className="text-[8.5px] badge-lime px-1.5 py-0.5 font-bold rounded-full tracking-wide whitespace-nowrap">{m.protein}G PRO</span>
+                    <span className="text-[8.5px] bg-[rgba(255,184,77,0.12)] text-[#FFB84D] px-1.5 py-0.5 font-bold rounded-full tracking-wide whitespace-nowrap">{m.fiber || 0}G FIB</span>
                     {m.id && !m.id.toString().startsWith('opt-') && (
                       <button aria-label="Delete meal" className="ml-0.5 w-6 h-6 shrink-0 rounded-full bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,77,28,0.2)] flex items-center justify-center text-[rgba(255,255,255,0.5)] hover:text-[#FF4D1C] transition-colors" onClick={(e) => {
                           e.stopPropagation();
@@ -712,7 +713,7 @@ export function MealLoggerPage() {
 
 
                 {/* Macros row */}
-        <div className="grid grid-cols-5 gap-2 mt-5 pt-4 border-t border-[rgba(255,255,255,0.06)]">
+        <div className="flex justify-between items-center mt-5 pt-4 border-t border-[rgba(255,255,255,0.06)] px-1">
           {[{ label: 'Kcal', val: eatenKcal, target: dailyTargetKcal, unit: '', color: '#FF4D1C' }, 
              { label: 'Pro', val: eatenProtein, target: proteinTarget, unit: 'g', color: '#378ADD' }, 
              { label: 'Fat', val: eatenFat, target: fatTarget, unit: 'g', color: 'white' }, 
@@ -720,7 +721,7 @@ export function MealLoggerPage() {
              { label: 'Fiber', val: eatenFiber, target: fiberTarget, unit: 'g', color: '#FFB84D' }
              ].map(item => (
             <div key={item.label} className="text-center flex flex-col items-center">
-              <div className="text-[16px] font-bold tracking-tight" style={{ color: item.color }}>
+              <div className="text-[15px] font-bold tracking-tight" style={{ color: item.color }}>
                 {item.val}<span className="text-[12px]">{item.unit}</span>
               </div>
               <div className="text-[10px] text-[rgba(235,235,245,0.5)] uppercase tracking-widest mt-0.5 font-medium">{item.label}</div>
@@ -921,6 +922,7 @@ export function MealLoggerPage() {
                         <span className="text-[10px] badge-lime px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{pendingMeal.data.protein}g pro</span>
                         <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.6)] px-2 py-0.5 rounded-full font-semibold">{pendingMeal.data.fat}g fat</span>
                         <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.6)] px-2 py-0.5 rounded-full font-semibold">{pendingMeal.data.carbs}g carb</span>
+                        <span className="text-[10px] bg-[rgba(255,184,77,0.12)] text-[#FFB84D] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{pendingMeal.data.fiber || 0}g fib</span>
                       </div>
                       <div className="flex gap-2">
                         <button 
