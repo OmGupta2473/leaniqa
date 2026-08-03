@@ -3,7 +3,7 @@ import { PerfProfiler } from '@/shared/utils/perfDebug';
 import { useAppStore } from "@/app/store";
 import { reportService } from "@/features/reports/services/reportService";
 import { calculateCurrentDailyStreak, isDailyGoalMet, toUtcDay } from "@/shared/utils/streaks";
-import { Target, Footprints, Flame, Sparkles, ChevronRight, Activity, TrendingDown, TrendingUp, Plus, Droplet, Wheat, Dna, Star, Leaf } from "lucide-react";
+import { Target, Footprints, Flame, Sparkles, ChevronRight, Activity, TrendingDown, TrendingUp, Plus, Droplet, Wheat, Dna, Star } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useCalculatedProfile } from "@/shared/hooks/useCalculatedProfile";
 import { mealService } from "@/features/nutrition/services/mealService";
@@ -133,7 +133,6 @@ export function DashboardPage() {
   const eatenProtein = Math.round(todaysMeals.reduce((acc, m) => acc + m.protein, 0));
   const eatenFat = Math.round(todaysMeals.reduce((acc, m) => acc + m.fat, 0));
   const eatenCarbs = Math.round(todaysMeals.reduce((acc, m) => acc + m.carbs, 0));
-  const eatenFiber = Math.round(todaysMeals.reduce((acc, m) => acc + (m.fiber || 0), 0));
 
   const remainingKcal = dailyTargetKcal ? dailyTargetKcal - eatenKcal : 0;
   const remainingProtein = proteinTarget ? proteinTarget - eatenProtein : 0;
@@ -148,8 +147,6 @@ export function DashboardPage() {
   const proPct = proteinTarget ? Math.min(eatenProtein / proteinTarget, 1) : 0;
   const fatPct = fatTarget ? Math.min(eatenFat / fatTarget, 1) : 0;
   const carbPct = carbsTarget ? Math.min(eatenCarbs / carbsTarget, 1) : 0;
-  const fiberTarget = profileData?.fiberMin || 20;
-  const fiberPct = fiberTarget ? Math.min(eatenFiber / fiberTarget, 1) : 0;
 
   const completionScore = dailyTargetKcal ? Math.round(((calPct + proPct + fatPct + carbPct) / 4) * 100) : 0;
 
@@ -285,8 +282,8 @@ export function DashboardPage() {
 
               <div className="flex flex-col gap-7">
                 {/* Protein */}
-                <div className="flex flex-col gap-3">
-                  <div className="flex justify-between items-center">
+                <div>
+                  <div className="flex justify-between items-center mb-3">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-[12px] bg-[rgba(55,138,221,0.1)] flex items-center justify-center">
                          <Dna size={16} className="text-[#378ADD]" />
@@ -304,8 +301,8 @@ export function DashboardPage() {
                 </div>
 
                 {/* Fat */}
-                <div className="flex flex-col gap-3">
-                  <div className="flex justify-between items-center">
+                <div>
+                  <div className="flex justify-between items-center mb-3">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-[12px] bg-[rgba(255,255,255,0.1)] flex items-center justify-center">
                          <Droplet size={16} className="text-white" />
@@ -321,10 +318,10 @@ export function DashboardPage() {
                     <div className="h-full bg-white rounded-full" style={{ width: mounted ? `${fatPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.4s" }} />
                   </div>
                 </div>
-                
+
                 {/* Carbs */}
-                <div className="flex flex-col gap-3">
-                  <div className="flex justify-between items-center">
+                <div>
+                  <div className="flex justify-between items-center mb-3">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-[12px] bg-[rgba(255,255,255,0.1)] flex items-center justify-center">
                          <Wheat size={16} className="text-white" />
@@ -337,30 +334,12 @@ export function DashboardPage() {
                     </div>
                   </div>
                   <div className="w-full h-2 rounded-full bg-[rgba(255,255,255,0.05)] overflow-hidden shadow-inner">
-                    <div className="h-full bg-[rgba(255,255,255,0.8)] rounded-full" style={{ width: mounted ? `${carbPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.5s" }} />
-                  </div>
-                </div>
-
-                {/* Fiber */}
-                <div className="flex flex-col gap-3">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-[12px] bg-[rgba(255,184,77,0.1)] flex items-center justify-center">
-                         <Leaf size={16} className="text-[#FFB84D]" />
-                      </div>
-                      <span className="text-[15px] font-bold text-white tracking-tight">Fiber</span>
-                    </div>
-                    <div className="text-[15px] font-bold tracking-tight">
-                      <span className="text-white">{eatenFiber}</span>
-                      <span className="text-[rgba(235,235,245,0.4)]"> / {fiberTarget}g</span>
-                    </div>
-                  </div>
-                  <div className="w-full h-2 rounded-full bg-[rgba(255,255,255,0.05)] overflow-hidden shadow-inner">
-                    <div className="h-full bg-[#FFB84D] rounded-full" style={{ width: mounted ? `${fiberPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.6s" }} />
+                    <div className="h-full bg-white rounded-full" style={{ width: mounted ? `${carbPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.5s" }} />
                   </div>
                 </div>
               </div>
             </motion.div>
+
             {/* Weight Progress & Next Meal Row */}
             <div className="grid grid-cols-2 gap-4">
               {/* Weight Progress */}

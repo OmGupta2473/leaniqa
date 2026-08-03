@@ -10,7 +10,7 @@ interface DailyHistoryChartProps {
   todayStr: string;
   startDateStr?: string;
   unit: string;
-  type: "calorie" | "protein" | "fiber";
+  type: "calorie" | "protein";
 }
 
 export function DailyHistoryChart({ logs, todayStr, startDateStr, unit, type }: DailyHistoryChartProps) {

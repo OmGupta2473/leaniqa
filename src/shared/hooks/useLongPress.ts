@@ -1,25 +1,25 @@
 import { useCallback, useRef, useState } from 'react';
 
 export function useLongPress(
-    onLongPress: (e?: any) => void = () => {},
-    onClick: (e?: any) => void = () => {},
-    { shouldPreventDefault = true, delay = 500 }: { shouldPreventDefault?: boolean; delay?: number; } = {}
+    onLongPress: (e: any) => void,
+    onClick: (e: any) => void,
+    { shouldPreventDefault = true, delay = 500 } = {}
 ) {
     const [longPressTriggered, setLongPressTriggered] = useState(false);
-    const timeout = useRef<any>(null);
-    const target = useRef<any>(null);
+    const timeout = useRef<NodeJS.Timeout>();
+    const target = useRef<EventTarget>();
 
     const start = useCallback(
         (event: any) => {
             if (shouldPreventDefault && event.target) {
-                event.target.addEventListener('touchend', preventDefault as any, {
+                event.target.addEventListener('touchend', preventDefault, {
                     passive: false
                 });
                 target.current = event.target;
             }
             setLongPressTriggered(false);
             timeout.current = setTimeout(() => {
-                onLongPress && onLongPress(event as any);
+                onLongPress(event);
                 setLongPressTriggered(true);
             }, delay);
         },
@@ -29,10 +29,10 @@ export function useLongPress(
     const clear = useCallback(
         (event: any, shouldTriggerClick = true) => {
             timeout.current && clearTimeout(timeout.current);
-            shouldTriggerClick && !longPressTriggered && onClick && onClick(event);
+            shouldTriggerClick && !longPressTriggered && onClick(event);
             setLongPressTriggered(false);
             if (shouldPreventDefault && target.current) {
-                target.current.removeEventListener('touchend', preventDefault as any);
+                target.current.removeEventListener('touchend', preventDefault);
             }
         },
         [shouldPreventDefault, onClick, longPressTriggered]
@@ -41,12 +41,12 @@ export function useLongPress(
     return {
         onMouseDown: (e: any) => start(e),
         onTouchStart: (e: any) => start(e),
-        onMouseUp: (e: any) => clear(e, true),
+        onMouseUp: (e: any) => clear(e),
         onMouseLeave: (e: any) => clear(e, false),
-        onTouchEnd: (e: any) => clear(e, true),
+        onTouchEnd: (e: any) => clear(e),
         onContextMenu: (e: any) => {
             e.preventDefault();
-            onLongPress && onLongPress(e as any);
+            onLongPress(e);
         }
     };
 }

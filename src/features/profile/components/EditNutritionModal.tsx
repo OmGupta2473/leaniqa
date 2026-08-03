@@ -18,7 +18,6 @@ export function EditNutritionModal({ isOpen, onClose, calculatedData }: EditNutr
   const [protein, setProtein] = useState(String(calculatedData?.targetMacros?.protein || ''));
   const [carbs, setCarbs] = useState(String(calculatedData?.targetMacros?.carbs || ''));
   const [fat, setFat] = useState(String(calculatedData?.targetMacros?.fat || ''));
-  const [fiber, setFiber] = useState(String(calculatedData?.targetMacros?.fiber || ''));
   const [water, setWater] = useState(String(calculatedData?.waterLitres || ''));
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -31,7 +30,6 @@ export function EditNutritionModal({ isOpen, onClose, calculatedData }: EditNutr
       setProtein(String(calculatedData?.targetMacros?.protein || calculatedData?.proteinMid || ''));
       setCarbs(String(calculatedData?.targetMacros?.carbs || ''));
       setFat(String(calculatedData?.targetMacros?.fat || ''));
-      setFiber(String(calculatedData?.targetMacros?.fiber || calculatedData?.fiberMin || ''));
       setWater(String(calculatedData?.waterLitres || ''));
       setManualOverride(calculatedData?.manualOverrides?.carbs || calculatedData?.manualOverrides?.fat || false);
       setErrorMsg('');
@@ -82,7 +80,6 @@ export function EditNutritionModal({ isOpen, onClose, calculatedData }: EditNutr
       const targetCarbs = parseFloat(carbs);
       const targetFat = parseFloat(fat);
       const targetWater = parseFloat(water);
-      const targetFiber = parseFloat(fiber);
       
       if (isNaN(targetCals) || targetCals < 500 || targetCals > 10000) {
         throw new Error("Please enter a valid daily calorie goal (500-10000)");
@@ -95,9 +92,6 @@ export function EditNutritionModal({ isOpen, onClose, calculatedData }: EditNutr
       }
       if (isNaN(targetFat) || targetFat < 0 || targetFat > 500) {
         throw new Error("Please enter a valid fat goal (0-500g)");
-      }
-      if (isNaN(targetFiber) || targetFiber < 0 || targetFiber > 150) {
-        throw new Error("Please enter a valid fiber goal (0-150g)");
       }
       if (isNaN(targetWater) || targetWater < 0 || targetWater > 20) {
         throw new Error("Please enter a valid water goal (0-20L)");
@@ -129,7 +123,6 @@ export function EditNutritionModal({ isOpen, onClose, calculatedData }: EditNutr
 
       // Always include water_target to ensure it saves
       profilePayload.water_target = targetWater;
-      profilePayload.fiber_target = targetFiber;
 
       if (Object.keys(profilePayload).length > 0) {
         await profileService.upsertProfile(profilePayload);
@@ -202,22 +195,12 @@ export function EditNutritionModal({ isOpen, onClose, calculatedData }: EditNutr
             />
           </div>
 
-          
           <div className="space-y-2">
             <label className="text-[13px] font-medium text-[rgba(255,255,255,0.6)] uppercase tracking-wider">Daily Fat (g)</label>
             <input 
               type="number" 
               value={fat} 
               onChange={e => handleMacroChange('fat', e.target.value)}
-              className="w-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] rounded-xl px-4 py-3 text-white text-[16px] outline-none focus:border-[#D4FF00] transition-colors"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-[13px] font-medium text-[rgba(255,255,255,0.6)] uppercase tracking-wider">Daily Fiber (g)</label>
-            <input 
-              type="number" 
-              value={fiber} 
-              onChange={e => setFiber(e.target.value)}
               className="w-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] rounded-xl px-4 py-3 text-white text-[16px] outline-none focus:border-[#D4FF00] transition-colors"
             />
           </div>
