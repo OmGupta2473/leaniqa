@@ -394,7 +394,20 @@ export function MealLoggerPage() {
             if (!currentSession?.access_token) throw new Error('Authentication failure');
 
             const edgeStart = Date.now();
-            const { data, error } = await supabase.functions.invoke('parse-meal', { body: { text, remainingCalories, remainingProtein, mealType: selectedMealSlot }, headers: { Authorization: `Bearer ${currentSession.access_token}` } });
+            // Call local Express API for parsing instead of Edge Function
+            const res = await fetch('/api/parse-meal', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text, remainingCalories, remainingProtein, mealType: selectedMealSlot, userGoal: onboardingData?.goal })
+            });
+            let data = null;
+            let error = null;
+            if (res.ok) {
+              data = await res.json();
+            } else {
+              const errData = await res.json().catch(() => ({}));
+              error = new Error(errData.error || 'Failed to parse meal via API');
+            }
             aiResponseDuration = Date.now() - edgeStart;
 
             if (error) {
