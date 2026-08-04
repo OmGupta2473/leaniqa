@@ -817,7 +817,7 @@ export function MealLoggerPage() {
                   <div className="flex items-center gap-2 text-[13px] text-[rgba(235,235,245,0.5)]">
                     <div className="w-1.5 h-1.5 rounded-full bg-[#D4FF00] shadow-[0_0_6px_#D4FF00] animate-pulse-glow" style={{ animation: 'pulseGlow 2s infinite ease-in-out' }} />
                     <style>{'@keyframes pulseGlow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }'}</style>
-                    <span>Gemini AI Active</span>
+                    <span>Groq AI Active</span>
                   </div>
                 )}
               </div>

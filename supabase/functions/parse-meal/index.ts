@@ -182,8 +182,17 @@ class GroqParser implements MealParser {
     
     console.log(`[parse-meal] GroqParser started`);
     try {
-      const prompt = `Analyze this meal: "${context.originalText}". 
-Meal type: ${context.mealType}. 
+      const prompt = `You are a precise nutrition expert for Indian and international foods. Analyze this meal: "${context.originalText}". Meal type: ${context.mealType || 'unspecified'}. The user has ${context.remainingCalories ?? 'unknown'} kcal remaining today and needs ${context.remainingProtein ?? 'unknown'}g more protein. User's goal: ${context.userGoal}.
+Instructions:
+1. Identify each food item and its exact quantity from the text. Never default to 100g unless explicitly specified in grams.
+2. Apply quantity scaling strictly. Final nutrition MUST be: Serving Nutrition * Quantity.
+3. Standard conversions: 1 scoop whey = 25g protein, 1 egg = 50g, 1 almond = 1.2g, 1 medium banana, 1 bowl sprouts, 1 cup rice, 1 roti = 40g, dal bowl = 200g, sabzi = 150g.
+4. Confidence: 95-100 for named items with quantities, 80-94 for named items without quantities, 60-79 for ambiguous descriptions.
+5. Coaching tip: Generate personalized recommendations based on the user's remaining daily targets and goal.
+   - If protein is low, suggest high-protein foods.
+   - If calories are almost exhausted, recommend low-calorie protein sources.
+   - If both targets are nearly achieved, acknowledge good progress.
+   - Keep it concise, natural, and context-aware.
 Generate structured JSON only. Never generate conversational text or markdown blocks.
 Format:
 {
@@ -229,13 +238,8 @@ Format:
       const parsed = JSON.parse(content);
       const data = MealSchema.parse(parsed);
       
-      if (data.confidence >= 80) { // Slightly lower threshold to prevent unnecessary Gemini fallbacks
-        console.log(`[parse-meal] GroqParser succeeded with confidence ${data.confidence}`);
-        return data;
-      } else {
-        console.log(`[parse-meal] GroqParser low confidence (${data.confidence}), skipping`);
-        return null; // Genuine uncertainty -> Fallback to Gemini
-      }
+      console.log(`[parse-meal] GroqParser succeeded with confidence ${data.confidence}`);
+      return data;
     } catch (err: any) {
       throw err;
     }
@@ -501,8 +505,7 @@ serve(async (req) => {
     // Pipeline Execution
     const parsers = [
       { name: 'KnowledgeBase', parser: new KnowledgeBaseParser() },
-      { name: 'Groq', parser: new GroqParser() },
-      { name: 'Gemini', parser: new GeminiParser() }
+      { name: 'Groq', parser: new GroqParser() }
     ];
 
     for (const { name, parser } of parsers) {
