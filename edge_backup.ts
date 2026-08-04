@@ -175,13 +175,12 @@ class KnowledgeBaseParser implements MealParser {
 // ----------------------------------------------------------------------------
 class GroqParser implements MealParser {
   async parse(context: ParseContext): Promise<MealResult | null> {
-    console.log(JSON.stringify({ level: "info", stage: "GroqParser", message: "Starting Groq API request", request_id: context.requestId }));
-    
     if (!context.groqApiKey) {
-      console.error(JSON.stringify({ level: "error", stage: "GroqParser", message: "GROQ_API_KEY is missing", request_id: context.requestId }));
-      throw new Error("Server configuration error: GROQ_API_KEY is not configured.");
+      console.error("[parse-meal] GROQ_API_KEY is missing from environment variables.");
+      throw new Error("Server configuration error: GROQ_API_KEY is not configured. Please add it to Supabase Dashboard -> Edge Functions -> Secrets.");
     }
     
+    console.log(`[parse-meal] GroqParser started`);
     try {
       const prompt = `You are a precise nutrition expert for Indian and international foods. Analyze this meal: "${context.originalText}". Meal type: ${context.mealType || 'unspecified'}. The user has ${context.remainingCalories ?? 'unknown'} kcal remaining today and needs ${context.remainingProtein ?? 'unknown'}g more protein. User's goal: ${context.userGoal}.
 Instructions:
@@ -201,17 +200,14 @@ Format:
   "protein": number,
   "fat": number,
   "carbs": number,
-  "confidence": number,
+  "confidence": number, // 0-100
   "foods_detected": string[],
   "coaching_tip": string
 }`;
 
-      console.log(JSON.stringify({ level: "info", stage: "GroqParser_Request", request_payload: { model: "llama3-70b-8192", prompt_length: prompt.length }, request_id: context.requestId }));
-
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
-      
-      const fetchStart = Date.now();
+
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -219,7 +215,7 @@ Format:
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "llama3-70b-8192", // Restoring original versatile model just in case
+          model: "llama3-70b-8192",
           messages: [{ role: "user", content: prompt }],
           response_format: { type: "json_object" },
           temperature: 0.1
@@ -229,25 +225,17 @@ Format:
       
       clearTimeout(timeoutId);
 
-      console.log(JSON.stringify({ level: "info", stage: "GroqParser_Response", status: res.status, latency_ms: Date.now() - fetchStart, request_id: context.requestId }));
-
       if (!res.ok) {
         const errText = await res.text();
-        console.error(JSON.stringify({ level: "error", stage: "GroqParser_HTTP", status: res.status, body: errText, request_id: context.requestId }));
         throw new Error(`Groq API Error ${res.status}: ${errText}`);
       }
       
       const json = await res.json();
-      console.log(JSON.stringify({ level: "info", stage: "GroqParser_JSON", json_keys: Object.keys(json), request_id: context.requestId }));
-
-      const content = json.choices?.[0]?.message?.content;
+      const content = json.choices[0]?.message?.content;
       if (!content) {
-        console.error(JSON.stringify({ level: "error", stage: "GroqParser_Content", json: JSON.stringify(json), request_id: context.requestId }));
         throw new Error("Groq API returned empty response");
       }
       
-      console.log(JSON.stringify({ level: "info", stage: "GroqParser_RawContent", contentPreview: content.substring(0, 100), request_id: context.requestId }));
-
       let parsed;
       try {
         const jsonMatch = content.match(/\{[\s\S]*\}/);
@@ -256,23 +244,14 @@ Format:
         } else {
             parsed = JSON.parse(content);
         }
-      } catch (e: any) {
-          console.error(JSON.stringify({ level: "error", stage: "GroqParser_Parse", error: e.message, rawContent: content, request_id: context.requestId }));
+      } catch (e) {
           throw new Error("Failed to parse Groq JSON: " + content);
       }
-
-      let data;
-      try {
-        data = MealSchema.parse(parsed);
-      } catch (zodErr: any) {
-        console.error(JSON.stringify({ level: "error", stage: "GroqParser_Zod", error: zodErr.message, parsed_object: parsed, request_id: context.requestId }));
-        throw zodErr;
-      }
+      const data = MealSchema.parse(parsed);
       
-      console.log(JSON.stringify({ level: "info", stage: "GroqParser_Success", confidence: data.confidence, request_id: context.requestId }));
+      console.log(`[parse-meal] GroqParser succeeded with confidence ${data.confidence}`);
       return data;
     } catch (err: any) {
-      console.error(JSON.stringify({ level: "error", stage: "GroqParser_Exception", error: err.message || String(err), request_id: context.requestId }));
       throw err;
     }
   }
@@ -515,7 +494,6 @@ serve(async (req) => {
     }
 
     if (!data) {
-      console.error(JSON.stringify({ level: "error", stage: "Pipeline", message: "All parsers exhausted", lastError, request_id: requestId }));
       throw new Error("AI parsing failed. Details: " + lastError);
     }
 
