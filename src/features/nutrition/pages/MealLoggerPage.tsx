@@ -398,6 +398,7 @@ export function MealLoggerPage() {
             const res = await fetch('/api/parse-meal', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
               body: JSON.stringify({ text, remainingCalories, remainingProtein, mealType: selectedMealSlot, userGoal: onboardingData?.goal })
             });
             let data = null;
@@ -406,7 +407,7 @@ export function MealLoggerPage() {
               data = await res.json();
             } else {
               const errData = await res.json().catch(() => ({}));
-              error = new Error(errData.error || 'Failed to parse meal via API');
+              error = new Error(errData.error || 'Failed to parse meal via API. If you are using incognito mode or blocking third-party cookies, this feature may not work in the preview environment.');
             }
             aiResponseDuration = Date.now() - edgeStart;
 

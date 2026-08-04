@@ -10,6 +10,7 @@ async function startServer() {
 
   app.use(cors());
   app.use(express.json());
+  app.options("*", cors());
 
   // API routes
   app.post("/api/parse-meal", async (req, res) => {
