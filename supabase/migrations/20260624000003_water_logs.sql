@@ -5,7 +5,9 @@ CREATE TABLE IF NOT EXISTS public.water_logs (
   amount_ml INTEGER NOT NULL,
   date TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
 ALTER TABLE public.water_logs ENABLE ROW LEVEL SECURITY;
+
 CREATE POLICY "user_own_water" ON public.water_logs 
   FOR ALL 
   USING (auth.uid() = user_id) 
