@@ -315,6 +315,13 @@ const memoryCache = new Map<string, MealResult>();
 // Main Handler
 // ----------------------------------------------------------------------------
 serve(async (req) => {
+  console.log(JSON.stringify({
+    level: "debug",
+    message: "Edge function invoked",
+    method: req.method,
+    url: req.url,
+  }));
+
   const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -327,7 +334,15 @@ serve(async (req) => {
 
   try {
     body = await req.json();
-  } catch {
+    console.log(JSON.stringify({
+      level: "debug",
+      message: "Parsed request body",
+      request_id: requestId,
+      bodyKeys: Object.keys(body),
+      mealText: body.text ? body.text.substring(0, 50) : null
+    }));
+  } catch (e) {
+    console.error("Failed to parse JSON body:", e);
     return new Response(JSON.stringify({ error: "Invalid request body" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
