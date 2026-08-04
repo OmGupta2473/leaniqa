@@ -7,17 +7,14 @@ CREATE TABLE IF NOT EXISTS public.subscriptions (
   beta_expires_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT now()
 );
-
 -- Enable RLS
 ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
-
 -- Create policy for users to manage their own subscriptions
 CREATE POLICY "Users can manage their own subscriptions" 
 ON public.subscriptions 
 FOR ALL 
 USING (auth.uid() = user_id) 
 WITH CHECK (auth.uid() = user_id);
-
 -- 2. Create get_or_create_subscription RPC
 CREATE OR REPLACE FUNCTION get_or_create_subscription(p_user_id UUID)
 RETURNS public.subscriptions AS $$
