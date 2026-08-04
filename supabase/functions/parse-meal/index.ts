@@ -206,7 +206,7 @@ Format:
 }`;
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3500);
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
@@ -215,7 +215,7 @@ Format:
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
+          model: "llama3-70b-8192",
           messages: [{ role: "user", content: prompt }],
           response_format: { type: "json_object" },
           temperature: 0.1
@@ -248,67 +248,6 @@ Format:
 
 // ----------------------------------------------------------------------------
 // Stage 6 - Gemini Fallback
-// ----------------------------------------------------------------------------
-class GeminiParser implements MealParser {
-  async parse(context: ParseContext): Promise<MealResult | null> {
-    if (!context.geminiApiKey) return null;
-    
-    console.log(`[parse-meal] GeminiParser started (Fallback)`);
-    try {
-      const ai = new GoogleGenAI({ apiKey: context.geminiApiKey });
-      const prompt = `You are a precise nutrition expert for Indian and international foods. Analyze this meal: "${context.originalText}". Meal type: ${context.mealType || 'unspecified'}. The user has ${context.remainingCalories ?? 'unknown'} kcal remaining today and needs ${context.remainingProtein ?? 'unknown'}g more protein. User's goal: ${context.userGoal}.
-Instructions:
-1. Identify each food item and its exact quantity from the text. Never default to 100g unless explicitly specified in grams.
-2. Apply quantity scaling strictly. Final nutrition MUST be: Serving Nutrition * Quantity.
-3. Standard conversions: 1 egg = 50g, 1 almond = 1.2g, 1 medium banana, 1 bowl sprouts, 1 cup rice, 1 roti = 40g, dal bowl = 200g, sabzi = 150g.
-4. Confidence: 95-100 for named items with quantities, 80-94 for named items without quantities, 60-79 for ambiguous descriptions.
-5. Coaching tip: Generate personalized recommendations based on the user's remaining daily targets and goal.
-   - If protein is low, suggest high-protein foods.
-   - If calories are almost exhausted, recommend low-calorie protein sources.
-   - If both targets are nearly achieved, acknowledge good progress.
-   - Keep it concise, natural, and context-aware.
-Respond with valid JSON only.`;
-
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              calories: { type: Type.NUMBER },
-              protein: { type: Type.NUMBER },
-              fat: { type: Type.NUMBER },
-              carbs: { type: Type.NUMBER },
-              confidence: { type: Type.NUMBER },
-              foods_detected: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING },
-              },
-              coaching_tip: { type: Type.STRING },
-            },
-            required: [
-              "calories",
-              "protein",
-              "fat",
-              "carbs",
-              "confidence",
-              "foods_detected",
-              "coaching_tip"
-            ],
-          },
-        },
-      });
-
-      const parsed = JSON.parse(response.text || "{}");
-      return MealSchema.parse(parsed);
-    } catch (err: any) {
-      throw err;
-    }
-  }
-}
-
 // ----------------------------------------------------------------------------
 // Stage 7 - Nutrition Validation
 // ----------------------------------------------------------------------------
@@ -593,7 +532,7 @@ serve(async (req) => {
 
     // Increment Usage
     const incStart = Date.now();
-    if (parserUsed === 'Groq' || parserUsed === 'Gemini') {
+    if (parserUsed === 'Groq') {
       const { error: incrementError } = await supabase.rpc("increment_api_usage", {
         p_user_id: user.id,
         p_endpoint: endpoint,

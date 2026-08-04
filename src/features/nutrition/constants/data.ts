@@ -227,8 +227,21 @@ export function lookupCachedMeal(text: string): (CachedMealMacros & { scaledCalo
 
   const quantity = extracted?.quantity ?? 1;
 
-  if (MealMacroCache[searchKey]) {
-    const macros = MealMacroCache[searchKey];
+  let matchedKey = searchKey;
+  if (!MealMacroCache[searchKey]) {
+    // Fuzzy matching: find a cache key that is contained in the search key (e.g. "whey protein" inside "alpha whey protein")
+    const words = searchKey.split(' ');
+    const possibleKeys = Object.keys(MealMacroCache);
+    for (const pKey of possibleKeys) {
+      if (searchKey.includes(pKey) || pKey.includes(searchKey)) {
+        matchedKey = pKey;
+        break;
+      }
+    }
+  }
+
+  if (MealMacroCache[matchedKey]) {
+    const macros = MealMacroCache[matchedKey];
     const result = scaleMacros(macros, quantity, extracted?.unit);
     
     console.group('Cache Lookup Audit: ' + text);
