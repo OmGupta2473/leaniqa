@@ -226,7 +226,8 @@ Format:
       clearTimeout(timeoutId);
 
       if (!res.ok) {
-        throw new Error(`Groq API Error: ${res.status}`);
+        const errText = await res.text();
+        throw new Error(`Groq API Error ${res.status}: ${errText}`);
       }
       
       const json = await res.json();
@@ -235,7 +236,17 @@ Format:
         throw new Error("Groq API returned empty response");
       }
       
-      const parsed = JSON.parse(content);
+      let parsed;
+      try {
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            parsed = JSON.parse(jsonMatch[0]);
+        } else {
+            parsed = JSON.parse(content);
+        }
+      } catch (e) {
+          throw new Error("Failed to parse Groq JSON: " + content);
+      }
       const data = MealSchema.parse(parsed);
       
       console.log(`[parse-meal] GroqParser succeeded with confidence ${data.confidence}`);
@@ -440,6 +451,7 @@ serve(async (req) => {
 
     let data: MealResult | null = null;
     let parserUsed = '';
+    let lastError = '';
 
     // Pipeline Execution
     const parsers = [
@@ -463,6 +475,7 @@ serve(async (req) => {
         if (err.message?.includes("Server configuration error")) {
           throw err;
         }
+        lastError = err.message || String(err);
         data = null;
       }
       
@@ -481,7 +494,7 @@ serve(async (req) => {
     }
 
     if (!data) {
-      throw new Error("All AI parsing stages failed completely");
+      throw new Error("AI parsing failed. Details: " + lastError);
     }
 
     // Stage 7 - Nutrition Validation
