@@ -9,6 +9,7 @@ import {
   Send, Loader2, Dumbbell, Lightbulb, Sun, Sunrise, Moon,  Plus, X, ChevronLeft, ChevronRight, ArrowRight, ChevronDown, 
  AlertTriangle } from "lucide-react";
 import { EmptyState } from '@/shared/components/EmptyState';
+import { CustomMealModal } from '../components/CustomMealModal';
 import { cn } from "@/shared/utils/utils";
 import { SmoothInput } from "@/shared/components/SmoothInput";
 
@@ -109,11 +110,18 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
                 >
                   <div className="flex-1 min-w-0 pr-1 flex flex-col justify-center items-start gap-1">
                     <div className="text-[13px] leading-tight font-medium text-[rgba(255,255,255,0.9)] capitalize break-words whitespace-normal break-all sm:break-normal">{m.meal_text}</div>
-                    {m._localOnly && (
-                      <span className="text-[9px] bg-[rgba(255,255,255,0.1)] text-white px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 shrink-0">
-                        Offline
-                      </span>
-                    )}
+                    <div className="flex gap-1.5 mt-0.5">
+                      {m._localOnly && (
+                        <span className="text-[9px] bg-[rgba(255,255,255,0.1)] text-white px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 shrink-0">
+                          Offline
+                        </span>
+                      )}
+                      {m.meal_source === 'manual' && (
+                        <span className="text-[9px] bg-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.5)] px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wider flex items-center gap-1 shrink-0">
+                          Manual
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <span className="text-[8.5px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-1.5 py-0.5 rounded-full font-bold tracking-wide whitespace-nowrap">{m.calories} KCAL</span>
@@ -180,6 +188,7 @@ export function MealLoggerPage() {
   const [pendingMeal, setPendingMeal] = useState<{ text: string; data: any } | null>(null);
   const [failedMealText, setFailedMealText] = useState<string | null>(null);
   const [failedMealError, setFailedMealError] = useState<string | null>(null);
+  const [isCustomMealModalOpen, setIsCustomMealModalOpen] = useState(false);
   const [retryCount, setRetryCount] = useState<number>(0);
 
   const isToday = (d: Date) => {
@@ -347,6 +356,74 @@ export function MealLoggerPage() {
       });
     }
   });
+
+  
+  const customMealMutation = useMutation({
+    mutationFn: async (mealData: any) => {
+      if (typeof window !== 'undefined' && !navigator.onLine) {
+        devLog('Offline: queueing custom meal');
+        const { offlineSyncService } = await import('@/shared/services/offlineSyncService');
+        offlineSyncService.enqueue({ type: 'ADD_MEAL', payload: mealData });
+        return { ...mealData, _localOnly: true };
+      }
+      return await mealService.addMeal(mealData);
+    },
+    onMutate: async (mealData) => {
+      const dateKeyStr = selectedDate.getFullYear() + '-' + String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + String(selectedDate.getDate()).padStart(2, '0');
+      const now = new Date();
+      const isToday = selectedDate.getFullYear() === now.getFullYear() && 
+                      selectedDate.getMonth() === now.getMonth() && 
+                      selectedDate.getDate() === now.getDate();
+      
+      await queryClient.cancelQueries({ queryKey: ["meals", "date", dateKeyStr] });
+      if (isToday) {
+        await queryClient.cancelQueries({ queryKey: ["meals"] });
+      }
+
+      const previousMeals = queryClient.getQueryData<any[]>(["meals", "date", dateKeyStr]);
+      const previousTodayMeals = queryClient.getQueryData<any[]>(["meals"]);
+      
+      const newMealObj = { ...mealData, id: 'temp-' + Date.now(), _localOnly: true };
+
+      if (previousMeals) {
+        queryClient.setQueryData(["meals", "date", dateKeyStr], [...previousMeals, newMealObj]);
+      }
+      if (isToday && previousTodayMeals) {
+        queryClient.setQueryData(["meals"], [...previousTodayMeals, newMealObj]);
+      }
+
+      return { previousMeals, previousTodayMeals, isToday };
+    },
+    onError: (err, mealData, context) => {
+      const dateKeyStr = selectedDate.getFullYear() + '-' + String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + String(selectedDate.getDate()).padStart(2, '0');
+      if (context?.previousMeals) {
+        queryClient.setQueryData(["meals", "date", dateKeyStr], context.previousMeals);
+      }
+      if (context?.isToday && context?.previousTodayMeals) {
+        queryClient.setQueryData(["meals"], context.previousTodayMeals);
+      }
+    },
+    onSettled: () => {
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["meals"] }),
+        queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] }),
+        queryClient.invalidateQueries({ queryKey: ["complianceScore"] })
+      ]).catch(console.error);
+    },
+    onSuccess: (data) => {
+      analytics.trackEvent('Custom Meal Logged', { calories: data.calories });
+      haptics.success();
+      setIsCustomMealModalOpen(false);
+      addChatMessage({ role: 'ai', text: `✓ Logged Custom Meal: ${data.meal_text}` });
+      setTimeout(() => {
+        setModalOpen(false);
+      }, 800);
+    }
+  });
+
+  const handleCustomMealSave = (mealData: any) => {
+    customMealMutation.mutate(mealData);
+  };
 
   const handleDeleteMeal = (id: string) => {
     deleteMealMutation.mutate(id);
@@ -967,8 +1044,11 @@ export function MealLoggerPage() {
                 </AnimatePresence>
               </div>
 
+
               {/* Input row */}
-              <div className="glass-strong border-t border-[rgba(255,255,255,0.06)] px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex gap-3 items-center">
+              <div className="glass-strong border-t border-[rgba(255,255,255,0.06)] px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex flex-col gap-3">
+                <div className="flex gap-3 items-center">
+
                 <input aria-label="Meal description"
                   className="input-apple flex-1 text-[16px] placeholder:text-[rgba(255,255,255,0.3)] bg-[rgba(255,255,255,0.03)]"
                   style={{ borderRadius: '14px', border: '0.5px solid rgba(255,255,255,0.15)', padding: '12px 16px' }}
@@ -1000,13 +1080,30 @@ export function MealLoggerPage() {
                     <ArrowRight size={18} strokeWidth={2} color="#0A0A0A" />
                   )}
                 </motion.button>
+                </div>
+                <button
+                  onClick={() => setIsCustomMealModalOpen(true)}
+                  className="flex items-center justify-center gap-1.5 text-[rgba(255,255,255,0.5)] hover:text-white text-[13px] font-medium transition-colors w-fit mx-auto pb-1"
+                >
+                  <Plus size={14} />
+                  Create Custom Meal
+                </button>
               </div>
             </motion.div>
           </motion.div>
+
         )}
         </AnimatePresence>,
         document.body
       )}
+      
+      <CustomMealModal
+        isOpen={isCustomMealModalOpen}
+        onClose={() => setIsCustomMealModalOpen(false)}
+        onSave={handleCustomMealSave}
+        defaultSlot={selectedMealSlot || undefined}
+      />
     </>
   );
+
 }
