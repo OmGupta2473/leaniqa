@@ -1,6 +1,5 @@
 /* LOCAL DEV SETUP ... */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { GoogleGenAI, Type } from "npm:@google/genai";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -18,6 +17,7 @@ const MealSchema = z.object({
   protein: z.number(),
   fat: z.number(),
   carbs: z.number(),
+  fiber: z.number(),
   confidence: z.number(),
   foods_detected: z.array(z.string()),
   coaching_tip: z.string(),
@@ -33,7 +33,6 @@ export interface ParseContext {
   remainingProtein: number | string;
   userGoal: string;
   groqApiKey?: string;
-  geminiApiKey?: string;
   requestId: string;
 }
 
@@ -87,25 +86,25 @@ function normalizeInput(input: string): string {
 // ----------------------------------------------------------------------------
 // Stage 2 & 3 - Knowledge Base & Rule-Based Parser
 // ----------------------------------------------------------------------------
-const KnowledgeBase: Record<string, { calories: number, protein: number, fat: number, carbs: number, serving: string, perUnit?: boolean, unitWeight?: number }> = {
-  "roti": { calories: 120, protein: 4, fat: 3, carbs: 20, serving: "1 piece (40g)", perUnit: true, unitWeight: 40 },
-  "rice": { calories: 130, protein: 3, fat: 0.5, carbs: 28, serving: "100g (cooked)", perUnit: false },
-  "dal": { calories: 150, protein: 8, fat: 4, carbs: 20, serving: "1 bowl (200g)", perUnit: false },
-  "paneer": { calories: 265, protein: 18, fat: 20, carbs: 3, serving: "100g", perUnit: false },
-  "milk": { calories: 60, protein: 3.2, fat: 3, carbs: 5, serving: "100ml", perUnit: false },
-  "egg": { calories: 70, protein: 6, fat: 5, carbs: 0.5, serving: "1 large (50g)", perUnit: true, unitWeight: 50 },
-  "chicken breast": { calories: 165, protein: 31, fat: 3.6, carbs: 0, serving: "100g", perUnit: false },
-  "apple": { calories: 52, protein: 0.3, fat: 0.2, carbs: 14, serving: "100g", perUnit: false },
-  "banana": { calories: 89, protein: 1.1, fat: 0.3, carbs: 23, serving: "100g", perUnit: false },
-  "poha": { calories: 180, protein: 4, fat: 5, carbs: 30, serving: "1 bowl (150g)", perUnit: false },
-  "idli": { calories: 40, protein: 1.5, fat: 0.2, carbs: 8, serving: "1 piece (40g)", perUnit: true, unitWeight: 40 },
-  "dosa": { calories: 130, protein: 3, fat: 4, carbs: 20, serving: "1 plain (100g)", perUnit: true, unitWeight: 100 },
-  "sambar": { calories: 150, protein: 6, fat: 5, carbs: 20, serving: "1 bowl", perUnit: false },
-  "upma": { calories: 200, protein: 5, fat: 7, carbs: 28, serving: "1 bowl", perUnit: false },
-  "oats": { calories: 389, protein: 16.9, fat: 6.9, carbs: 66, serving: "100g", perUnit: false },
-  "rajma": { calories: 140, protein: 8.7, fat: 0.5, carbs: 22.8, serving: "100g", perUnit: false },
-  "chole": { calories: 164, protein: 8.9, fat: 2.6, carbs: 27.4, serving: "100g", perUnit: false },
-  "soya": { calories: 345, protein: 52, fat: 0.5, carbs: 33, serving: "100g", perUnit: false },
+const KnowledgeBase: Record<string, { calories: number, protein: number, fat: number, carbs: number, fiber: number, serving: string, perUnit?: boolean, unitWeight?: number }> = {
+  "roti": { calories: 120, protein: 4, fat: 3, carbs: 20, fiber: 3, serving: "1 piece (40g)", perUnit: true, unitWeight: 40 },
+  "rice": { calories: 130, protein: 3, fat: 0.5, carbs: 28, fiber: 0.4, serving: "100g (cooked)", perUnit: false },
+  "dal": { calories: 150, protein: 8, fat: 4, carbs: 20, fiber: 8, serving: "1 bowl (200g)", perUnit: false },
+  "paneer": { calories: 265, protein: 18, fat: 20, carbs: 3, fiber: 0, serving: "100g", perUnit: false },
+  "milk": { calories: 60, protein: 3.2, fat: 3, carbs: 5, fiber: 0, serving: "100ml", perUnit: false },
+  "egg": { calories: 70, protein: 6, fat: 5, carbs: 0.5, fiber: 0, serving: "1 large (50g)", perUnit: true, unitWeight: 50 },
+  "chicken breast": { calories: 165, protein: 31, fat: 3.6, carbs: 0, fiber: 0, serving: "100g", perUnit: false },
+  "apple": { calories: 52, protein: 0.3, fat: 0.2, carbs: 14, fiber: 2.4, serving: "100g", perUnit: false },
+  "banana": { calories: 89, protein: 1.1, fat: 0.3, carbs: 23, fiber: 2.6, serving: "100g", perUnit: false },
+  "poha": { calories: 180, protein: 4, fat: 5, carbs: 30, fiber: 2, serving: "1 bowl (150g)", perUnit: false },
+  "idli": { calories: 40, protein: 1.5, fat: 0.2, carbs: 8, fiber: 1, serving: "1 piece (40g)", perUnit: true, unitWeight: 40 },
+  "dosa": { calories: 130, protein: 3, fat: 4, carbs: 20, fiber: 2, serving: "1 plain (100g)", perUnit: true, unitWeight: 100 },
+  "sambar": { calories: 150, protein: 6, fat: 5, carbs: 20, fiber: 3, serving: "1 bowl", perUnit: false },
+  "upma": { calories: 200, protein: 5, fat: 7, carbs: 28, fiber: 2, serving: "1 bowl", perUnit: false },
+  "oats": { calories: 389, protein: 16.9, fat: 6.9, carbs: 66, fiber: 10.6, serving: "100g", perUnit: false },
+  "rajma": { calories: 140, protein: 8.7, fat: 0.5, carbs: 22.8, fiber: 6.4, serving: "100g", perUnit: false },
+  "chole": { calories: 164, protein: 8.9, fat: 2.6, carbs: 27.4, fiber: 7.6, serving: "100g", perUnit: false },
+  "soya": { calories: 345, protein: 52, fat: 0.5, carbs: 33, fiber: 13, serving: "100g", perUnit: false },
 };
 
 class KnowledgeBaseParser implements MealParser {
@@ -117,6 +116,7 @@ class KnowledgeBaseParser implements MealParser {
     let totalProtein = 0;
     let totalFat = 0;
     let totalCarbs = 0;
+    let totalFiber = 0;
     const foodsDetected: string[] = [];
 
     for (const part of parts) {
@@ -148,6 +148,7 @@ class KnowledgeBaseParser implements MealParser {
       totalProtein += kbInfo.protein * multiplier;
       totalFat += kbInfo.fat * multiplier;
       totalCarbs += kbInfo.carbs * multiplier;
+      totalFiber += kbInfo.fiber * multiplier;
       
       const detectedName = quantityStr ? `${quantityStr}${unit || ''} ${food}` : (kbInfo.perUnit ? `1 ${food}` : `1 serving ${food}`);
       foodsDetected.push(detectedName);
@@ -160,6 +161,7 @@ class KnowledgeBaseParser implements MealParser {
         protein: Math.round(totalProtein),
         fat: Math.round(totalFat),
         carbs: Math.round(totalCarbs),
+        fiber: Math.round(totalFiber),
         confidence: 99,
         foods_detected: foodsDetected,
         coaching_tip: "Great, simple and tracked accurately!"
@@ -179,7 +181,7 @@ class GroqParser implements MealParser {
     
     if (!context.groqApiKey) {
       console.error(JSON.stringify({ level: "error", stage: "GroqParser", message: "GROQ_API_KEY is missing", request_id: context.requestId }));
-      throw new Error("Server configuration error: GROQ_API_KEY is not configured.");
+      throw new Error("Server configuration error:\nGROQ_API_KEY is missing.");
     }
     
     try {
@@ -201,6 +203,7 @@ Format:
   "protein": number,
   "fat": number,
   "carbs": number,
+  "fiber": number,
   "confidence": number,
   "foods_detected": string[],
   "coaching_tip": string
@@ -219,9 +222,8 @@ Format:
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "llama3-70b-8192", // Restoring original versatile model just in case
+          model: "llama-3.3-70b-versatile",
           messages: [{ role: "user", content: prompt }],
-          response_format: { type: "json_object" },
           temperature: 0.1
         }),
         signal: controller.signal
@@ -391,7 +393,6 @@ serve(async (req) => {
       remainingProtein,
       userGoal,
       groqApiKey: Deno.env.get("GROQ_API_KEY"),
-      geminiApiKey: Deno.env.get("GEMINI_API_KEY"),
       requestId
     };
 
