@@ -38,6 +38,7 @@ export interface DbMealLog {
   protein: number;
   fat: number;
   carbs: number;
+  fiber?: number;
   meal_time: string;
   tip?: string;
   meal_slot?: 'breakfast' | 'lunch' | 'dinner';

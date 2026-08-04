@@ -42,6 +42,7 @@ Format:
   "protein": number,
   "fat": number,
   "carbs": number,
+  "fiber": number,
   "confidence": number,
   "foods_detected": string[],
   "coaching_tip": string
@@ -56,7 +57,6 @@ Format:
         body: JSON.stringify({
           model: "llama-3.3-70b-versatile",
           messages: [{ role: "user", content: prompt }],
-          response_format: { type: "json_object" },
           temperature: 0.1
         })
       });
