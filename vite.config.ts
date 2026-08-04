@@ -2,51 +2,12 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig} from 'vite';
-import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(() => {
   return {
     plugins: [
       react(), 
       tailwindcss(),
-      VitePWA({
-        registerType: 'autoUpdate',
-        includeAssets: ['LQ-64.png', 'LQ-192.png', 'LQ-512.png', 'LQ.png'],
-        manifest: {
-          name: 'LeanIQA',
-          short_name: 'LeanIQA',
-          description: 'Your Smart Fitness Companion',
-          theme_color: '#080809',
-          background_color: '#080809',
-          display: 'standalone',
-          icons: [
-            {
-              src: 'LQ-192.png',
-              sizes: '192x192',
-              type: 'image/png'
-            },
-            {
-              src: 'LQ-512.png',
-              sizes: '512x512',
-              type: 'image/png'
-            },
-            {
-              src: 'LQ-512.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'any maskable'
-            },
-            {
-              src: 'LQ.png',
-              sizes: '1254x1254',
-              type: 'image/png'
-            }
-          ]
-        },
-        workbox: {
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}']
-        }
-      })
     ],
     build: { outDir: 'dist', emptyOutDir: true,
       sourcemap: true,
@@ -104,6 +65,13 @@ export default defineConfig(() => {
     server: {
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+          secure: false
+        }
+      }
     },
   };
 });
