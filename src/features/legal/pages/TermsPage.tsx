@@ -35,7 +35,7 @@ export function TermsPage() {
           <h2 className="text-2xl font-semibold mt-10 mb-4">2. Description of Service</h2>
           <p className="mb-6">
             LeanIQA is a fitness and nutrition tracking tool. The information provided by our application, 
-            including AI-generated nutritional estimates from Google Gemini, is for informational purposes only 
+            including AI-generated nutritional estimates from Groq AI, is for informational purposes only 
             and should not be considered medical advice. Always consult with a qualified healthcare provider 
             before starting any diet or exercise program.
           </p>

@@ -91,6 +91,8 @@ export const MealMacroCache: Record<string, CachedMealMacros> = {
   'whey protein': { calories: 120, protein: 25, fat: 1, carbs: 3, confidence: 97 },
   'protein shake': { calories: 150, protein: 25, fat: 2, carbs: 8, confidence: 90 },
   'protein powder': { calories: 120, protein: 24, fat: 1.5, carbs: 5, confidence: 88 },
+  'whey': { calories: 120, protein: 25, fat: 1, carbs: 3, confidence: 97 },
+  'scoop whey': { calories: 120, protein: 25, fat: 1, carbs: 3, confidence: 97 },
   
   // Vegetables (per 100g)
   'sprouts': { calories: 30, protein: 3, fat: 0.2, carbs: 6, confidence: 95, per100g: true, pieceWeightGrams: 100 },

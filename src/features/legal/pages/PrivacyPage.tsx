@@ -39,7 +39,7 @@ export function PrivacyPage() {
           <p className="mb-4">We use trusted third-party services to operate our application. Your data may be processed by:</p>
           <ul className="list-disc pl-6 mb-6 space-y-2 text-[rgba(255,255,255,0.7)]">
             <li><strong>Supabase:</strong> For authentication and secure database hosting.</li>
-            <li><strong>Google Gemini:</strong> For AI-powered meal parsing and nutrition estimation.</li>
+            <li><strong>Groq AI:</strong> For AI-powered meal parsing and nutrition estimation.</li>
             <li><strong>Sentry:</strong> For crash reporting and application stability monitoring.</li>
             <li><strong>PostHog:</strong> For usage analytics and feature improvement.</li>
           </ul>
