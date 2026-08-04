@@ -343,17 +343,32 @@ serve(async (req) => {
   try {
     // Authentication
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Unauthorized");
+    console.log(JSON.stringify({
+      level: "debug", request_id: requestId, stage: "auth", step: "check_header", has_header: !!authHeader
+    }));
+    if (!authHeader) throw new Error("Unauthorized: Missing Authorization header");
     
     const token = authHeader.replace("Bearer ", "");
+    console.log(JSON.stringify({
+      level: "debug", request_id: requestId, stage: "auth", step: "init_supabase", has_token: !!token
+    }));
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
+    console.log(JSON.stringify({
+      level: "debug", request_id: requestId, stage: "auth", step: "get_user"
+    }));
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) throw new Error("Unauthorized");
+    
+    if (authError || !user) {
+      console.log(JSON.stringify({
+        level: "error", request_id: requestId, stage: "auth", step: "get_user_failed", authError: authError?.message || "No user found"
+      }));
+      throw new Error("Unauthorized: Invalid token");
+    }
     userId = user.id;
 
     // Rate Limiting
@@ -609,8 +624,8 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    if (error.message === "Unauthorized") {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+    if (error.message?.startsWith("Unauthorized")) {
+      return new Response(JSON.stringify({ error: error.message }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
