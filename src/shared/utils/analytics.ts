@@ -11,6 +11,7 @@ export type EventName =
   | 'Meal Logged'
   | 'AI Parse Success'
   | 'AI Parse Failure'
+  | 'Meal Parse Analytics'
   | 'Custom Meal Logged'
   | 'Weekly Report Viewed'
   | 'Subscription Started'

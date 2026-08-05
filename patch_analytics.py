@@ -1,10 +1,10 @@
-with open("src/shared/utils/analytics.ts", "r") as f:
+import re
+
+with open("server.ts", "r") as f:
     content = f.read()
 
-content = content.replace(
-    "| 'AI Parse Failure'",
-    "| 'AI Parse Failure'\n  | 'Custom Meal Logged'"
-)
+content = content.replace("finalResult = await fetchWithRetry(p.name, p.fn, prompt);\n               finalResult.source = 'ai';",
+                          "finalResult = await fetchWithRetry(p.name, p.fn, prompt);\n               finalResult.source = 'ai';\n               finalResult.provider = p.name;")
 
-with open("src/shared/utils/analytics.ts", "w") as f:
+with open("server.ts", "w") as f:
     f.write(content)
