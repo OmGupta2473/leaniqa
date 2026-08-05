@@ -6,7 +6,7 @@ import { useAppStore } from "@/app/store";
 import { useChatStore } from "@/app/store";
 import { useNutritionStore } from "../store/nutritionStore";
 import {
-  Send, Loader2, Dumbbell, Lightbulb, Sun, Sunrise, Moon,  Plus, X, ChevronLeft, ChevronRight, ArrowRight, ChevronDown, 
+  Send, Loader2, Dumbbell, Lightbulb, Sun, Sunrise, Moon, Coffee, Plus, X, ChevronLeft, ChevronRight, ArrowRight, ChevronDown, 
  AlertTriangle } from "lucide-react";
 import { EmptyState } from '@/shared/components/EmptyState';
 import { CustomMealModal } from '../components/CustomMealModal';
@@ -266,6 +266,7 @@ export function MealLoggerPage() {
   const breakfastMeals = meals.filter(m => m.meal_slot === "breakfast");
   const lunchMeals = meals.filter(m => m.meal_slot === "lunch");
   const dinnerMeals = meals.filter(m => m.meal_slot === "dinner");
+  const snackMeals = meals.filter(m => m.meal_slot === "snack");
 
   const dailyTargetKcal = onboardingData?.dailyCalorieGoal || 0;
   const proteinTarget = onboardingData?.targetMacros?.protein || 0;
@@ -358,71 +359,20 @@ export function MealLoggerPage() {
   });
 
   
-  const customMealMutation = useMutation({
-    mutationFn: async (mealData: any) => {
-      if (typeof window !== 'undefined' && !navigator.onLine) {
-        devLog('Offline: queueing custom meal');
-        const { offlineSyncService } = await import('@/shared/services/offlineSyncService');
-        offlineSyncService.enqueue({ type: 'ADD_MEAL', payload: mealData });
-        return { ...mealData, _localOnly: true };
-      }
-      return await mealService.addMeal(mealData);
-    },
-    onMutate: async (mealData) => {
-      const dateKeyStr = selectedDate.getFullYear() + '-' + String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + String(selectedDate.getDate()).padStart(2, '0');
-      const now = new Date();
-      const isToday = selectedDate.getFullYear() === now.getFullYear() && 
-                      selectedDate.getMonth() === now.getMonth() && 
-                      selectedDate.getDate() === now.getDate();
-      
-      await queryClient.cancelQueries({ queryKey: ["meals", "date", dateKeyStr] });
-      if (isToday) {
-        await queryClient.cancelQueries({ queryKey: ["meals"] });
-      }
-
-      const previousMeals = queryClient.getQueryData<any[]>(["meals", "date", dateKeyStr]);
-      const previousTodayMeals = queryClient.getQueryData<any[]>(["meals"]);
-      
-      const newMealObj = { ...mealData, id: 'temp-' + Date.now(), _localOnly: true };
-
-      if (previousMeals) {
-        queryClient.setQueryData(["meals", "date", dateKeyStr], [...previousMeals, newMealObj]);
-      }
-      if (isToday && previousTodayMeals) {
-        queryClient.setQueryData(["meals"], [...previousTodayMeals, newMealObj]);
-      }
-
-      return { previousMeals, previousTodayMeals, isToday };
-    },
-    onError: (err, mealData, context) => {
-      const dateKeyStr = selectedDate.getFullYear() + '-' + String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + String(selectedDate.getDate()).padStart(2, '0');
-      if (context?.previousMeals) {
-        queryClient.setQueryData(["meals", "date", dateKeyStr], context.previousMeals);
-      }
-      if (context?.isToday && context?.previousTodayMeals) {
-        queryClient.setQueryData(["meals"], context.previousTodayMeals);
-      }
-    },
-    onSettled: () => {
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["meals"] }),
-        queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] }),
-        queryClient.invalidateQueries({ queryKey: ["complianceScore"] })
-      ]).catch(console.error);
-    },
-    onSuccess: (data) => {
-      analytics.trackEvent('Custom Meal Logged', { calories: data.calories });
-      haptics.success();
-      setIsCustomMealModalOpen(false);
-      addChatMessage({ role: 'ai', text: `✓ Logged Custom Meal: ${data.meal_text}` });
-      setTimeout(() => {
-        setModalOpen(false);
-      }, 800);
-    }
-  });
-
   const handleCustomMealSave = (mealData: any) => {
-    customMealMutation.mutate(mealData);
+    confirmMealMutation.mutate({
+      text: mealData.meal_text,
+      data: {
+        calories: mealData.calories,
+        protein: mealData.protein,
+        fat: mealData.fat,
+        carbs: mealData.carbs,
+        fiber: mealData.fiber,
+        meal_slot: mealData.meal_slot,
+        tip: mealData.tip
+      },
+      source: 'manual'
+    });
   };
 
   const handleDeleteMeal = (id: string) => {
@@ -597,38 +547,99 @@ export function MealLoggerPage() {
   });
 
   const confirmMealMutation = useMutation({
-    mutationFn: async ({ text, data }: { text: string, data: any }) => {
-      await mealService.addMeal({ 
+    mutationFn: async ({ text, data, source }: { text: string, data: any, source?: 'manual' | 'ai' }) => {
+      const mealData = { 
         meal_text: text, 
         calories: Math.round(data.calories), 
         protein: Math.round(data.protein), 
         fat: Math.round(data.fat), 
         carbs: Math.round(data.carbs), 
+        fiber: data.fiber ? Math.round(data.fiber) : undefined,
         meal_time: getMealTime().toISOString(), 
-        tip: data.foods_detected?.join(', ') || text, 
-        meal_slot: selectedMealSlot || undefined 
-      });
-      return { text, data };
+        tip: data.tip || data.foods_detected?.join(', ') || text, 
+        meal_slot: data.meal_slot || selectedMealSlot || undefined,
+        meal_source: source || 'ai'
+      };
+
+      if (typeof window !== 'undefined' && !navigator.onLine) {
+        devLog('Offline: queueing add meal');
+        const { offlineSyncService } = await import('@/shared/services/offlineSyncService');
+        offlineSyncService.enqueue({ type: 'ADD_MEAL', payload: mealData });
+        return { text, data, source, _localOnly: true };
+      }
+
+      await mealService.addMeal(mealData as any);
+      return { text, data, source };
     },
-    onSuccess: ({ text, data }) => {
+    onMutate: async ({ text, data, source }) => {
+      const dateKeyStr = selectedDate.getFullYear() + '-' + String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + String(selectedDate.getDate()).padStart(2, '0');
+      const now = new Date();
+      const isToday = selectedDate.getFullYear() === now.getFullYear() && 
+                      selectedDate.getMonth() === now.getMonth() && 
+                      selectedDate.getDate() === now.getDate();
+      
+      await queryClient.cancelQueries({ queryKey: ["meals", "date", dateKeyStr] });
+      if (isToday) {
+        await queryClient.cancelQueries({ queryKey: ["meals"] });
+      }
+
+      const previousMeals = queryClient.getQueryData<any[]>(["meals", "date", dateKeyStr]);
+      const previousTodayMeals = queryClient.getQueryData<any[]>(["meals"]);
+      
+      const newMealObj = { 
+        id: 'temp-' + Date.now(), 
+        meal_text: text,
+        calories: Math.round(data.calories),
+        protein: Math.round(data.protein),
+        fat: Math.round(data.fat),
+        carbs: Math.round(data.carbs),
+        fiber: data.fiber ? Math.round(data.fiber) : undefined,
+        meal_slot: data.meal_slot || selectedMealSlot || undefined,
+        meal_source: source || 'ai',
+        _localOnly: true 
+      };
+
+      if (previousMeals) {
+        queryClient.setQueryData(["meals", "date", dateKeyStr], [...previousMeals, newMealObj]);
+      }
+      if (isToday && previousTodayMeals) {
+        queryClient.setQueryData(["meals"], [...previousTodayMeals, newMealObj]);
+      }
+
+      return { previousMeals, previousTodayMeals, isToday, dateKeyStr };
+    },
+    onSuccess: ({ text, data, source }) => {
       setPendingMeal(null);
       haptics.success();
       haptics.success();
-      const foodsDetected = Array.isArray(data?.foods_detected) && data?.foods_detected.length > 0 ? data.foods_detected.join(', ') : text;
       
-      let responseText = `✓ Logged: ${foodsDetected}`;
-      if (data?._fromCache) {
-        responseText = `✓ Logged: ${foodsDetected}`;
+      if (source === 'manual') {
+        analytics.trackEvent('Custom Meal Logged', { calories: data.calories } as any);
+        setIsCustomMealModalOpen(false);
+        addChatMessage({ role: 'ai', text: `✓ Logged Custom Meal: ${text}` });
+      } else {
+        const foodsDetected = Array.isArray(data?.foods_detected) && data?.foods_detected.length > 0 ? data.foods_detected.join(', ') : text;
+        let responseText = `✓ Logged: ${foodsDetected}`;
+        if (data?._fromCache) {
+          responseText = `✓ Logged: ${foodsDetected}`;
+        }
+        addChatMessage({ role: 'ai', text: responseText, data });
       }
       
-      addChatMessage({ role: 'ai', text: responseText, data });
       setTimeout(() => {
         setModalOpen(false);
       }, 800);
     },
-    onError: (err: any) => {
+    onError: (err: any, variables: any, context: any) => {
       console.error('[confirmMealMutation] onError:', err);
       addChatMessage({ role: 'ai', text: `⚠️ Failed to save meal. Please try again.` });
+      
+      if (context?.dateKeyStr && context?.previousMeals) {
+        queryClient.setQueryData(["meals", "date", context.dateKeyStr], context.previousMeals);
+      }
+      if (context?.isToday && context?.previousTodayMeals) {
+        queryClient.setQueryData(["meals"], context.previousTodayMeals);
+      }
     },
     onSettled: () => {
       Promise.all([
@@ -642,7 +653,7 @@ export function MealLoggerPage() {
           ])
         ).catch(console.error)
       ]);
-    },
+    }
   });
 
   const handleSend = React.useCallback(() => {
@@ -785,6 +796,7 @@ export function MealLoggerPage() {
         <MealSlotRow slot="breakfast" icon={<Sunrise size={20} />} label="Breakfast" timeRange="6 am – 12 pm" meals={breakfastMeals} onDelete={handleDeleteMeal} />
         <MealSlotRow slot="lunch" icon={<Sun size={20} />} label="Lunch" timeRange="12 pm – 6 pm" meals={lunchMeals} onDelete={handleDeleteMeal} />
         <MealSlotRow slot="dinner" icon={<Moon size={20} />} label="Dinner" timeRange="6 pm – 10 pm" meals={dinnerMeals} onDelete={handleDeleteMeal} />
+        <MealSlotRow slot="snack" icon={<Coffee size={20} />} label="Snack" timeRange="Anytime" meals={snackMeals} onDelete={handleDeleteMeal} />
       </div>
       {/* ── SPACER TO PREVENT FAB OVERLAP ── */}
       <div style={{ height: '120px', flexShrink: 0 }} aria-hidden="true" />
@@ -860,7 +872,7 @@ export function MealLoggerPage() {
               {/* Meal slot selector */}
               <div className="px-5 pt-3">
                 <div className="bg-[rgba(255,255,255,0.02)] rounded-[24px] p-1.5 flex gap-1 relative">
-                  {([['breakfast', Sunrise, 'Breakfast', '6 AM - 12 PM'], ['lunch', Sun, 'Lunch', '12 PM - 6 PM'], ['dinner', Moon, 'Dinner', '6 PM - 10 PM']] as const).map(([slot, Icon, label, time]) => {
+                  {([['breakfast', Sunrise, 'Breakfast', '6 AM - 12 PM'], ['lunch', Sun, 'Lunch', '12 PM - 6 PM'], ['dinner', Moon, 'Dinner', '6 PM - 10 PM'], ['snack', Coffee, 'Snack', 'Anytime']] as const).map(([slot, Icon, label, time]) => {
                     const isActive = selectedMealSlot === slot;
                     return (
                       <div
@@ -1082,7 +1094,7 @@ export function MealLoggerPage() {
                 </motion.button>
                 </div>
                 <button
-                  onClick={() => setIsCustomMealModalOpen(true)}
+                  onClick={() => { setModalOpen(false); setTimeout(() => setIsCustomMealModalOpen(true), 300); }}
                   className="flex items-center justify-center gap-1.5 text-[rgba(255,255,255,0.5)] hover:text-white text-[13px] font-medium transition-colors w-fit mx-auto pb-1"
                 >
                   <Plus size={14} />
