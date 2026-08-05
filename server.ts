@@ -307,9 +307,10 @@ async function startServer() {
   app.options("*", cors({ origin: true, credentials: true }));
 
   // AI Orchestrator API
-  app.post('/api/parse-meal', async (req, res) => {
+  app.all('/api/parse-meal', async (req, res) => {
     try {
-      const { text, mealType, remainingCalories, remainingProtein, userGoal } = req.body;
+      const payload = req.method === 'GET' ? req.query : req.body;
+      const { text, mealType, remainingCalories, remainingProtein, userGoal } = payload;
       const normalizedText = normalizeInput(text);
       
       console.log(`[Orchestrator] Input: "${text}" -> "${normalizedText}"`);
