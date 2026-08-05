@@ -302,9 +302,9 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(cors());
+  app.use(cors({ origin: true, credentials: true }));
   app.use(express.json());
-  app.options("*", cors());
+  app.options("*", cors({ origin: true, credentials: true }));
 
   // AI Orchestrator API
   app.post('/api/parse-meal', async (req, res) => {
