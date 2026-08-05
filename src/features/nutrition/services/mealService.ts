@@ -75,8 +75,9 @@ export const mealService = {
 
   async addMeal(mealData: Omit<DbMealLog, 'id' | 'user_id'>): Promise<DbMealLog | null> {
     const userId = await authService.getUserId();
+    const { meal_source, ...restMealData } = mealData as any;
     const payload = {
-      ...mealData,
+      ...restMealData,
       user_id: userId,
     };
     
