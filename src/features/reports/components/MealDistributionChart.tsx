@@ -23,9 +23,13 @@ export function MealDistributionChart({ color }: MealDistributionChartProps) {
       breakfast: { calories: 0, protein: 0, fat: 0, carbs: 0 },
       lunch: { calories: 0, protein: 0, fat: 0, carbs: 0 },
       dinner: { calories: 0, protein: 0, fat: 0, carbs: 0 },
+      snack: { calories: 0, protein: 0, fat: 0, carbs: 0 },
     };
     meals.forEach(m => {
-      const type = (m.meal_slot || 'breakfast').toLowerCase();
+      let type = (m.meal_slot || 'snack').toLowerCase();
+      if (!['breakfast', 'lunch', 'dinner', 'snack'].includes(type)) {
+        type = 'snack';
+      }
       if (dist[type as keyof typeof dist]) {
         dist[type as keyof typeof dist].calories += m.calories;
         dist[type as keyof typeof dist].protein += m.protein;
@@ -40,6 +44,7 @@ export function MealDistributionChart({ color }: MealDistributionChartProps) {
     distribution.breakfast.calories,
     distribution.lunch.calories,
     distribution.dinner.calories,
+    distribution.snack.calories,
     100 // ensure we don't divide by zero
   );
 
@@ -65,6 +70,7 @@ export function MealDistributionChart({ color }: MealDistributionChartProps) {
     { id: 'breakfast', label: '🍳 Breakfast', data: distribution.breakfast },
     { id: 'lunch', label: '☀️ Lunch', data: distribution.lunch },
     { id: 'dinner', label: '🌙 Dinner', data: distribution.dinner },
+    { id: 'snack', label: '☕ Snack', data: distribution.snack },
   ];
 
   const dateDisplay = isToday(selectedDate) ? 'Today' : selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
