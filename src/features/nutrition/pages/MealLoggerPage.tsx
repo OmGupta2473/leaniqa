@@ -157,6 +157,45 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
 }
 
 // ── MAIN SCREEN ────────────────────────────────────────────────────────────
+
+const LOADING_MESSAGES = [
+  "Analyzing meal…",
+  "Estimating portions…",
+  "Calculating nutrition…",
+  "Checking confidence…",
+  "Preparing recommendations…"
+];
+
+function LoadingStatusMessage() {
+  const [index, setIndex] = React.useState(0);
+  
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex(prev => (prev + 1) % LOADING_MESSAGES.length);
+    }, 1500); // cycle every 1.5s
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-[rgba(255,255,255,0.02)] border-[0.5px] border-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.85)] rounded-[24px] rounded-tl-sm max-w-[85%] self-start p-[10px_14px] flex items-center gap-[8px] text-[13px]"
+    >
+      <Loader2 size={16} className="animate-spin text-[#D4FF00]" />
+      <motion.span 
+        key={index}
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -4 }}
+        className="inline-block"
+      >
+        {LOADING_MESSAGES[index]}
+      </motion.span>
+    </motion.div>
+  );
+}
+
 export function MealLoggerPage() {
   const chatHistory = useChatStore(s => s.chatHistory);
   const addChatMessage = useChatStore(s => s.addChatMessage);
@@ -381,22 +420,8 @@ export function MealLoggerPage() {
 
   const parseMealMutation = useMutation({
     mutationFn: async (text: string) => {
-      // ── COMPOUND MEAL DETECTION ───────────────────────────────────────────────
-      const COMPOUND_PATTERN = /\b(with|and|aur|&|\+|along with|plus|sabzi|sabji|curry|masala)\b/i;
-      const COMMA_SPLIT = text.split(',').filter(s => s.trim().length > 2);
-      const isCompoundMeal = COMPOUND_PATTERN.test(text) || COMMA_SPLIT.length > 1;
-      
       devLog("=== MEAL LOGGING PIPELINE START ===");
       devLog("User Input:", text);
-      
-      if (!isCompoundMeal) {
-        const cachedResult = lookupCachedMeal(text);
-        if (cachedResult && cachedResult.confidence >= 90) {
-          devLog("Nutrition Source Used: Cache");
-          return { calories: cachedResult.scaledCalories, protein: cachedResult.scaledProtein, fat: cachedResult.scaledFat, carbs: cachedResult.scaledCarbs, confidence: cachedResult.confidence, foods_detected: [text], coaching_tip: `Logged from nutritional database. ${Math.round(cachedResult.scaledCalories)} kcal · ${cachedResult.scaledProtein}g protein`, _fromCache: true };
-        }
-      }
-      
       devLog("Nutrition Source Used: AI / Function");
       let lastError: Error | null = null;
       let aiResponseDuration = 0;
@@ -421,72 +446,39 @@ export function MealLoggerPage() {
             if (!currentSession?.access_token) throw new Error('Authentication failure');
 
             const edgeStart = Date.now();
-            // Call Supabase Edge Function directly
-            const { data: responseData, error: responseError } = await supabase.functions.invoke('parse-meal', {
-              body: { text, remainingCalories, remainingProtein, mealType: selectedMealSlot, userGoal: onboardingData?.goal }
+            const response = await fetch('/api/parse-meal', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                text, 
+                remainingCalories, 
+                remainingProtein, 
+                mealType: selectedMealSlot, 
+                userGoal: onboardingData?.goal 
+              })
             });
-            let data = responseData;
-            let error = responseError;
+            
+            const responseBody = await response.json();
             aiResponseDuration = Date.now() - edgeStart;
+            responseBody._latency = aiResponseDuration;
 
-            if (error) {
-              const status = (error as any)?.context?.status ?? 0;
-              let responseBody: any = data ?? null;
-              
-              if (error.name === 'FunctionsHttpError' && (error as any)?.context?.json) {
-                try {
-                  responseBody = await (error as any).context.clone().json();
-                } catch (e) {
-                  try {
-                    responseBody = await (error as any).context.clone().text();
-                  } catch (e2) {}
-                }
-              }
-
-              const msg = String(error.message ?? '');
-              
-              if (import.meta.env.DEV) {
-                 console.error('[MealLogger] Edge Function Error:', { status, message: msg, error, responseBody });
-              }
-              
-              if (status === 401 || status === 403) { 
+            if (!response.ok) {
+              const msg = responseBody.error || 'Server error';
+              if (response.status === 401 || response.status === 403) { 
                 if (attempt < 2) { await supabase.auth.refreshSession(); lastError = new Error('Auth — retrying'); continue; }
                 throw new Error('Authentication failure');
               }
-              if (status === 429) throw new Error('Daily AI limit reached');
-              if (status === 504 || msg.includes('timeout')) {
+              if (response.status === 429) throw new Error('Daily AI limit reached');
+              if (response.status === 504 || msg.includes('timeout')) {
                 lastError = new Error('AI took too long to respond');
                 if (attempt < 2) { await new Promise(r => setTimeout(r, 1200 * (attempt + 1))); continue; }
                 throw new Error('AI took too long to respond');
               }
-              if (msg.includes('fetch') || msg.includes('Network') || msg.includes('Failed to fetch')) { 
-                lastError = new Error('No internet connection');
-                if (attempt < 2) { await new Promise(r => setTimeout(r, 1200 * (attempt + 1))); continue; }
-                throw new Error('No internet connection');
-              }
-              if (status >= 500) { 
-                lastError = new Error('Server error');
-                if (attempt < 2) { await new Promise(r => setTimeout(r, 1200 * (attempt + 1))); continue; }
-                
-                let detailedMessage = 'Server error';
-                try {
-                  const parsed = typeof responseBody === 'string' ? JSON.parse(responseBody) : responseBody;
-                  if (parsed?.error) detailedMessage = parsed.error;
-                  else if (typeof responseBody === 'string') detailedMessage = responseBody;
-                  else if (responseBody) detailedMessage = JSON.stringify(responseBody);
-                } catch (e) {}
-                throw new Error(detailedMessage);
-              }
               
-              let detailedMessage = msg || 'AI temporarily unavailable';
-              try {
-                const parsed = typeof responseBody === 'string' ? JSON.parse(responseBody) : responseBody;
-                if (parsed?.error) detailedMessage = parsed.error;
-                else if (typeof responseBody === 'string') detailedMessage = responseBody;
-                else if (responseBody) detailedMessage = JSON.stringify(responseBody);
-              } catch (e) {}
-              throw new Error(detailedMessage);
+              throw new Error(msg);
             }
+            
+            let data = responseBody;
 
             if (!data || typeof data.calories !== 'number') { 
               if (import.meta.env.DEV) {
@@ -518,6 +510,22 @@ export function MealLoggerPage() {
       isSubmittingRef.current = false;
       setLoading(false);
       
+      // Calculate costs
+      let cost = 0;
+      if (data.provider === 'gemini') cost = 0.0001;
+      else if (data.provider === 'groq') cost = 0.00005;
+      else if (data.provider === 'mistral') cost = 0.00002;
+
+      const eventData = {
+        source: data.source || 'unknown',
+        provider: data.provider || 'none',
+        latency: data._latency || 0,
+        fallbackCount: data.fallbackCount || 0,
+        confidence: data.confidence || 0,
+        estimatedCost: cost,
+        hitRateType: data.source // cache, rule_engine, ai
+      };
+
       if (data._errorMessage) {
         analytics.trackEvent('AI Parse Failure', { error: data._errorMessage, input: text });
         setFailedMealError(data._errorMessage);
@@ -528,7 +536,10 @@ export function MealLoggerPage() {
         setFailedMealError(null);
       } else {
         setRetryCount(0);
+        
+        analytics.trackEvent('Meal Parse Analytics', eventData);
         analytics.trackEvent('AI Parse Success', { confidence: data.confidence, calories: data.calories });
+        
         setPendingMeal({ text, data });
       }
     },
@@ -952,15 +963,7 @@ export function MealLoggerPage() {
                       </motion.div>
                     );
                   })}
-                  {loading && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-[rgba(255,255,255,0.02)] border-[0.5px] border-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.85)] rounded-[24px] rounded-tl-sm max-w-[85%] self-start p-[10px_14px] flex items-center gap-[8px] text-[13px]"
-                    >
-                      <Loader2 size={16} className="animate-spin text-[#D4FF00]" /> Analyzing meal...
-                    </motion.div>
-                  )}
+                  {loading && <LoadingStatusMessage />}
                   {pendingMeal && !loading && (
                     <motion.div 
                       initial={{ opacity: 0, y: 8 }}

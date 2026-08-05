@@ -75,7 +75,10 @@ export const mealService = {
 
   async addMeal(mealData: Omit<DbMealLog, 'id' | 'user_id'>): Promise<DbMealLog | null> {
     const userId = await authService.getUserId();
-    const { meal_source, ...restMealData } = mealData as any;
+    const { meal_source, fiber, ...restMealData } = mealData as any;
+    if (restMealData.meal_slot === 'snack') {
+      delete restMealData.meal_slot; // snack is not in DB ENUM yet
+    }
     const payload = {
       ...restMealData,
       user_id: userId,
