@@ -315,10 +315,10 @@ export function MealLoggerPage() {
     isOnline
   } = useDailyNutrition(selectedDate);
 
-  const breakfastMeals = meals.filter(m => m.meal_slot === "breakfast");
-  const lunchMeals = meals.filter(m => m.meal_slot === "lunch");
-  const dinnerMeals = meals.filter(m => m.meal_slot === "dinner");
-  const snackMeals = meals.filter(m => m.meal_slot === "snack");
+  const breakfastMeals = meals.filter(m => m.meal_slot?.toLowerCase() === "breakfast");
+  const lunchMeals = meals.filter(m => m.meal_slot?.toLowerCase() === "lunch");
+  const dinnerMeals = meals.filter(m => m.meal_slot?.toLowerCase() === "dinner");
+  const snackMeals = meals.filter(m => m.meal_slot?.toLowerCase() === "snack" || m.meal_slot?.toLowerCase() === "snacks");
 
   const caloriePercent = Math.min(100, calPct * 100);
   const proteinPercent = Math.min(100, proPct * 100);
@@ -566,6 +566,12 @@ export function MealLoggerPage() {
 
   const confirmMealMutation = useMutation({
     mutationFn: async ({ text, data, source }: { text: string, data: any, source?: 'manual' | 'ai' }) => {
+      let finalSlot = data.meal_slot || selectedMealSlot || undefined;
+      if (typeof finalSlot === 'string') {
+        finalSlot = finalSlot.toLowerCase();
+        if (finalSlot === 'snacks') finalSlot = 'snack';
+      }
+
       const mealData = { 
         meal_text: text, 
         calories: Math.round(data.calories), 
@@ -575,7 +581,7 @@ export function MealLoggerPage() {
         fiber: data.fiber ? Math.round(data.fiber) : undefined,
         meal_time: getMealTime().toISOString(), 
         tip: data.tip || data.foods_detected?.join(', ') || text, 
-        meal_slot: data.meal_slot || selectedMealSlot || undefined,
+        meal_slot: finalSlot,
         meal_source: source || 'ai'
       };
 
@@ -604,6 +610,12 @@ export function MealLoggerPage() {
       const previousMeals = queryClient.getQueryData<any[]>(["meals", "date", dateKeyStr]);
       const previousTodayMeals = queryClient.getQueryData<any[]>(["meals"]);
       
+      let finalSlot = data.meal_slot || selectedMealSlot || undefined;
+      if (typeof finalSlot === 'string') {
+        finalSlot = finalSlot.toLowerCase();
+        if (finalSlot === 'snacks') finalSlot = 'snack';
+      }
+
       const newMealObj = { 
         id: 'temp-' + Date.now(), 
         meal_text: text,
@@ -612,7 +624,7 @@ export function MealLoggerPage() {
         fat: Math.round(data.fat),
         carbs: Math.round(data.carbs),
         fiber: data.fiber ? Math.round(data.fiber) : undefined,
-        meal_slot: data.meal_slot || selectedMealSlot || undefined,
+        meal_slot: finalSlot,
         meal_source: source || 'ai',
         _localOnly: true 
       };
