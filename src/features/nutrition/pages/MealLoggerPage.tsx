@@ -460,12 +460,18 @@ export function MealLoggerPage() {
             });
             
             if (response.status === 405 || response.redirected || response.url.includes('__cookie_check')) {
-              throw new Error('Preview session expired. Please refresh the page in AI Studio to authenticate.');
+              if (window.location.hostname.includes('run.app')) {
+                throw new Error('Preview session expired. Please refresh the page in AI Studio to authenticate.');
+              }
             }
             
             const contentType = response.headers.get("content-type");
             if (!contentType || !contentType.includes("application/json")) {
-              throw new Error('Preview session expired. Please refresh the page in AI Studio to authenticate.');
+              if (window.location.hostname.includes('run.app')) {
+                throw new Error('Preview session expired. Please refresh the page in AI Studio to authenticate.');
+              } else {
+                throw new Error(`API returned an invalid response (Status: ${response.status}). If you deployed to Vercel, ensure your Express backend (server.ts) is properly hosted, as Vercel only serves static frontend files by default.`);
+              }
             }
             
             const responseBody = await response.json();
