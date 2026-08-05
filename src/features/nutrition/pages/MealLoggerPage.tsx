@@ -318,7 +318,10 @@ export function MealLoggerPage() {
   const breakfastMeals = meals.filter(m => m.meal_slot?.toLowerCase() === "breakfast");
   const lunchMeals = meals.filter(m => m.meal_slot?.toLowerCase() === "lunch");
   const dinnerMeals = meals.filter(m => m.meal_slot?.toLowerCase() === "dinner");
-  const snackMeals = meals.filter(m => m.meal_slot?.toLowerCase() === "snack" || m.meal_slot?.toLowerCase() === "snacks");
+  const snackMeals = meals.filter(m => {
+    const s = m.meal_slot?.toLowerCase();
+    return !s || s === "snack" || s === "snacks" || !["breakfast", "lunch", "dinner"].includes(s);
+  });
 
   const caloriePercent = Math.min(100, calPct * 100);
   const proteinPercent = Math.min(100, proPct * 100);
