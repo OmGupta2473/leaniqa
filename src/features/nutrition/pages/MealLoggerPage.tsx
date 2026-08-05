@@ -448,8 +448,8 @@ export function MealLoggerPage() {
             const edgeStart = Date.now();
             const response = await fetch('/api/parse-meal', {
               method: 'POST',
-              credentials: 'include',
               headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
               body: JSON.stringify({ 
                 text, 
                 remainingCalories, 
@@ -458,6 +458,15 @@ export function MealLoggerPage() {
                 userGoal: onboardingData?.goal 
               })
             });
+            
+            if (response.status === 405 || response.redirected || response.url.includes('__cookie_check')) {
+              throw new Error('Preview session expired. Please refresh the page in AI Studio to authenticate.');
+            }
+            
+            const contentType = response.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+              throw new Error('Preview session expired. Please refresh the page in AI Studio to authenticate.');
+            }
             
             const responseBody = await response.json();
             aiResponseDuration = Date.now() - edgeStart;
