@@ -446,52 +446,46 @@ export function MealLoggerPage() {
             if (!currentSession?.access_token) throw new Error('Authentication failure');
 
             const edgeStart = Date.now();
-            const response = await fetch('/api/parse-meal', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'include',
-              body: JSON.stringify({ 
+            const { data: responseBody, error: functionError } = await supabase.functions.invoke('parse-meal', {
+              body: { 
                 text, 
                 remainingCalories, 
                 remainingProtein, 
                 mealType: selectedMealSlot, 
                 userGoal: onboardingData?.goal 
-              })
+              }
             });
-            
-            if (response.status === 405 || response.redirected || response.url.includes('__cookie_check')) {
-              if (window.location.hostname.includes('run.app')) {
-                throw new Error('Preview session expired. Please refresh the page in AI Studio to authenticate.');
-              }
-            }
-            
-            const contentType = response.headers.get("content-type");
-            if (!contentType || !contentType.includes("application/json")) {
-              if (window.location.hostname.includes('run.app')) {
-                throw new Error('Preview session expired. Please refresh the page in AI Studio to authenticate.');
-              } else {
-                throw new Error(`API returned an invalid response (Status: ${response.status}). If you deployed to Vercel, ensure your Express backend (server.ts) is properly hosted, as Vercel only serves static frontend files by default.`);
-              }
-            }
-            
-            const responseBody = await response.json();
-            aiResponseDuration = Date.now() - edgeStart;
-            responseBody._latency = aiResponseDuration;
 
-            if (!response.ok) {
-              const msg = responseBody.error || 'Server error';
-              if (response.status === 401 || response.status === 403) { 
+            aiResponseDuration = Date.now() - edgeStart;
+
+            if (functionError) {
+              let msg = functionError.message || 'Server error';
+              
+              if (functionError.context && typeof functionError.context.json === 'function') {
+                try {
+                  const errorBody = await functionError.context.json();
+                  if (errorBody && errorBody.error) {
+                    msg = errorBody.error;
+                  }
+                } catch(e) {}
+              }
+
+              if (msg.includes('Auth') || msg.includes('Authentication') || msg.includes('JWT') || functionError.message?.includes('Auth')) { 
                 if (attempt < 2) { await supabase.auth.refreshSession(); lastError = new Error('Auth — retrying'); continue; }
                 throw new Error('Authentication failure');
               }
-              if (response.status === 429) throw new Error('Daily AI limit reached');
-              if (response.status === 504 || msg.includes('timeout')) {
+              if (msg.includes('429') || msg.includes('limit reached')) throw new Error('Daily AI limit reached');
+              if (msg.includes('504') || msg.includes('timeout')) {
                 lastError = new Error('AI took too long to respond');
                 if (attempt < 2) { await new Promise(r => setTimeout(r, 1200 * (attempt + 1))); continue; }
                 throw new Error('AI took too long to respond');
               }
               
-              throw new Error(msg);
+              throw new Error(msg.includes('Friendly Retry') ? msg : `AI Service Error: ${msg}`);
+            }
+
+            if (responseBody) {
+              responseBody._latency = aiResponseDuration;
             }
             
             let data = responseBody;
