@@ -8,8 +8,8 @@ export interface NutritionState {
   setMealDrafts: (drafts: Record<string, any>) => void;
   updateMealDraft: (id: string, draft: any) => void;
   
-  selectedMealSlot: "breakfast" | "lunch" | "dinner" | null;
-  setSelectedMealSlot: (slot: "breakfast" | "lunch" | "dinner" | null) => void;
+  selectedMealSlot: "breakfast" | "lunch" | "dinner" | "snack" | null;
+  setSelectedMealSlot: (slot: "breakfast" | "lunch" | "dinner" | "snack" | null) => void;
 
   // Search & Selection
   searchText: string;

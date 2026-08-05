@@ -41,7 +41,7 @@ export interface DbMealLog {
   fiber?: number;
   meal_time: string;
   tip?: string;
-  meal_slot?: 'breakfast' | 'lunch' | 'dinner';
+  meal_slot?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   meal_source?: 'ai' | 'manual';
 }
 

@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Plus, Info } from 'lucide-react';
 import { DbMealLog } from '@/shared/types/supabase';
@@ -7,7 +9,7 @@ interface CustomMealModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (meal: Omit<DbMealLog, 'id' | 'user_id'>) => void;
-  defaultSlot?: 'breakfast' | 'lunch' | 'dinner' | '';
+  defaultSlot?: 'breakfast' | 'lunch' | 'dinner' | 'snack' | '';
 }
 
 export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: CustomMealModalProps) {
@@ -17,7 +19,7 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: Custom
   const [carbs, setCarbs] = useState('');
   const [fat, setFat] = useState('');
   const [fiber, setFiber] = useState('');
-  const [slot, setSlot] = useState<'breakfast' | 'lunch' | 'dinner'>(defaultSlot as 'breakfast' | 'lunch' | 'dinner' || 'lunch');
+  const [slot, setSlot] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>(defaultSlot as 'breakfast' | 'lunch' | 'dinner' | 'snack' || 'lunch');
   
   const p = parseFloat(protein) || 0;
   const c = parseFloat(carbs) || 0;
@@ -36,8 +38,8 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: Custom
 
   useEffect(() => {
     if (isOpen) {
-      if (defaultSlot && ['breakfast', 'lunch', 'dinner'].includes(defaultSlot)) {
-        setSlot(defaultSlot as 'breakfast' | 'lunch' | 'dinner');
+      if (defaultSlot && ['breakfast', 'lunch', 'dinner', 'snack'].includes(defaultSlot)) {
+        setSlot(defaultSlot as 'breakfast' | 'lunch' | 'dinner' | 'snack');
       }
     }
   }, [isOpen, defaultSlot]);
@@ -77,10 +79,15 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: Custom
   const inputStyle = "w-full bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-[14px] px-4 py-3 text-white placeholder:text-[rgba(255,255,255,0.3)] focus:outline-none focus:border-[#D4FF00] transition-colors text-[16px]";
   const labelStyle = "text-[12px] font-semibold text-[rgba(255,255,255,0.6)] uppercase tracking-wider mb-1.5 block ml-1";
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <div 
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
           className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm"
           onClick={handleBackdropClick}
         >
@@ -112,6 +119,7 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: Custom
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Chicken Salad"
+                  autoFocus
                   className={inputStyle}
                 />
               </div>
@@ -119,11 +127,11 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: Custom
               <div>
                 <label className={labelStyle}>Meal Slot</label>
                 <div className="flex gap-2 p-1 bg-[rgba(255,255,255,0.03)] rounded-[14px]">
-                  {['breakfast', 'lunch', 'dinner'].map((s) => (
+                  {['breakfast', 'lunch', 'dinner', 'snack'].map((s) => (
                     <button
                       key={s}
                       onClick={() => setSlot(s as any)}
-                      className={`flex-1 py-2 text-[13px] font-semibold rounded-[10px] capitalize transition-colors \${
+                      className={`flex-1 py-2 text-[13px] font-semibold rounded-[10px] capitalize transition-colors ${
                         slot === s ? 'bg-[#D4FF00] text-black' : 'text-[rgba(255,255,255,0.5)] hover:text-white'
                       }`}
                     >
@@ -273,8 +281,9 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: Custom
               </button>
             </div>
           </motion.div>
-        </div>
+        </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
