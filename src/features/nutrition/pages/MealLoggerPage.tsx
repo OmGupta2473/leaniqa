@@ -448,6 +448,7 @@ export function MealLoggerPage() {
             const edgeStart = Date.now();
             const response = await fetch('/api/parse-meal', {
               method: 'POST',
+              credentials: 'include',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ 
                 text, 
