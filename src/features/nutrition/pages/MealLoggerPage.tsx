@@ -116,7 +116,7 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
                           Offline
                         </span>
                       )}
-                      {m.meal_source === 'manual' && (
+                      {(m.meal_source === 'manual' || m.tip === 'Manually logged meal.') && (
                         <span className="text-[9px] bg-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.5)] px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wider flex items-center gap-1 shrink-0">
                           Manual
                         </span>
