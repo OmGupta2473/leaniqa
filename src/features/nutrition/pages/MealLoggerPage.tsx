@@ -14,6 +14,8 @@ import { cn } from "@/shared/utils/utils";
 import { SmoothInput } from "@/shared/components/SmoothInput";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useDailyNutrition } from "@/features/nutrition/hooks/useDailyNutrition";
+import { onMealSaved } from "@/features/nutrition/utils/mealSync";
 import { mealService } from "../services/mealService";
 import { profileService } from "@/features/profile/services/profileService";
 import { complianceService } from "@/features/reports/services/complianceService";
@@ -292,29 +294,34 @@ export function MealLoggerPage() {
     checkAI();
   }, []);
 
-
   const { data: goal } = useQuery({ queryKey: ["goal"], queryFn: () => profileService.getGoal() });
-  const { profileData: onboardingData } = useCalculatedProfile();
-  const { data: meals = [], isLoading } = useQuery({ queryKey: ["meals", "date", dateKeyStr], queryFn: () => mealService.getMealsForDate(selectedDate) });
-  const isOnline = useNetworkConnectivity();
+  
+  const {
+    meals,
+    isMealsLoading: isLoading,
+    profileData: onboardingData,
+    proteinTarget,
+    dailyTargetKcal,
+    fatTarget,
+    carbsTarget,
+    eatenKcal,
+    eatenProtein,
+    eatenFat,
+    eatenCarbs,
+    remainingKcal: remainingCalories,
+    remainingProtein,
+    calPct,
+    proPct,
+    isOnline
+  } = useDailyNutrition(selectedDate);
 
-  const eatenKcal = meals.reduce((acc, m) => acc + m.calories, 0);
-  const eatenProtein = meals.reduce((acc, m) => acc + m.protein, 0);
-  const eatenFat = meals.reduce((acc, m) => acc + m.fat, 0);
-  const eatenCarbs = meals.reduce((acc, m) => acc + m.carbs, 0);
   const breakfastMeals = meals.filter(m => m.meal_slot === "breakfast");
   const lunchMeals = meals.filter(m => m.meal_slot === "lunch");
   const dinnerMeals = meals.filter(m => m.meal_slot === "dinner");
   const snackMeals = meals.filter(m => m.meal_slot === "snack");
 
-  const dailyTargetKcal = onboardingData?.dailyCalorieGoal || 0;
-  const proteinTarget = onboardingData?.targetMacros?.protein || 0;
-  const fatTarget = onboardingData?.targetMacros?.fat || 0;
-  const carbsTarget = onboardingData?.targetMacros?.carbs || 0;
-  const remainingCalories = dailyTargetKcal - eatenKcal;
-  const remainingProtein = proteinTarget - eatenProtein;
-  const caloriePercent = Math.min(100, (eatenKcal / dailyTargetKcal) * 100);
-  const proteinPercent = Math.min(100, (eatenProtein / proteinTarget) * 100);
+  const caloriePercent = Math.min(100, calPct * 100);
+  const proteinPercent = Math.min(100, proPct * 100);
 
   const chatRef = useRef<HTMLDivElement>(null);
   const chat = chatHistory.length > 0 ? chatHistory : [{ role: "ai" as const, text: "What did you eat? I'll calculate the macros and give you coaching advice." }];
@@ -379,18 +386,8 @@ export function MealLoggerPage() {
       }
     },
     onSettled: () => {
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["meals"] }),
-        queryClient.invalidateQueries({ queryKey: ["userStreak"] }),
-        queryClient.invalidateQueries({ queryKey: ["userAwards"] }),
-        complianceService.recalculateDayScore(selectedDate.getFullYear() + '-' + String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + String(selectedDate.getDate()).padStart(2, '0')).then(() => {
-          devLog('Updated Dashboard & Progress Rings');
-          return Promise.all([
-            queryClient.invalidateQueries({ queryKey: ["complianceScore"] }),
-            queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] })
-          ])
-        }).catch(console.error)
-      ]).then(() => {
+      onMealSaved(dateKeyStr).then(() => {
+        devLog('Updated Dashboard & Progress Rings');
         devLog('Updated History & Reports');
         console.groupEnd();
       });
@@ -663,17 +660,7 @@ export function MealLoggerPage() {
       }
     },
     onSettled: () => {
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["meals"] }),
-        queryClient.invalidateQueries({ queryKey: ["userStreak"] }),
-        queryClient.invalidateQueries({ queryKey: ["userAwards"] }),
-        complianceService.recalculateDayScore(selectedDate.getFullYear() + '-' + String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + String(selectedDate.getDate()).padStart(2, '0')).then(() => 
-          Promise.all([
-            queryClient.invalidateQueries({ queryKey: ["complianceScore"] }),
-            queryClient.invalidateQueries({ queryKey: ["dailyMetrics"] })
-          ])
-        ).catch(console.error)
-      ]);
+      onMealSaved(selectedDate.getFullYear() + '-' + String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + String(selectedDate.getDate()).padStart(2, '0'));
     }
   });
 

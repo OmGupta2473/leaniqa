@@ -6,6 +6,7 @@ import { calculateCurrentDailyStreak, isDailyGoalMet, toUtcDay } from "@/shared/
 import { Target, Footprints, Flame, Sparkles, ChevronRight, Activity, TrendingDown, TrendingUp, Plus, Droplet, Wheat, Dna, Star } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useCalculatedProfile } from "@/shared/hooks/useCalculatedProfile";
+import { useDailyNutrition } from "@/features/nutrition/hooks/useDailyNutrition";
 import { mealService } from "@/features/nutrition/services/mealService";
 import { useNetworkConnectivity } from "@/shared/hooks/useNetworkConnectivity";
 import { EmptyState } from "@/shared/components/EmptyState";
@@ -76,12 +77,9 @@ const AnimatedNumber = memo(function AnimatedNumber({
 });
 
 export function DashboardPage() {
-  const isOnline = useNetworkConnectivity();
-
   const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
   const currentStreak = calculateCurrentDailyStreak(metrics);
   
-  const { profileData, isLoading } = useCalculatedProfile();
   const navigate = useNavigate();
 
   const [mounted, setMounted] = useState(false);
@@ -89,22 +87,33 @@ export function DashboardPage() {
     setMounted(true);
   }, []);
 
+  const now = new Date();
   const {
-    data: allMeals,
-    isError: isMealsError,
-    isLoading: isMealsLoading,
-    refetch: refetchMeals,
-  } = useQuery({
-    queryKey: ["meals"],
-    queryFn: () => mealService.getMeals({ days: 30 }),
-  });
+    meals: todaysMeals,
+    isMealsLoading,
+    isMealsError,
+    refetchMeals,
+    isProfileLoading: isLoading,
+    profileData,
+    proteinTarget,
+    dailyTargetKcal,
+    fatTarget,
+    carbsTarget,
+    eatenKcal,
+    eatenProtein,
+    eatenFat,
+    eatenCarbs,
+    remainingKcal,
+    remainingProtein,
+    calPct,
+    proPct,
+    fatPct,
+    carbPct,
+    completionScore,
+    isOnline
+  } = useDailyNutrition(now);
 
   const name = profileData?.name || "User";
-  const proteinTarget = Math.round(profileData?.targetMacros?.protein || 0);
-  const dailyTargetKcal = Math.round(profileData?.dailyCalorieGoal || 0);
-  const fatTarget = Math.round(profileData?.targetMacros?.fat || 0);
-  const carbsTarget = Math.round(profileData?.targetMacros?.carbs || 0);
-
   const weightKg = profileData?.weightKg || 0;
   const targetWeightKg = profileData?.targetWeightKg || 0;
   const currentBf = profileData?.currentBodyFatPct || 0;
@@ -125,30 +134,13 @@ export function DashboardPage() {
     return <DashboardSkeleton />;
   }
 
-  const now = new Date();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-  const todaysMeals = (allMeals || []).filter(m => m.meal_time >= startOfToday);
-  const isFirstTimeUser = (allMeals || []).length === 0 && metrics.length === 0;
-  const eatenKcal = Math.round(todaysMeals.reduce((acc, m) => acc + m.calories, 0));
-  const eatenProtein = Math.round(todaysMeals.reduce((acc, m) => acc + m.protein, 0));
-  const eatenFat = Math.round(todaysMeals.reduce((acc, m) => acc + m.fat, 0));
-  const eatenCarbs = Math.round(todaysMeals.reduce((acc, m) => acc + m.carbs, 0));
-
-  const remainingKcal = dailyTargetKcal ? dailyTargetKcal - eatenKcal : 0;
-  const remainingProtein = proteinTarget ? proteinTarget - eatenProtein : 0;
+  const isFirstTimeUser = todaysMeals.length === 0 && metrics.length === 0;
 
   const dateString = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     day: "numeric",
     month: "long",
   });
-
-  const calPct = dailyTargetKcal ? Math.min(eatenKcal / dailyTargetKcal, 1) : 0;
-  const proPct = proteinTarget ? Math.min(eatenProtein / proteinTarget, 1) : 0;
-  const fatPct = fatTarget ? Math.min(eatenFat / fatTarget, 1) : 0;
-  const carbPct = carbsTarget ? Math.min(eatenCarbs / carbsTarget, 1) : 0;
-
-  const completionScore = dailyTargetKcal ? Math.round(((calPct + proPct + fatPct + carbPct) / 4) * 100) : 0;
 
   const getAiInsight = () => {
     if (completionScore >= 100) return "Incredible work today. You've hit your nutritional targets perfectly. Keep resting and hydrating.";
