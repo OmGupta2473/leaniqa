@@ -298,9 +298,8 @@ async function fetchMistral(prompt: string) {
   return JSON.parse(content);
 }
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
+export const app = express();
+const PORT = process.env.PORT || 3000;
 
   app.use(cors({ origin: true, credentials: true }));
   app.use(express.json());
@@ -493,11 +492,13 @@ async function startServer() {
   });
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
+    (async () => {
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: "spa",
+      });
+      app.use(vite.middlewares);
+    })();
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
@@ -506,9 +507,8 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
-}
-
-startServer();
+  if (!process.env.VERCEL) {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  }
