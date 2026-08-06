@@ -196,6 +196,7 @@ Instructions:
    - If calories are almost exhausted, recommend low-calorie protein sources.
    - If both targets are nearly achieved, acknowledge good progress.
    - Keep it concise, natural, and context-aware.
+6. EXTREMELY IMPORTANT: ALWAYS output evaluated numbers (e.g. 96). NEVER output mathematical expressions (e.g. 24 * 4). Mathematical expressions break JSON parsing.
 Generate structured JSON only. Never generate conversational text or markdown blocks.
 Format:
 {
@@ -252,12 +253,14 @@ Format:
 
       let parsed;
       try {
-        const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            parsed = JSON.parse(jsonMatch[0]);
-        } else {
-            parsed = JSON.parse(content);
-        }
+        let jsonMatch = content.match(/\{[\s\S]*\}/);
+        let jsonStr = jsonMatch ? jsonMatch[0] : content;
+        
+        // Sometimes the AI returns mathematical expressions like `24 * 4` inside the JSON.
+        // We evaluate basic multiplication before parsing to fix this permanently.
+        jsonStr = jsonStr.replace(/([0-9.]+)\s*\*\s*([0-9.]+)/g, (match, p1, p2) => String(parseFloat(p1) * parseFloat(p2)));
+        
+        parsed = JSON.parse(jsonStr);
       } catch (e: any) {
           console.error(JSON.stringify({ level: "error", stage: "GroqParser_Parse", error: e.message, rawContent: content, request_id: context.requestId }));
           throw new Error("Failed to parse Groq JSON: " + content);
