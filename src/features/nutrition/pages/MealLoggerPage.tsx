@@ -458,6 +458,8 @@ export function MealLoggerPage() {
 
             aiResponseDuration = Date.now() - edgeStart;
 
+            let data = responseBody;
+
             if (functionError) {
               let msg = functionError.message || 'Server error';
               
@@ -480,15 +482,29 @@ export function MealLoggerPage() {
                 if (attempt < 2) { await new Promise(r => setTimeout(r, 1200 * (attempt + 1))); continue; }
                 throw new Error('AI took too long to respond');
               }
-              
-              throw new Error(msg.includes('Friendly Retry') ? msg : `AI Service Error: ${msg}`);
+
+              if (msg.includes('Failed to parse Groq JSON:')) {
+                try {
+                  const jsonStrMatch = msg.match(/\{[\s\S]*\}/);
+                  if (jsonStrMatch) {
+                    let jsonStr = jsonStrMatch[0];
+                    jsonStr = jsonStr.replace(/([0-9.]+)\s*\*\s*([0-9.]+)/g, (match, p1, p2) => String(parseFloat(p1) * parseFloat(p2)));
+                    data = JSON.parse(jsonStr);
+                    msg = ''; // Clear error to proceed
+                  }
+                } catch (fallbackErr) {
+                   console.error('Fallback parse failed', fallbackErr);
+                }
+              }
+
+              if (msg) {
+                throw new Error(msg.includes('Friendly Retry') ? msg : `AI Service Error: ${msg}`);
+              }
             }
 
-            if (responseBody) {
-              responseBody._latency = aiResponseDuration;
+            if (data) {
+              data._latency = aiResponseDuration;
             }
-            
-            let data = responseBody;
 
             if (!data || typeof data.calories !== 'number') { 
               if (import.meta.env.DEV) {
