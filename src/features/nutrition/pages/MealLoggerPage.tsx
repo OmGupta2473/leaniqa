@@ -675,9 +675,10 @@ export function MealLoggerPage() {
         addChatMessage({ role: 'ai', text: responseText, data });
       }
       
-      setTimeout(() => {
-        setModalOpen(false);
-      }, 800);
+      // Removed automatic modal close to allow continuous meal logging
+      // setTimeout(() => {
+      //   setModalOpen(false);
+      // }, 800);
     },
     onError: (err: any, variables: any, context: any) => {
       console.error('[confirmMealMutation] onError:', err);
