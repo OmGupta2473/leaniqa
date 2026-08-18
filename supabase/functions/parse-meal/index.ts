@@ -210,7 +210,7 @@ Format:
   "coaching_tip": string
 }`;
 
-      console.log(JSON.stringify({ level: "info", stage: "GroqParser_Request", request_payload: { model: "llama3-70b-8192", prompt_length: prompt.length }, request_id: context.requestId }));
+      console.log(JSON.stringify({ level: "info", stage: "GroqParser_Request", request_payload: { model: "llama-3.1-8b-instant", prompt_length: prompt.length }, request_id: context.requestId }));
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -223,7 +223,7 @@ Format:
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "llama3-70b-8192",
+          model: "llama-3.1-8b-instant",
           messages: [{ role: "user", content: prompt }],
           temperature: 0.1
         }),
