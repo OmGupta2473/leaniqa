@@ -1,7 +1,6 @@
 import { useChatStore } from '@/app/store/chatStore';
 import { useEffect } from 'react';
 import { supabase } from '@/shared/utils/supabase';
-import { useMultiAccountStore } from '@/app/store/multiAccountStore';
 import { useAuthStore } from '@/app/store/authStore';
 import { setCrashReportingUser, clearCrashReportingUser } from '@/shared/utils/logger';
 import { analytics } from '@/shared/utils/analytics';
@@ -12,6 +11,8 @@ export function useAuthSession() {
   useEffect(() => {
     if (initialized) return;
 
+    window.localStorage.removeItem('leaniqa-multi-account');
+
     let mounted = true;
 
     const handleSessionUser = (localSession: any) => {
@@ -21,7 +22,6 @@ export function useAuthSession() {
           email: localSession.user.email,
         });
         analytics.identifyUser(localSession.user.id);
-        useMultiAccountStore.getState().updateSession(localSession);
       } else {
         clearCrashReportingUser();
       }

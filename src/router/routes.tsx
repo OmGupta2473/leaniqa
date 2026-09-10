@@ -9,7 +9,6 @@ import { RouteErrorBoundary } from '@/shared/components/RouteErrorBoundary';
 import { ScrollHandler } from '@/shared/components/ScrollHandler';
 import { ScreenSkeleton } from '@/shared/components/ScreenSkeleton';
 import { RouteMetadata } from '@/shared/components/RouteMetadata';
-import { SaveAccountPrompt } from '@/shared/components/SaveAccountPrompt';
 import { AnalyticsObserver } from '@/shared/components/AnalyticsObserver';
 import { DashboardSkeleton, MealLoggerSkeleton, ProgressSkeleton, WeeklyReportSkeleton, ProfileSkeleton, NutritionDetailSkeleton, AwardsSkeleton, GoalSkeleton } from '@/shared/components/Skeletons';
 
@@ -44,7 +43,6 @@ function RootLayout() {
       <ScrollHandler />
       <ScrollRestoration />
       <Outlet />
-      <SaveAccountPrompt />
     </>
   );
 }
