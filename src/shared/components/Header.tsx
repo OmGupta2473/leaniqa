@@ -10,12 +10,10 @@ import { profileService } from '@/features/profile/services/profileService';
 import { supabase } from '@/shared/utils/supabase';
 import { useNetworkStatus } from '@/shared/utils/utils';
 import { WifiOff, ChevronLeft } from 'lucide-react';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useHasCompletedOnboarding } from '@/shared/hooks/useHasCompletedOnboarding';
 import { motion } from 'motion/react';
-import { AccountSwitcher } from '@/features/auth/components/AccountSwitcher';
-import { useLongPress } from '@/shared/hooks/useLongPress';
 
 function getLocalDateString() {
   const d = new Date();
@@ -30,7 +28,6 @@ export function Header() {
   const earnedAwards = calculateEarnedAwards(metrics);
   const { isOnline } = useNetworkStatus();
   const [session, setSession] = useState(null);
-  const [showAccountSwitcher, setShowAccountSwitcher] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -142,14 +139,9 @@ export function Header() {
         </div>
         <div 
           className="rounded-full flex items-center justify-center text-[12px] font-medium select-none"
-          {...useLongPress(
-            () => {
-              if (hasCompletedOnboarding !== false) setShowAccountSwitcher(true);
-            },
-            () => {
-              if (hasCompletedOnboarding !== false) navigate('/profile');
-            }
-          )}
+          onClick={() => {
+            if (hasCompletedOnboarding !== false) navigate('/profile');
+          }}
           style={{ 
             cursor: hasCompletedOnboarding === false ? 'not-allowed' : 'pointer',
             background: 'rgba(212,255,0,0.12)',
@@ -163,7 +155,6 @@ export function Header() {
           {profile?.name ? profile.name.substring(0, 2).toUpperCase() : 'ME'}
         </div>
       </div>
-      <AccountSwitcher isOpen={showAccountSwitcher} onClose={() => setShowAccountSwitcher(false)} />
     </motion.div>
   );
 }
