@@ -388,7 +388,7 @@ serve(async (req) => {
     if (authError || !user) throw new Error("Unauthorized: Invalid token");
 
     const endpoint = "parse-meal";
-    const limit = Number.parseInt(Deno.env.get("DAILY_AI_LIMIT") || "50", 10);
+    const limit = Number.parseInt(Deno.env.get("DAILY_AI_LIMIT") || "15", 10);
     const istDate = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
     const today = istDate.toISOString().split("T")[0];
 
@@ -462,13 +462,35 @@ serve(async (req) => {
     }
     console.log(JSON.stringify({ level: "info", stage: "DBCache", event: "miss", request_id: requestId, latency_ms: Date.now() - cacheStartedAt }));
 
-    const { data: usageData } = await supabase.from("api_usage").select("usage_count").eq("user_id", user.id).eq("endpoint", endpoint).eq("date", today).maybeSingle();
-    const currentUsage = usageData?.usage_count || 0;
-    if (currentUsage >= limit) {
+    let quotaResult: { usage_count?: number; limit_value?: number } | undefined;
+    try {
+      const { data, error: quotaError } = await supabase.rpc("reserve_api_usage", {
+        p_user_id: user.id,
+        p_endpoint: endpoint,
+        p_date: today,
+        p_limit: limit,
+      });
+      if (quotaError) {
+        throw quotaError;
+      }
+      const rows = Array.isArray(data) ? data : data ? [data] : [];
+      quotaResult = rows[0] as { usage_count?: number; limit_value?: number } | undefined;
+    } catch (error) {
+      console.error(JSON.stringify({ level: "error", stage: "UsageTracking", event: "reserve_failed", request_id: requestId, error: error instanceof Error ? error.message : String(error) }));
+      return new Response(JSON.stringify({ error: "Unable to reserve Gemini quota right now. Please try again." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    if (!quotaResult) {
+      const { data: usageData, error: usageError } = await supabase.from("api_usage").select("usage_count").eq("user_id", user.id).eq("endpoint", endpoint).eq("date", today).maybeSingle();
+      if (usageError) {
+        console.error(JSON.stringify({ level: "error", stage: "UsageTracking", event: "quota_status_lookup_failed", request_id: requestId, error: usageError.message }));
+        return new Response(JSON.stringify({ error: "Unable to reserve Gemini quota right now. Please try again." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const used = usageData?.usage_count ?? 0;
       const istTime = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
       istTime.setUTCHours(24, 0, 0, 0);
       const resetsAt = new Date(istTime.getTime() - 5.5 * 60 * 60 * 1000);
-      return new Response(JSON.stringify({ error: "Daily AI limit reached", limit, used: currentUsage, resets_at: resetsAt.toISOString(), _limitReached: true }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Daily AI limit reached", limit, used, resets_at: resetsAt.toISOString(), _limitReached: true }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const data = validator.validate(await new GeminiParser().parse(context));
@@ -487,8 +509,6 @@ serve(async (req) => {
       console.error(JSON.stringify({ level: "error", stage: "DBCache", event: "write_exception", request_id: requestId }));
     }
 
-    const { error: incrementError } = await supabase.rpc("increment_api_usage", { p_user_id: user.id, p_endpoint: endpoint, p_date: today });
-    if (incrementError) console.error(JSON.stringify({ level: "error", stage: "UsageTracking", event: "increment_error", request_id: requestId }));
     console.log(JSON.stringify({ level: "info", stage: "Pipeline", event: "success", parser: "Gemini", request_id: requestId, total_latency_ms: Date.now() - startedAt }));
     return responseFor(data, corsHeaders);
   } catch (error) {
