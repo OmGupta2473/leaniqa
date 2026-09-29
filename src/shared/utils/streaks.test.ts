@@ -20,11 +20,22 @@ describe('streaks', () => {
       expect(day2 - day1).toBe(1); // 1 day difference
     });
     
-    it('handles date objects near midnight UTC', () => {
-      const d1 = new Date(Date.UTC(2026, 0, 1, 23, 59, 59));
-      const d2 = new Date(Date.UTC(2026, 0, 2, 0, 0, 1));
-      expect(toUtcDay(d1)).toBe(toUtcDay(new Date(Date.UTC(2026, 0, 1))));
-      expect(toUtcDay(d2)).toBe(toUtcDay(new Date(Date.UTC(2026, 0, 2))));
+    it('handles Date inputs on the IST midnight boundary', () => {
+      // IST midnight = 18:30 UTC previous day.
+      // 18:29:59 UTC = 23:59:59 IST same calendar day.
+      // 18:30:00 UTC = 00:00:00 IST next calendar day.
+      const justBefore = new Date('2026-01-01T18:29:59Z');
+      const justAfter = new Date('2026-01-01T18:30:00Z');
+      expect(toUtcDay(justBefore)).toBe(toUtcDay('2026-01-01'));
+      expect(toUtcDay(justAfter)).toBe(toUtcDay('2026-01-02'));
+      // Also verify the day-number delta is exactly 1 across the boundary:
+      expect(toUtcDay(justAfter) - toUtcDay(justBefore)).toBe(1);
+    });
+
+    it('treats the current instant as IST today, not host-local today', () => {
+      // 2026-01-01T22:00:00Z = 03:30 IST on Jan 2.
+      const istEarlyMorning = new Date('2026-01-01T22:00:00Z');
+      expect(toUtcDay(istEarlyMorning)).toBe(toUtcDay('2026-01-02'));
     });
   });
 
