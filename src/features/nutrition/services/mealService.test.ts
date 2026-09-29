@@ -120,9 +120,9 @@ describe('mealService.addMeal meal_slot handling', () => {
     });
   });
 
-  it('T-D9-5 (known-bug: fiber dropped): keeps the current zero fiber payload', async () => {
+  it('T-D9-5: carries fiber through to the upsert payload', async () => {
     await mealService.addMeal({ ...validMeal, fiber: 12 });
 
-    expect(mocks.upsert.mock.calls[0][0].fiber).toBe(0);
+    expect(mocks.upsert.mock.calls[0][0].fiber).toBe(12);
   });
 });
