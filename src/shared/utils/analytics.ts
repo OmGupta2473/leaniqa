@@ -1,6 +1,8 @@
 import posthog from 'posthog-js';
 import { devLog } from '@/shared/utils/logger';
 
+let lastIdentifiedUserId: string | null = null;
+
 export type EventName = 
   | 'App Open'
   | 'Sign Up'
@@ -49,13 +51,17 @@ export const analytics = {
     posthog.capture(eventName, scrubbedProperties);
   },
   identifyUser: (userId: string, traits?: Record<string, any>) => {
+    if (lastIdentifiedUserId === userId) return;
+
     const scrubbedTraits = traits ? scrubSensitiveData(traits) : undefined;
     devLog(`[Analytics] Identify: ${userId}`, scrubbedTraits);
     posthog.identify(userId, scrubbedTraits);
+    lastIdentifiedUserId = userId;
   },
   reset: () => {
     devLog(`[Analytics] Reset User`);
     posthog.reset();
+    lastIdentifiedUserId = null;
   }
 };
 

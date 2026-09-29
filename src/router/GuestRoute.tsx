@@ -1,5 +1,8 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthSession } from './useAuthSession';
+import { isSafeNextPath } from './nextPath';
+
+export { isSafeNextPath } from './nextPath';
 
 export function GuestRoute() {
   const { session, loading } = useAuthSession();
@@ -14,7 +17,7 @@ export function GuestRoute() {
     const nextParam = searchParams.get('next');
     let redirectTo = '/dashboard';
 
-    if (nextParam && nextParam.startsWith('/')) {
+    if (isSafeNextPath(nextParam)) {
       redirectTo = nextParam;
     } else if (location.state?.from?.pathname) {
       redirectTo = location.state.from.pathname + (location.state.from.search || '');
