@@ -7,6 +7,7 @@ import { profileService } from '@/features/profile/services/profileService';
 import { reportService } from './reportService';
 import { authService } from '@/features/auth/services/authService';
 import { DbDailyMetric } from '@/shared/types/supabase';
+import { formatDateKey } from '@/shared/utils/dateKey';
 
 function getLocalDateString() {
   const d = new Date();
@@ -93,7 +94,7 @@ export const complianceService = {
         authService.getUserId(),
         queryClient.getQueryData<any>(['profile']) || queryClient.fetchQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() }),
         queryClient.getQueryData<any>(['goal']) || queryClient.fetchQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() }),
-        queryClient.getQueryData<any[]>(['meals', 'today']) || queryClient.fetchQuery({ queryKey: ['meals', 'today'], queryFn: () => mealService.getTodaysMeals() }),
+        queryClient.getQueryData<any[]>(['meals', 'date', formatDateKey(new Date())]) || queryClient.fetchQuery({ queryKey: ['meals', 'date', formatDateKey(new Date())], queryFn: () => mealService.getMealsForDate(new Date()) }),
         queryClient.getQueryData<any[]>(['weightLogs']) || queryClient.fetchQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() })
       ]);
       

@@ -352,41 +352,25 @@ export function MealLoggerPage() {
       return id;
     },
     onMutate: async (id) => {
-      const now = new Date();
-      const isToday = selectedDate.getFullYear() === now.getFullYear() && 
-                      selectedDate.getMonth() === now.getMonth() && 
-                      selectedDate.getDate() === now.getDate();
-
       await queryClient.cancelQueries({ queryKey: ["meals", "date", dateKeyStr] });
-      if (isToday) {
-        await queryClient.cancelQueries({ queryKey: ["meals"] });
-      }
       
       const previousMeals = queryClient.getQueryData<any[]>(["meals", "date", dateKeyStr]);
-      const previousTodayMeals = queryClient.getQueryData<any[]>(["meals"]);
       
       const newMeals = previousMeals ? previousMeals.filter((m: any) => m.id !== id) : [];
       queryClient.setQueryData(["meals", "date", dateKeyStr], newMeals);
-
-      if (isToday && previousTodayMeals) {
-        queryClient.setQueryData(["meals"], previousTodayMeals.filter((m: any) => m.id !== id));
-      }
       
       devLog('Remaining Meals:', newMeals.length);
       const newKcal = newMeals.reduce((s, m) => s + m.calories, 0);
       const newPro = newMeals.reduce((s, m) => s + m.protein, 0);
       devLog('Recalculated Daily Totals:', { calories: newKcal, protein: newPro });
       
-      return { previousMeals, previousTodayMeals, isToday };
+      return { previousMeals };
     },
     onError: (err, id, context) => {
       console.error('Delete failed, rolling back:', err);
       console.groupEnd();
       if (context?.previousMeals) {
         queryClient.setQueryData(["meals", "date", dateKeyStr], context.previousMeals);
-      }
-      if (context?.isToday && context?.previousTodayMeals) {
-        queryClient.setQueryData(["meals"], context.previousTodayMeals);
       }
     },
     onSettled: () => {
@@ -618,18 +602,9 @@ export function MealLoggerPage() {
       return { text, data, source };
     },
     onMutate: async ({ text, data, source }) => {
-      const now = new Date();
-      const isToday = selectedDate.getFullYear() === now.getFullYear() && 
-                      selectedDate.getMonth() === now.getMonth() && 
-                      selectedDate.getDate() === now.getDate();
-      
       await queryClient.cancelQueries({ queryKey: ["meals", "date", dateKeyStr] });
-      if (isToday) {
-        await queryClient.cancelQueries({ queryKey: ["meals"] });
-      }
 
       const previousMeals = queryClient.getQueryData<any[]>(["meals", "date", dateKeyStr]);
-      const previousTodayMeals = queryClient.getQueryData<any[]>(["meals"]);
       
       let finalSlot = data.meal_slot || selectedMealSlot || undefined;
       if (typeof finalSlot === 'string') {
@@ -653,11 +628,7 @@ export function MealLoggerPage() {
       if (previousMeals) {
         queryClient.setQueryData(["meals", "date", dateKeyStr], [...previousMeals, newMealObj]);
       }
-      if (isToday && previousTodayMeals) {
-        queryClient.setQueryData(["meals"], [...previousTodayMeals, newMealObj]);
-      }
-
-      return { previousMeals, previousTodayMeals, isToday, dateKeyStr };
+      return { previousMeals, dateKeyStr };
     },
     onSuccess: ({ text, data, source }) => {
       setPendingMeal(null);
@@ -688,9 +659,6 @@ export function MealLoggerPage() {
       
       if (context?.dateKeyStr && context?.previousMeals) {
         queryClient.setQueryData(["meals", "date", context.dateKeyStr], context.previousMeals);
-      }
-      if (context?.isToday && context?.previousTodayMeals) {
-        queryClient.setQueryData(["meals"], context.previousTodayMeals);
       }
     },
     onSettled: () => {
