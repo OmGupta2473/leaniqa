@@ -30,6 +30,7 @@ import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
 import { MealLoggerSkeleton } from '@/shared/components/Skeletons';
 import { useToast } from '@/shared/components/Toast';
 import { devLog } from '@/shared/utils/logger';
+import { formatDateKey } from '@/shared/utils/dateKey';
 
 const getDeterministicFallback = (text: string) => {
   const normalizedText = text.toLowerCase();
@@ -263,7 +264,7 @@ export function MealLoggerPage() {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const dateKeyStr = `${selectedDate.getFullYear()}-${selectedDate.getMonth() + 1}-${selectedDate.getDate()}`;
+  const dateKeyStr = formatDateKey(selectedDate);
 
   const getMealTime = () => {
     const d = new Date(selectedDate);
@@ -615,7 +616,6 @@ export function MealLoggerPage() {
       return { text, data, source };
     },
     onMutate: async ({ text, data, source }) => {
-      const dateKeyStr = selectedDate.getFullYear() + '-' + String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + String(selectedDate.getDate()).padStart(2, '0');
       const now = new Date();
       const isToday = selectedDate.getFullYear() === now.getFullYear() && 
                       selectedDate.getMonth() === now.getMonth() && 
@@ -692,7 +692,7 @@ export function MealLoggerPage() {
       }
     },
     onSettled: () => {
-      onMealSaved(selectedDate.getFullYear() + '-' + String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + String(selectedDate.getDate()).padStart(2, '0'));
+      onMealSaved(dateKeyStr);
     }
   });
 

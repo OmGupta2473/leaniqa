@@ -2,10 +2,11 @@ import { useQuery } from '@tanstack/react-query';
 import { mealService } from '@/features/nutrition/services/mealService';
 import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
 import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
+import { formatDateKey } from '@/shared/utils/dateKey';
 
 export function useDailyNutrition(date: Date) {
   const isOnline = useNetworkConnectivity();
-  const dateKeyStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const dateKeyStr = formatDateKey(date);
 
   const { data: meals = [], isLoading: isMealsLoading, isError: isMealsError, refetch: refetchMeals } = useQuery({
     queryKey: ["meals", "date", dateKeyStr],
