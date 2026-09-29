@@ -12,14 +12,8 @@ describe('profileCalculations', () => {
       const macros = calculateMacros(80, 180, 30, 'Male', 'Lightly Active');
       expect(macros.tdee).toBe(2450);
       expect(macros.proteinMid).toBe(144);
-      expect(macros.waterLitres).toBe("2.6");
     });
 
-    it('adjusts water for very active users', () => {
-      const macros = calculateMacros(80, 180, 30, 'Male', 'Very Active');
-      expect(macros.waterLitres).toBe("3.1");
-    });
-    
     it('handles very low body weight gracefully', () => {
       const macros = calculateMacros(40, 150, 20, 'Female', 'Sedentary');
       expect(macros.tdee).toBeGreaterThan(0);

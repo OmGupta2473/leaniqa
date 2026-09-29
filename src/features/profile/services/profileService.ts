@@ -122,24 +122,21 @@ export const profileService = {
       data = res.data;
       error = res.error;
 
-      if (error && (error.message.includes('could not find the carbs_target') || error.message.includes('carbs_target') || error.message.includes('fat_target') || error.message.includes('water_target'))) {
+      if (error && (error.message.includes('could not find the carbs_target') || error.message.includes('carbs_target') || error.message.includes('fat_target'))) {
         devLog('Schema cache error detected, retrying without new columns');
         const fallbackPayload = { ...payload };
         delete fallbackPayload.carbs_target;
         delete fallbackPayload.fat_target;
-        delete fallbackPayload.water_target;
         
         const fallbackUpdatePayload = { ...profileData };
         delete fallbackUpdatePayload.carbs_target;
         delete fallbackUpdatePayload.fat_target;
-        delete fallbackUpdatePayload.water_target;
         
         try {
           const { useUserStore } = await import('@/features/profile/store/userStore');
           const overridesToUpdate: any = {};
           if ('carbs_target' in payload) overridesToUpdate.carbs_target = payload.carbs_target;
           if ('fat_target' in payload) overridesToUpdate.fat_target = payload.fat_target;
-          if ('water_target' in payload) overridesToUpdate.water_target = payload.water_target;
           
           if (Object.keys(overridesToUpdate).length > 0) {
             useUserStore.getState().setMacroOverrides(overridesToUpdate);

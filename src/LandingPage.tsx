@@ -271,13 +271,6 @@ function DisciplineAdvantage() {
                    </div>
                    <div className="w-full h-1 bg-zinc-950 rounded-full border border-white/5 overflow-hidden"><div className="h-full bg-blue-400/90 rounded-full w-[84%] shadow-[0_0_8px_rgba(96,165,250,0.5)]"/></div>
                  </div>
-                 <div>
-                   <div className="flex items-center justify-between text-[10px] mb-1.5 font-medium">
-                     <span className="text-cyan-400/90 flex items-center gap-1.5"><Droplets className="w-3 h-3"/> Water</span>
-                     <span className="text-zinc-300">2.4 / 3 L</span>
-                   </div>
-                   <div className="w-full h-1 bg-zinc-950 rounded-full border border-white/5 overflow-hidden"><div className="h-full bg-cyan-400/90 rounded-full w-[80%] shadow-[0_0_8px_rgba(34,211,238,0.5)]"/></div>
-                 </div>
                </div>
              </div>
              

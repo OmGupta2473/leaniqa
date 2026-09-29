@@ -55,7 +55,6 @@ export const complianceService = {
         actual_calories: actualCalories,
         target_protein: targetProtein,
         actual_protein: actualProtein,
-        water: 0,
         score
       };
       
@@ -126,7 +125,6 @@ export const complianceService = {
         actual_calories: actualCalories,
         target_protein: targetProtein,
         actual_protein: actualProtein,
-        water: 0,
         score
       };
       

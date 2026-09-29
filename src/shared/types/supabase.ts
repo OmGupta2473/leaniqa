@@ -14,7 +14,6 @@ export interface DbProfile {
   protein_target: number;
   carbs_target?: number;
   fat_target?: number;
-  water_target?: number;
   created_at?: string;
 }
 
@@ -62,15 +61,7 @@ export interface DbDailyMetric {
   actual_calories: number;
   target_protein: number;
   actual_protein: number;
-  water: number;
   score: number;
-}
-
-export interface DbWaterLog {
-  id?: string;
-  user_id: string;
-  amount_ml: number;
-  date: string;
 }
 
 export interface DbWeeklyReport {

@@ -45,7 +45,7 @@ describe('streaks', () => {
       actual_protein: met ? 145 : 100,
       target_protein: 150,
       id: '1', user_id: '1', 
-      score: 0, water: 0
+      score: 0
     });
 
     it('calculates current streak ignoring today', () => {

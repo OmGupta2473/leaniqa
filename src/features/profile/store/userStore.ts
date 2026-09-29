@@ -37,9 +37,8 @@ export interface UserState {
   macroOverrides?: {
     carbs_target?: number | null;
     fat_target?: number | null;
-    water_target?: number | null;
   };
-  setMacroOverrides: (overrides: { carbs_target?: number | null, fat_target?: number | null, water_target?: number | null }) => void;
+  setMacroOverrides: (overrides: { carbs_target?: number | null, fat_target?: number | null }) => void;
 
   clearUserStore: () => void;
 }

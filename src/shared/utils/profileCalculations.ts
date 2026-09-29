@@ -64,19 +64,13 @@ export function calculateMacros(weightKg: number, heightCm: number, age: number,
 
   let fiberMin = Math.round((tdee / 1000) * 14);
   const fiberMax = fiberMin + 10;
-  let water = weightKg * 0.033;
-  if (activityLevel === 'Very Active' || activityLevel === 'Active' || activityLevel === 'Athlete' || activityLevel === 'Very active') {
-    water += 0.5;
-  }
-
   if (import.meta.env.DEV) console.timeEnd('[PERF] calculateMacros');
   return {
     tdee,
     proteinMin, proteinMid, proteinMax,
     fatMin, fatMid, fatMax,
     carbMin, carbMid, carbMax,
-    fiberMin, fiberMax,
-    waterLitres: water.toFixed(1)
+    fiberMin, fiberMax
   };
 }
 
