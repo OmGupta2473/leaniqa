@@ -4,6 +4,7 @@ import { DbWeightLog } from '@/shared/types/supabase';
 import { authService } from '@/features/auth/services/authService';
 import { profileService } from '@/features/profile/services/profileService';
 import { calculateBodyFat } from '@/shared/utils/navyMethod';
+import { getKolkataDateString } from '@/shared/utils/timezone';
 
 export const weightService = {
   async getWeightLogs(): Promise<DbWeightLog[]> {
@@ -47,7 +48,10 @@ export const weightService = {
       user_id: userId,
     };
 
-    const datePrefix = logData.date.substring(0, 10);
+    const dateValue = logData.date;
+    const datePrefix = dateValue.includes('T')
+      ? getKolkataDateString(new Date(dateValue))
+      : dateValue;
     const upsertPayload = { ...payload, date: datePrefix };
 
     const { data, error } = await supabase
