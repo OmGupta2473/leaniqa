@@ -47,6 +47,29 @@ export function shiftKolkataDateString(dateStr: string, days: number): string {
 }
 
 /**
+ * Milliseconds elapsed since IST midnight for the IST day containing `date`.
+ * Range: [0, 86_400_000).
+ */
+export function msSinceKolkataMidnight(date: Date = new Date()): number {
+  const dateStr = getKolkataDateString(date);
+  const midnightUtc = kolkataDateStringToUtcMidnight(dateStr);
+  return date.getTime() - midnightUtc.getTime();
+}
+
+/**
+ * Hour of day in IST (0–23) for the given instant.
+ */
+export function getKolkataHour(date: Date = new Date()): number {
+  return Number(
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Kolkata',
+      hour: '2-digit',
+      hour12: false,
+    }).format(date),
+  );
+}
+
+/**
  * Convert IST wall-clock (date + h/m/s/ms) to a UTC ISO instant.
  * Not exported; used internally.
  */
