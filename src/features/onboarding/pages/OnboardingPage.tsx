@@ -160,7 +160,6 @@ export function OnboardingPage() {
               carbMid: macros.carbMid,
               fiberMin: macros.fiberMin,
               fiberMax: macros.fiberMax,
-              waterLitres: macros.waterLitres
             });
             
             setStep(9);
@@ -242,7 +241,6 @@ export function OnboardingPage() {
         carbMid: results.carbMid,
         fiberMin: results.fiberMin,
         fiberMax: results.fiberMax,
-        waterLitres: results.waterLitres,
       });
 
       complianceService.updateTodayScore().then(() => {
@@ -793,15 +791,6 @@ export function OnboardingPage() {
                             <div className="text-2xl font-bold text-white"><AnimatedNumber value={results.carbMid} />g</div>
                         </motion.div>
                         
-                        <motion.div 
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 1.6 }}
-                            className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] rounded-3xl p-6"
-                        >
-                            <div className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-2">Water</div>
-                            <div className="text-2xl font-bold text-white"><AnimatedNumber value={results.waterLitres} />L</div>
-                        </motion.div>
                     </div>
 
                     <motion.div 

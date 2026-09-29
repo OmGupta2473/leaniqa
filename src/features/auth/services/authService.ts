@@ -7,10 +7,16 @@ import { useDashboardStore } from '@/features/dashboard/store/dashboardStore';
 import { useNutritionStore } from '@/features/nutrition/store/nutritionStore';
 import { useReportStore } from '@/features/reports/store/reportStore';
 import { queryClient } from '@/app/query/queryClient';
+import { queryPersister, REACT_QUERY_OFFLINE_CACHE_KEY } from '@/app/query/queryPersister';
 
 import { supabase } from '@/shared/utils/supabase';
 import { AppError, ErrorCodes } from '@/shared/utils/errors';
 import { analytics } from '@/shared/utils/analytics';
+import { clearCrashReportingUser } from '@/shared/utils/logger';
+import { getSessionUserId } from '@/shared/utils/sessionUser';
+import { offlineSyncService } from '@/shared/services/offlineSyncService';
+
+let sessionEndPromise: Promise<void> | null = null;
 
 export const authService = {
   async getUserId(): Promise<string> {
@@ -53,7 +59,9 @@ export const authService = {
     return user.id;
   },
   
-  clearCaches() {
+  async clearCaches(): Promise<void> {
+    const userId = getSessionUserId();
+
     useChatStore.getState().clearChatStore();
     useAuthStore.getState().setSession(null);
     useUserStore.getState().clearUserStore();
@@ -63,12 +71,33 @@ export const authService = {
     useNutritionStore.getState().clearNutritionStore();
     useReportStore.getState().clearReportStore();
     queryClient.clear();
+    offlineSyncService.clearQueueForUser(userId);
     analytics.reset();
+    clearCrashReportingUser();
+
+    // query-sync-storage-persister@5.101.4 provides removeClient().
+    if (typeof queryPersister.removeClient === 'function') {
+      await queryPersister.removeClient();
+    } else if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(REACT_QUERY_OFFLINE_CACHE_KEY);
+    }
+  },
+
+  onSessionEnded(): Promise<void> {
+    if (!sessionEndPromise) {
+      sessionEndPromise = this.clearCaches().finally(() => {
+        sessionEndPromise = null;
+      });
+    }
+    return sessionEndPromise;
   },
 
   async logout(): Promise<void> {
-    await supabase.auth.signOut();
-    this.clearCaches();
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      await this.onSessionEnded();
+    }
   }
 };
 

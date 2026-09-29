@@ -4,6 +4,7 @@ import { DbWeightLog } from '@/shared/types/supabase';
 import { authService } from '@/features/auth/services/authService';
 import { profileService } from '@/features/profile/services/profileService';
 import { calculateBodyFat } from '@/shared/utils/navyMethod';
+import { getKolkataDateString } from '@/shared/utils/timezone';
 
 export const weightService = {
   async getWeightLogs(): Promise<DbWeightLog[]> {
@@ -47,38 +48,17 @@ export const weightService = {
       user_id: userId,
     };
 
-    // Check if an entry for this local date already exists
-    const datePrefix = logData.date.substring(0, 10);
-    
-    const { data: existing } = await supabase
-      .from('weight_logs')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('date', datePrefix)
-      .limit(1)
-      .maybeSingle();
+    const dateValue = logData.date;
+    const datePrefix = dateValue.includes('T')
+      ? getKolkataDateString(new Date(dateValue))
+      : dateValue;
+    const upsertPayload = { ...payload, date: datePrefix };
 
-    let data, error;
-    if (existing && existing.id) {
-      // Update existing
-      const res = await supabase
-        .from('weight_logs')
-        .update(payload)
-        .eq('id', existing.id)
-        .select()
-        .maybeSingle();
-      data = res.data;
-      error = res.error;
-    } else {
-      // Insert new
-      const res = await supabase
-        .from('weight_logs')
-        .insert(payload)
-        .select()
-        .maybeSingle();
-      data = res.data;
-      error = res.error;
-    }
+    const { data, error } = await supabase
+      .from('weight_logs')
+      .upsert(upsertPayload, { onConflict: 'user_id,date' })
+      .select()
+      .maybeSingle();
 
     if (error && error.code !== 'PGRST116') {
       console.error('Error adding weight log:', error);

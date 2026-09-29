@@ -147,14 +147,6 @@ function generateCoachData(days: DailyActivityData[], loggedCount: number) {
         impact: "Maintain" as const
       });
     }
-    if (recs.length < 3 && !recs.find(r => r.title.includes("Hydration"))) {
-      recs.push({
-        id: 7,
-        title: "Maintain Hydration",
-        description: "Water intake supports metabolism and reduces false hunger signals.",
-        impact: "Low Priority" as const
-      });
-    }
   }
 
   return {
