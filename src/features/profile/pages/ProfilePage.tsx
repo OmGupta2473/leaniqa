@@ -74,7 +74,7 @@ export function ProfilePage() {
   const {
     name, gender, age, activityLevel,
     weightKg, heightCm, currentBodyFatPct, targetBodyFatPct,
-    tdee, proteinMin, proteinMax, fatMin, fatMax, carbMin, carbMax, fiberMin, fiberMax, waterLitres,
+    tdee, proteinMin, proteinMax, fatMin, fatMax, carbMin, carbMax, fiberMin, fiberMax,
     fatToLoseKg, targetWeightKg, chosenStrategyName, dailyCalorieGoal, dailyDeficit, estimatedWeeks, estimatedCompletionDate, targetMacros
   } = calculated;
 
@@ -247,7 +247,7 @@ export function ProfilePage() {
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <div className="card-base p-4 flex flex-col items-center justify-center text-center">
             <div className="text-[11px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Carbs</div>
             <div className="text-[16px] font-bold text-white">
@@ -259,10 +259,6 @@ export function ProfilePage() {
             <div className="text-[16px] font-bold text-white">
               {targetMacros?.fat ? displayVal(targetMacros.fat) : `${displayVal(fatMin)}–${displayVal(fatMax)}`}
             </div>
-          </div>
-          <div className="card-base p-4 flex flex-col items-center justify-center text-center">
-            <div className="text-[11px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Water</div>
-            <div className="text-[16px] font-bold text-[#378ADD]">{displayVal(waterLitres)} L</div>
           </div>
         </div>
       </div>
