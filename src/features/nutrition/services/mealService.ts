@@ -109,23 +109,11 @@ export const mealService = {
     
     devLog('--- SUPABASE INSERT PAYLOAD ---', payload);
     
-    let res = await supabase
+    const res = await supabase
       .from('meal_logs')
       .insert(payload)
       .select()
       .maybeSingle();
-      
-    // If the error indicates a missing column (PGRST204 or PGRST205 or message includes column), try without meal_slot
-    if (res.error && (res.error.code?.startsWith('PGRST20') || res.error.message?.toLowerCase().includes('column'))) {
-      devWarn('Column might be missing. Retrying without meal_slot.');
-      const fallbackPayload = { ...payload };
-      delete (fallbackPayload as any).meal_slot;
-      res = await supabase
-        .from('meal_logs')
-        .insert(fallbackPayload)
-        .select()
-        .maybeSingle();
-    }
       
     if (res.error && res.error.code !== 'PGRST116') {
       logError(new Error('Supabase insert error'), { error: res.error, payload });
