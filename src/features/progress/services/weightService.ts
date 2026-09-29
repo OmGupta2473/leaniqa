@@ -47,38 +47,14 @@ export const weightService = {
       user_id: userId,
     };
 
-    // Check if an entry for this local date already exists
     const datePrefix = logData.date.substring(0, 10);
-    
-    const { data: existing } = await supabase
-      .from('weight_logs')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('date', datePrefix)
-      .limit(1)
-      .maybeSingle();
+    const upsertPayload = { ...payload, date: datePrefix };
 
-    let data, error;
-    if (existing && existing.id) {
-      // Update existing
-      const res = await supabase
-        .from('weight_logs')
-        .update(payload)
-        .eq('id', existing.id)
-        .select()
-        .maybeSingle();
-      data = res.data;
-      error = res.error;
-    } else {
-      // Insert new
-      const res = await supabase
-        .from('weight_logs')
-        .insert(payload)
-        .select()
-        .maybeSingle();
-      data = res.data;
-      error = res.error;
-    }
+    const { data, error } = await supabase
+      .from('weight_logs')
+      .upsert(upsertPayload, { onConflict: 'user_id,date' })
+      .select()
+      .maybeSingle();
 
     if (error && error.code !== 'PGRST116') {
       console.error('Error adding weight log:', error);
