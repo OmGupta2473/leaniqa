@@ -30,7 +30,7 @@ import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
 import { MealLoggerSkeleton } from '@/shared/components/Skeletons';
 import { useToast } from '@/shared/components/Toast';
 import { devLog } from '@/shared/utils/logger';
-import { formatDateKey } from '@/shared/utils/dateKey';
+import { getKolkataDateString, getKolkataHour, shiftKolkataDateString, kolkataDateStringToUtcMidnight, msSinceKolkataMidnight } from '@/shared/utils/timezone';
 
 const getDeterministicFallback = (text: string) => {
   const normalizedText = text.toLowerCase();
@@ -226,53 +226,40 @@ export function MealLoggerPage() {
     }
   }, [profile?.id, initializeSession]);
 
-  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
+  const [selectedDateStr, setSelectedDateStr] = useState<string>(() => getKolkataDateString());
   const [pendingMeal, setPendingMeal] = useState<{ text: string; data: any } | null>(null);
   const [failedMealText, setFailedMealText] = useState<string | null>(null);
   const [failedMealError, setFailedMealError] = useState<string | null>(null);
   const [isCustomMealModalOpen, setIsCustomMealModalOpen] = useState(false);
   const [retryCount, setRetryCount] = useState<number>(0);
 
-  const isToday = (d: Date) => {
-    const today = new Date();
-    return d.getDate() === today.getDate() &&
-           d.getMonth() === today.getMonth() &&
-           d.getFullYear() === today.getFullYear();
-  };
-
-  const isYesterday = (d: Date) => {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    return d.getDate() === yesterday.getDate() &&
-           d.getMonth() === yesterday.getMonth() &&
-           d.getFullYear() === yesterday.getFullYear();
-  };
-
-  const isAtOrBeforeCreatedAt = (d: Date) => {
+  const isToday = (dateStr: string) => dateStr === getKolkataDateString();
+  const isYesterday = (dateStr: string) =>
+    dateStr === shiftKolkataDateString(getKolkataDateString(), -1);
+  const isAtOrBeforeCreatedAt = (dateStr: string) => {
     if (!profile?.created_at) return false;
-    const createdAt = new Date(profile.created_at);
-    // compare only year, month, day
-    const dTime = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-    const cTime = new Date(createdAt.getFullYear(), createdAt.getMonth(), createdAt.getDate()).getTime();
-    return dTime <= cTime;
+    const createdStr = getKolkataDateString(new Date(profile.created_at));
+    return dateStr <= createdStr;
   };
 
 
-  const formatDateLabel = (d: Date) => {
-    if (isToday(d)) return "Today";
-    if (isYesterday(d)) return "Yesterday";
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const formatDateLabel = (dateStr: string) => {
+    if (isToday(dateStr)) return "Today";
+    if (isYesterday(dateStr)) return "Yesterday";
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric',
+    });
   };
 
-  const dateKeyStr = formatDateKey(selectedDate);
+  const dateKeyStr = selectedDateStr;
 
-  const getMealTime = () => {
-    const d = new Date(selectedDate);
+  const getMealTime = (): Date => {
     const now = new Date();
-    d.setHours(now.getHours());
-    d.setMinutes(now.getMinutes());
-    d.setSeconds(now.getSeconds());
-    return d;
+    if (selectedDateStr === getKolkataDateString(now)) return now;
+    const offsetMs = msSinceKolkataMidnight(now);
+    const selectedMidnightUtc = kolkataDateStringToUtcMidnight(selectedDateStr);
+    return new Date(selectedMidnightUtc.getTime() + offsetMs);
   };
 
   const selectedMealSlot = useNutritionStore(s => s.selectedMealSlot);
@@ -280,7 +267,7 @@ export function MealLoggerPage() {
 
   useEffect(() => {
     clearOldChats();
-    const hour = new Date().getHours();
+    const hour = getKolkataHour();
     if (hour < 12) setSelectedMealSlot("breakfast");
     else if (hour < 18) setSelectedMealSlot("lunch");
     else setSelectedMealSlot("dinner");
@@ -314,7 +301,7 @@ export function MealLoggerPage() {
     calPct,
     proPct,
     isOnline
-  } = useDailyNutrition(selectedDate);
+  } = useDailyNutrition(selectedDateStr);
 
   const breakfastMeals = meals.filter(m => m.meal_slot?.toLowerCase() === "breakfast");
   const lunchMeals = meals.filter(m => m.meal_slot?.toLowerCase() === "lunch");
@@ -703,39 +690,35 @@ export function MealLoggerPage() {
       <div className="mb-6 flex items-center justify-between">
         <div className="flex flex-col">
           <h2 className="text-[28px] font-semibold text-white tracking-tight">Meal Log</h2>
-          <div className="text-[14px] font-medium text-[rgba(235,235,245,0.5)] mt-0.5">{selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</div>
+          <div className="text-[14px] font-medium text-[rgba(235,235,245,0.5)] mt-0.5">{formatDateLabel(selectedDateStr)}</div>
         </div>
         <div className="flex items-center gap-3">
           <button 
             onClick={() => {
-              if (isAtOrBeforeCreatedAt(selectedDate)) return;
-              const d = new Date(selectedDate);
-              d.setDate(d.getDate() - 1);
-              setSelectedDate(d);
+              if (isAtOrBeforeCreatedAt(selectedDateStr)) return;
+              setSelectedDateStr(shiftKolkataDateString(selectedDateStr, -1));
             }}
-            disabled={isAtOrBeforeCreatedAt(selectedDate)}
+            disabled={isAtOrBeforeCreatedAt(selectedDateStr)}
             className={cn(
               "min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full transition-all duration-200",
-              isAtOrBeforeCreatedAt(selectedDate) ? "opacity-30 cursor-not-allowed" : "bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] cursor-pointer active:scale-95"
+              isAtOrBeforeCreatedAt(selectedDateStr) ? "opacity-30 cursor-not-allowed" : "bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] cursor-pointer active:scale-95"
             )}
-            aria-label="Previous Day" title={isAtOrBeforeCreatedAt(selectedDate) ? "This is your first day on LeanIQA. No meal history exists before this date." : "Previous Day"}
+            aria-label="Previous Day" title={isAtOrBeforeCreatedAt(selectedDateStr) ? "This is your first day on LeanIQA. No meal history exists before this date." : "Previous Day"}
           >
             <ChevronLeft size={18} className="text-white" />
           </button>
           <span className="text-[15px] font-semibold text-white min-w-[85px] text-center tracking-tight">
-            {formatDateLabel(selectedDate)}
+            {formatDateLabel(selectedDateStr)}
           </span>
           <button 
             onClick={() => {
-              if (isToday(selectedDate)) return;
-              const d = new Date(selectedDate);
-              d.setDate(d.getDate() + 1);
-              setSelectedDate(d);
+              if (isToday(selectedDateStr)) return;
+              setSelectedDateStr(shiftKolkataDateString(selectedDateStr, 1));
             }}
-            disabled={isToday(selectedDate)}
+            disabled={isToday(selectedDateStr)}
             className={cn(
               "min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full transition-all duration-200",
-              isToday(selectedDate) ? "opacity-30 cursor-not-allowed" : "bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] cursor-pointer active:scale-95"
+              isToday(selectedDateStr) ? "opacity-30 cursor-not-allowed" : "bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] cursor-pointer active:scale-95"
             )}
           >
             <ChevronRight size={18} className="text-white" />

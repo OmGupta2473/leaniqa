@@ -2,15 +2,14 @@ import { useQuery } from '@tanstack/react-query';
 import { mealService } from '@/features/nutrition/services/mealService';
 import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
 import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
-import { formatDateKey } from '@/shared/utils/dateKey';
+import { parseDateKey } from '@/shared/utils/dateKey';
 
-export function useDailyNutrition(date: Date) {
+export function useDailyNutrition(dateStr: string) {
   const isOnline = useNetworkConnectivity();
-  const dateKeyStr = formatDateKey(date);
 
   const { data: meals = [], isLoading: isMealsLoading, isError: isMealsError, refetch: refetchMeals } = useQuery({
-    queryKey: ["meals", "date", dateKeyStr],
-    queryFn: () => mealService.getMealsForDate(date),
+    queryKey: ["meals", "date", dateStr],
+    queryFn: () => mealService.getMealsForDate(parseDateKey(dateStr)),
   });
 
   const { profileData, isLoading: isProfileLoading } = useCalculatedProfile();
@@ -36,7 +35,7 @@ export function useDailyNutrition(date: Date) {
   const completionScore = dailyTargetKcal ? Math.round(((calPct + proPct + fatPct + carbPct) / 4) * 100) : 0;
 
   return {
-    dateKeyStr,
+    dateKeyStr: dateStr,
     meals,
     isMealsLoading,
     isMealsError,
