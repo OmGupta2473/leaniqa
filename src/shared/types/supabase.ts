@@ -43,6 +43,7 @@ export interface DbMealLog {
   tip?: string;
   meal_slot?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   meal_source?: 'ai' | 'manual';
+  client_token?: string;
 }
 
 export interface DbWeightLog {

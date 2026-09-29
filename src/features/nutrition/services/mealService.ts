@@ -73,7 +73,7 @@ export const mealService = {
     return data || [];
   },
 
-  async addMeal(mealData: Omit<DbMealLog, 'id' | 'user_id'>): Promise<DbMealLog | null> {
+  async addMeal(mealData: Omit<DbMealLog, 'id' | 'user_id' | 'client_token'> & { client_token: string }): Promise<DbMealLog | null> {
     const userId = await authService.getUserId();
     const { meal_source, fiber, ...restMealData } = mealData as any;
     if (restMealData.meal_slot === 'snack') {
@@ -91,27 +91,11 @@ export const mealService = {
     payload.carbs = Math.round(payload.carbs || 0);
     payload.fiber = Math.round(payload.fiber || 0);
     
-    // Deduplication check: prevent identical meals logged within the last 2 minutes
-    const twoMinsAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-    const { data: recentMeals } = await supabase
-      .from('meal_logs')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('meal_text', payload.meal_text)
-      .eq('calories', payload.calories)
-      .gte('created_at', twoMinsAgo)
-      .limit(1);
-
-    if (recentMeals && recentMeals.length > 0) {
-      devLog('Duplicate meal detected (retries), skipping insert');
-      return { ...payload, id: recentMeals[0].id } as DbMealLog;
-    }
-    
     devLog('--- SUPABASE INSERT PAYLOAD ---', payload);
     
     const res = await supabase
       .from('meal_logs')
-      .insert(payload)
+      .upsert(payload, { onConflict: 'user_id,client_token' })
       .select()
       .maybeSingle();
       
