@@ -1,2 +1,0 @@
-const o={outExpo:[.16,1,.3,1],smooth:[.4,0,.2,1]},t={hidden:{opacity:0,y:16},visible:{opacity:1,y:0,transition:{duration:.5,ease:o.outExpo,staggerChildren:.07}},exit:{opacity:0,y:-8,transition:{duration:.25,ease:o.smooth}}},a={glow:{scale:1.03,boxShadow:"0 0 32px rgba(212,255,0,0.35)",transition:{duration:.2,ease:o.smooth}},subtle:{backgroundColor:"rgba(255,255,255,0.06)"}},s={scale:{scale:.96,transition:{duration:.1}}};export{a as h,t as p,s as t};
-//# sourceMappingURL=motion-Cqt-eLJY.js.map
