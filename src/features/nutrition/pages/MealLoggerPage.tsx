@@ -411,7 +411,8 @@ export function MealLoggerPage() {
         meal_slot: mealData.meal_slot,
         tip: mealData.tip
       },
-      source: 'manual'
+      source: 'manual',
+      client_token: crypto.randomUUID(),
     });
   };
 
@@ -585,7 +586,7 @@ export function MealLoggerPage() {
   });
 
   const confirmMealMutation = useMutation({
-    mutationFn: async ({ text, data, source }: { text: string, data: any, source?: 'manual' | 'ai' }) => {
+    mutationFn: async ({ text, data, source, client_token }: { text: string, data: any, source?: 'manual' | 'ai', client_token: string }) => {
       let finalSlot = data.meal_slot || selectedMealSlot || undefined;
       if (typeof finalSlot === 'string') {
         finalSlot = finalSlot.toLowerCase();
@@ -602,7 +603,8 @@ export function MealLoggerPage() {
         meal_time: getMealTime().toISOString(), 
         tip: data.tip || data.foods_detected?.join(', ') || text, 
         meal_slot: finalSlot,
-        meal_source: source || 'ai'
+        meal_source: source || 'ai',
+        client_token
       };
 
       if (typeof window !== 'undefined' && !navigator.onLine) {
@@ -1008,7 +1010,7 @@ export function MealLoggerPage() {
                       </div>
                       <div className="flex gap-2">
                         <button 
-                          onClick={() => confirmMealMutation.mutate(pendingMeal)}
+                          onClick={() => confirmMealMutation.mutate({ ...pendingMeal, source: 'ai', client_token: crypto.randomUUID() })}
                           disabled={confirmMealMutation.isPending}
                           className="flex-1 bg-[#D4FF00] text-black font-bold py-2 rounded-[12px] text-[13px]"
                         >
