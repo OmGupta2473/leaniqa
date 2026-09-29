@@ -89,7 +89,7 @@ export const mealService = {
     payload.protein = Math.round(payload.protein || 0);
     payload.fat = Math.round(payload.fat || 0);
     payload.carbs = Math.round(payload.carbs || 0);
-    payload.fiber = Math.round(payload.fiber || 0);
+    payload.fiber = Math.round(fiber || 0);
     
     devLog('--- SUPABASE INSERT PAYLOAD ---', payload);
     
