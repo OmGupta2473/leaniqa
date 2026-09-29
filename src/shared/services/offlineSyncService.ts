@@ -2,12 +2,16 @@ import { mealService } from '@/features/nutrition/services/mealService';
 import { profileService } from '@/features/profile/services/profileService';
 import { weightService } from '@/features/progress/services/weightService';
 import { queryClient } from '@/app/query/queryClient';
-import { devLog } from '@/shared/utils/logger';
+import { devLog, devWarn } from '@/shared/utils/logger';
+import { getSessionUserId } from '@/shared/utils/sessionUser';
 
-const QUEUE_KEY = 'LEANIQA_OFFLINE_QUEUE';
+const LEGACY_QUEUE_KEY = 'LEANIQA_OFFLINE_QUEUE';
+const QUEUE_KEY_PREFIX = `${LEGACY_QUEUE_KEY}:`;
+const LEGACY_PENDING_QUEUE_KEY = `${QUEUE_KEY_PREFIX}legacy-pending`;
 
 interface OfflineAction {
   id: string;
+  user_id: string;
   type: 'ADD_MEAL' | 'SAVE_GOAL' | 'DELETE_MEAL' | 'ADD_WEIGHT';
   payload: any;
   timestamp: number;
@@ -16,47 +20,102 @@ interface OfflineAction {
 let syncTimeoutId: number | null = null;
 let retryAttempt = 0;
 let isSyncing = false;
+let hasMigratedLegacyQueue = false;
+
+function queueKeyForUser(userId: string): string {
+  return `${QUEUE_KEY_PREFIX}${userId}`;
+}
+
+function migrateLegacyQueue(): void {
+  if (hasMigratedLegacyQueue || typeof window === 'undefined') return;
+
+  const legacyQueue = window.localStorage.getItem(LEGACY_QUEUE_KEY);
+  if (legacyQueue === null) {
+    hasMigratedLegacyQueue = true;
+    return;
+  }
+
+  // An unauthenticated legacy queue cannot safely be attributed to a user.
+  if (!getSessionUserId()) return;
+
+  try {
+    if (window.localStorage.getItem(LEGACY_PENDING_QUEUE_KEY) === null) {
+      window.localStorage.setItem(LEGACY_PENDING_QUEUE_KEY, legacyQueue);
+    }
+    window.localStorage.removeItem(LEGACY_QUEUE_KEY);
+    hasMigratedLegacyQueue = true;
+    devWarn('Legacy offline queue moved to legacy-pending; it will not be replayed automatically.');
+  } catch {
+    // Leave the legacy queue intact so a later authenticated read can retry.
+  }
+}
+
+function getQueueForUser(userId: string): OfflineAction[] {
+  if (typeof window === 'undefined') return [];
+  migrateLegacyQueue();
+
+  try {
+    const data = window.localStorage.getItem(queueKeyForUser(userId));
+    const queue: OfflineAction[] = data ? JSON.parse(data) : [];
+    return queue.filter((action) => action.user_id === userId);
+  } catch {
+    return [];
+  }
+}
+
+function saveQueueForUser(userId: string, queue: OfflineAction[]): void {
+  window.localStorage.setItem(queueKeyForUser(userId), JSON.stringify(queue));
+}
 
 export const offlineSyncService = {
   getQueue(): OfflineAction[] {
-    if (typeof window === 'undefined') return [];
-    try {
-      const data = localStorage.getItem(QUEUE_KEY);
-      return data ? JSON.parse(data) : [];
-    } catch {
-      return [];
-    }
+    const userId = getSessionUserId();
+    if (!userId) return [];
+    return getQueueForUser(userId);
   },
 
-  enqueue(action: Omit<OfflineAction, 'id' | 'timestamp'>) {
-    const queue = this.getQueue();
+  enqueue(action: Omit<OfflineAction, 'id' | 'timestamp' | 'user_id'>): void {
+    const userId = getSessionUserId();
+    if (!userId) {
+      if (import.meta.env.DEV) devWarn('Offline action ignored because there is no active session user.');
+      return;
+    }
+
+    const queue = getQueueForUser(userId);
     queue.push({
       ...action,
       id: crypto.randomUUID(),
+      user_id: userId,
       timestamp: Date.now(),
     });
-    localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+    saveQueueForUser(userId, queue);
     
     // Attempt to flush immediately if online
     if (typeof window !== 'undefined' && navigator.onLine) {
-        this.flush();
+        void this.flush();
     }
   },
 
-  async flush() {
-    if (typeof window === 'undefined' || !navigator.onLine) return;
-    
-    const queue = this.getQueue();
+  clearQueueForUser(userId: string | null | undefined): void {
+    if (typeof window === 'undefined' || !userId) return;
+    window.localStorage.removeItem(queueKeyForUser(userId));
+  },
+
+  async flush(): Promise<void> {
+    const userId = getSessionUserId();
+    if (!userId || typeof window === 'undefined' || !navigator.onLine) return;
+    if (isSyncing) return;
+
+    const queue = getQueueForUser(userId);
     if (queue.length === 0) {
         retryAttempt = 0;
         return;
     }
 
-    if (isSyncing) return;
     isSyncing = true;
 
     devLog(`Flushing offline queue (${queue.length} items), attempt ${retryAttempt + 1}`);
-    const newQueue = [];
+    const newQueue: OfflineAction[] = [];
     let hadNetworkError = false;
 
     for (const action of queue) {
@@ -87,8 +146,14 @@ export const offlineSyncService = {
       }
     }
 
+    // Do not recreate User A's queue after a sign-out or account switch.
+    if (getSessionUserId() !== userId) {
+      isSyncing = false;
+      return;
+    }
+
     if (newQueue.length !== queue.length) {
-      localStorage.setItem(QUEUE_KEY, JSON.stringify(newQueue));
+      saveQueueForUser(userId, newQueue);
       // Re-fetch meals to show synced data
       queryClient.invalidateQueries({ queryKey: ['meals'] });
       queryClient.invalidateQueries({ queryKey: ['goal'] });
@@ -102,7 +167,7 @@ export const offlineSyncService = {
         const backoffMs = Math.min(1000 * (2 ** retryAttempt), 5 * 60 * 1000); // Max 5 mins
         devLog(`Sync failed, retrying in ${backoffMs}ms`);
         if (syncTimeoutId) window.clearTimeout(syncTimeoutId);
-        syncTimeoutId = window.setTimeout(() => this.flush(), backoffMs);
+        syncTimeoutId = window.setTimeout(() => void this.flush(), backoffMs);
     } else if (!hadNetworkError) {
         // Success
         retryAttempt = 0;
@@ -120,6 +185,12 @@ if (typeof window !== 'undefined') {
         window.clearTimeout(syncTimeoutId);
         syncTimeoutId = null;
     }
-    offlineSyncService.flush();
+    void offlineSyncService.flush();
   });
 }
+
+export const offlineQueueStorage = {
+  legacyKey: LEGACY_QUEUE_KEY,
+  legacyPendingKey: LEGACY_PENDING_QUEUE_KEY,
+  keyForUser: queueKeyForUser,
+};

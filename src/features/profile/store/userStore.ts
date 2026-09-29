@@ -85,7 +85,8 @@ export const useUserStore = create<UserState>()(
         goalWizardCurrentBfMid: null,
         goalWizardTargetBfMid: null,
         draftProfile: null,
-        profileEditState: 'summary'
+        profileEditState: 'summary',
+        macroOverrides: {}
       }),
     }),
     createPersistConfig('leaniqa-user-store', (state) => ({
