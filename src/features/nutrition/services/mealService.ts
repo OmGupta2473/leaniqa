@@ -3,6 +3,7 @@ import { DbMealLog } from '@/shared/types/supabase';
 import { authService } from '@/features/auth/services/authService';
 import { logError } from '@/shared/utils/logger';
 import { devLog, devWarn } from '@/shared/utils/logger';
+import { getKolkataStartOfDay, kolkataDateStringToUtcMidnight } from '@/shared/utils/timezone';
 
 export const mealService = {
   async getMeals(options?: { days?: number, limit?: number }): Promise<DbMealLog[]> {
@@ -34,9 +35,9 @@ export const mealService = {
 
   async getTodaysMeals(): Promise<DbMealLog[]> {
     const userId = await authService.getUserId();
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-    const startOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
+    const startOfToday = getKolkataStartOfDay();
+    const tomorrowInstant = new Date(new Date(startOfToday).getTime() + 24 * 60 * 60 * 1000);
+    const startOfTomorrow = getKolkataStartOfDay(tomorrowInstant);
     
     const { data, error } = await supabase
       .from('meal_logs')
@@ -55,8 +56,9 @@ export const mealService = {
 
   async getMealsForDate(date: Date): Promise<DbMealLog[]> {
     const userId = await authService.getUserId();
-    const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString();
-    const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1).toISOString();
+    const startOfDay = getKolkataStartOfDay(date);
+    const nextDayInstant = new Date(new Date(startOfDay).getTime() + 24 * 60 * 60 * 1000);
+    const endOfDay = getKolkataStartOfDay(nextDayInstant);
     
     const { data, error } = await supabase
       .from('meal_logs')
@@ -125,9 +127,9 @@ export const mealService = {
   async getMealsByDate(dateStr: string): Promise<DbMealLog[]> {
     const userId = await authService.getUserId();
     // dateStr is 'YYYY-MM-DD'
-    const [year, month, day] = dateStr.split('-').map(Number);
-    const startOfDay = new Date(year, month - 1, day).toISOString();
-    const endOfDay = new Date(year, month - 1, day + 1).toISOString();
+    const startOfDay = kolkataDateStringToUtcMidnight(dateStr).toISOString();
+    const endInstant = new Date(new Date(startOfDay).getTime() + 24 * 60 * 60 * 1000);
+    const endOfDay = endInstant.toISOString();
     
     const { data, error } = await supabase
       .from('meal_logs')
