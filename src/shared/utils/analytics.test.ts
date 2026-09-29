@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const posthog = vi.hoisted(() => ({ identify: vi.fn(), reset: vi.fn() }));
 vi.mock('posthog-js', () => ({ default: { init: vi.fn(), capture: vi.fn(), identify: posthog.identify, reset: posthog.reset } }));
@@ -6,7 +6,12 @@ vi.mock('@/shared/utils/logger', () => ({ devLog: vi.fn() }));
 
 beforeEach(() => {
   vi.resetModules();
+  vi.stubEnv('VITE_POSTHOG_KEY', 'test-key');
   posthog.identify.mockReset();
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 describe('analytics identity', () => {

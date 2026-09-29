@@ -13,8 +13,7 @@ export interface ErrorContext {
  * We're setting up the Sentry SDK here. 
  */
 export const initCrashReporting = () => {
-  // Use VITE_SENTRY_DSN from environment, or fallback to the provided default DSN
-  const dsn = import.meta.env.VITE_SENTRY_DSN || 'https://3fe7d1053b5cf48ebe5696ca5afc3bfa@o4511789342916608.ingest.de.sentry.io/4511789346390096'; 
+  const dsn = import.meta.env.VITE_SENTRY_DSN;
   const isDev = import.meta.env.MODE === 'development';
 
   Sentry.init({
@@ -31,8 +30,12 @@ export const initCrashReporting = () => {
     // Capture React routing navigation, console logs, etc.
     integrations: [
       Sentry.browserTracingIntegration(),
-      Sentry.replayIntegration(),
-      Sentry.breadcrumbsIntegration({ console: true }),
+      Sentry.replayIntegration({
+        maskAllText: true,
+        maskAllInputs: true,
+        blockAllMedia: true,
+      }),
+      Sentry.breadcrumbsIntegration({ console: false }),
     ],
     
     // Capture Replay for sessions with errors
@@ -47,7 +50,7 @@ export const initCrashReporting = () => {
     
     beforeSend(event) {
       // Global scrub for sensitive fields in request data or breadcrumbs
-      const sensitiveKeys = ['password', 'token', 'secret', 'apikey', 'authorization'];
+      const sensitiveKeys = ['password', 'token', 'secret', 'apikey', 'authorization', 'meal', 'meal_text', 'text', 'message', 'chat', 'weight', 'email', 'body'];
       
       const scrubObject = (obj: any) => {
         if (!obj || typeof obj !== 'object') return;

@@ -56,8 +56,7 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: Custom
       fiber: fiber ? Math.round(parseFloat(fiber)) : undefined,
       meal_slot: slot,
       meal_time: new Date().toISOString(),
-      tip: "Manually logged meal.",
-      meal_source: 'manual' as any
+      tip: "Manually logged meal."
     });
     
     // Reset

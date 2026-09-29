@@ -22,23 +22,22 @@ export type EventName =
   | 'Retention Milestone';
 
 export const initAnalytics = () => {
-  const posthogKey = import.meta.env.VITE_POSTHOG_KEY || 'phc_rP4qPtGoTQoMt6g93Kf9NqtrSTnq2JVztTCU2LZSyc2W';
+  const posthogKey = import.meta.env.VITE_POSTHOG_KEY;
   const posthogHost = import.meta.env.VITE_POSTHOG_HOST || 'https://us.i.posthog.com';
 
-  // Only init if we're in browser environment
-  if (typeof window !== 'undefined') {
-    posthog.init(posthogKey, {
-      api_host: posthogHost,
-      autocapture: false, // Explicitly false as requested to only track what we define
-      capture_pageview: false, // We handle this manually in AnalyticsObserver
-      capture_pageleave: false,
-      person_profiles: 'always',
-    });
-  }
+  if (typeof window === 'undefined' || !posthogKey) return;
+  posthog.init(posthogKey, {
+    api_host: posthogHost,
+    autocapture: false, // Explicitly false as requested to only track what we define
+    capture_pageview: false, // We handle this manually in AnalyticsObserver
+    capture_pageleave: false,
+    person_profiles: 'always',
+  });
 };
 
 export const analytics = {
   trackPageView: (url: string, title?: string) => {
+    if (!import.meta.env.VITE_POSTHOG_KEY) return;
     devLog(`[Analytics] Page View: ${url} - ${title || 'Unknown Title'}`);
     posthog.capture('$pageview', {
       $current_url: url,
@@ -46,11 +45,13 @@ export const analytics = {
     });
   },
   trackEvent: (eventName: EventName, properties?: Record<string, any>) => {
+    if (!import.meta.env.VITE_POSTHOG_KEY) return;
     const scrubbedProperties = properties ? scrubSensitiveData(properties) : undefined;
     devLog(`[Analytics] Event: ${eventName}`, scrubbedProperties);
     posthog.capture(eventName, scrubbedProperties);
   },
   identifyUser: (userId: string, traits?: Record<string, any>) => {
+    if (!import.meta.env.VITE_POSTHOG_KEY) return;
     if (lastIdentifiedUserId === userId) return;
 
     const scrubbedTraits = traits ? scrubSensitiveData(traits) : undefined;
@@ -59,6 +60,7 @@ export const analytics = {
     lastIdentifiedUserId = userId;
   },
   reset: () => {
+    if (!import.meta.env.VITE_POSTHOG_KEY) return;
     devLog(`[Analytics] Reset User`);
     posthog.reset();
     lastIdentifiedUserId = null;
