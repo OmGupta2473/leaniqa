@@ -50,3 +50,37 @@ describe('profileService invalid-session recovery', () => {
     expect(storage.getItem(offlineQueueStorage.keyForUser('user-a'))).toBeNull();
   });
 });
+
+describe('profileService macro target upsert', () => {
+  it('T-D14-1: surfaces a missing carbs_target error without retrying', async () => {
+    const { useAuthStore } = await import('@/app/store/authStore');
+    useAuthStore.getState().setSession({ user: { id: 'user-a' } } as never);
+    supabase.auth.getSession.mockResolvedValue({ data: { session: { user: { id: 'user-a' } } }, error: null });
+    const error = { code: 'PGRST204', message: 'column "carbs_target" does not exist' };
+    supabase.from
+      .mockReturnValueOnce({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) })
+      .mockReturnValueOnce({ insert: () => ({ select: () => ({ maybeSingle: async () => ({ data: null, error }) }) }) });
+    const { profileService } = await import('./profileService');
+
+    await expect(profileService.upsertProfile({ carbs_target: 200 })).rejects.toMatchObject({
+      message: expect.stringContaining('carbs_target'),
+    });
+
+    expect(supabase.from).toHaveBeenCalledTimes(2);
+    expect(supabase.from).toHaveBeenNthCalledWith(1, 'profiles');
+    expect(supabase.from).toHaveBeenNthCalledWith(2, 'profiles');
+  });
+
+  it('T-D14-2: returns profile data on a successful upsert', async () => {
+    const { useAuthStore } = await import('@/app/store/authStore');
+    useAuthStore.getState().setSession({ user: { id: 'user-a' } } as never);
+    supabase.auth.getSession.mockResolvedValue({ data: { session: { user: { id: 'user-a' } } }, error: null });
+    const profile = { id: 'user-a', email: 'user@example.com', carbs_target: 200 };
+    supabase.from
+      .mockReturnValueOnce({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) })
+      .mockReturnValueOnce({ insert: () => ({ select: () => ({ maybeSingle: async () => ({ data: profile, error: null }) }) }) });
+    const { profileService } = await import('./profileService');
+
+    await expect(profileService.upsertProfile({ carbs_target: 200 })).resolves.toEqual(profile);
+  });
+});
