@@ -436,31 +436,35 @@ serve(async (req) => {
     }
 
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const cacheClient = serviceRoleKey ? createClient(supabaseUrl, serviceRoleKey) : supabase;
-    try {
-      const { data: cacheData, error: cacheError } = await cacheClient.from("meal_parse_cache").select("result").eq("normalized_text", context.normalizedText).eq("meal_type", context.mealType).limit(1).maybeSingle();
-      if (cacheError) {
-        console.error(JSON.stringify({ level: "error", stage: "DBCache", event: "read_error", request_id: requestId }));
-      } else if (cacheData?.result) {
-        const cached = MealSchema.safeParse(cacheData.result);
-        if (cached.success) {
-          const validated = validator.validate(cached.data);
-          const cachedEntry: CacheEntry = {
-            normalizedText: context.normalizedText,
-            result: validated,
-            quantities: queryQuantities,
-          };
-          const dbEntries = memoryCache.get(cacheKey) ?? [];
-          dbEntries.push(cachedEntry);
-          memoryCache.set(cacheKey, dbEntries.slice(-25));
-          console.log(JSON.stringify({ level: "info", stage: "DBCache", event: "hit", request_id: requestId, latency_ms: Date.now() - cacheStartedAt }));
-          return responseFor(validated, corsHeaders);
+    const cacheClient = serviceRoleKey ? createClient(supabaseUrl, serviceRoleKey) : null;
+    if (cacheClient) {
+      try {
+        const { data: cacheData, error: cacheError } = await cacheClient.from("meal_parse_cache").select("result").eq("normalized_text", context.normalizedText).eq("meal_type", context.mealType).limit(1).maybeSingle();
+        if (cacheError) {
+          console.error(JSON.stringify({ level: "error", stage: "DBCache", event: "read_error", request_id: requestId }));
+        } else if (cacheData?.result) {
+          const cached = MealSchema.safeParse(cacheData.result);
+          if (cached.success) {
+            const validated = validator.validate(cached.data);
+            const cachedEntry: CacheEntry = {
+              normalizedText: context.normalizedText,
+              result: validated,
+              quantities: queryQuantities,
+            };
+            const dbEntries = memoryCache.get(cacheKey) ?? [];
+            dbEntries.push(cachedEntry);
+            memoryCache.set(cacheKey, dbEntries.slice(-25));
+            console.log(JSON.stringify({ level: "info", stage: "DBCache", event: "hit", request_id: requestId, latency_ms: Date.now() - cacheStartedAt }));
+            return responseFor(validated, corsHeaders);
+          }
         }
+      } catch {
+        console.error(JSON.stringify({ level: "error", stage: "DBCache", event: "read_exception", request_id: requestId }));
       }
-    } catch {
-      console.error(JSON.stringify({ level: "error", stage: "DBCache", event: "read_exception", request_id: requestId }));
+      console.log(JSON.stringify({ level: "info", stage: "DBCache", event: "miss", request_id: requestId, latency_ms: Date.now() - cacheStartedAt }));
+    } else {
+      console.log(JSON.stringify({ level: "info", stage: "DBCache", event: "cache_disabled_no_service_role", request_id: requestId }));
     }
-    console.log(JSON.stringify({ level: "info", stage: "DBCache", event: "miss", request_id: requestId, latency_ms: Date.now() - cacheStartedAt }));
 
     let quotaResult: { usage_count?: number; limit_value?: number } | undefined;
     try {
@@ -502,11 +506,15 @@ serve(async (req) => {
     const existingEntries = memoryCache.get(cacheKey) ?? [];
     existingEntries.push(cacheEntry);
     memoryCache.set(cacheKey, existingEntries.slice(-25));
-    try {
-      const { error: cacheWriteError } = await cacheClient.from("meal_parse_cache").insert({ normalized_text: context.normalizedText, meal_type: context.mealType, result: data });
-      if (cacheWriteError) console.error(JSON.stringify({ level: "error", stage: "DBCache", event: "write_error", request_id: requestId }));
-    } catch {
-      console.error(JSON.stringify({ level: "error", stage: "DBCache", event: "write_exception", request_id: requestId }));
+    if (cacheClient) {
+      try {
+        const { error: cacheWriteError } = await cacheClient.from("meal_parse_cache").insert({ normalized_text: context.normalizedText, meal_type: context.mealType, result: data });
+        if (cacheWriteError) console.error(JSON.stringify({ level: "error", stage: "DBCache", event: "write_error", request_id: requestId }));
+      } catch {
+        console.error(JSON.stringify({ level: "error", stage: "DBCache", event: "write_exception", request_id: requestId }));
+      }
+    } else {
+      console.error(JSON.stringify({ level: "error", stage: "DBCache", event: "cache_write_skipped", request_id: requestId }));
     }
 
     console.log(JSON.stringify({ level: "info", stage: "Pipeline", event: "success", parser: "Gemini", request_id: requestId, total_latency_ms: Date.now() - startedAt }));
