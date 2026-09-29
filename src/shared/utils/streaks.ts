@@ -1,4 +1,5 @@
 import { DbDailyMetric } from '@/shared/types/supabase';
+import { getKolkataDateString } from '@/shared/utils/timezone';
 
 export interface Award {
   id: string;
@@ -32,20 +33,16 @@ export const AWARDS_CATALOG: Award[] = [
 
 export function toUtcDay(dateStr: string | Date): number {
   if (!dateStr) return 0;
-  let year, month, day;
+  let yyyyMmDd: string;
   if (typeof dateStr === 'string') {
     const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
     if (!match) return 0;
-    year = +match[1];
-    month = +match[2] - 1;
-    day = +match[3];
+    yyyyMmDd = `${match[1]}-${match[2]}-${match[3]}`;
   } else {
-    year = dateStr.getFullYear();
-    month = dateStr.getMonth();
-    day = dateStr.getDate();
+    yyyyMmDd = getKolkataDateString(dateStr);
   }
-  const d = new Date(Date.UTC(year, month, day));
-  return Math.floor(d.getTime() / 86400000);
+  const [y, m, d] = yyyyMmDd.split('-').map(Number);
+  return Math.floor(Date.UTC(y, m - 1, d) / 86400000);
 }
 
 export function calculateCurrentStreak(metrics: DbDailyMetric[], predicate: (m: DbDailyMetric) => boolean): number {

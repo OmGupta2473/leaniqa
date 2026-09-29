@@ -1,13 +1,8 @@
 import { ReactNode, StrictMode } from 'react';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
-import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import { queryClient } from '@/app/query/queryClient';
+import { queryPersister } from '@/app/query/queryPersister';
 import { ToastProvider } from '@/shared/components/Toast';
-
-const persister = createSyncStoragePersister({
-  storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-  key: 'REACT_QUERY_OFFLINE_CACHE',
-});
 
 export function AppProvider({ children }: { children: ReactNode }) {
   return (
@@ -15,7 +10,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       <PersistQueryClientProvider 
         client={queryClient}
         persistOptions={{ 
-          persister,
+          persister: queryPersister,
           maxAge: 24 * 60 * 60 * 1000, // 24 hours
           dehydrateOptions: {
             shouldDehydrateQuery: (query) => {

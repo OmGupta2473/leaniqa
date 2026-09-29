@@ -37,9 +37,8 @@ export interface UserState {
   macroOverrides?: {
     carbs_target?: number | null;
     fat_target?: number | null;
-    water_target?: number | null;
   };
-  setMacroOverrides: (overrides: { carbs_target?: number | null, fat_target?: number | null, water_target?: number | null }) => void;
+  setMacroOverrides: (overrides: { carbs_target?: number | null, fat_target?: number | null }) => void;
 
   clearUserStore: () => void;
 }
@@ -85,7 +84,8 @@ export const useUserStore = create<UserState>()(
         goalWizardCurrentBfMid: null,
         goalWizardTargetBfMid: null,
         draftProfile: null,
-        profileEditState: 'summary'
+        profileEditState: 'summary',
+        macroOverrides: {}
       }),
     }),
     createPersistConfig('leaniqa-user-store', (state) => ({

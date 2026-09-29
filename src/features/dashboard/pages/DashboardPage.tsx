@@ -7,6 +7,7 @@ import { Target, Footprints, Flame, Sparkles, ChevronRight, Activity, TrendingDo
 import { useQuery } from "@tanstack/react-query";
 import { useCalculatedProfile } from "@/shared/hooks/useCalculatedProfile";
 import { useDailyNutrition } from "@/features/nutrition/hooks/useDailyNutrition";
+import { getKolkataDateString } from "@/shared/utils/timezone";
 import { mealService } from "@/features/nutrition/services/mealService";
 import { useNetworkConnectivity } from "@/shared/hooks/useNetworkConnectivity";
 import { EmptyState } from "@/shared/components/EmptyState";
@@ -111,7 +112,7 @@ export function DashboardPage() {
     carbPct,
     completionScore,
     isOnline
-  } = useDailyNutrition(now);
+  } = useDailyNutrition(getKolkataDateString(now));
 
   const name = profileData?.name || "User";
   const weightKg = profileData?.weightKg || 0;

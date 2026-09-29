@@ -7,14 +7,7 @@ import { profileService } from '@/features/profile/services/profileService';
 import { reportService } from './reportService';
 import { authService } from '@/features/auth/services/authService';
 import { DbDailyMetric } from '@/shared/types/supabase';
-
-function getLocalDateString() {
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
+import { getKolkataDateString } from '@/shared/utils/timezone';
 
 export const complianceService = {
   
@@ -55,7 +48,6 @@ export const complianceService = {
         actual_calories: actualCalories,
         target_protein: targetProtein,
         actual_protein: actualProtein,
-        water: 0,
         score
       };
       
@@ -94,13 +86,13 @@ export const complianceService = {
         authService.getUserId(),
         queryClient.getQueryData<any>(['profile']) || queryClient.fetchQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() }),
         queryClient.getQueryData<any>(['goal']) || queryClient.fetchQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() }),
-        queryClient.getQueryData<any[]>(['meals', 'today']) || queryClient.fetchQuery({ queryKey: ['meals', 'today'], queryFn: () => mealService.getTodaysMeals() }),
+        queryClient.getQueryData<any[]>(['meals', 'date', getKolkataDateString()]) || queryClient.fetchQuery({ queryKey: ['meals', 'date', getKolkataDateString()], queryFn: () => mealService.getMealsForDate(new Date()) }),
         queryClient.getQueryData<any[]>(['weightLogs']) || queryClient.fetchQuery({ queryKey: ['weightLogs'], queryFn: () => weightService.getWeightLogs() })
       ]);
       
       if (!profile) return null;
       
-      const today = getLocalDateString();
+      const today = getKolkataDateString();
                   
       const hasWeightLogged = weightLogs.some(w => w.date.startsWith(today));
       let actualCalories = 0;
@@ -126,7 +118,6 @@ export const complianceService = {
         actual_calories: actualCalories,
         target_protein: targetProtein,
         actual_protein: actualProtein,
-        water: 0,
         score
       };
       
@@ -174,7 +165,7 @@ export const complianceService = {
       return { todayScore: 0, weeklyAverage: 0, monthlyAverage: 0 };
     }
     
-    const todayStr = getLocalDateString();
+    const todayStr = getKolkataDateString();
     const todayMetric = metrics.find(m => m.date === todayStr);
     const todayScore = todayMetric ? todayMetric.score : 0;
     

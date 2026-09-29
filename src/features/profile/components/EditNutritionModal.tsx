@@ -18,7 +18,6 @@ export function EditNutritionModal({ isOpen, onClose, calculatedData }: EditNutr
   const [protein, setProtein] = useState(String(calculatedData?.targetMacros?.protein || ''));
   const [carbs, setCarbs] = useState(String(calculatedData?.targetMacros?.carbs || ''));
   const [fat, setFat] = useState(String(calculatedData?.targetMacros?.fat || ''));
-  const [water, setWater] = useState(String(calculatedData?.waterLitres || ''));
   const [errorMsg, setErrorMsg] = useState('');
 
   // Track if macros were manually overridden by the user
@@ -30,7 +29,6 @@ export function EditNutritionModal({ isOpen, onClose, calculatedData }: EditNutr
       setProtein(String(calculatedData?.targetMacros?.protein || calculatedData?.proteinMid || ''));
       setCarbs(String(calculatedData?.targetMacros?.carbs || ''));
       setFat(String(calculatedData?.targetMacros?.fat || ''));
-      setWater(String(calculatedData?.waterLitres || ''));
       setManualOverride(calculatedData?.manualOverrides?.carbs || calculatedData?.manualOverrides?.fat || false);
       setErrorMsg('');
     }
@@ -79,7 +77,6 @@ export function EditNutritionModal({ isOpen, onClose, calculatedData }: EditNutr
       const targetPro = parseFloat(protein);
       const targetCarbs = parseFloat(carbs);
       const targetFat = parseFloat(fat);
-      const targetWater = parseFloat(water);
       
       if (isNaN(targetCals) || targetCals < 500 || targetCals > 10000) {
         throw new Error("Please enter a valid daily calorie goal (500-10000)");
@@ -92,9 +89,6 @@ export function EditNutritionModal({ isOpen, onClose, calculatedData }: EditNutr
       }
       if (isNaN(targetFat) || targetFat < 0 || targetFat > 500) {
         throw new Error("Please enter a valid fat goal (0-500g)");
-      }
-      if (isNaN(targetWater) || targetWater < 0 || targetWater > 20) {
-        throw new Error("Please enter a valid water goal (0-20L)");
       }
 
       const profilePayload: any = {};
@@ -120,9 +114,6 @@ export function EditNutritionModal({ isOpen, onClose, calculatedData }: EditNutr
         profilePayload.carbs_target = targetCarbs;
         profilePayload.fat_target = targetFat;
       }
-
-      // Always include water_target to ensure it saves
-      profilePayload.water_target = targetWater;
 
       if (Object.keys(profilePayload).length > 0) {
         await profileService.upsertProfile(profilePayload);
@@ -205,16 +196,6 @@ export function EditNutritionModal({ isOpen, onClose, calculatedData }: EditNutr
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[13px] font-medium text-[rgba(255,255,255,0.6)] uppercase tracking-wider">Daily Water (L)</label>
-            <input 
-              type="number" 
-              step="0.1"
-              value={water} 
-              onChange={e => setWater(e.target.value)}
-              className="w-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] rounded-xl px-4 py-3 text-white text-[16px] outline-none focus:border-[#D4FF00] transition-colors"
-            />
-          </div>
         </div>
 
         <div className="p-4 border-t border-[rgba(255,255,255,0.06)] shrink-0">

@@ -1,43 +1,58 @@
-import { useChatStore } from '@/app/store/chatStore';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/shared/utils/supabase';
 import { useAuthStore } from '@/app/store/authStore';
-import { setCrashReportingUser, clearCrashReportingUser } from '@/shared/utils/logger';
+import { setCrashReportingUser } from '@/shared/utils/logger';
 import { analytics } from '@/shared/utils/analytics';
+import { offlineSyncService } from '@/shared/services/offlineSyncService';
+import { authService } from '@/features/auth/services/authService';
+
+let activeSessionUserId: string | null = null;
+let lastFlushedUserId: string | null = null;
 
 export function useAuthSession() {
-  const { session, loading, initialized, setSession, setLoading, setInitialized } = useAuthStore();
+  const { session, loading, setSession, setLoading, setInitialized } = useAuthStore();
+  const hasBootstrappedRef = useRef(false);
 
   useEffect(() => {
-    if (initialized) return;
-
     window.localStorage.removeItem('leaniqa-multi-account');
 
     let mounted = true;
 
-    const handleSessionUser = (localSession: any) => {
-      if (localSession?.user) {
-        setCrashReportingUser({
-          id: localSession.user.id,
-          email: localSession.user.email,
-        });
-        analytics.identifyUser(localSession.user.id);
-      } else {
-        clearCrashReportingUser();
+    const activateSession = async (localSession: Session) => {
+      const userId = localSession.user.id;
+      if (activeSessionUserId && activeSessionUserId !== userId) {
+        await authService.onSessionEnded();
       }
+
+      activeSessionUserId = userId;
+      setSession(localSession);
+      setCrashReportingUser({ id: userId, email: localSession.user.email });
+      analytics.identifyUser(userId);
+
+      if (lastFlushedUserId !== userId) {
+        lastFlushedUserId = userId;
+        void offlineSyncService.flush();
+      }
+    };
+
+    const endSession = async () => {
+      activeSessionUserId = null;
+      lastFlushedUserId = null;
+      await authService.onSessionEnded();
     };
 
     const initializeSession = async () => {
       try {
         const { data: { session: localSession } } = await supabase.auth.getSession();
-        
-        if (mounted) {
-          setSession(localSession);
-          handleSessionUser(localSession);
+        if (localSession?.user) {
+          await activateSession(localSession);
+        } else {
+          await endSession();
         }
       } catch (err) {
         console.error('Error initializing session:', err);
-        if (mounted) setSession(null);
+        await endSession();
       } finally {
         if (mounted) {
           setLoading(false);
@@ -46,14 +61,25 @@ export function useAuthSession() {
       }
     };
 
-    initializeSession();
+    if (!hasBootstrappedRef.current) {
+      hasBootstrappedRef.current = true;
+      void initializeSession();
+    }
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      if (!mounted) return;
+
+      if (event === 'SIGNED_OUT' || !newSession?.user) {
+        await endSession();
+        setLoading(false);
+        setInitialized(true);
+        return;
+      }
+
+      await activateSession(newSession);
       if (mounted) {
-        setSession(newSession);
-        handleSessionUser(newSession);
         setLoading(false);
         setInitialized(true);
 
@@ -79,7 +105,7 @@ export function useAuthSession() {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [initialized, setSession, setLoading, setInitialized]);
+  }, [setSession, setLoading, setInitialized]);
 
   return { session, loading };
 }

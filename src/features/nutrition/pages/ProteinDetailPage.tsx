@@ -114,7 +114,7 @@ export function ProteinDetailPage() {
           target_protein: target_protein,
           actual_calories: 0,
           target_calories: 0,
-          user_id: "", water: 0, score: 0
+          user_id: "", score: 0
         });
       }
     });
@@ -125,7 +125,7 @@ export function ProteinDetailPage() {
     } else {
       logs.push({
         date: todayStr,
-        actual_calories: 0, user_id: "", water: 0, score: 0,
+        actual_calories: 0, user_id: "", score: 0,
         actual_protein: proteinConsumed,
         target_calories: 0,
         target_protein,

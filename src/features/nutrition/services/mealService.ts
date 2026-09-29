@@ -3,6 +3,7 @@ import { DbMealLog } from '@/shared/types/supabase';
 import { authService } from '@/features/auth/services/authService';
 import { logError } from '@/shared/utils/logger';
 import { devLog, devWarn } from '@/shared/utils/logger';
+import { getKolkataStartOfDay, kolkataDateStringToUtcMidnight } from '@/shared/utils/timezone';
 
 export const mealService = {
   async getMeals(options?: { days?: number, limit?: number }): Promise<DbMealLog[]> {
@@ -34,9 +35,9 @@ export const mealService = {
 
   async getTodaysMeals(): Promise<DbMealLog[]> {
     const userId = await authService.getUserId();
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-    const startOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
+    const startOfToday = getKolkataStartOfDay();
+    const tomorrowInstant = new Date(new Date(startOfToday).getTime() + 24 * 60 * 60 * 1000);
+    const startOfTomorrow = getKolkataStartOfDay(tomorrowInstant);
     
     const { data, error } = await supabase
       .from('meal_logs')
@@ -55,8 +56,9 @@ export const mealService = {
 
   async getMealsForDate(date: Date): Promise<DbMealLog[]> {
     const userId = await authService.getUserId();
-    const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString();
-    const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1).toISOString();
+    const startOfDay = getKolkataStartOfDay(date);
+    const nextDayInstant = new Date(new Date(startOfDay).getTime() + 24 * 60 * 60 * 1000);
+    const endOfDay = getKolkataStartOfDay(nextDayInstant);
     
     const { data, error } = await supabase
       .from('meal_logs')
@@ -73,7 +75,7 @@ export const mealService = {
     return data || [];
   },
 
-  async addMeal(mealData: Omit<DbMealLog, 'id' | 'user_id'>): Promise<DbMealLog | null> {
+  async addMeal(mealData: Omit<DbMealLog, 'id' | 'user_id' | 'client_token'> & { client_token: string }): Promise<DbMealLog | null> {
     const userId = await authService.getUserId();
     const { meal_source, fiber, ...restMealData } = mealData as any;
     if (restMealData.meal_slot === 'snack') {
@@ -89,43 +91,15 @@ export const mealService = {
     payload.protein = Math.round(payload.protein || 0);
     payload.fat = Math.round(payload.fat || 0);
     payload.carbs = Math.round(payload.carbs || 0);
-    payload.fiber = Math.round(payload.fiber || 0);
-    
-    // Deduplication check: prevent identical meals logged within the last 2 minutes
-    const twoMinsAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-    const { data: recentMeals } = await supabase
-      .from('meal_logs')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('meal_text', payload.meal_text)
-      .eq('calories', payload.calories)
-      .gte('created_at', twoMinsAgo)
-      .limit(1);
-
-    if (recentMeals && recentMeals.length > 0) {
-      devLog('Duplicate meal detected (retries), skipping insert');
-      return { ...payload, id: recentMeals[0].id } as DbMealLog;
-    }
+    payload.fiber = Math.round(fiber || 0);
     
     devLog('--- SUPABASE INSERT PAYLOAD ---', payload);
     
-    let res = await supabase
+    const res = await supabase
       .from('meal_logs')
-      .insert(payload)
+      .upsert(payload, { onConflict: 'user_id,client_token' })
       .select()
       .maybeSingle();
-      
-    // If the error indicates a missing column (PGRST204 or PGRST205 or message includes column), try without meal_slot
-    if (res.error && (res.error.code?.startsWith('PGRST20') || res.error.message?.toLowerCase().includes('column'))) {
-      devWarn('Column might be missing. Retrying without meal_slot.');
-      const fallbackPayload = { ...payload };
-      delete (fallbackPayload as any).meal_slot;
-      res = await supabase
-        .from('meal_logs')
-        .insert(fallbackPayload)
-        .select()
-        .maybeSingle();
-    }
       
     if (res.error && res.error.code !== 'PGRST116') {
       logError(new Error('Supabase insert error'), { error: res.error, payload });
@@ -153,9 +127,9 @@ export const mealService = {
   async getMealsByDate(dateStr: string): Promise<DbMealLog[]> {
     const userId = await authService.getUserId();
     // dateStr is 'YYYY-MM-DD'
-    const [year, month, day] = dateStr.split('-').map(Number);
-    const startOfDay = new Date(year, month - 1, day).toISOString();
-    const endOfDay = new Date(year, month - 1, day + 1).toISOString();
+    const startOfDay = kolkataDateStringToUtcMidnight(dateStr).toISOString();
+    const endInstant = new Date(new Date(startOfDay).getTime() + 24 * 60 * 60 * 1000);
+    const endOfDay = endInstant.toISOString();
     
     const { data, error } = await supabase
       .from('meal_logs')
