@@ -1,9 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Plus, Info } from 'lucide-react';
+import {
+  X, Utensils, Plus, Sunrise, Sun, Moon, Coffee,
+  Flame, Beef, Wheat, Droplet, Leaf, Info,
+} from 'lucide-react';
+import { cn } from '@/shared/utils/utils';
+import { haptics } from '@/shared/utils/haptics';
 import { DbMealLog } from '@/shared/types/supabase';
+
+type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
 interface CustomMealModalProps {
   isOpen: boolean;
@@ -12,277 +18,383 @@ interface CustomMealModalProps {
   defaultSlot?: 'breakfast' | 'lunch' | 'dinner' | 'snack' | '';
 }
 
+const SLOTS: { id: MealSlot; label: string; Icon: typeof Sunrise }[] = [
+  { id: 'breakfast', label: 'Breakfast', Icon: Sunrise },
+  { id: 'lunch', label: 'Lunch', Icon: Sun },
+  { id: 'dinner', label: 'Dinner', Icon: Moon },
+  { id: 'snack', label: 'Snack', Icon: Coffee },
+];
+
+const isValidMacro = (v: string) => v !== '' && !Number.isNaN(Number(v)) && Number(v) >= 0;
+
+const SectionLabel = ({ children }: { children: React.ReactNode }) => (
+  <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-[rgba(255,255,255,0.4)]">
+    {children}
+  </div>
+);
+
+const NumField = ({
+  value, onChange, placeholder, label, unit, Icon,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  label: string;
+  unit: string;
+  Icon: typeof Flame;
+}) => (
+  <label className="group flex flex-col gap-2 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-4 py-3.5 transition-colors focus-within:border-[rgba(212,255,0,0.4)] focus-within:bg-[rgba(255,255,255,0.03)]">
+    <span className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.08em] text-[rgba(255,255,255,0.4)]">
+      <Icon size={12} className="text-[rgba(255,255,255,0.35)]" />
+      {label}
+    </span>
+    <div className="flex items-baseline justify-between">
+      <input
+        type="text"
+        inputMode="decimal"
+        value={value}
+        onChange={(e) => onChange((() => {
+          const v = e.target.value.replace(/[^0-9.]/g, '');
+          const parts = v.split('.');
+          return parts.length > 1 ? parts[0] + '.' + parts.slice(1).join('') : v;
+        })())}
+        placeholder={placeholder}
+        className="w-full bg-transparent text-[17px] font-semibold text-white placeholder:text-[rgba(255,255,255,0.25)] outline-none tabular-nums"
+      />
+      <span className="ml-2 shrink-0 text-[12px] font-medium text-[rgba(255,255,255,0.4)]">
+        {unit}
+      </span>
+    </div>
+  </label>
+);
+
 export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: CustomMealModalProps) {
+  // SSR guard (restored) — no hooks run when there is no DOM.
+  if (typeof document === 'undefined') return null;
+
   const [name, setName] = useState('');
   const [calories, setCalories] = useState('');
   const [protein, setProtein] = useState('');
   const [carbs, setCarbs] = useState('');
   const [fat, setFat] = useState('');
   const [fiber, setFiber] = useState('');
-  const [slot, setSlot] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>(defaultSlot as 'breakfast' | 'lunch' | 'dinner' | 'snack' || 'lunch');
-  
-  const p = parseFloat(protein) || 0;
-  const c = parseFloat(carbs) || 0;
-  const f = parseFloat(fat) || 0;
-  const calculatedCalories = (p * 4) + (c * 4) + (f * 9);
-  const totalMacros = p + c + f;
-  
-  const cals = parseFloat(calories) || 0;
-  const isCaloriesMismatched = totalMacros > 0 && Math.abs(cals - calculatedCalories) > Math.max(cals * 0.2, 50);
-
-  const isValid = name.trim() !== '' && 
-                 calories !== '' && !isNaN(parseFloat(calories)) && parseFloat(calories) >= 0 &&
-                 protein !== '' && !isNaN(parseFloat(protein)) && parseFloat(protein) >= 0 &&
-                 carbs !== '' && !isNaN(parseFloat(carbs)) && parseFloat(carbs) >= 0 &&
-                 fat !== '' && !isNaN(parseFloat(fat)) && parseFloat(fat) >= 0;
+  const [slot, setSlot] = useState<MealSlot>(defaultSlot || 'dinner');
+  const [nameFocused, setNameFocused] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
-      if (defaultSlot && ['breakfast', 'lunch', 'dinner', 'snack'].includes(defaultSlot)) {
-        setSlot(defaultSlot as 'breakfast' | 'lunch' | 'dinner' | 'snack');
-      }
+      setSlot(defaultSlot || 'dinner');
+      const t = setTimeout(() => nameInputRef.current?.focus(), 260);
+      return () => clearTimeout(t);
     }
-  }, [isOpen, defaultSlot]);
-
-  const handleSave = () => {
-    if (!isValid) return;
-    
-    onSave({
-      meal_text: name.trim(),
-      calories: Math.round(parseFloat(calories)),
-      protein: Math.round(parseFloat(protein)),
-      carbs: Math.round(parseFloat(carbs)),
-      fat: Math.round(parseFloat(fat)),
-      fiber: fiber ? Math.round(parseFloat(fiber)) : undefined,
-      meal_slot: slot,
-      meal_time: new Date().toISOString(),
-      tip: "Manually logged meal."
-    });
-    
-    // Reset
     setName('');
     setCalories('');
     setProtein('');
     setCarbs('');
     setFat('');
     setFiber('');
+    return undefined;
+  }, [isOpen, defaultSlot]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
+
+  const p = Number(protein) || 0;
+  const c = Number(carbs) || 0;
+  const f = Number(fat) || 0;
+  const calculatedCalories = p * 4 + c * 4 + f * 9;
+  const totalMacros = p + c + f;
+  const cals = Number(calories) || 0;
+  const isCaloriesMismatched =
+    totalMacros > 0 && Math.abs(cals - calculatedCalories) > Math.max(cals * 0.2, 50);
+  const showPreview = totalMacros > 0 || cals > 0;
+
+  const isValid =
+    name.trim().length > 0 &&
+    isValidMacro(calories) &&
+    isValidMacro(protein) &&
+    isValidMacro(carbs) &&
+    isValidMacro(fat);
+
+  const numberValue = (v: string) => Math.round(Number(v) || 0);
+
+  const handleSave = () => {
+    if (!isValid) return;
+    onSave({
+      meal_text: name.trim(),
+      calories: numberValue(calories),
+      protein: numberValue(protein),
+      fat: numberValue(fat),
+      carbs: numberValue(carbs),
+      fiber: numberValue(fiber),
+      meal_slot: slot,
+      meal_time: new Date().toISOString(),
+      tip: 'Manually logged meal.',
+    });
     onClose();
   };
-
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
-  const inputStyle = "w-full bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-[14px] px-4 py-3 text-white placeholder:text-[rgba(255,255,255,0.3)] focus:outline-none focus:border-[#D4FF00] transition-colors text-[16px]";
-  const labelStyle = "text-[12px] font-semibold text-[rgba(255,255,255,0.6)] uppercase tracking-wider mb-1.5 block ml-1";
-
-  if (typeof document === 'undefined') return null;
 
   return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <motion.div 
+        <motion.div
+          key="cm-backdrop"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm"
-          onClick={handleBackdropClick}
+          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          className="fixed inset-0 z-[110] flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center"
+          onClick={onClose}
         >
           <motion.div
-            initial={{ y: "100%", opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: "100%", opacity: 0 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="w-full sm:max-w-md bg-[#111112] sm:rounded-[28px] rounded-t-[28px] border-t sm:border border-[rgba(255,255,255,0.1)] overflow-hidden flex flex-col max-h-[90vh]"
+            key="cm-panel"
+            initial={{ y: 40, opacity: 0, scale: 0.98 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: 40, opacity: 0, scale: 0.98 }}
+            transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-[520px] overflow-hidden rounded-t-[32px] border border-[rgba(255,255,255,0.08)] bg-[#0F0F10]/95 shadow-[0_-8px_60px_rgba(0,0,0,0.6)] backdrop-blur-2xl sm:rounded-[32px]"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Create custom meal"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[rgba(255,255,255,0.06)] shrink-0">
-              <h2 className="text-lg font-semibold text-white tracking-tight">Create Custom Meal</h2>
-              <button 
+            <div className="mx-auto mt-3 h-1 w-9 rounded-full bg-[rgba(255,255,255,0.15)] sm:hidden" />
+
+            <div className="flex items-start justify-between px-6 pt-5 pb-4 sm:pt-6">
+              <div className="min-w-0 pr-4">
+                <h2 className="text-[22px] font-semibold tracking-tight text-white">
+                  Create Custom Meal
+                </h2>
+                <p className="mt-1 text-[13px] leading-snug text-[rgba(255,255,255,0.5)]">
+                  Save your favorite meals for quick logging
+                </p>
+              </div>
+              <button
+                type="button"
                 onClick={onClose}
-                className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.05)] flex items-center justify-center hover:bg-[rgba(255,255,255,0.1)] transition-colors"
+                aria-label="Close"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] text-[rgba(255,255,255,0.7)] transition-colors hover:bg-[rgba(255,255,255,0.08)] active:scale-95"
               >
-                <X size={18} color="#A0A0A5" />
+                <X size={16} />
               </button>
             </div>
 
-            {/* Content */}
-            <div className="overflow-y-auto p-6 space-y-6">
-              
-              <div>
-                <label className={labelStyle}>Meal Name</label>
-                <input 
-                  type="text" 
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Chicken Salad"
-                  autoFocus
-                  className={inputStyle}
-                />
-              </div>
-
-              <div>
-                <label className={labelStyle}>Meal Slot</label>
-                <div className="flex gap-2 p-1 bg-[rgba(255,255,255,0.03)] rounded-[14px]">
-                  {['breakfast', 'lunch', 'dinner', 'snack'].map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => setSlot(s as any)}
-                      className={`flex-1 py-2 text-[13px] font-semibold rounded-[10px] capitalize transition-colors ${
-                        slot === s ? 'bg-[#D4FF00] text-black' : 'text-[rgba(255,255,255,0.5)] hover:text-white'
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={labelStyle}>Calories</label>
-                  <div className="relative">
-                    <input 
-                      type="number" 
-                      inputMode="decimal"
-                      value={calories}
-                      onChange={(e) => setCalories(e.target.value)}
-                      placeholder="0"
-                      className={inputStyle + " pr-12"}
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[14px] text-[rgba(255,255,255,0.3)]">kcal</span>
-                  </div>
-                </div>
-                <div>
-                  <label className={labelStyle}>Protein</label>
-                  <div className="relative">
-                    <input 
-                      type="number" 
-                      inputMode="decimal"
-                      value={protein}
-                      onChange={(e) => setProtein(e.target.value)}
-                      placeholder="0"
-                      className={inputStyle + " pr-8"}
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[14px] text-[rgba(255,255,255,0.3)]">g</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={labelStyle}>Carbs</label>
-                  <div className="relative">
-                    <input 
-                      type="number" 
-                      inputMode="decimal"
-                      value={carbs}
-                      onChange={(e) => setCarbs(e.target.value)}
-                      placeholder="0"
-                      className={inputStyle + " pr-8"}
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[14px] text-[rgba(255,255,255,0.3)]">g</span>
-                  </div>
-                </div>
-                <div>
-                  <label className={labelStyle}>Fat</label>
-                  <div className="relative">
-                    <input 
-                      type="number" 
-                      inputMode="decimal"
-                      value={fat}
-                      onChange={(e) => setFat(e.target.value)}
-                      placeholder="0"
-                      className={inputStyle + " pr-8"}
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[14px] text-[rgba(255,255,255,0.3)]">g</span>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className={labelStyle}>Fiber (Optional)</label>
-                <div className="relative">
-                  <input 
-                    type="number" 
-                    inputMode="decimal"
-                    value={fiber}
-                    onChange={(e) => setFiber(e.target.value)}
-                    placeholder="0"
-                    className={inputStyle + " pr-8"}
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[14px] text-[rgba(255,255,255,0.3)]">g</span>
-                </div>
-              </div>
-
-              {/* Live Preview */}
-              {(totalMacros > 0 || cals > 0) && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  className="bg-[rgba(255,255,255,0.03)] rounded-[16px] p-4 border border-[rgba(255,255,255,0.05)]"
+            <div className="max-h-[70vh] overflow-y-auto px-6 pb-4 sm:max-h-[75vh]">
+              <section className="mb-6">
+                <SectionLabel>Meal Name</SectionLabel>
+                <div
+                  className={cn(
+                    'relative flex items-center gap-3 rounded-2xl border bg-[rgba(255,255,255,0.02)] px-4 py-3.5 transition-all',
+                    nameFocused
+                      ? 'border-[rgba(212,255,0,0.45)] bg-[rgba(212,255,0,0.03)] shadow-[0_0_0_4px_rgba(212,255,0,0.06)]'
+                      : 'border-[rgba(255,255,255,0.06)]',
+                  )}
                 >
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-[12px] font-semibold text-[rgba(255,255,255,0.6)] uppercase tracking-wider">Macros</span>
-                    {totalMacros > 0 && (
-                      <span className="text-[12px] font-medium text-[rgba(255,255,255,0.4)]">
-                        ~{Math.round(calculatedCalories)} kcal implied
-                      </span>
-                    )}
-                  </div>
-                  
-                  {totalMacros > 0 ? (
-                    <div className="flex w-full h-2 rounded-full overflow-hidden">
-                      <div style={{ width: `${(p / totalMacros) * 100}%` }} className="bg-[#FF4D1C]"></div>
-                      <div style={{ width: `${(c / totalMacros) * 100}%` }} className="bg-[#4D9FFF]"></div>
-                      <div style={{ width: `${(f / totalMacros) * 100}%` }} className="bg-[#FFB347]"></div>
-                    </div>
-                  ) : (
-                    <div className="flex w-full h-2 rounded-full overflow-hidden bg-[rgba(255,255,255,0.1)]"></div>
-                  )}
-                  
-                  <div className="flex justify-between mt-3 text-[12px]">
-                    <div className="flex items-center gap-1.5 text-[rgba(255,255,255,0.6)]">
-                      <div className="w-2 h-2 rounded-full bg-[#FF4D1C]"></div>
-                      {totalMacros > 0 ? Math.round((p / totalMacros) * 100) : 0}% Pro
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[rgba(255,255,255,0.6)]">
-                      <div className="w-2 h-2 rounded-full bg-[#4D9FFF]"></div>
-                      {totalMacros > 0 ? Math.round((c / totalMacros) * 100) : 0}% Carb
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[rgba(255,255,255,0.6)]">
-                      <div className="w-2 h-2 rounded-full bg-[#FFB347]"></div>
-                      {totalMacros > 0 ? Math.round((f / totalMacros) * 100) : 0}% Fat
-                    </div>
-                  </div>
+                  <Utensils
+                    size={16}
+                    className={nameFocused ? 'text-[#D4FF00]' : 'text-[rgba(255,255,255,0.35)]'}
+                  />
+                  <input
+                    ref={nameInputRef}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    onFocus={() => setNameFocused(true)}
+                    onBlur={() => setNameFocused(false)}
+                    placeholder="e.g. Chicken Salad"
+                    className="w-full bg-transparent text-[16px] font-medium text-white placeholder:text-[rgba(255,255,255,0.3)] outline-none"
+                  />
+                </div>
+              </section>
 
-                  {isCaloriesMismatched && (
-                    <div className="mt-4 flex gap-2 p-3 bg-[rgba(255,179,71,0.1)] text-[#FFB347] rounded-[10px] text-[12px] leading-relaxed">
-                      <Info size={14} className="shrink-0 mt-0.5" />
-                      <span>The calories you entered ({cals} kcal) differ from the macros ({Math.round(calculatedCalories)} kcal). We'll still save what you entered.</span>
+              <section className="mb-6">
+                <SectionLabel>Meal Slot</SectionLabel>
+                <div className="grid grid-cols-4 gap-2 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-1.5">
+                  {SLOTS.map(({ id, label, Icon }) => {
+                    const active = slot === id;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => {
+                          haptics.tap();
+                          setSlot(id);
+                        }}
+                        className={cn(
+                          'relative flex flex-col items-center justify-center gap-1.5 rounded-xl py-2.5 text-[12px] font-medium transition-colors',
+                          active
+                            ? 'text-[#0A0A0A]'
+                            : 'text-[rgba(255,255,255,0.55)] hover:text-white',
+                        )}
+                        aria-pressed={active}
+                      >
+                        {active && (
+                          <motion.div
+                            layoutId="custom-meal-slot-pill"
+                            className="absolute inset-0 rounded-xl bg-[#D4FF00]"
+                            transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                          />
+                        )}
+                        <span className="relative z-10 flex flex-col items-center gap-1">
+                          <Icon size={15} strokeWidth={2} />
+                          {label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <section className="mb-2">
+                <SectionLabel>Nutrition Info</SectionLabel>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <NumField
+                    value={calories}
+                    onChange={setCalories}
+                    placeholder="0"
+                    label="Calories"
+                    unit="kcal"
+                    Icon={Flame}
+                  />
+                  <NumField
+                    value={protein}
+                    onChange={setProtein}
+                    placeholder="0"
+                    label="Protein"
+                    unit="g"
+                    Icon={Beef}
+                  />
+                  <NumField
+                    value={carbs}
+                    onChange={setCarbs}
+                    placeholder="0"
+                    label="Carbs"
+                    unit="g"
+                    Icon={Wheat}
+                  />
+                  <NumField
+                    value={fat}
+                    onChange={setFat}
+                    placeholder="0"
+                    label="Fat"
+                    unit="g"
+                    Icon={Droplet}
+                  />
+                </div>
+                <div className="mt-2.5">
+                  <NumField
+                    value={fiber}
+                    onChange={setFiber}
+                    placeholder="0"
+                    label="Fiber (Optional)"
+                    unit="g"
+                    Icon={Leaf}
+                  />
+                </div>
+
+                {/* Live macro preview + calorie/macro mismatch warning (restored) */}
+                {showPreview && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                    className="overflow-hidden"
+                  >
+                    <div className="mt-2.5 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-4 py-3.5">
+                      <div className="mb-3 flex items-center justify-between">
+                        <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-[rgba(255,255,255,0.4)]">
+                          Macro Split
+                        </span>
+                        {totalMacros > 0 && (
+                          <span className="text-[12px] font-medium tabular-nums text-[rgba(255,255,255,0.4)]">
+                            ~{Math.round(calculatedCalories)} kcal implied
+                          </span>
+                        )}
+                      </div>
+
+                      {totalMacros > 0 ? (
+                        <div className="flex h-2 w-full overflow-hidden rounded-full">
+                          <div
+                            style={{ width: `${(p / totalMacros) * 100}%` }}
+                            className="bg-[#FF4D1C]"
+                          />
+                          <div
+                            style={{ width: `${(c / totalMacros) * 100}%` }}
+                            className="bg-[#4D9FFF]"
+                          />
+                          <div
+                            style={{ width: `${(f / totalMacros) * 100}%` }}
+                            className="bg-[#FFB347]"
+                          />
+                        </div>
+                      ) : (
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-[rgba(255,255,255,0.08)]" />
+                      )}
+
+                      <div className="mt-3 flex items-center justify-between text-[12px]">
+                        <span className="flex items-center gap-1.5 text-[rgba(255,255,255,0.6)]">
+                          <span className="h-2 w-2 rounded-full bg-[#FF4D1C]" />
+                          <span className="tabular-nums">
+                            {totalMacros > 0 ? Math.round((p / totalMacros) * 100) : 0}% Pro
+                          </span>
+                        </span>
+                        <span className="flex items-center gap-1.5 text-[rgba(255,255,255,0.6)]">
+                          <span className="h-2 w-2 rounded-full bg-[#4D9FFF]" />
+                          <span className="tabular-nums">
+                            {totalMacros > 0 ? Math.round((c / totalMacros) * 100) : 0}% Carb
+                          </span>
+                        </span>
+                        <span className="flex items-center gap-1.5 text-[rgba(255,255,255,0.6)]">
+                          <span className="h-2 w-2 rounded-full bg-[#FFB347]" />
+                          <span className="tabular-nums">
+                            {totalMacros > 0 ? Math.round((f / totalMacros) * 100) : 0}% Fat
+                          </span>
+                        </span>
+                      </div>
+
+                      {isCaloriesMismatched && (
+                        <div className="mt-3.5 flex gap-2 rounded-xl border border-[rgba(255,179,71,0.2)] bg-[rgba(255,179,71,0.1)] p-3 text-[12px] leading-relaxed text-[#FFB347]">
+                          <Info size={14} className="mt-0.5 shrink-0" />
+                          <span>
+                            The calories you entered ({cals} kcal) differ from the macros (
+                            {Math.round(calculatedCalories)} kcal). We'll still save what you entered.
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </motion.div>
-              )}
+                  </motion.div>
+                )}
+              </section>
             </div>
 
-            {/* Footer */}
-            <div className="p-6 pt-2 border-t border-[rgba(255,255,255,0.06)] shrink-0 bg-[#111112]">
-              <button
+            <div className="border-t border-[rgba(255,255,255,0.06)] bg-[rgba(15,15,16,0.9)] px-6 pb-[max(16px,env(safe-area-inset-bottom))] pt-4">
+              <motion.button
+                type="button"
                 onClick={handleSave}
                 disabled={!isValid}
-                className="w-full bg-[#D4FF00] disabled:bg-[rgba(212,255,0,0.3)] disabled:text-[rgba(0,0,0,0.5)] hover:bg-[#bce600] text-black font-bold py-3.5 rounded-[16px] text-[15px] transition-colors flex items-center justify-center gap-2"
+                whileTap={isValid ? { scale: 0.98 } : undefined}
+                className={cn(
+                  'flex w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold transition-colors',
+                  isValid
+                    ? 'bg-[#D4FF00] text-[#0A0A0A] shadow-[0_8px_24px_-8px_rgba(212,255,0,0.5)] hover:bg-[#C8F200]'
+                    : 'cursor-not-allowed bg-[rgba(212,255,0,0.15)] text-[rgba(212,255,0,0.4)]',
+                )}
+                style={{ height: 52 }}
               >
-                <Plus size={18} />
+                <Plus size={18} strokeWidth={2.5} />
                 Save Custom Meal
-              </button>
+              </motion.button>
             </div>
           </motion.div>
         </motion.div>
       )}
     </AnimatePresence>,
-    document.body
+    document.body,
   );
 }
