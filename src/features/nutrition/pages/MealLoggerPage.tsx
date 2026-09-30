@@ -574,7 +574,6 @@ export function MealLoggerPage() {
         meal_time: getMealTime().toISOString(), 
         tip: data.tip || data.foods_detected?.join(', ') || text, 
         meal_slot: finalSlot,
-        meal_source: source || 'ai',
         client_token
       };
 
