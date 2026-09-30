@@ -43,8 +43,8 @@ const NumField = ({
   unit: string;
   Icon: typeof Flame;
 }) => (
-  <label className="group flex flex-col gap-2 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-4 py-3.5 transition-colors focus-within:border-[rgba(212,255,0,0.4)] focus-within:bg-[rgba(255,255,255,0.03)]">
-    <span className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.08em] text-[rgba(255,255,255,0.4)]">
+  <label className="group flex flex-col gap-2 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-3.5 py-3 transition-colors focus-within:border-[rgba(212,255,0,0.4)] focus-within:bg-[rgba(255,255,255,0.03)] sm:px-4 sm:py-3.5">
+    <span className="flex items-center gap-2 text-[10.5px] font-medium uppercase tracking-[0.08em] text-[rgba(255,255,255,0.4)] sm:text-[11px]">
       <Icon size={12} className="text-[rgba(255,255,255,0.35)]" />
       {label}
     </span>
@@ -59,7 +59,7 @@ const NumField = ({
           return parts.length > 1 ? parts[0] + '.' + parts.slice(1).join('') : v;
         })())}
         placeholder={placeholder}
-        className="w-full bg-transparent text-[17px] font-semibold text-white placeholder:text-[rgba(255,255,255,0.25)] outline-none tabular-nums"
+        className="w-full bg-transparent text-[16px] font-semibold text-white placeholder:text-[rgba(255,255,255,0.25)] outline-none tabular-nums sm:text-[17px]"
       />
       <span className="ml-2 shrink-0 text-[12px] font-medium text-[rgba(255,255,255,0.4)]">
         {unit}
@@ -160,19 +160,19 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: Custom
             exit={{ y: 40, opacity: 0, scale: 0.98 }}
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-[520px] overflow-hidden rounded-t-[32px] border border-[rgba(255,255,255,0.08)] bg-[#0F0F10]/95 shadow-[0_-8px_60px_rgba(0,0,0,0.6)] backdrop-blur-2xl sm:rounded-[32px]"
+            className="relative flex max-h-[92dvh] w-full max-w-[460px] flex-col overflow-hidden rounded-t-[28px] border border-[rgba(255,255,255,0.08)] bg-[#0F0F10]/95 shadow-[0_-8px_60px_rgba(0,0,0,0.6)] backdrop-blur-2xl sm:max-h-[85dvh] sm:rounded-[32px]"
             role="dialog"
             aria-modal="true"
             aria-label="Create custom meal"
           >
             <div className="mx-auto mt-3 h-1 w-9 rounded-full bg-[rgba(255,255,255,0.15)] sm:hidden" />
 
-            <div className="flex items-start justify-between px-6 pt-5 pb-4 sm:pt-6">
+            <div className="flex shrink-0 items-start justify-between px-5 pb-3.5 pt-5 sm:px-6 sm:pb-4 sm:pt-6">
               <div className="min-w-0 pr-4">
-                <h2 className="text-[22px] font-semibold tracking-tight text-white">
+                <h2 className="text-[20px] font-semibold tracking-tight text-white sm:text-[22px]">
                   Create Custom Meal
                 </h2>
-                <p className="mt-1 text-[13px] leading-snug text-[rgba(255,255,255,0.5)]">
+                <p className="mt-0.5 text-[12.5px] leading-snug text-[rgba(255,255,255,0.5)] sm:mt-1 sm:text-[13px]">
                   Save your favorite meals for quick logging
                 </p>
               </div>
@@ -180,14 +180,14 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: Custom
                 type="button"
                 onClick={onClose}
                 aria-label="Close"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] text-[rgba(255,255,255,0.7)] transition-colors hover:bg-[rgba(255,255,255,0.08)] active:scale-95"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] text-[rgba(255,255,255,0.7)] transition-colors hover:bg-[rgba(255,255,255,0.08)] active:scale-95 sm:h-9 sm:w-9"
               >
                 <X size={16} />
               </button>
             </div>
 
-            <div className="max-h-[70vh] overflow-y-auto px-6 pb-4 sm:max-h-[75vh]">
-              <section className="mb-6">
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-3.5 sm:px-6 sm:pb-4">
+              <section className="mb-4 sm:mb-6">
                 <SectionLabel>Meal Name</SectionLabel>
                 <div
                   className={cn(
@@ -213,9 +213,9 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: Custom
                 </div>
               </section>
 
-              <section className="mb-6">
+              <section className="mb-4 sm:mb-6">
                 <SectionLabel>Meal Slot</SectionLabel>
-                <div className="grid grid-cols-4 gap-2 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-1.5">
+                <div className="grid grid-cols-4 gap-1.5 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-1 sm:gap-2 sm:p-1.5">
                   {SLOTS.map(({ id, label, Icon }) => {
                     const active = slot === id;
                     return (
@@ -227,7 +227,7 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: Custom
                           setSlot(id);
                         }}
                         className={cn(
-                          'relative flex flex-col items-center justify-center gap-1.5 rounded-xl py-2.5 text-[12px] font-medium transition-colors',
+                          'relative flex flex-col items-center justify-center gap-1 rounded-xl py-2 text-[11px] font-medium transition-colors sm:gap-1.5 sm:py-2.5 sm:text-[12px]',
                           active
                             ? 'text-[#0A0A0A]'
                             : 'text-[rgba(255,255,255,0.55)] hover:text-white',
@@ -242,7 +242,7 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: Custom
                           />
                         )}
                         <span className="relative z-10 flex flex-col items-center gap-1">
-                          <Icon size={15} strokeWidth={2} />
+                          <Icon size={14} strokeWidth={2} />
                           {label}
                         </span>
                       </button>
@@ -253,7 +253,7 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: Custom
 
               <section className="mb-2">
                 <SectionLabel>Nutrition Info</SectionLabel>
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
                   <NumField
                     value={calories}
                     onChange={setCalories}
@@ -287,7 +287,7 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: Custom
                     Icon={Droplet}
                   />
                 </div>
-                <div className="mt-2.5">
+                <div className="mt-2 sm:mt-2.5">
                   <NumField
                     value={fiber}
                     onChange={setFiber}
@@ -306,8 +306,8 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: Custom
                     transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                     className="overflow-hidden"
                   >
-                    <div className="mt-2.5 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-4 py-3.5">
-                      <div className="mb-3 flex items-center justify-between">
+                    <div className="mt-2 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-3.5 py-3 sm:mt-2.5 sm:px-4 sm:py-3.5">
+                      <div className="mb-2.5 flex items-center justify-between sm:mb-3">
                         <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-[rgba(255,255,255,0.4)]">
                           Macro Split
                         </span>
@@ -337,7 +337,7 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: Custom
                         <div className="h-2 w-full overflow-hidden rounded-full bg-[rgba(255,255,255,0.08)]" />
                       )}
 
-                      <div className="mt-3 flex items-center justify-between text-[12px]">
+                      <div className="mt-2.5 flex items-center justify-between text-[12px] sm:mt-3">
                         <span className="flex items-center gap-1.5 text-[rgba(255,255,255,0.6)]">
                           <span className="h-2 w-2 rounded-full bg-[#FF4D1C]" />
                           <span className="tabular-nums">
@@ -359,7 +359,7 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: Custom
                       </div>
 
                       {isCaloriesMismatched && (
-                        <div className="mt-3.5 flex gap-2 rounded-xl border border-[rgba(255,179,71,0.2)] bg-[rgba(255,179,71,0.1)] p-3 text-[12px] leading-relaxed text-[#FFB347]">
+                        <div className="mt-3 flex gap-2 rounded-xl border border-[rgba(255,179,71,0.2)] bg-[rgba(255,179,71,0.1)] p-2.5 text-[12px] leading-relaxed text-[#FFB347] sm:mt-3.5 sm:p-3">
                           <Info size={14} className="mt-0.5 shrink-0" />
                           <span>
                             The calories you entered ({cals} kcal) differ from the macros (
@@ -373,21 +373,21 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: Custom
               </section>
             </div>
 
-            <div className="border-t border-[rgba(255,255,255,0.06)] bg-[rgba(15,15,16,0.9)] px-6 pb-[max(16px,env(safe-area-inset-bottom))] pt-4">
+            <div className="shrink-0 border-t border-[rgba(255,255,255,0.06)] bg-[rgba(15,15,16,0.9)] px-5 pb-[max(14px,env(safe-area-inset-bottom))] pt-3.5 sm:px-6 sm:pb-[max(16px,env(safe-area-inset-bottom))] sm:pt-4">
               <motion.button
                 type="button"
                 onClick={handleSave}
                 disabled={!isValid}
                 whileTap={isValid ? { scale: 0.98 } : undefined}
                 className={cn(
-                  'flex w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold transition-colors',
+                  'flex w-full items-center justify-center gap-2 rounded-xl text-[14.5px] font-semibold transition-colors sm:rounded-2xl sm:text-[15px]',
                   isValid
                     ? 'bg-[#D4FF00] text-[#0A0A0A] shadow-[0_8px_24px_-8px_rgba(212,255,0,0.5)] hover:bg-[#C8F200]'
                     : 'cursor-not-allowed bg-[rgba(212,255,0,0.15)] text-[rgba(212,255,0,0.4)]',
                 )}
-                style={{ height: 52 }}
+                style={{ height: 48 }}
               >
-                <Plus size={18} strokeWidth={2.5} />
+                <Plus size={17} strokeWidth={2.5} />
                 Save Custom Meal
               </motion.button>
             </div>
