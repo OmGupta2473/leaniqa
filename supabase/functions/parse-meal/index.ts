@@ -69,23 +69,84 @@ function normalizeInput(input: string): string {
   normalized = normalized.replace(/(\d+(?:\.\d+)?)\s*(scoop|scoops)\b/g, "$1 scoop");
   normalized = normalized.replace(/(\d+)\s*x\s+(?=[a-z])/g, "$1 ");
 
-  // Only aliases with the same preparation and nutrition basis are normalized.
-  normalized = normalized.replace(/\b(chapatis?|chappatis?|chapathis?|phulkas?|rotis?)\b/g, "roti");
-  normalized = normalized.replace(/\b(soya chunks?|nutrela)\b/g, "soya chunks");
-  normalized = normalized.replace(/\b(boiled eggs?|eggs?|andas?)\b/g, "egg");
-  normalized = normalized.replace(/\b(chicken breasts?)\b/g, "chicken breast");
-  normalized = normalized.replace(/\b(cooked rice|chawal|rices?)\b/g, "rice");
+  // Aliases are single-word spelling/regional variants only.
+  // Rule: never substitute a word that is a substring of an existing KB key,
+  // because those compounds (aloo gobhi, chicken breast, fish fry, mutton biryani)
+  // must match the KB exactly.
+  normalized = normalized.replace(/\b(chapatis?|chapathis?|chapattis?|phulkas?|rotis?)\b/g, "roti");
+  normalized = normalized.replace(/\b(aloo paranthas?|aloo parathas?)\b/g, "paratha");
+  normalized = normalized.replace(/\b(paranthas?|parathas?|porottas?)\b/g, "paratha");
+  normalized = normalized.replace(/\b(poori|puris?)\b/g, "puri");
+  normalized = normalized.replace(/\b(naan|naans)\b/g, "naan");
+  normalized = normalized.replace(/\b(bhature|bhaturas?|bature)\b/g, "bhatura");
+  normalized = normalized.replace(/\b(chawal|bhaat|bhat|rices?)\b/g, "rice");
+  normalized = normalized.replace(/\b(cumin rice)\b/g, "jeera rice");
+  normalized = normalized.replace(/\b(boiled rice)\b/g, "brown rice");
+  normalized = normalized.replace(/\b(mung dal|green gram dal|pesara pappu)\b/g, "moong dal");
+  normalized = normalized.replace(/\b(masur dal|red lentil)\b/g, "masoor dal");
+  normalized = normalized.replace(/\b(toor dal|arhar dal|toovar dal|dals?)\b/g, "dal");
+  normalized = normalized.replace(/\b(daal|dhal)\b/g, "dal");
+  normalized = normalized.replace(/\b(rajmah|kidney beans)\b/g, "rajma");
+  normalized = normalized.replace(/\b(chana masala|chickpea curry|cholay|chholey)\b/g, "chole");
+  normalized = normalized.replace(/\b(spinach paneer)\b/g, "palak paneer");
+  normalized = normalized.replace(/\b(matar paneer)\b/g, "mutter paneer");
+  normalized = normalized.replace(/\b(okra|lady finger)\b/g, "bhindi");
+  normalized = normalized.replace(/\b(brinjal|eggplant|aubergine)\b/g, "baigan bharta");
+  normalized = normalized.replace(/\b(baingan)\b/g, "baigan");
+  normalized = normalized.replace(/\b(batata)\b/g, "aloo");
+  normalized = normalized.replace(/\b(yogurt|yoghurt|thayir|dahi)\b/g, "curd");
   normalized = normalized.replace(/\b(dudh|milks?)\b/g, "milk");
+  normalized = normalized.replace(/\b(chaas|mor|majjige)\b/g, "buttermilk");
+  normalized = normalized.replace(/\b(anda|ande|boiled egg|boiled eggs|eggs?)\b/g, "egg");
+  normalized = normalized.replace(/\b(murgh)\b/g, "chicken");
+  normalized = normalized.replace(/\b(chicken breasts?)\b/g, "chicken breast");
+  normalized = normalized.replace(/\b(goat meat|lamb)\b/g, "mutton");
+  normalized = normalized.replace(/\b(dhokla|dhoklas?|khaman)\b/g, "dhokla");
+  normalized = normalized.replace(/\b(golgappa|gol gappa|puchka)\b/g, "pani puri");
+  normalized = normalized.replace(/\b(vadapav|vada pao)\b/g, "vada pav");
+  normalized = normalized.replace(/\b(alu tikki)\b/g, "aloo tikki");
+  normalized = normalized.replace(/\b(momo|momos|dumpling)\b/g, "momos");
+  normalized = normalized.replace(/\b(biscuits?|cookies?|biskut)\b/g, "biscuit");
+  normalized = normalized.replace(/\b(samosas?|singara)\b/g, "samosa");
+  normalized = normalized.replace(/\b(bread pakoda|bread pakodas?)\b/g, "bread pakora");
+  normalized = normalized.replace(/\b(pakoras?|pakoda|bhajiya|bhaji)\b/g, "pakora");
+  normalized = normalized.replace(/\b(khichuri|khichri)\b/g, "khichdi");
+  normalized = normalized.replace(/\b(ven pongal)\b/g, "pongal");
+  normalized = normalized.replace(/\b(sambhar|sambhars?|kuzhambu)\b/g, "sambar");
+  normalized = normalized.replace(/\b(uthappam|ootapam)\b/g, "uttapam");
+  normalized = normalized.replace(/\b(idly|iddli|idlis?)\b/g, "idli");
+  normalized = normalized.replace(/\b(cheela|besan chilla)\b/g, "chilla");
+  normalized = normalized.replace(/\b(theplas?)\b/g, "thepla");
+  normalized = normalized.replace(/\b(payasam|payesh|kheera)\b/g, "kheer");
+  normalized = normalized.replace(/\b(rosogolla)\b/g, "rasgulla");
+  normalized = normalized.replace(/\b(gulabjamun)\b/g, "gulab jamun");
+  normalized = normalized.replace(/\b(srikhand)\b/g, "shrikhand");
+  normalized = normalized.replace(/\b(rabadi)\b/g, "rabri");
+  normalized = normalized.replace(/\b(uppma|uppitu|upmas?)\b/g, "upma");
+  normalized = normalized.replace(/\b(pohe?)\b/g, "poha");
+  normalized = normalized.replace(/\b(semiya|seviyan|sevai)\b/g, "vermicelli");
+  normalized = normalized.replace(/\b(ankurit|sprouted)\b/g, "sprouts");
+  normalized = normalized.replace(/\b(meal maker|nutrela)\b/g, "soya chunks");
+  normalized = normalized.replace(/\b(patta gobhi|bandh gobi)\b/g, "cabbage sabzi");
+  normalized = normalized.replace(/\b(bell pepper)\b/g, "shimla mirch aloo");
+  normalized = normalized.replace(/\b(dudhi|bottle gourd|opu)\b/g, "lauki sabzi");
+  normalized = normalized.replace(/\b(kashi halwa)\b/g, "kaddu sabzi");
+  normalized = normalized.replace(/\b(methi alu)\b/g, "methi aloo");
+  normalized = normalized.replace(/\b(mixed veg|veg curry)\b/g, "mixed vegetable");
   normalized = normalized.replace(/\b(apples?|seb)\b/g, "apple");
   normalized = normalized.replace(/\b(bananas?|kelas?|kela)\b/g, "banana");
-  normalized = normalized.replace(/\b(dals?|daal)\b/g, "dal");
-  normalized = normalized.replace(/\b(dahi|yogurt|yoghurt)\b/g, "curd");
-  normalized = normalized.replace(/\b(almonds?)\b/g, "almond");
-  normalized = normalized.replace(/\b(idlis?)\b/g, "idli");
-  normalized = normalized.replace(/\b(plain dosas?|dosas?)\b/g, "plain dosa");
-  normalized = normalized.replace(/\b(sambars?)\b/g, "sambar");
-  normalized = normalized.replace(/\b(upmas?)\b/g, "upma");
-  normalized = normalized.replace(/\b(pohe?)\b/g, "poha");
+  normalized = normalized.replace(/\b(mangoes?|mangos?|aam)\b/g, "mango");
+  normalized = normalized.replace(/\b(papayas?)\b/g, "papaya");
+  normalized = normalized.replace(/\b(oranges?)\b/g, "orange");
+  normalized = normalized.replace(/\b(guavas?|amrood)\b/g, "guava");
+  normalized = normalized.replace(/\b(grapes?|angoor)\b/g, "grapes");
+  normalized = normalized.replace(/\b(watermelons?|tarbuj)\b/g, "watermelon");
+  normalized = normalized.replace(/\b(pomegranates?|anar)\b/g, "pomegranate");
+  normalized = normalized.replace(/\b(almonds?|badam)\b/g, "almond");
+  normalized = normalized.replace(/\b(cashews?|kaju)\b/g, "cashew");
+  normalized = normalized.replace(/\b(peanuts?|moongfali|groundnut)\b/g, "peanut");
+  normalized = normalized.replace(/\b(walnuts?|akhrot)\b/g, "walnut");
+  normalized = normalized.replace(/\b(kaapi)\b/g, "coffee");
   return normalized.replace(/\s+/g, " ").trim();
 }
 
@@ -101,32 +162,151 @@ interface KnowledgeFood {
   defaultUnit?: ServingUnit;
 }
 
-// Values are for the stated reference amount. Prepared foods with widely varying
-// recipes (such as curries and biryani) intentionally fall through to Gemini.
+// Values are for the stated reference amount. Prepared dishes use the IFCT 2017 /
+// INDB standard recipe. Branded or novel restaurant dishes still fall through to Gemini.
 const KnowledgeBase: Record<string, KnowledgeFood> = {
-  roti: { calories: 120, protein: 4, fat: 3, carbs: 20, fiber: 3, referenceAmount: 40, referenceUnit: "g", unitWeights: { piece: 40 }, defaultUnit: "piece" },
-  rice: { calories: 130, protein: 3, fat: 0.5, carbs: 28, fiber: 0.4, referenceAmount: 100, referenceUnit: "g", unitWeights: { cup: 158, bowl: 200 } },
-  dal: { calories: 75, protein: 4, fat: 2, carbs: 10, fiber: 4, referenceAmount: 100, referenceUnit: "g", unitWeights: { cup: 200, bowl: 200 } },
-  paneer: { calories: 265, protein: 18, fat: 20, carbs: 3, fiber: 0, referenceAmount: 100, referenceUnit: "g" },
-  milk: { calories: 60, protein: 3.2, fat: 3, carbs: 5, fiber: 0, referenceAmount: 100, referenceUnit: "ml", unitWeights: { cup: 240 } },
-  curd: { calories: 60, protein: 3.5, fat: 3.3, carbs: 4.7, fiber: 0, referenceAmount: 100, referenceUnit: "g", unitWeights: { cup: 245, bowl: 200 } },
-  egg: { calories: 70, protein: 6, fat: 5, carbs: 0.5, fiber: 0, referenceAmount: 50, referenceUnit: "g", unitWeights: { piece: 50 }, defaultUnit: "piece" },
-  "chicken breast": { calories: 165, protein: 31, fat: 3.6, carbs: 0, fiber: 0, referenceAmount: 100, referenceUnit: "g" },
-  apple: { calories: 52, protein: 0.3, fat: 0.2, carbs: 14, fiber: 2.4, referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 182 }, defaultUnit: "piece" },
-  banana: { calories: 89, protein: 1.1, fat: 0.3, carbs: 23, fiber: 2.6, referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 118 }, defaultUnit: "piece" },
-  poha: { calories: 180, protein: 4, fat: 5, carbs: 30, fiber: 2, referenceAmount: 150, referenceUnit: "g", unitWeights: { bowl: 150 } },
-  idli: { calories: 40, protein: 1.5, fat: 0.2, carbs: 8, fiber: 1, referenceAmount: 40, referenceUnit: "g", unitWeights: { piece: 40 }, defaultUnit: "piece" },
-  "plain dosa": { calories: 130, protein: 3, fat: 4, carbs: 20, fiber: 2, referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 100 }, defaultUnit: "piece" },
-  sambar: { calories: 75, protein: 3, fat: 2.5, carbs: 10, fiber: 1.5, referenceAmount: 100, referenceUnit: "g", unitWeights: { cup: 240, bowl: 200 } },
-  upma: { calories: 200, protein: 5, fat: 7, carbs: 28, fiber: 2, referenceAmount: 150, referenceUnit: "g", unitWeights: { bowl: 150 } },
-  oats: { calories: 389, protein: 16.9, fat: 6.9, carbs: 66, fiber: 10.6, referenceAmount: 100, referenceUnit: "g" },
-  rajma: { calories: 127, protein: 9, fat: 0.5, carbs: 22, fiber: 6, referenceAmount: 100, referenceUnit: "g", unitWeights: { cup: 177, bowl: 200 } },
-  chole: { calories: 164, protein: 8.9, fat: 2.6, carbs: 27.4, fiber: 7.6, referenceAmount: 100, referenceUnit: "g", unitWeights: { cup: 164, bowl: 200 } },
-  "soya chunks": { calories: 345, protein: 52, fat: 0.5, carbs: 33, fiber: 13, referenceAmount: 100, referenceUnit: "g" },
-  sprouts: { calories: 30, protein: 3.8, fat: 0.2, carbs: 6, fiber: 1.8, referenceAmount: 100, referenceUnit: "g", unitWeights: { cup: 100, bowl: 150 } },
-  bread: { calories: 75, protein: 2.5, fat: 1, carbs: 14, fiber: 1, referenceAmount: 30, referenceUnit: "g", unitWeights: { piece: 30, slice: 30 }, defaultUnit: "slice" },
-  almond: { calories: 579, protein: 21, fat: 50, carbs: 22, fiber: 12.5, referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 1.2 }, defaultUnit: "piece" },
-  "whey protein": { calories: 120, protein: 25, fat: 1, carbs: 3, fiber: 0, referenceAmount: 30, referenceUnit: "g", unitWeights: { scoop: 30 } },
+  // ============================================================
+  // CEREALS & GRAINS — cooked, per 100g
+  // ============================================================
+  "rice":               { calories: 130, protein: 2.7,  fat: 0.3,  carbs: 28.0, fiber: 0.4,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150, cup: 158 }, defaultUnit: "bowl" },
+  "brown rice":         { calories: 123, protein: 2.7,  fat: 1.0,  carbs: 25.6, fiber: 1.6,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150, cup: 158 }, defaultUnit: "bowl" },
+  "jeera rice":         { calories: 165, protein: 3.0,  fat: 4.5,  carbs: 28.0, fiber: 0.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "roti":               { calories: 265, protein: 8.5,  fat: 3.5,  carbs: 50.0, fiber: 4.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 35 }, defaultUnit: "piece" },
+  "chapati":            { calories: 265, protein: 8.5,  fat: 3.5,  carbs: 50.0, fiber: 4.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 35 }, defaultUnit: "piece" },
+  "phulka":             { calories: 220, protein: 7.5,  fat: 1.0,  carbs: 47.0, fiber: 3.8,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 30 }, defaultUnit: "piece" },
+  "paratha":            { calories: 330, protein: 6.4,  fat: 13.0, carbs: 45.4, fiber: 3.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 60 }, defaultUnit: "piece" },
+  "puri":               { calories: 460, protein: 6.0,  fat: 20.0, carbs: 60.0, fiber: 3.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 30 }, defaultUnit: "piece" },
+  "naan":               { calories: 310, protein: 10.2, fat: 5.7,  carbs: 55.0, fiber: 2.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 90 }, defaultUnit: "piece" },
+  "bhatura":            { calories: 380, protein: 7.0,  fat: 15.0, carbs: 52.0, fiber: 3.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 80 }, defaultUnit: "piece" },
+  "poha":               { calories: 120, protein: 2.7,  fat: 3.3,  carbs: 20.0, fiber: 1.3,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "upma":               { calories: 130, protein: 3.3,  fat: 4.7,  carbs: 18.7, fiber: 1.3,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "idli":               { calories: 130, protein: 3.8,  fat: 0.8,  carbs: 24.0, fiber: 1.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 40 }, defaultUnit: "piece" },
+  "plain dosa":         { calories: 130, protein: 3.0,  fat: 4.0,  carbs: 20.0, fiber: 2.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 100 }, defaultUnit: "piece" },
+  "masala dosa":        { calories: 190, protein: 3.5,  fat: 8.0,  carbs: 25.0, fiber: 2.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 150 }, defaultUnit: "piece" },
+  "rava dosa":          { calories: 160, protein: 3.5,  fat: 6.0,  carbs: 22.0, fiber: 1.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 90 }, defaultUnit: "piece" },
+  "khichdi":            { calories: 115, protein: 5.5,  fat: 2.5,  carbs: 20.5, fiber: 2.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 200 }, defaultUnit: "bowl" },
+  "pongal":             { calories: 150, protein: 4.5,  fat: 5.0,  carbs: 22.0, fiber: 1.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 180 }, defaultUnit: "bowl" },
+  "thepla":             { calories: 300, protein: 8.0,  fat: 12.0, carbs: 40.0, fiber: 3.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 40 }, defaultUnit: "piece" },
+  "chilla":             { calories: 200, protein: 10.0, fat: 7.0,  carbs: 25.0, fiber: 3.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 60 }, defaultUnit: "piece" },
+  "uttapam":            { calories: 140, protein: 3.5,  fat: 4.5,  carbs: 21.0, fiber: 1.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 120 }, defaultUnit: "piece" },
+  "vermicelli":         { calories: 140, protein: 4.0,  fat: 4.0,  carbs: 22.0, fiber: 1.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "oats":  { calories: 389, protein: 16.9, fat: 6.9,  carbs: 66.3, fiber: 10.6, referenceAmount: 100, referenceUnit: "g" },
+  "bread": { calories: 265, protein: 8.5,  fat: 3.2,  carbs: 49.0, fiber: 2.7,  referenceAmount: 100, referenceUnit: "g", unitWeights: { slice: 30, piece: 30 }, defaultUnit: "slice" },
+
+  // ============================================================
+  // DALS & LEGUMES — cooked, per 100g
+  // ============================================================
+  "dal":                { calories: 114, protein: 7.2,  fat: 0.5,  carbs: 20.9, fiber: 5.1,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150, cup: 200 }, defaultUnit: "bowl" },
+  "dal tadka":          { calories: 131, protein: 6.5,  fat: 5.0,  carbs: 16.0, fiber: 3.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "dal makhani":        { calories: 140, protein: 6.0,  fat: 7.0,  carbs: 15.0, fiber: 4.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "dal fry":            { calories: 120, protein: 5.5,  fat: 4.5,  carbs: 15.0, fiber: 3.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "moong dal":          { calories: 105, protein: 7.6,  fat: 0.7,  carbs: 19.0, fiber: 4.1,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "masoor dal":         { calories: 116, protein: 9.0,  fat: 0.4,  carbs: 20.1, fiber: 4.9,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "rajma":              { calories: 127, protein: 8.7,  fat: 0.5,  carbs: 22.8, fiber: 6.4,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150, cup: 177 }, defaultUnit: "bowl" },
+  "chole":              { calories: 164, protein: 8.9,  fat: 2.6,  carbs: 27.4, fiber: 7.6,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150, cup: 164 }, defaultUnit: "bowl" },
+  "kadhi":              { calories: 90,  protein: 3.5,  fat: 4.5,  carbs: 9.0,  fiber: 0.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 200 }, defaultUnit: "bowl" },
+  "sambar":             { calories: 81,  protein: 4.0,  fat: 2.1,  carbs: 12.0, fiber: 2.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 160, cup: 240 }, defaultUnit: "bowl" },
+  "rasam":              { calories: 40,  protein: 2.0,  fat: 1.0,  carbs: 6.0,  fiber: 1.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150, cup: 240 }, defaultUnit: "bowl" },
+  "soya chunks":        { calories: 345, protein: 52.0, fat: 0.5,  carbs: 33.0, fiber: 13.0, referenceAmount: 100, referenceUnit: "g" },
+  "sprouts":            { calories: 30,  protein: 3.8,  fat: 0.2,  carbs: 6.0,  fiber: 1.8,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150, cup: 100 }, defaultUnit: "bowl" },
+
+  // ============================================================
+  // VEGETABLES & SABZI — cooked, per 100g
+  // ============================================================
+  "aloo curry":         { calories: 105, protein: 1.2,  fat: 5.0,  carbs: 14.4, fiber: 1.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "aloo gobhi":         { calories: 121, protein: 2.2,  fat: 5.4,  carbs: 16.0, fiber: 2.2,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "aloo matar":         { calories: 120, protein: 3.0,  fat: 5.0,  carbs: 17.0, fiber: 3.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "dum aloo":           { calories: 150, protein: 2.0,  fat: 7.0,  carbs: 20.0, fiber: 2.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "bhindi":             { calories: 161, protein: 3.9,  fat: 10.7, carbs: 12.1, fiber: 2.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 130 }, defaultUnit: "bowl" },
+  "baigan bharta":      { calories: 70,  protein: 1.2,  fat: 4.7,  carbs: 5.7,  fiber: 2.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "mutter paneer":      { calories: 147, protein: 8.5,  fat: 8.1,  carbs: 10.7, fiber: 2.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "palak paneer":       { calories: 180, protein: 9.0,  fat: 12.0, carbs: 8.0,  fiber: 2.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "cabbage sabzi":      { calories: 131, protein: 2.3,  fat: 5.0,  carbs: 7.0,  fiber: 2.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 130 }, defaultUnit: "bowl" },
+  "shimla mirch aloo":  { calories: 93,  protein: 1.5,  fat: 3.4,  carbs: 12.8, fiber: 2.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 130 }, defaultUnit: "bowl" },
+  "kaddu sabzi":        { calories: 67,  protein: 1.6,  fat: 3.8,  carbs: 6.7,  fiber: 1.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 130 }, defaultUnit: "bowl" },
+  "lauki sabzi":        { calories: 45,  protein: 1.0,  fat: 2.0,  carbs: 6.0,  fiber: 1.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 130 }, defaultUnit: "bowl" },
+  "methi aloo":         { calories: 121, protein: 2.2,  fat: 5.4,  carbs: 16.0, fiber: 2.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 130 }, defaultUnit: "bowl" },
+  "mixed vegetable":    { calories: 103, protein: 1.3,  fat: 4.7,  carbs: 12.3, fiber: 3.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "salad":              { calories: 50,  protein: 2.0,  fat: 0.0,  carbs: 10.0, fiber: 2.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+
+  // ============================================================
+  // DAIRY — per 100g / 100ml
+  // ============================================================
+  "paneer":             { calories: 265, protein: 18.3, fat: 20.8, carbs: 1.2,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 30, bowl: 150 }, defaultUnit: "piece" },
+  "curd":               { calories: 60,  protein: 3.5,  fat: 3.3,  carbs: 4.7,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 200, cup: 245 }, defaultUnit: "bowl" },
+  "milk":               { calories: 65,  protein: 3.2,  fat: 3.7,  carbs: 4.7,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "ml", unitWeights: { cup: 240 }, defaultUnit: "cup" },
+  "ghee":               { calories: 900, protein: 0.3,  fat: 99.5, carbs: 0.0,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g" },
+  "butter":             { calories: 720, protein: 0.5,  fat: 80.0, carbs: 0.5,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g" },
+  "lassi":              { calories: 70,  protein: 2.5,  fat: 2.0,  carbs: 10.0, fiber: 0.0,  referenceAmount: 100, referenceUnit: "ml", unitWeights: { cup: 240 }, defaultUnit: "cup" },
+  "buttermilk":         { calories: 22,  protein: 1.5,  fat: 0.8,  carbs: 2.5,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "ml", unitWeights: { cup: 240 }, defaultUnit: "cup" },
+  "cream":              { calories: 340, protein: 2.0,  fat: 36.0, carbs: 3.0,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g" },
+
+  // ============================================================
+  // NON-VEGETARIAN — cooked, per 100g
+  // ============================================================
+  "egg":                { calories: 155, protein: 13.0, fat: 11.0, carbs: 1.1,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 50 }, defaultUnit: "piece" },
+  "chicken curry":      { calories: 140, protein: 14.0, fat: 8.0,  carbs: 3.0,  fiber: 0.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "chicken breast":     { calories: 165, protein: 31.0, fat: 3.6,  carbs: 0.0,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g" },
+  "chicken tikka":      { calories: 165, protein: 25.0, fat: 7.0,  carbs: 1.0,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g" },
+  "mutton curry":       { calories: 200, protein: 15.0, fat: 14.0, carbs: 4.0,  fiber: 0.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "fish curry":         { calories: 100, protein: 12.0, fat: 4.0,  carbs: 3.0,  fiber: 0.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "fish fry":           { calories: 200, protein: 20.0, fat: 12.0, carbs: 2.0,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 80 }, defaultUnit: "piece" },
+  "prawn curry":        { calories: 120, protein: 15.0, fat: 5.0,  carbs: 3.0,  fiber: 0.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "chicken biryani":    { calories: 163, protein: 9.2,  fat: 5.1,  carbs: 20.1, fiber: 1.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 200 }, defaultUnit: "bowl" },
+  "mutton biryani":     { calories: 175, protein: 9.5,  fat: 7.0,  carbs: 20.0, fiber: 0.8,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 200 }, defaultUnit: "bowl" },
+  "egg curry":          { calories: 120, protein: 8.0,  fat: 8.0,  carbs: 4.0,  fiber: 0.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "whey protein": { calories: 400, protein: 80.0, fat: 3.3, carbs: 10.0, fiber: 0.0, referenceAmount: 100, referenceUnit: "g", unitWeights: { scoop: 30 }, defaultUnit: "scoop" },
+
+  // ============================================================
+  // SNACKS & STREET FOOD — per 100g
+  // ============================================================
+  "samosa":             { calories: 308, protein: 4.5,  fat: 17.0, carbs: 32.0, fiber: 2.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 60 }, defaultUnit: "piece" },
+  "pakora":             { calories: 234, protein: 6.7,  fat: 10.3, carbs: 26.8, fiber: 2.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 20 }, defaultUnit: "piece" },
+  "vada pav":           { calories: 290, protein: 6.0,  fat: 12.0, carbs: 38.0, fiber: 2.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 120 }, defaultUnit: "piece" },
+  "dhokla":             { calories: 160, protein: 5.0,  fat: 3.0,  carbs: 28.0, fiber: 1.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 30 }, defaultUnit: "piece" },
+  "bhel puri":          { calories: 150, protein: 3.0,  fat: 5.0,  carbs: 23.0, fiber: 2.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 100 }, defaultUnit: "bowl" },
+  "pani puri":          { calories: 180, protein: 3.0,  fat: 8.0,  carbs: 24.0, fiber: 2.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 15 }, defaultUnit: "piece" },
+  "aloo tikki":         { calories: 180, protein: 3.0,  fat: 8.0,  carbs: 24.0, fiber: 2.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 60 }, defaultUnit: "piece" },
+  "bread pakora":       { calories: 250, protein: 6.0,  fat: 12.0, carbs: 30.0, fiber: 2.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 80 }, defaultUnit: "piece" },
+  "khandvi":            { calories: 150, protein: 5.0,  fat: 6.0,  carbs: 18.0, fiber: 1.0,  referenceAmount: 100, referenceUnit: "g" },
+  "momos":              { calories: 180, protein: 7.0,  fat: 5.0,  carbs: 26.0, fiber: 1.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 25 }, defaultUnit: "piece" },
+  "biscuit":            { calories: 450, protein: 7.0,  fat: 15.0, carbs: 72.0, fiber: 2.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 10 }, defaultUnit: "piece" },
+
+  // ============================================================
+  // FRUITS — raw, per 100g
+  // ============================================================
+  "apple":              { calories: 52,  protein: 0.3,  fat: 0.2,  carbs: 14.0, fiber: 2.4,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 180 }, defaultUnit: "piece" },
+  "banana":             { calories: 89,  protein: 1.1,  fat: 0.3,  carbs: 23.0, fiber: 2.6,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 120 }, defaultUnit: "piece" },
+  "mango":              { calories: 60,  protein: 0.8,  fat: 0.4,  carbs: 15.0, fiber: 1.6,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 200 }, defaultUnit: "piece" },
+  "papaya":             { calories: 43,  protein: 0.5,  fat: 0.3,  carbs: 11.0, fiber: 1.7,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "orange":             { calories: 47,  protein: 0.9,  fat: 0.1,  carbs: 12.0, fiber: 2.4,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 140 }, defaultUnit: "piece" },
+  "guava":              { calories: 68,  protein: 2.6,  fat: 1.0,  carbs: 14.0, fiber: 5.4,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 150 }, defaultUnit: "piece" },
+  "grapes":             { calories: 69,  protein: 0.7,  fat: 0.2,  carbs: 18.0, fiber: 0.9,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "watermelon":         { calories: 30,  protein: 0.6,  fat: 0.2,  carbs: 7.6,  fiber: 0.4,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 200 }, defaultUnit: "bowl" },
+  "pomegranate":        { calories: 83,  protein: 1.7,  fat: 1.2,  carbs: 19.0, fiber: 4.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+
+  // ============================================================
+  // NUTS & SEEDS — per 100g
+  // ============================================================
+  "almond":             { calories: 579, protein: 21.0, fat: 50.0, carbs: 22.0, fiber: 12.5, referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 1.2 }, defaultUnit: "piece" },
+  "cashew":             { calories: 553, protein: 18.0, fat: 44.0, carbs: 30.0, fiber: 3.3,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 1.6 }, defaultUnit: "piece" },
+  "peanut":             { calories: 567, protein: 26.0, fat: 49.0, carbs: 16.0, fiber: 8.5,  referenceAmount: 100, referenceUnit: "g" },
+  "walnut":             { calories: 654, protein: 15.0, fat: 65.0, carbs: 14.0, fiber: 6.7,  referenceAmount: 100, referenceUnit: "g" },
+
+  // ============================================================
+  // BEVERAGES — per 100ml
+  // ============================================================
+  "chai":               { calories: 100, protein: 2.0,  fat: 3.0,  carbs: 15.0, fiber: 0.0,  referenceAmount: 100, referenceUnit: "ml", unitWeights: { cup: 150 }, defaultUnit: "cup" },
+  "coffee":             { calories: 60,  protein: 2.0,  fat: 2.0,  carbs: 8.0,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "ml", unitWeights: { cup: 150 }, defaultUnit: "cup" },
+
+  // ============================================================
+  // SWEETS & DESSERTS — per 100g
+  // ============================================================
+  "kheer":              { calories: 150, protein: 3.5,  fat: 5.0,  carbs: 23.0, fiber: 0.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "rasgulla":           { calories: 180, protein: 3.0,  fat: 5.0,  carbs: 32.0, fiber: 0.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 30 }, defaultUnit: "piece" },
+  "gulab jamun":        { calories: 300, protein: 4.0,  fat: 12.0, carbs: 45.0, fiber: 0.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 40 }, defaultUnit: "piece" },
+  "shrikhand":          { calories: 250, protein: 5.0,  fat: 10.0, carbs: 35.0, fiber: 0.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "rabri":              { calories: 280, protein: 7.0,  fat: 15.0, carbs: 30.0, fiber: 0.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 100 }, defaultUnit: "bowl" },
 };
 
 function formatAmount(amount: number): string {
