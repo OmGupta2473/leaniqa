@@ -124,6 +124,32 @@ export const mealService = {
     }
     return true;
   },
+
+  async updateMeal(
+    id: string,
+    updates: Partial<Pick<DbMealLog, 'meal_text' | 'calories' | 'protein' | 'fat' | 'carbs' | 'fiber' | 'meal_slot' | 'tip'>>,
+  ): Promise<DbMealLog | null> {
+    const userId = await authService.getUserId();
+    const payload: Record<string, unknown> = { ...updates };
+    if (typeof payload.calories === 'number') payload.calories = Math.round(payload.calories);
+    if (typeof payload.protein === 'number') payload.protein = Math.round(payload.protein);
+    if (typeof payload.fat === 'number') payload.fat = Math.round(payload.fat);
+    if (typeof payload.carbs === 'number') payload.carbs = Math.round(payload.carbs);
+    if (typeof payload.fiber === 'number') payload.fiber = Math.round(payload.fiber);
+    if (payload.meal_slot === 'snack') delete payload.meal_slot;  // matches addMeal behaviour
+    const { data, error } = await supabase
+      .from('meal_logs')
+      .update(payload)
+      .eq('id', id)
+      .eq('user_id', userId)
+      .select()
+      .maybeSingle();
+    if (error) {
+      logError(new Error('Error updating meal'), { error, id, userId });
+      throw error;
+    }
+    return data;
+  },
   async getMealsByDate(dateStr: string): Promise<DbMealLog[]> {
     const userId = await authService.getUserId();
     // dateStr is 'YYYY-MM-DD'

@@ -10,6 +10,8 @@ import {
  AlertTriangle } from "lucide-react";
 import { EmptyState } from '@/shared/components/EmptyState';
 import { CustomMealModal } from '../components/CustomMealModal';
+import { EditMealModal } from '../components/EditMealModal';
+import { DbMealLog } from '@/shared/types/supabase';
 import { cn } from "@/shared/utils/utils";
 import { SmoothInput } from "@/shared/components/SmoothInput";
 
@@ -62,7 +64,7 @@ const getDeterministicFallback = (text: string) => {
 };
 
 // ── SLOT ROW — used in the persistent summary ─────────────────────────────
-function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: string; icon: React.ReactNode; label: string; timeRange: string; meals: any[], onDelete: (id: string) => void }) {
+function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete, onEdit }: { slot: string; icon: React.ReactNode; label: string; timeRange: string; meals: any[], onDelete: (id: string) => void; onEdit: (meal: any) => void }) {
   const [expanded, setExpanded] = useState(false);
   const { toast } = useToast();
   const kcal = meals.reduce((s, m) => s + m.calories, 0);
@@ -111,7 +113,12 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
                   key={m.id || i} 
                   className="flex items-center justify-between group p-2.5 sm:p-3 rounded-[16px] bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)] transition-colors gap-2"
                 >
-                  <div className="flex-1 min-w-0 pr-1 flex flex-col justify-center items-start gap-1">
+                  <button
+                    type="button"
+                    onClick={() => onEdit(m)}
+                    aria-label="Edit meal"
+                    className="flex-1 min-w-0 pr-1 flex flex-col justify-center items-start gap-1 text-left cursor-pointer"
+                  >
                     <div className="text-[13px] leading-tight font-medium text-[rgba(255,255,255,0.9)] capitalize break-words whitespace-normal break-all sm:break-normal">{m.meal_text}</div>
                     <div className="flex gap-1.5 mt-0.5">
                       {m._localOnly && (
@@ -125,7 +132,7 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete }: { slot: 
                         </span>
                       )}
                     </div>
-                  </div>
+                  </button>
                   <div className="flex items-center gap-1 shrink-0">
                     <span className="text-[8.5px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-1.5 py-0.5 rounded-full font-bold tracking-wide whitespace-nowrap">{m.calories} KCAL</span>
                     <span className="text-[8.5px] badge-lime px-1.5 py-0.5 font-bold rounded-full tracking-wide whitespace-nowrap">{m.protein}G PRO</span>
@@ -232,6 +239,7 @@ export function MealLoggerPage() {
   const [failedMealError, setFailedMealError] = useState<string | null>(null);
   const [isCustomMealModalOpen, setIsCustomMealModalOpen] = useState(false);
   const [retryCount, setRetryCount] = useState<number>(0);
+  const [editingMeal, setEditingMeal] = useState<(DbMealLog & { id: string }) | null>(null);
 
   const isToday = (dateStr: string) => dateStr === getKolkataDateString();
   const isYesterday = (dateStr: string) =>
@@ -370,6 +378,40 @@ export function MealLoggerPage() {
   });
 
   
+  const updateMealMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Parameters<typeof mealService.updateMeal>[1] }) => {
+      if (typeof window !== 'undefined' && !navigator.onLine) {
+        // v1: edits require network. Show a toast and abort.
+        throw new Error('Editing requires an internet connection.');
+      }
+      await mealService.updateMeal(id, updates);
+      return { id, updates };
+    },
+    onMutate: async ({ id, updates }) => {
+      await queryClient.cancelQueries({ queryKey: ['meals', 'date', dateKeyStr] });
+      const previousMeals = queryClient.getQueryData<any[]>(['meals', 'date', dateKeyStr]);
+      if (previousMeals) {
+        queryClient.setQueryData(
+          ['meals', 'date', dateKeyStr],
+          previousMeals.map((m) => m.id === id ? { ...m, ...updates } : m),
+        );
+      }
+      return { previousMeals };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousMeals) {
+        queryClient.setQueryData(['meals', 'date', dateKeyStr], context.previousMeals);
+      }
+    },
+    onSuccess: () => {
+      haptics.success();
+      setEditingMeal(null);
+    },
+    onSettled: () => {
+      onMealSaved(dateKeyStr);
+    },
+  });
+
   const handleCustomMealSave = (mealData: any) => {
     confirmMealMutation.mutate({
       text: mealData.meal_text,
@@ -785,10 +827,10 @@ export function MealLoggerPage() {
           />
         )}
 
-        <MealSlotRow slot="breakfast" icon={<Sunrise size={20} />} label="Breakfast" timeRange="6 am – 12 pm" meals={breakfastMeals} onDelete={handleDeleteMeal} />
-        <MealSlotRow slot="lunch" icon={<Sun size={20} />} label="Lunch" timeRange="12 pm – 6 pm" meals={lunchMeals} onDelete={handleDeleteMeal} />
-        <MealSlotRow slot="dinner" icon={<Moon size={20} />} label="Dinner" timeRange="6 pm – 10 pm" meals={dinnerMeals} onDelete={handleDeleteMeal} />
-        <MealSlotRow slot="snack" icon={<Coffee size={20} />} label="Snack" timeRange="Anytime" meals={snackMeals} onDelete={handleDeleteMeal} />
+        <MealSlotRow slot="breakfast" icon={<Sunrise size={20} />} label="Breakfast" timeRange="6 am – 12 pm" meals={breakfastMeals} onDelete={handleDeleteMeal} onEdit={(meal) => setEditingMeal(meal)} />
+        <MealSlotRow slot="lunch" icon={<Sun size={20} />} label="Lunch" timeRange="12 pm – 6 pm" meals={lunchMeals} onDelete={handleDeleteMeal} onEdit={(meal) => setEditingMeal(meal)} />
+        <MealSlotRow slot="dinner" icon={<Moon size={20} />} label="Dinner" timeRange="6 pm – 10 pm" meals={dinnerMeals} onDelete={handleDeleteMeal} onEdit={(meal) => setEditingMeal(meal)} />
+        <MealSlotRow slot="snack" icon={<Coffee size={20} />} label="Snack" timeRange="Anytime" meals={snackMeals} onDelete={handleDeleteMeal} onEdit={(meal) => setEditingMeal(meal)} />
       </div>
       {/* ── SPACER TO PREVENT FAB OVERLAP ── */}
       <div style={{ height: '120px', flexShrink: 0 }} aria-hidden="true" />
@@ -1098,6 +1140,16 @@ export function MealLoggerPage() {
         onClose={() => setIsCustomMealModalOpen(false)}
         onSave={handleCustomMealSave}
         defaultSlot={selectedMealSlot || undefined}
+      />
+
+      <EditMealModal
+        isOpen={!!editingMeal}
+        onClose={() => setEditingMeal(null)}
+        meal={editingMeal}
+        onSave={(updates) => {
+          if (!editingMeal) return;
+          updateMealMutation.mutate({ id: editingMeal.id, updates });
+        }}
       />
     </>
   );
