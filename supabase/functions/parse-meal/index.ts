@@ -774,7 +774,10 @@ serve(async (req) => {
             request_id: requestId,
             error_message: (cacheError as { message?: string })?.message ?? String(cacheError),
             error_code: (cacheError as { code?: string })?.code,
+            error_details: (cacheError as { details?: string })?.details,
+            error_hint: (cacheError as { hint?: string })?.hint,
             error_type: typeof cacheError,
+            error_keys: cacheError && typeof cacheError === "object" ? Object.keys(cacheError as object) : [],
           }));
         } else if (cacheData?.result) {
           const cached = MealSchema.safeParse(cacheData.result);
@@ -824,6 +827,7 @@ serve(async (req) => {
         error_details: (error as { details?: string })?.details,
         error_hint: (error as { hint?: string })?.hint,
         error_type: typeof error,
+        error_keys: error && typeof error === "object" ? Object.keys(error as object) : [],
       }));
       return new Response(JSON.stringify({ error: "Unable to reserve Gemini quota right now. Please try again." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -858,7 +862,18 @@ serve(async (req) => {
     if (cacheClient) {
       try {
         const { error: cacheWriteError } = await cacheClient.from("meal_parse_cache").insert({ normalized_text: context.normalizedText, meal_type: context.mealType, result: data });
-        if (cacheWriteError) console.error(JSON.stringify({ level: "error", stage: "DBCache", event: "write_error", request_id: requestId }));
+        if (cacheWriteError) console.error(JSON.stringify({
+          level: "error",
+          stage: "DBCache",
+          event: "write_error",
+          request_id: requestId,
+          error_message: (cacheWriteError as { message?: string })?.message ?? String(cacheWriteError),
+          error_code: (cacheWriteError as { code?: string })?.code,
+          error_details: (cacheWriteError as { details?: string })?.details,
+          error_hint: (cacheWriteError as { hint?: string })?.hint,
+          error_type: typeof cacheWriteError,
+          error_keys: cacheWriteError && typeof cacheWriteError === "object" ? Object.keys(cacheWriteError as object) : [],
+        }));
       } catch {
         console.error(JSON.stringify({ level: "error", stage: "DBCache", event: "write_exception", request_id: requestId }));
       }
