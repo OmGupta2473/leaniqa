@@ -436,7 +436,36 @@ class GeminiParser implements MealParser {
       clearTimeout(timeoutId);
     }
 
-    console.log(JSON.stringify({ level: "info", stage: "Gemini", event: "response_received", request_id: context.requestId, status: response.status, latency_ms: Date.now() - startedAt }));
+    console.log(JSON.stringify({ level: "info", stage: "Gemini", event: "response_received", status: response.status, request_id: context.requestId, latency_ms: Date.now() - startedAt }));
+
+    if (!response.ok && response.status === 503) {
+      // One-shot retry with the lite model on 503 overload
+      console.log(JSON.stringify({ level: "info", stage: "Gemini", event: "retry_lite", request_id: context.requestId }));
+      const liteUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent`;
+      try {
+        const liteResponse = await fetch(liteUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: buildGeminiPrompt(context) }] }],
+            generationConfig: { temperature: 0.1, responseMimeType: "application/json", maxOutputTokens: 1024 },
+          }),
+          signal: controller.signal,
+        });
+        if (liteResponse.ok) {
+          const liteBody = await liteResponse.json();
+          const liteContent = liteBody.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? "").join("");
+          if (liteContent) {
+            return MealSchema.parse(JSON.parse(liteContent));
+          }
+        }
+        console.error(JSON.stringify({ level: "error", stage: "Gemini", event: "retry_lite_failed", status: liteResponse.status, request_id: context.requestId }));
+      } catch (retryErr) {
+        console.error(JSON.stringify({ level: "error", stage: "Gemini", event: "retry_lite_error", request_id: context.requestId, error_message: retryErr instanceof Error ? retryErr.message : String(retryErr) }));
+      }
+      // Fall through to throwing provider_error so chain moves on
+    }
+
     if (!response.ok) {
       const errBody = await response.text().catch(() => "");
       console.error(JSON.stringify({
@@ -486,7 +515,7 @@ class GroqParser implements MealParser {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
         body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
+          model: "openai/gpt-oss-120b",
           messages: [{ role: "user", content: buildGeminiPrompt(context) }],
           temperature: 0.1,
           response_format: { type: "json_object" },
@@ -598,6 +627,13 @@ class MealParserChain implements MealParser {
   async parse(context: ParseContext): Promise<MealResult> {
     const errors: string[] = [];
     for (const { name, parser } of this.parsers) {
+      console.log(JSON.stringify({
+        level: "info",
+        stage: "Chain",
+        event: "provider_started",
+        provider: name,
+        request_id: context.requestId,
+      }));
       try {
         const result = await parser.parse(context);
         console.log(JSON.stringify({ level: "info", stage: "Chain", event: "provider_success", provider: name, request_id: context.requestId }));
