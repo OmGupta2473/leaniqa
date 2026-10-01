@@ -383,7 +383,7 @@ class KnowledgeBaseParser implements MealParser {
   }
 }
 
-const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_MODEL = "gemini-flash-latest";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 function buildGeminiPrompt(context: ParseContext): string {
@@ -438,7 +438,15 @@ class GeminiParser implements MealParser {
 
     console.log(JSON.stringify({ level: "info", stage: "Gemini", event: "response_received", request_id: context.requestId, status: response.status, latency_ms: Date.now() - startedAt }));
     if (!response.ok) {
-      console.error(JSON.stringify({ level: "error", stage: "Gemini", event: "http_error", request_id: context.requestId, status: response.status }));
+      const errBody = await response.text().catch(() => "");
+      console.error(JSON.stringify({
+        level: "error",
+        stage: "Gemini",
+        event: "http_error",
+        request_id: context.requestId,
+        status: response.status,
+        body_preview: errBody.slice(0, 500),
+      }));
       throw new MealAiError("provider_error", 502);
     }
 
@@ -495,6 +503,15 @@ class GroqParser implements MealParser {
     }
     console.log(JSON.stringify({ level: "info", stage: "Groq", event: "response_received", request_id: context.requestId, status: response.status, latency_ms: Date.now() - startedAt }));
     if (!response.ok) {
+      const errBody = await response.text().catch(() => "");
+      console.error(JSON.stringify({
+        level: "error",
+        stage: "Groq",
+        event: "http_error",
+        request_id: context.requestId,
+        status: response.status,
+        body_preview: errBody.slice(0, 500),
+      }));
       throw new MealAiError("provider_error", 502);
     }
     let body: { choices?: Array<{ message?: { content?: string } }> };
@@ -548,6 +565,15 @@ class CloudflareParser implements MealParser {
     }
     console.log(JSON.stringify({ level: "info", stage: "Cloudflare", event: "response_received", request_id: context.requestId, status: response.status, latency_ms: Date.now() - startedAt }));
     if (!response.ok) {
+      const errBody = await response.text().catch(() => "");
+      console.error(JSON.stringify({
+        level: "error",
+        stage: "Cloudflare",
+        event: "http_error",
+        request_id: context.requestId,
+        status: response.status,
+        body_preview: errBody.slice(0, 500),
+      }));
       throw new MealAiError("provider_error", 502);
     }
     let body: { result?: { response?: string }; success?: boolean };
