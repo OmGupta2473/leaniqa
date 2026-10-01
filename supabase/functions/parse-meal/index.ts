@@ -632,7 +632,8 @@ class MealParserChain implements MealParser {
   async parse(context: ParseContext): Promise<MealResult> {
     const errors: string[] = [];
     const attempts = this.parsers.map(({ name, parser }) =>
-      parser.parse(context)
+      Promise.resolve()
+        .then(() => parser.parse(context))
         .then((result): { ok: true; name: string; result: MealResult } => ({ ok: true, name, result }))
         .catch((err): { ok: false; name: string; error: unknown } => ({ ok: false, name, error: err })),
     );
