@@ -642,55 +642,97 @@ class MealParserChain implements MealParser {
   constructor(private readonly parsers: Array<{ name: string; parser: MealParser }>) {}
 
   async parse(context: ParseContext): Promise<MealResult> {
+    const total = this.parsers.length;
+    if (total === 0) throw new MealAiError("provider_error", 502);
+
     const abortController = new AbortController();
     const errors: string[] = [];
-    const attempts = this.parsers.map(({ name, parser }) =>
-      Promise.resolve()
-        .then(() => parser.parse(context, abortController.signal))
-        .then((result): { ok: true; name: string; result: MealResult } => ({ ok: true, name, result }))
-        .catch((err): { ok: false; name: string; error: unknown } => ({ ok: false, name, error: err })),
-    );
+    const HEDGE_DELAYS_MS = [0, 250, 700]; // stagger for each provider index
 
     return new Promise<MealResult>((resolve, reject) => {
-      let completed = 0;
       let settled = false;
-      const total = attempts.length;
+      let completed = 0;
+      const startedAt = Date.now();
 
-      for (const attempt of attempts) {
-        attempt.then((outcome) => {
-          completed += 1;
-          if (settled) return;
+      const tryProvider = (index: number) => {
+        if (settled || index >= total) return;
+        const { name, parser } = this.parsers[index];
 
-          if (outcome.ok) {
+        parser
+          .parse(context, abortController.signal)
+          .then((result) => {
+            completed += 1;
+            if (settled) return;
             settled = true;
-            console.log(JSON.stringify({ level: "info", stage: "Chain", event: "provider_success", provider: outcome.name, request_id: context.requestId }));
             abortController.abort();
-            resolve(outcome.result);
-            return;
-          }
+            console.log(JSON.stringify({
+              level: "info",
+              stage: "Chain",
+              event: "provider_success",
+              provider: name,
+              provider_index: index,
+              request_id: context.requestId,
+              elapsed_ms: Date.now() - startedAt,
+            }));
+            resolve(result);
+          })
+          .catch((err) => {
+            completed += 1;
+            if (settled) return;
 
-          const err = outcome.error;
-          if (err instanceof MealAiError) {
-            if (err.code === "missing_secret") {
-              console.log(JSON.stringify({ level: "info", stage: "Chain", event: "provider_skipped", provider: outcome.name, reason: "missing_secret", request_id: context.requestId }));
+            const isMissingSecret = err instanceof MealAiError && err.code === "missing_secret";
+            if (isMissingSecret) {
+              console.log(JSON.stringify({
+                level: "info",
+                stage: "Chain",
+                event: "provider_skipped",
+                provider: name,
+                reason: "missing_secret",
+                request_id: context.requestId,
+              }));
             } else {
-              errors.push(`${outcome.name}:${err.code}`);
+              const code = err instanceof MealAiError ? err.code : "unknown";
+              errors.push(`${name}:${code}`);
+              console.log(JSON.stringify({
+                level: "info",
+                stage: "Chain",
+                event: "provider_failed",
+                provider: name,
+                provider_index: index,
+                error_code: code,
+                elapsed_ms: Date.now() - startedAt,
+                request_id: context.requestId,
+              }));
             }
-          } else {
-            errors.push(`${outcome.name}:unknown`);
-          }
 
-          if (completed === total && !settled) {
-            settled = true;
-            console.error(JSON.stringify({ level: "error", stage: "Chain", event: "all_providers_failed", request_id: context.requestId, errors }));
-            reject(new MealAiError("provider_error", 502));
-          }
-        });
-      }
+            // If this provider failed, immediately start the next one (no hedge delay).
+            if (index + 1 < total) tryProvider(index + 1);
 
-      if (total === 0) {
-        reject(new MealAiError("provider_error", 502));
-      }
+            // If all providers have completed or failed and nothing settled, reject.
+            if (completed >= total && !settled) {
+              settled = true;
+              abortController.abort();
+              console.error(JSON.stringify({
+                level: "error",
+                stage: "Chain",
+                event: "all_providers_failed",
+                request_id: context.requestId,
+                errors,
+              }));
+              reject(new MealAiError("provider_error", 502));
+            }
+          });
+
+        // Schedule hedge for the next provider if it exists.
+        if (index + 1 < total) {
+          const nextDelay = HEDGE_DELAYS_MS[index + 1] - HEDGE_DELAYS_MS[index];
+          setTimeout(() => {
+            if (!settled) tryProvider(index + 1);
+          }, nextDelay);
+        }
+      };
+
+      tryProvider(0);
     });
   }
 }
@@ -946,8 +988,8 @@ serve(async (req) => {
     }
 
     const chain = new MealParserChain([
-      { name: "gemini", parser: new GeminiParser() },
       { name: "groq", parser: new GroqParser() },
+      { name: "gemini", parser: new GeminiParser() },
       { name: "cloudflare", parser: new CloudflareParser() },
     ]);
     const data = validator.validate(await chain.parse(context));
