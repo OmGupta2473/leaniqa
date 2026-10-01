@@ -442,6 +442,8 @@ class GeminiParser implements MealParser {
       // One-shot retry with the lite model on 503 overload
       console.log(JSON.stringify({ level: "info", stage: "Gemini", event: "retry_lite", request_id: context.requestId }));
       const liteUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent`;
+      const liteController = new AbortController();
+      const liteTimeoutId = setTimeout(() => liteController.abort(), 8_000);
       try {
         const liteResponse = await fetch(liteUrl, {
           method: "POST",
@@ -450,18 +452,21 @@ class GeminiParser implements MealParser {
             contents: [{ role: "user", parts: [{ text: buildGeminiPrompt(context) }] }],
             generationConfig: { temperature: 0.1, responseMimeType: "application/json", maxOutputTokens: 1024 },
           }),
-          signal: controller.signal,
+          signal: liteController.signal,
         });
         if (liteResponse.ok) {
           const liteBody = await liteResponse.json();
           const liteContent = liteBody.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? "").join("");
           if (liteContent) {
+            clearTimeout(liteTimeoutId);
             return MealSchema.parse(JSON.parse(liteContent));
           }
         }
         console.error(JSON.stringify({ level: "error", stage: "Gemini", event: "retry_lite_failed", status: liteResponse.status, request_id: context.requestId }));
       } catch (retryErr) {
         console.error(JSON.stringify({ level: "error", stage: "Gemini", event: "retry_lite_error", request_id: context.requestId, error_message: retryErr instanceof Error ? retryErr.message : String(retryErr) }));
+      } finally {
+        clearTimeout(liteTimeoutId);
       }
       // Fall through to throwing provider_error so chain moves on
     }
