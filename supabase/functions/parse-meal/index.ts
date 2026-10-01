@@ -55,6 +55,11 @@ const numberWords: Record<string, string> = {
 
 function normalizeInput(input: string): string {
   let normalized = input.toLowerCase().trim();
+  // Raw/cooked modifier: prefix the matched food with "raw " when the user
+  // says raw/uncooked/dry, and leave the plain name when they say cooked/
+  // boiled/steamed/plain (cooked is the default for KB lookups).
+  normalized = normalized.replace(/\b(raw|uncooked|dry)\s+(rice|oats|dal|moong dal|masoor dal|chicken( breast)?|mutton|fish)\b/g, "raw $2");
+  normalized = normalized.replace(/\b(cooked|boiled|steamed|plain)\s+(rice|oats|dal|moong dal|masoor dal|chicken( breast)?|mutton|fish)\b/g, "$2");
   normalized = normalized.replace(/[,+&]/g, " and ");
   normalized = normalized.replace(/[^a-z0-9\s.]/g, " ");
   normalized = normalized.replace(/\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|half)\b/g, (word) => numberWords[word]);
@@ -81,7 +86,6 @@ function normalizeInput(input: string): string {
   normalized = normalized.replace(/\b(bhature|bhaturas?|bature)\b/g, "bhatura");
   normalized = normalized.replace(/\b(chawal|bhaat|bhat|rices?)\b/g, "rice");
   normalized = normalized.replace(/\b(cumin rice)\b/g, "jeera rice");
-  normalized = normalized.replace(/\b(boiled rice)\b/g, "brown rice");
   normalized = normalized.replace(/\b(mung dal|green gram dal|pesara pappu)\b/g, "moong dal");
   normalized = normalized.replace(/\b(masur dal|red lentil)\b/g, "masoor dal");
   normalized = normalized.replace(/\b(toor dal|arhar dal|toovar dal|dals?)\b/g, "dal");
@@ -170,6 +174,8 @@ const KnowledgeBase: Record<string, KnowledgeFood> = {
   // ============================================================
   "rice":               { calories: 130, protein: 2.7,  fat: 0.3,  carbs: 28.0, fiber: 0.4,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150, cup: 158 }, defaultUnit: "bowl" },
   "brown rice":         { calories: 123, protein: 2.7,  fat: 1.0,  carbs: 25.6, fiber: 1.6,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150, cup: 158 }, defaultUnit: "bowl" },
+  "raw rice":           { calories: 360, protein: 7.9,  fat: 0.9,  carbs: 78.0, fiber: 1.3,  referenceAmount: 100, referenceUnit: "g" },
+  "raw oats":           { calories: 389, protein: 16.9, fat: 6.9,  carbs: 66.3, fiber: 10.6, referenceAmount: 100, referenceUnit: "g" },
   "jeera rice":         { calories: 165, protein: 3.0,  fat: 4.5,  carbs: 28.0, fiber: 0.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
   "roti":               { calories: 265, protein: 8.5,  fat: 3.5,  carbs: 50.0, fiber: 4.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 35 }, defaultUnit: "piece" },
   "chapati":            { calories: 265, protein: 8.5,  fat: 3.5,  carbs: 50.0, fiber: 4.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 35 }, defaultUnit: "piece" },
@@ -198,6 +204,9 @@ const KnowledgeBase: Record<string, KnowledgeFood> = {
   // DALS & LEGUMES — cooked, per 100g
   // ============================================================
   "dal":                { calories: 114, protein: 7.2,  fat: 0.5,  carbs: 20.9, fiber: 5.1,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150, cup: 200 }, defaultUnit: "bowl" },
+  "raw dal":            { calories: 340, protein: 24.0, fat: 1.5,  carbs: 60.0, fiber: 12.0, referenceAmount: 100, referenceUnit: "g" },
+  "raw moong dal":      { calories: 347, protein: 24.0, fat: 1.2,  carbs: 63.0, fiber: 12.0, referenceAmount: 100, referenceUnit: "g" },
+  "raw masoor dal":     { calories: 340, protein: 25.0, fat: 1.0,  carbs: 60.0, fiber: 11.0, referenceAmount: 100, referenceUnit: "g" },
   "dal tadka":          { calories: 131, protein: 6.5,  fat: 5.0,  carbs: 16.0, fiber: 3.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
   "dal makhani":        { calories: 140, protein: 6.0,  fat: 7.0,  carbs: 15.0, fiber: 4.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
   "dal fry":            { calories: 120, protein: 5.5,  fat: 4.5,  carbs: 15.0, fiber: 3.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
@@ -246,8 +255,12 @@ const KnowledgeBase: Record<string, KnowledgeFood> = {
   // NON-VEGETARIAN — cooked, per 100g
   // ============================================================
   "egg":                { calories: 155, protein: 13.0, fat: 11.0, carbs: 1.1,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 50 }, defaultUnit: "piece" },
+  "chicken":            { calories: 165, protein: 31.0, fat: 3.6,  carbs: 0.0,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g" },
   "chicken curry":      { calories: 140, protein: 14.0, fat: 8.0,  carbs: 3.0,  fiber: 0.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
   "chicken breast":     { calories: 165, protein: 31.0, fat: 3.6,  carbs: 0.0,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g" },
+  "raw chicken":        { calories: 120, protein: 22.5, fat: 2.6,  carbs: 0.0,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g" },
+  "raw mutton":         { calories: 143, protein: 19.0, fat: 6.5,  carbs: 0.0,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g" },
+  "raw fish":           { calories: 96,  protein: 20.0, fat: 1.5,  carbs: 0.0,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g" },
   "chicken tikka":      { calories: 165, protein: 25.0, fat: 7.0,  carbs: 1.0,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g" },
   "mutton curry":       { calories: 200, protein: 15.0, fat: 14.0, carbs: 4.0,  fiber: 0.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
   "fish curry":         { calories: 100, protein: 12.0, fat: 4.0,  carbs: 3.0,  fiber: 0.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
