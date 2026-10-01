@@ -223,6 +223,7 @@ export function MealLoggerPage() {
   const aiStatus = useNutritionStore(s => s.aiStatus);
   const setAiStatus = useNutritionStore(s => s.setAiStatus);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => profileService.getProfile() });
   const keyboardOffset = useVisualViewport();
   const isKeyboardOpen = useKeyboardOpen();
@@ -579,11 +580,26 @@ export function MealLoggerPage() {
         setFailedMealError(null);
       } else {
         setRetryCount(0);
-        
         analytics.trackEvent('Meal Parse Analytics', eventData);
         analytics.trackEvent('AI Parse Success', { confidence: data.confidence, calories: data.calories });
-        
-        setPendingMeal({ text, data });
+
+        const source = data.source as string | undefined;
+        const isHighConfidence = source === 'kb' || source === 'memory_cache' || source === 'db_cache';
+
+        if (isHighConfidence) {
+          // Auto-log: the values are verified (IFCT-sourced) or previously confirmed.
+          analytics.trackEvent('Meal Auto-Logged' as any, { source, calories: data.calories });
+          addChatMessage({ role: 'ai', text: `✓ Logged: ${text}`, data });
+          toast({
+            type: 'success',
+            message: `Logged ✓ ${Math.round(data.calories)} kcal · ${Math.round(data.protein)}g pro`,
+            duration: 3000,
+          });
+          confirmMealMutation.mutate({ text, data, source: 'ai', client_token: crypto.randomUUID() });
+        } else {
+          // LLM estimate — keep the confirmation modal so users can review.
+          setPendingMeal({ text, data });
+        }
       }
     },
     onError: (err: any, variables) => {

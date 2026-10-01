@@ -822,7 +822,7 @@ serve(async (req) => {
     if (knowledgeBaseResult) {
       const validated = validator.validate(knowledgeBaseResult);
       console.log(JSON.stringify({ level: "info", stage: "KnowledgeBase", event: "hit", request_id: requestId, latency_ms: Date.now() - knowledgeBaseStartedAt }));
-      return responseFor(validated, corsHeaders);
+      return responseFor({ ...validated, source: "kb" }, corsHeaders);
     }
     console.log(JSON.stringify({ level: "info", stage: "KnowledgeBase", event: "miss", request_id: requestId, latency_ms: Date.now() - knowledgeBaseStartedAt }));
 
@@ -833,7 +833,7 @@ serve(async (req) => {
     const exactMemoryHit = memoryEntries.find((entry) => entry.normalizedText === context.normalizedText);
     if (exactMemoryHit) {
       console.log(JSON.stringify({ level: "info", stage: "MemoryCache", event: "hit", request_id: requestId, latency_ms: Date.now() - cacheStartedAt }));
-      return responseFor(exactMemoryHit.result, corsHeaders);
+      return responseFor({ ...exactMemoryHit.result, source: "memory_cache" }, corsHeaders);
     }
 
     const scaledMemoryHit = memoryEntries.find((entry) => {
@@ -844,7 +844,7 @@ serve(async (req) => {
       const ratio = safeScalingRatio(scaledMemoryHit.quantities, queryQuantities);
       const scaledResult = ratio ? scaleMealResult(scaledMemoryHit.result, ratio) : scaledMemoryHit.result;
       console.log(JSON.stringify({ level: "info", stage: "MemoryCache", event: "scaled_hit", request_id: requestId, latency_ms: Date.now() - cacheStartedAt, ratio }));
-      return responseFor(scaledResult, corsHeaders);
+      return responseFor({ ...scaledResult, source: "memory_cache" }, corsHeaders);
     }
 
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -878,7 +878,7 @@ serve(async (req) => {
             dbEntries.push(cachedEntry);
             memoryCache.set(cacheKey, dbEntries.slice(-25));
             console.log(JSON.stringify({ level: "info", stage: "DBCache", event: "hit", request_id: requestId, latency_ms: Date.now() - cacheStartedAt }));
-            return responseFor(validated, corsHeaders);
+            return responseFor({ ...validated, source: "db_cache" }, corsHeaders);
           }
         }
       } catch {
@@ -968,7 +968,7 @@ serve(async (req) => {
     }
 
     console.log(JSON.stringify({ level: "info", stage: "Pipeline", event: "success", parser: "Gemini", request_id: requestId, total_latency_ms: Date.now() - startedAt }));
-    return responseFor(data, corsHeaders);
+    return responseFor({ ...data, source: "llm" }, corsHeaders);
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("Unauthorized")) {
       return new Response(JSON.stringify({ error: error.message }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
