@@ -463,6 +463,138 @@ class GeminiParser implements MealParser {
   }
 }
 
+class GroqParser implements MealParser {
+  async parse(context: ParseContext): Promise<MealResult> {
+    const apiKey = Deno.env.get("GROQ_API_KEY");
+    if (!apiKey) {
+      throw new MealAiError("missing_secret", 503);
+    }
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8_000);
+    const startedAt = Date.now();
+    let response: Response;
+    try {
+      response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          messages: [{ role: "user", content: buildGeminiPrompt(context) }],
+          temperature: 0.1,
+          response_format: { type: "json_object" },
+          max_tokens: 1024,
+        }),
+        signal: controller.signal,
+      });
+    } catch (error) {
+      const isTimeout = error instanceof DOMException && error.name === "AbortError";
+      console.error(JSON.stringify({ level: "error", stage: "Groq", event: isTimeout ? "timeout" : "request_failed", request_id: context.requestId, latency_ms: Date.now() - startedAt }));
+      throw new MealAiError(isTimeout ? "timeout" : "provider_error", isTimeout ? 504 : 502);
+    } finally {
+      clearTimeout(timeoutId);
+    }
+    console.log(JSON.stringify({ level: "info", stage: "Groq", event: "response_received", request_id: context.requestId, status: response.status, latency_ms: Date.now() - startedAt }));
+    if (!response.ok) {
+      throw new MealAiError("provider_error", 502);
+    }
+    let body: { choices?: Array<{ message?: { content?: string } }> };
+    try {
+      body = await response.json();
+    } catch {
+      throw new MealAiError("invalid_response", 502);
+    }
+    const content = body.choices?.[0]?.message?.content;
+    if (!content) throw new MealAiError("invalid_response", 502);
+    try {
+      return MealSchema.parse(JSON.parse(content));
+    } catch {
+      throw new MealAiError("invalid_response", 502);
+    }
+  }
+}
+
+class CloudflareParser implements MealParser {
+  async parse(context: ParseContext): Promise<MealResult> {
+    const apiKey = Deno.env.get("CF_AI_API_TOKEN");
+    const accountId = Deno.env.get("CF_ACCOUNT_ID");
+    if (!apiKey || !accountId) {
+      throw new MealAiError("missing_secret", 503);
+    }
+    const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/meta/llama-3.3-70b-instruct-fp8-fast`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10_000);
+    const startedAt = Date.now();
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          messages: [
+            { role: "system", content: "You return only valid JSON. Never include markdown fences or explanation." },
+            { role: "user", content: buildGeminiPrompt(context) },
+          ],
+          temperature: 0.1,
+          max_tokens: 1024,
+        }),
+        signal: controller.signal,
+      });
+    } catch (error) {
+      const isTimeout = error instanceof DOMException && error.name === "AbortError";
+      console.error(JSON.stringify({ level: "error", stage: "Cloudflare", event: isTimeout ? "timeout" : "request_failed", request_id: context.requestId, latency_ms: Date.now() - startedAt }));
+      throw new MealAiError(isTimeout ? "timeout" : "provider_error", isTimeout ? 504 : 502);
+    } finally {
+      clearTimeout(timeoutId);
+    }
+    console.log(JSON.stringify({ level: "info", stage: "Cloudflare", event: "response_received", request_id: context.requestId, status: response.status, latency_ms: Date.now() - startedAt }));
+    if (!response.ok) {
+      throw new MealAiError("provider_error", 502);
+    }
+    let body: { result?: { response?: string }; success?: boolean };
+    try {
+      body = await response.json();
+    } catch {
+      throw new MealAiError("invalid_response", 502);
+    }
+    const content = body.result?.response;
+    if (!content) throw new MealAiError("invalid_response", 502);
+    try {
+      return MealSchema.parse(JSON.parse(content));
+    } catch {
+      throw new MealAiError("invalid_response", 502);
+    }
+  }
+}
+
+class MealParserChain implements MealParser {
+  constructor(private readonly parsers: Array<{ name: string; parser: MealParser }>) {}
+
+  async parse(context: ParseContext): Promise<MealResult> {
+    const errors: string[] = [];
+    for (const { name, parser } of this.parsers) {
+      try {
+        const result = await parser.parse(context);
+        console.log(JSON.stringify({ level: "info", stage: "Chain", event: "provider_success", provider: name, request_id: context.requestId }));
+        return result;
+      } catch (err) {
+        if (err instanceof MealAiError) {
+          if (err.code === "missing_secret") {
+            console.log(JSON.stringify({ level: "info", stage: "Chain", event: "provider_skipped", provider: name, reason: "missing_secret", request_id: context.requestId }));
+            continue;
+          }
+          errors.push(`${name}:${err.code}`);
+          if (err.code === "timeout" || err.code === "provider_error" || err.code === "invalid_response") {
+            continue;
+          }
+        }
+        throw err;
+      }
+    }
+    console.error(JSON.stringify({ level: "error", stage: "Chain", event: "all_providers_failed", request_id: context.requestId, errors }));
+    throw new MealAiError("provider_error", 502);
+  }
+}
+
 class NutritionValidator {
   validate(data: MealResult): MealResult {
     if (data.protein < 0) data.protein = 0;
@@ -691,7 +823,12 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Daily AI limit reached", limit, used, resets_at: resetsAt.toISOString(), _limitReached: true }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const data = validator.validate(await new GeminiParser().parse(context));
+    const chain = new MealParserChain([
+      { name: "gemini", parser: new GeminiParser() },
+      { name: "groq", parser: new GroqParser() },
+      { name: "cloudflare", parser: new CloudflareParser() },
+    ]);
+    const data = validator.validate(await chain.parse(context));
     const cacheEntry: CacheEntry = {
       normalizedText: context.normalizedText,
       result: data,
