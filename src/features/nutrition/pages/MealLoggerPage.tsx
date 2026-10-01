@@ -448,17 +448,13 @@ export function MealLoggerPage() {
       if (typeof window !== 'undefined' && !navigator.onLine) {
         lastError = new Error('Network failure');
       } else {
-        for (let attempt = 0; attempt < 3; attempt++) {
+        {
           try {
             const { data: { session }, error: sessionError } = await supabase.auth.getSession();
             let currentSession = session;
             if (sessionError || !session?.access_token) {
-              if (attempt === 0) { 
-                const { data: refreshData } = await supabase.auth.refreshSession(); 
-                currentSession = refreshData.session;
-              } else { 
-                throw new Error('Authentication failure'); 
-              }
+              const { data: refreshData } = await supabase.auth.refreshSession();
+              currentSession = refreshData.session;
             }
 
             if (!currentSession?.access_token) throw new Error('Authentication failure');
@@ -490,14 +486,11 @@ export function MealLoggerPage() {
                 } catch(e) {}
               }
 
-              if (msg.includes('Auth') || msg.includes('Authentication') || msg.includes('JWT') || functionError.message?.includes('Auth')) { 
-                if (attempt < 2) { await supabase.auth.refreshSession(); lastError = new Error('Auth — retrying'); continue; }
+              if (msg.includes('Auth') || msg.includes('Authentication') || msg.includes('JWT') || functionError.message?.includes('Auth')) {
                 throw new Error('Authentication failure');
               }
               if (msg.includes('429') || msg.includes('limit reached')) throw new Error('Daily AI limit reached');
               if (msg.includes('504') || msg.includes('timeout')) {
-                lastError = new Error('AI took too long to respond');
-                if (attempt < 2) { await new Promise(r => setTimeout(r, 1200 * (attempt + 1))); continue; }
                 throw new Error('AI took too long to respond');
               }
 
@@ -529,16 +522,12 @@ export function MealLoggerPage() {
                 console.error('[MealLogger] Parsing Error - Invalid AI response data:', data);
               }
               lastError = new Error('AI returned invalid data');
-              if (attempt < 2) continue;
               throw new Error('AI returned invalid data');
             }
             
             return data;
           } catch (err: any) {
             lastError = err as Error;
-            const retryableErrors = ['retrying', 'unavailable', 'Auth —', 'Server error', 'timeout', 'too long', 'Network', 'internet', 'invalid data'];
-            if (attempt < 2 && retryableErrors.some(retryMsg => err.message.includes(retryMsg))) continue;
-            break;
           }
         }
       }
@@ -589,7 +578,6 @@ export function MealLoggerPage() {
         if (isHighConfidence) {
           // Auto-log: the values are verified (IFCT-sourced) or previously confirmed.
           analytics.trackEvent('Meal Logged', { auto: true, source, calories: data.calories });
-          addChatMessage({ role: 'ai', text: `✓ Logged: ${text}`, data });
           toast({
             type: 'success',
             message: `Logged ✓ ${Math.round(data.calories)} kcal · ${Math.round(data.protein)}g pro`,

@@ -36,7 +36,7 @@ interface ParseContext {
 }
 
 interface MealParser {
-  parse(context: ParseContext): Promise<MealResult | null>;
+  parse(context: ParseContext, externalSignal?: AbortSignal): Promise<MealResult | null>;
 }
 
 class MealAiError extends Error {
@@ -408,7 +408,7 @@ Return JSON only with this exact shape:
 }
 
 class GeminiParser implements MealParser {
-  async parse(context: ParseContext): Promise<MealResult> {
+  async parse(context: ParseContext, externalSignal?: AbortSignal): Promise<MealResult> {
     const apiKey = context.geminiApiKey;
     if (!apiKey) {
       console.error(JSON.stringify({ level: "error", stage: "Gemini", event: "missing_secret", request_id: context.requestId }));
@@ -416,6 +416,9 @@ class GeminiParser implements MealParser {
     }
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10_000);
+    if (externalSignal) {
+      externalSignal.addEventListener('abort', () => controller.abort(), { once: true });
+    }
     const startedAt = Date.now();
     let response: Response;
     try {
@@ -444,6 +447,9 @@ class GeminiParser implements MealParser {
       const liteUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent`;
       const liteController = new AbortController();
       const liteTimeoutId = setTimeout(() => liteController.abort(), 8_000);
+      if (externalSignal) {
+        externalSignal.addEventListener('abort', () => liteController.abort(), { once: true });
+      }
       try {
         const liteResponse = await fetch(liteUrl, {
           method: "POST",
@@ -506,13 +512,16 @@ class GeminiParser implements MealParser {
 }
 
 class GroqParser implements MealParser {
-  async parse(context: ParseContext): Promise<MealResult> {
+  async parse(context: ParseContext, externalSignal?: AbortSignal): Promise<MealResult> {
     const apiKey = Deno.env.get("GROQ_API_KEY");
     if (!apiKey) {
       throw new MealAiError("missing_secret", 503);
     }
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8_000);
+    if (externalSignal) {
+      externalSignal.addEventListener('abort', () => controller.abort(), { once: true });
+    }
     const startedAt = Date.now();
     let response: Response;
     try {
@@ -565,7 +574,7 @@ class GroqParser implements MealParser {
 }
 
 class CloudflareParser implements MealParser {
-  async parse(context: ParseContext): Promise<MealResult> {
+  async parse(context: ParseContext, externalSignal?: AbortSignal): Promise<MealResult> {
     const apiKey = Deno.env.get("CF_AI_API_TOKEN");
     const accountId = Deno.env.get("CF_ACCOUNT_ID");
     if (!apiKey || !accountId) {
@@ -574,6 +583,9 @@ class CloudflareParser implements MealParser {
     const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/meta/llama-3.3-70b-instruct-fp8-fast`;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10_000);
+    if (externalSignal) {
+      externalSignal.addEventListener('abort', () => controller.abort(), { once: true });
+    }
     const startedAt = Date.now();
     let response: Response;
     try {
@@ -630,10 +642,11 @@ class MealParserChain implements MealParser {
   constructor(private readonly parsers: Array<{ name: string; parser: MealParser }>) {}
 
   async parse(context: ParseContext): Promise<MealResult> {
+    const abortController = new AbortController();
     const errors: string[] = [];
     const attempts = this.parsers.map(({ name, parser }) =>
       Promise.resolve()
-        .then(() => parser.parse(context))
+        .then(() => parser.parse(context, abortController.signal))
         .then((result): { ok: true; name: string; result: MealResult } => ({ ok: true, name, result }))
         .catch((err): { ok: false; name: string; error: unknown } => ({ ok: false, name, error: err })),
     );
@@ -651,6 +664,7 @@ class MealParserChain implements MealParser {
           if (outcome.ok) {
             settled = true;
             console.log(JSON.stringify({ level: "info", stage: "Chain", event: "provider_success", provider: outcome.name, request_id: context.requestId }));
+            abortController.abort();
             resolve(outcome.result);
             return;
           }
