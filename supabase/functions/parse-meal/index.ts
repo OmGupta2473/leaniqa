@@ -74,7 +74,7 @@ function normalizeInput(input: string): string {
   // because those compounds (aloo gobhi, chicken breast, fish fry, mutton biryani)
   // must match the KB exactly.
   normalized = normalized.replace(/\b(chapatis?|chapathis?|chapattis?|phulkas?|rotis?)\b/g, "roti");
-  normalized = normalized.replace(/\b(aloo paranthas?|aloo parathas?)\b/g, "paratha");
+  normalized = normalized.replace(/\b(aloo paranthas?|aloo parathas?|alu parathas?)\b/g, "aloo paratha");
   normalized = normalized.replace(/\b(paranthas?|parathas?|porottas?)\b/g, "paratha");
   normalized = normalized.replace(/\b(poori|puris?)\b/g, "puri");
   normalized = normalized.replace(/\b(naan|naans)\b/g, "naan");
@@ -175,6 +175,7 @@ const KnowledgeBase: Record<string, KnowledgeFood> = {
   "chapati":            { calories: 265, protein: 8.5,  fat: 3.5,  carbs: 50.0, fiber: 4.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 35 }, defaultUnit: "piece" },
   "phulka":             { calories: 220, protein: 7.5,  fat: 1.0,  carbs: 47.0, fiber: 3.8,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 30 }, defaultUnit: "piece" },
   "paratha":            { calories: 330, protein: 6.4,  fat: 13.0, carbs: 45.4, fiber: 3.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 60 }, defaultUnit: "piece" },
+  "aloo paratha":       { calories: 270, protein: 5.5,  fat: 10.5, carbs: 37.0, fiber: 3.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 120 }, defaultUnit: "piece" },
   "puri":               { calories: 460, protein: 6.0,  fat: 20.0, carbs: 60.0, fiber: 3.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 30 }, defaultUnit: "piece" },
   "naan":               { calories: 310, protein: 10.2, fat: 5.7,  carbs: 55.0, fiber: 2.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 90 }, defaultUnit: "piece" },
   "bhatura":            { calories: 380, protein: 7.0,  fat: 15.0, carbs: 52.0, fiber: 3.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 80 }, defaultUnit: "piece" },
@@ -336,7 +337,7 @@ class KnowledgeBaseParser implements MealParser {
     const foodsDetected: string[] = [];
 
     for (const part of parts) {
-      const match = part.match(/^(?:(\d+(?:\.\d+)?)\s*(g|ml|bowl|cup|piece|slice|scoop)?\s*(?:of\s+)?)?(.+)$/);
+      const match = part.match(/^(?:(\d+(?:\.\d+)?)\s*(g|ml|bowl|cup|piece|slice|scoop)?(?=\s|$)\s*(?:of\s+)?)?(.+)$/);
       if (!match) return null;
       const quantityProvided = Boolean(match[1]);
       const quantity = quantityProvided ? Number.parseFloat(match[1]) : 1;
@@ -475,7 +476,7 @@ function parseMealQuantities(normalizedText: string): Array<{ foodName: string; 
 
   const entries: Array<{ foodName: string; effectiveAmount: number }> = [];
   for (const part of parts) {
-    const match = part.match(/^(?:(\d+(?:\.\d+)?)\s*(g|ml|bowl|cup|piece|slice|scoop)?\s*(?:of\s+)?)?(.+)$/);
+    const match = part.match(/^(?:(\d+(?:\.\d+)?)\s*(g|ml|bowl|cup|piece|slice|scoop)?(?=\s|$)\s*(?:of\s+)?)?(.+)$/);
     if (!match) return null;
     const quantityProvided = Boolean(match[1]);
     const quantity = quantityProvided ? Number.parseFloat(match[1]) : 1;
