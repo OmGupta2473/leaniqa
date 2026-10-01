@@ -7,9 +7,10 @@ import { useChatStore } from "@/app/store";
 import { useNutritionStore } from "../store/nutritionStore";
 import {
   Send, Loader2, Dumbbell, Lightbulb, Sun, Sunrise, Moon, Coffee, Plus, X, ChevronLeft, ChevronRight, ArrowRight, ChevronDown, 
- AlertTriangle } from "lucide-react";
+ AlertTriangle, Pencil } from "lucide-react";
 import { EmptyState } from '@/shared/components/EmptyState';
 import { CustomMealModal } from '../components/CustomMealModal';
+import { PreCommitEditModal } from '../components/PreCommitEditModal';
 import { EditMealModal } from '../components/EditMealModal';
 import { DbMealLog } from '@/shared/types/supabase';
 import { cn } from "@/shared/utils/utils";
@@ -240,6 +241,7 @@ export function MealLoggerPage() {
   const [isCustomMealModalOpen, setIsCustomMealModalOpen] = useState(false);
   const [retryCount, setRetryCount] = useState<number>(0);
   const [editingMeal, setEditingMeal] = useState<(DbMealLog & { id: string }) | null>(null);
+  const [editingPending, setEditingPending] = useState(false);
 
   const isToday = (dateStr: string) => dateStr === getKolkataDateString();
   const isYesterday = (dateStr: string) =>
@@ -1016,6 +1018,15 @@ export function MealLoggerPage() {
                           Cancel
                         </button>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => setEditingPending(true)}
+                        disabled={confirmMealMutation.isPending}
+                        className="mt-2 flex w-full items-center justify-center gap-1.5 text-[12px] font-medium text-[rgba(255,255,255,0.45)] transition-colors hover:text-white disabled:opacity-40"
+                      >
+                        <Pencil size={12} />
+                        Edit estimate
+                      </button>
                     </motion.div>
                   )}
                                     {failedMealError && !loading && (
@@ -1149,6 +1160,35 @@ export function MealLoggerPage() {
         onSave={(updates) => {
           if (!editingMeal) return;
           updateMealMutation.mutate({ id: editingMeal.id, updates });
+        }}
+      />
+      <PreCommitEditModal
+        isOpen={editingPending && !!pendingMeal}
+        onClose={() => setEditingPending(false)}
+        initial={pendingMeal ? {
+          meal_text: pendingMeal.text,
+          calories: pendingMeal.data?.calories ?? 0,
+          protein: pendingMeal.data?.protein ?? 0,
+          fat: pendingMeal.data?.fat ?? 0,
+          carbs: pendingMeal.data?.carbs ?? 0,
+          fiber: pendingMeal.data?.fiber,
+        } : null}
+        onSave={(updates) => {
+          if (!pendingMeal) return;
+          setPendingMeal({
+            text: updates.meal_text,
+            data: {
+              ...pendingMeal.data,
+              calories: updates.calories,
+              protein: updates.protein,
+              fat: updates.fat,
+              carbs: updates.carbs,
+              fiber: updates.fiber,
+              _userEdited: true,
+            },
+          });
+          setEditingPending(false);
+          haptics.tap();
         }}
       />
     </>
