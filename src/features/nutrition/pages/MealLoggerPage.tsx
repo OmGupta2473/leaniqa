@@ -588,7 +588,7 @@ export function MealLoggerPage() {
 
         if (isHighConfidence) {
           // Auto-log: the values are verified (IFCT-sourced) or previously confirmed.
-          analytics.trackEvent('Meal Auto-Logged' as any, { source, calories: data.calories });
+          analytics.trackEvent('Meal Logged', { auto: true, source, calories: data.calories });
           addChatMessage({ role: 'ai', text: `✓ Logged: ${text}`, data });
           toast({
             type: 'success',
