@@ -767,7 +767,15 @@ serve(async (req) => {
       try {
         const { data: cacheData, error: cacheError } = await cacheClient.from("meal_parse_cache").select("result").eq("normalized_text", context.normalizedText).eq("meal_type", context.mealType).limit(1).maybeSingle();
         if (cacheError) {
-          console.error(JSON.stringify({ level: "error", stage: "DBCache", event: "read_error", request_id: requestId }));
+          console.error(JSON.stringify({
+            level: "error",
+            stage: "DBCache",
+            event: "read_error",
+            request_id: requestId,
+            error_message: (cacheError as { message?: string })?.message ?? String(cacheError),
+            error_code: (cacheError as { code?: string })?.code,
+            error_type: typeof cacheError,
+          }));
         } else if (cacheData?.result) {
           const cached = MealSchema.safeParse(cacheData.result);
           if (cached.success) {
@@ -806,7 +814,17 @@ serve(async (req) => {
       const rows = Array.isArray(data) ? data : data ? [data] : [];
       quotaResult = rows[0] as { usage_count?: number; limit_value?: number } | undefined;
     } catch (error) {
-      console.error(JSON.stringify({ level: "error", stage: "UsageTracking", event: "reserve_failed", request_id: requestId, error: error instanceof Error ? error.message : String(error) }));
+      console.error(JSON.stringify({
+        level: "error",
+        stage: "UsageTracking",
+        event: "reserve_failed",
+        request_id: requestId,
+        error_message: (error as { message?: string })?.message ?? String(error),
+        error_code: (error as { code?: string })?.code,
+        error_details: (error as { details?: string })?.details,
+        error_hint: (error as { hint?: string })?.hint,
+        error_type: typeof error,
+      }));
       return new Response(JSON.stringify({ error: "Unable to reserve Gemini quota right now. Please try again." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
