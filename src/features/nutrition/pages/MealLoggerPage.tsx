@@ -257,20 +257,59 @@ export function MealLoggerPage() {
   const [editingPending, setEditingPending] = useState(false);
 
   const refundParseCredit = useCallback(async (pm: PendingMeal | null) => {
-    if (!pm || pm.source !== 'llm' || !pm.request_id) return;
+    if (!pm || pm.source !== 'llm' || !pm.request_id) {
+      console.log('[credits] refund skipped', {
+        reason: !pm ? 'no pm' : pm.source !== 'llm' ? 'not llm' : 'no request_id',
+        pm,
+      });
+      return;
+    }
     try {
       const userId = await authService.getUserId();
-      await supabase.rpc('refund_api_usage', {
+      const p_date = getKolkataDateString();
+      console.log('[credits] refund calling', {
+        request_id: pm.request_id,
+        p_user_id: userId,
+        p_date,
+      });
+      const { data, error } = await supabase.rpc('refund_api_usage', {
         p_user_id: userId,
         p_endpoint: 'parse-meal',
-        p_date: getKolkataDateString(),
+        p_date,
         p_request_id: pm.request_id,
       });
-    } catch (e) {
-      // Best-effort. If it fails, the credit stays consumed; user can retry.
-      console.warn('[credits] refund failed', e);
+      if (error) {
+        console.error('[credits] refund FAILED', {
+          request_id: pm.request_id,
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+        });
+        return;
+      }
+      console.log('[credits] refund succeeded', {
+        request_id: pm.request_id,
+        result: data,
+      });
+      toast({ type: 'success', message: 'Credit refunded', duration: 2000 });
+    } catch (thrown) {
+      console.error('[credits] refund threw', {
+        request_id: pm.request_id,
+        error: thrown instanceof Error ? thrown.message : String(thrown),
+      });
     }
-  }, []);
+  }, [toast]);
+
+  // Deterministic ordering: close the card first (blocks double-tap), then let
+  // the refund RPC fully commit, then read the true post-refund count.
+  const handleCancelPendingMeal = useCallback(async () => {
+    const pm = pendingMeal;
+    if (!pm) return;
+    setPendingMeal(null);
+    await refundParseCredit(pm);
+    await refetchCredits();
+  }, [pendingMeal, refundParseCredit, refetchCredits]);
 
   const isToday = (dateStr: string) => dateStr === getKolkataDateString();
   const isYesterday = (dateStr: string) =>
@@ -1101,6 +1140,11 @@ export function MealLoggerPage() {
                         <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.6)] px-2 py-0.5 rounded-full font-semibold">{pendingMeal.data.fat}g fat</span>
                         <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.6)] px-2 py-0.5 rounded-full font-semibold">{pendingMeal.data.carbs}g carb</span>
                       </div>
+                      {pendingMeal.creditsConsumed && (
+                        <div className="mb-2 text-center text-[11px] text-[rgba(255,255,255,0.4)]">
+                          1 credit reserved — Cancel will refund it
+                        </div>
+                      )}
                       <div className="flex gap-2">
                         <button 
                           onClick={() => confirmMealMutation.mutate({ ...pendingMeal, source: 'ai', client_token: crypto.randomUUID() })}
@@ -1110,7 +1154,7 @@ export function MealLoggerPage() {
                           {confirmMealMutation.isPending ? 'Logging...' : 'Confirm'}
                         </button>
                         <button 
-                          onClick={() => refundParseCredit(pendingMeal).finally(() => { setPendingMeal(null); refetchCredits(); })}
+                          onClick={handleCancelPendingMeal}
                           disabled={confirmMealMutation.isPending}
                           className="flex-1 bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] text-white font-bold py-2 rounded-[12px] text-[13px] transition-colors"
                         >
