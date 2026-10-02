@@ -782,6 +782,18 @@ class MealParserChain implements MealParser {
 
 class NutritionValidator {
   validate(data: MealResult): MealResult {
+    // Gibberish input can yield a schema-valid but empty payload (every macro
+    // reported as 0). Treat it as an unidentifiable meal so the credit is
+    // refunded instead of surfacing a meaningless "0 kcal" confirm card.
+    if (
+      data.calories === 0 &&
+      data.protein === 0 &&
+      data.fat === 0 &&
+      data.carbs === 0 &&
+      data.fiber === 0
+    ) {
+      throw new Error("Nutrition values are all zero — meal could not be identified");
+    }
     if (data.protein < 0) data.protein = 0;
     if (data.fat < 0) data.fat = 0;
     if (data.carbs < 0) data.carbs = 0;
