@@ -55,6 +55,9 @@ const numberWords: Record<string, string> = {
 
 function normalizeInput(input: string): string {
   let normalized = input.toLowerCase().trim();
+  normalized = normalized.replace(/\btablespoons?\b/g, "tbsp");
+  normalized = normalized.replace(/\bteaspoons?\b/g, "tsp");
+  normalized = normalized.replace(/\bmixed seeds?\b/g, "mix seeds");
   // Raw/cooked modifier: prefix the matched food with "raw " when the user
   // says raw/uncooked/dry, and leave the plain name when they say cooked/
   // boiled/steamed/plain (cooked is the default for KB lookups).
@@ -306,6 +309,7 @@ const KnowledgeBase: Record<string, KnowledgeFood> = {
   "cashew":             { calories: 553, protein: 18.0, fat: 44.0, carbs: 30.0, fiber: 3.3,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 1.6 }, defaultUnit: "piece" },
   "peanut":             { calories: 567, protein: 26.0, fat: 49.0, carbs: 16.0, fiber: 8.5,  referenceAmount: 100, referenceUnit: "g" },
   "walnut":             { calories: 654, protein: 15.0, fat: 65.0, carbs: 14.0, fiber: 6.7,  referenceAmount: 100, referenceUnit: "g" },
+  "mix seeds":          { calories: 550, protein: 20.0, fat: 44.0, carbs: 22.0, fiber: 8.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { scoop: 15 }, defaultUnit: "scoop" },
 
   // ============================================================
   // BEVERAGES — per 100ml
@@ -350,11 +354,11 @@ class KnowledgeBaseParser implements MealParser {
     const foodsDetected: string[] = [];
 
     for (const part of parts) {
-      const match = part.match(/^(?:(\d+(?:\.\d+)?)\s*(g|ml|bowl|cup|piece|slice|scoop)?(?=\s|$)\s*(?:of\s+)?)?(.+)$/);
+      const match = part.match(/^(?:(\d+(?:\.\d+)?)\s*(g|ml|bowl|cup|piece|slice|scoop|tbsp|tsp)?(?=\s|$)\s*(?:of\s+)?)?(.+)$/);
       if (!match) return null;
       const quantityProvided = Boolean(match[1]);
       const quantity = quantityProvided ? Number.parseFloat(match[1]) : 1;
-      const unit = match[2] as QuantityUnit | undefined;
+      const unit = (match[2] === "tbsp" || match[2] === "tsp" ? "scoop" : match[2]) as QuantityUnit | undefined;
       const foodName = match[3].trim();
       const food = KnowledgeBase[foodName];
       if (!food || !Number.isFinite(quantity) || quantity <= 0) return null;
@@ -427,7 +431,7 @@ class GeminiParser implements MealParser {
         headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
         body: JSON.stringify({
           contents: [{ role: "user", parts: [{ text: buildGeminiPrompt(context) }] }],
-          generationConfig: { temperature: 0.1, responseMimeType: "application/json", maxOutputTokens: 1024 },
+          generationConfig: { temperature: 0.1, responseMimeType: "application/json", maxOutputTokens: 2048 },
         }),
         signal: controller.signal,
       });
@@ -456,7 +460,7 @@ class GeminiParser implements MealParser {
           headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
           body: JSON.stringify({
             contents: [{ role: "user", parts: [{ text: buildGeminiPrompt(context) }] }],
-            generationConfig: { temperature: 0.1, responseMimeType: "application/json", maxOutputTokens: 1024 },
+            generationConfig: { temperature: 0.1, responseMimeType: "application/json", maxOutputTokens: 2048 },
           }),
           signal: liteController.signal,
         });
@@ -533,7 +537,7 @@ class GroqParser implements MealParser {
           messages: [{ role: "user", content: buildGeminiPrompt(context) }],
           temperature: 0.1,
           response_format: { type: "json_object" },
-          max_tokens: 1024,
+          max_tokens: 2048,
         }),
         signal: controller.signal,
       });
@@ -574,7 +578,7 @@ class GroqParser implements MealParser {
               messages: [{ role: "user", content: buildGeminiPrompt(context) }],
               temperature: 0.1,
               response_format: { type: "json_object" },
-              max_tokens: 1024,
+              max_tokens: 2048,
             }),
             signal: retryController.signal,
           });
@@ -637,7 +641,7 @@ class CloudflareParser implements MealParser {
             { role: "user", content: buildGeminiPrompt(context) },
           ],
           temperature: 0.1,
-          max_tokens: 1024,
+          max_tokens: 2048,
         }),
         signal: controller.signal,
       });
@@ -802,11 +806,11 @@ function parseMealQuantities(normalizedText: string): Array<{ foodName: string; 
 
   const entries: Array<{ foodName: string; effectiveAmount: number }> = [];
   for (const part of parts) {
-    const match = part.match(/^(?:(\d+(?:\.\d+)?)\s*(g|ml|bowl|cup|piece|slice|scoop)?(?=\s|$)\s*(?:of\s+)?)?(.+)$/);
+    const match = part.match(/^(?:(\d+(?:\.\d+)?)\s*(g|ml|bowl|cup|piece|slice|scoop|tbsp|tsp)?(?=\s|$)\s*(?:of\s+)?)?(.+)$/);
     if (!match) return null;
     const quantityProvided = Boolean(match[1]);
     const quantity = quantityProvided ? Number.parseFloat(match[1]) : 1;
-    const unit = match[2] as QuantityUnit | undefined;
+    const unit = (match[2] === "tbsp" || match[2] === "tsp" ? "scoop" : match[2]) as QuantityUnit | undefined;
     const foodName = match[3].trim();
     const food = KnowledgeBase[foodName];
     if (!food || !Number.isFinite(quantity) || quantity <= 0) return null;
