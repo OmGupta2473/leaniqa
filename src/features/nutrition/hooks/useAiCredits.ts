@@ -14,7 +14,9 @@ export interface AiCredits {
 export function useAiCredits() {
   const query = useQuery<AiCredits>({
     queryKey: ['aiCredits'],
-    staleTime: 60_000,
+    staleTime: 10_000,          // was 60_000 — reduce so refetch never silently skips
+    refetchOnMount: 'always',   // re-read the DB whenever the meal logger mounts
+    refetchOnWindowFocus: true, // correct the counter when the user returns to the tab
     queryFn: async () => {
       const userId = await authService.getUserId();
       const today = getKolkataDateString();

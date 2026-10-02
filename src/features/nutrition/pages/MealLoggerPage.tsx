@@ -634,18 +634,36 @@ export function MealLoggerPage() {
           low_confidence: typeof data.confidence === 'number' && data.confidence < 80,
         });
 
-        // Any valid parse — regardless of confidence — goes to the pendingMeal
-        // card. Low confidence just adds a warning banner. The user can Edit,
-        // Confirm, or Cancel (Cancel refunds the credit via refundParseCredit).
-        setPendingMeal({
-          text,
-          data,
-          request_id: data.request_id,
-          source: data.source,
-          creditsConsumed: data.source === 'llm',
-          lowConfidence: typeof data.confidence === 'number' && data.confidence < 80,
-        });
-        refetchCredits();
+        const source = data.source as string | undefined;
+        const isHighConfidence = source === 'kb' || source === 'memory_cache' || source === 'db_cache';
+
+        if (isHighConfidence) {
+          // Verified values from KB or cache — auto-log without a tap.
+          analytics.trackEvent('Meal Logged', { auto: true, source, calories: data.calories });
+          toast({
+            type: 'success',
+            message: `Logged ✓ ${Math.round(data.calories)} kcal · ${Math.round(data.protein)}g pro`,
+            duration: 3000,
+          });
+          confirmMealMutation.mutate({
+            text,
+            data,
+            source: 'ai',
+            client_token: crypto.randomUUID(),
+          });
+          refetchCredits();
+        } else {
+          // LLM estimate — show the card so the user can Edit/Confirm/Cancel.
+          setPendingMeal({
+            text,
+            data,
+            request_id: data.request_id,
+            source: data.source,
+            creditsConsumed: data.source === 'llm',
+            lowConfidence: typeof data.confidence === 'number' && data.confidence < 80,
+          });
+          refetchCredits();
+        }
       }
     },
     onError: (err: any, variables) => {
