@@ -244,6 +244,7 @@ export function MealLoggerPage() {
     request_id?: string;
     source?: string;
     creditsConsumed?: boolean;   // true when source === 'llm'
+    lowConfidence?: boolean;     // true when the parse came back with confidence < 80
   };
 
   const [selectedDateStr, setSelectedDateStr] = useState<string>(() => getKolkataDateString());
@@ -624,38 +625,26 @@ export function MealLoggerPage() {
             duration: 5000,
           });
         }
-      } else if (data.confidence && data.confidence < 80) {
-        analytics.trackEvent('AI Parse Failure', { error: 'Low confidence', input: text });
-        setFailedMealText(text);
-        setFailedMealError(null);
-        refetchCredits();
       } else {
         setRetryCount(0);
         analytics.trackEvent('Meal Parse Analytics', eventData);
-        analytics.trackEvent('AI Parse Success', { confidence: data.confidence, calories: data.calories });
+        analytics.trackEvent('AI Parse Success', {
+          confidence: data.confidence,
+          calories: data.calories,
+          low_confidence: typeof data.confidence === 'number' && data.confidence < 80,
+        });
 
-        const source = data.source as string | undefined;
-        const isHighConfidence = source === 'kb' || source === 'memory_cache' || source === 'db_cache';
-
-        if (isHighConfidence) {
-          // Auto-log: the values are verified (IFCT-sourced) or previously confirmed.
-          analytics.trackEvent('Meal Logged', { auto: true, source, calories: data.calories });
-          toast({
-            type: 'success',
-            message: `Logged ✓ ${Math.round(data.calories)} kcal · ${Math.round(data.protein)}g pro`,
-            duration: 3000,
-          });
-          confirmMealMutation.mutate({ text, data, source: 'ai', client_token: crypto.randomUUID() });
-        } else {
-          // LLM estimate — keep the confirmation modal so users can review.
-          setPendingMeal({
-            text,
-            data,
-            request_id: data.request_id,
-            source: data.source,
-            creditsConsumed: data.source === 'llm',
-          });
-        }
+        // Any valid parse — regardless of confidence — goes to the pendingMeal
+        // card. Low confidence just adds a warning banner. The user can Edit,
+        // Confirm, or Cancel (Cancel refunds the credit via refundParseCredit).
+        setPendingMeal({
+          text,
+          data,
+          request_id: data.request_id,
+          source: data.source,
+          creditsConsumed: data.source === 'llm',
+          lowConfidence: typeof data.confidence === 'number' && data.confidence < 80,
+        });
         refetchCredits();
       }
     },
@@ -1082,6 +1071,12 @@ export function MealLoggerPage() {
                       className="bg-[rgba(255,255,255,0.02)] border-[0.5px] border-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.85)] rounded-[24px] rounded-tl-sm max-w-[90%] self-start p-[12px_16px] text-[14px] leading-relaxed"
                     >
                       <div className="font-semibold text-white mb-2">Here is the estimated nutrition. Would you like to log this?</div>
+                      {pendingMeal.lowConfidence && (
+                        <div className="mb-3 flex items-start gap-2 rounded-xl border border-[rgba(255,179,71,0.25)] bg-[rgba(255,179,71,0.08)] p-2.5 text-[12px] leading-relaxed text-[#FFB347]">
+                          <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+                          <span>Low confidence — please review the values before logging.</span>
+                        </div>
+                      )}
                       <div className="flex gap-[6px] flex-wrap mb-[12px]">
                         <span className="text-[10px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">~{pendingMeal.data.calories} kcal</span>
                         <span className="text-[10px] badge-lime px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{pendingMeal.data.protein}g pro</span>
