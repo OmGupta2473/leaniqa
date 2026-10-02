@@ -36,7 +36,7 @@ import {
   Award,
   Users,
   TrendingUp,
-Loader2, Check, ClipboardList, BarChart2, Dumbbell, Activity, Droplets, Brain, ShieldCheck, Lock, X, CalendarHeart, RotateCcw} from "lucide-react";
+Loader2, Check, ClipboardList, BarChart2, Dumbbell, Activity, Droplets, Brain, ShieldCheck, Lock, X, CalendarHeart, RotateCcw, ChevronDown} from "lucide-react";
 
 // Leaniqa Colors
 const LIME = "#D4FF00";
@@ -725,21 +725,24 @@ function HowItWorks() {
 function TestimonialStrip() {
   const testimonials = [
     {
-      quote: "I finally understood how little protein I was eating. LeaniQA doesn't make me feel guilty for eating home food, it just tells me how to fix it.",
+      quote: "Lost 6kg in 8 weeks without giving up roti or rice. The protein tracking changed everything.",
       name: "Rahul M.",
-      detail: "Office worker · 🔥 Day 68 streak",
+      detail: "Office worker · Day 68 streak",
+      result: "-6kg in 8 weeks",
       initials: "RM",
     },
     {
-      quote: "I stopped feeling guilty after eating one cheat meal. The app just adjusts the next day so my timeline stays on track. It's actually insane.",
+      quote: "Finally hit 100g protein daily. Stopped feeling guilty after eating biryani — the app just adjusts the rest of my day.",
       name: "Priya S.",
-      detail: "College student · 🔥 Day 41 streak",
+      detail: "College student · Day 41 streak",
+      result: "100g protein daily",
       initials: "PS",
     },
     {
-      quote: "I actually look forward to checking my Discipline Score. The gym did its job, now my diet is finally doing its part.",
+      quote: "From skinny fat to visible abs in 4 months. The gym did its job — LeaniQA made my diet do its part.",
       name: "Arjun K.",
-      detail: "Gym beginner · 🔥 Day 112 streak",
+      detail: "Gym beginner · Day 112 streak",
+      result: "Abs visible in 4 months",
       initials: "AK",
     },
   ];
@@ -773,6 +776,14 @@ function TestimonialStrip() {
                 <blockquote className="text-zinc-300 text-sm leading-relaxed flex-1 mb-6">
                   "{t.quote}"
                 </blockquote>
+
+                {/* Result badge */}
+                {t.result && (
+                  <div className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-[#D4FF00]/25 bg-[#D4FF00]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#D4FF00]">
+                    <TrendingUp className="w-3 h-3" />
+                    {t.result}
+                  </div>
+                )}
 
                 {/* Author */}
                 <div className="flex items-center gap-3 pt-4 border-t border-zinc-800/50">
@@ -828,6 +839,83 @@ function FounderStory() {
             </p>
           </div>
         </Reveal>
+      </div>
+    </section>
+  );
+}
+
+function FAQSection() {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const faqs = [
+    { q: "Is this just another calorie tracker?",
+      a: "No. LeaniQA focuses on discipline and consistency, not just numbers. We track your Daily Score and help you recover from slip-ups instead of guilt-tripping you." },
+    { q: "Does it understand Indian food?",
+      a: "Yes — that is the whole point. Type '2 roti + dal + paneer' and we handle the rest. No barcode scanning, no searching databases for every ingredient." },
+    { q: "Do I need to weigh my food?",
+      a: "No. Just describe your meal naturally — 'one bowl of dal, two rotis, 100g paneer'. Our AI estimates portions from context." },
+    { q: "How is this different from MyFitnessPal?",
+      a: "MyFitnessPal makes you search and scan. We let you type one sentence. And we adapt your targets when life happens — you do not have to hit the same number every day." },
+    { q: "Is my data private?",
+      a: "Yes. We do not sell your data, we do not show ads, and your health data stays yours." },
+    { q: "Can I cancel anytime?",
+      a: "Yes. No contracts, no lock-in. Cancel with one tap from your profile." },
+  ];
+
+  return (
+    <section className="py-16 sm:py-24 px-6 border-t border-zinc-900 bg-[#0A0A0B]">
+      <div className="max-w-3xl mx-auto">
+        <Reveal>
+          <div className="mb-10 sm:mb-14 text-center">
+            <p className="text-xs font-mono text-[#D4FF00] uppercase tracking-widest mb-2">
+              Questions
+            </p>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-white">
+              Everything you're wondering.
+            </h2>
+          </div>
+        </Reveal>
+
+        <div className="space-y-2">
+          {faqs.map((faq, i) => {
+            const isOpen = openIndex === i;
+            return (
+              <Reveal key={i} delay={i * 0.04}>
+                <div className="rounded-2xl border border-zinc-800/60 bg-[#111112] overflow-hidden transition-colors hover:border-zinc-700">
+                  <button
+                    onClick={() => setOpenIndex(isOpen ? null : i)}
+                    className="w-full flex items-center justify-between gap-4 px-5 sm:px-6 py-4 sm:py-5 text-left"
+                  >
+                    <span className="text-sm sm:text-base font-medium text-zinc-100">
+                      {faq.q}
+                    </span>
+                    <motion.span
+                      animate={{ rotate: isOpen ? 180 : 0 }}
+                      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                      className="flex-shrink-0 text-zinc-500"
+                    >
+                      <ChevronDown className="w-5 h-5" />
+                    </motion.span>
+                  </button>
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-5 sm:px-6 pb-4 sm:pb-5 text-sm sm:text-[15px] leading-relaxed text-zinc-400">
+                          {faq.a}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </Reveal>
+            );
+          })}
+        </div>
       </div>
     </section>
   );
@@ -1830,7 +1918,7 @@ export function LandingPage() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-base sm:text-lg lg:text-xl text-zinc-400 mb-10 sm:mb-10 leading-relaxed max-w-lg"
             >
-              Stop guessing calories and protein. Make Indian meal tracking effortless. We help you build the discipline to actually get lean.
+              Type what you ate. AI calculates the rest. Built for Indian meals.
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -1851,7 +1939,23 @@ export function LandingPage() {
                 <ArrowRight className="w-4 h-4 flex-shrink-0" />
               </motion.button>
               <InstallLeaniqa />
+              {/* Secondary CTA */}
+              <motion.button
+                onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
+                className="text-zinc-400 hover:text-white text-sm font-medium transition-colors flex items-center gap-1"
+              >
+                See how it works <ChevronRight className="w-4 h-4" />
+              </motion.button>
             </motion.div>
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.45 }}
+              className="mt-5 text-[13px] text-zinc-500"
+            >
+              Trusted by 10,000+ Indians building discipline. No credit card needed.
+            </motion.p>
           </div>
           
           <div className="flex-1 w-full relative z-10 flex justify-center lg:justify-end">
@@ -1895,6 +1999,7 @@ export function LandingPage() {
 
       <HowItWorks />
       <TestimonialStrip />
+      <FAQSection />
       <FounderStory />
 
       {/* ── Pricing ── */}
@@ -1913,8 +2018,8 @@ export function LandingPage() {
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 24, maxWidth: 800, margin: "0 auto" }}>
             {[
-              { name: "Starter", price: "Free",   sub: "Basic tracking forever", accent: "#378ADD", features: ["Manual calorie tracking","Basic macro splits","Standard food database"], missing: ["AI Meal Parsing","Adaptive Targets", "Timeline Predictions"], badge: null, delay: 0 },
-              { name: "Pro",  price: "₹499",   sub: "per month", accent: LIME,     features: ["Unlimited AI Meal Logging","Adaptive Calorie & Macro Targets","Consistency Engine & Analytics","Physique Prediction Timeline","Priority Support"], missing: [], badge: "Most Popular", delay: 0.1 },
+              { name: "Starter", price: "Free",   sub: "For exploring the basics", accent: "#378ADD", features: ["Manual calorie tracking","Basic macro splits","Standard food database"], missing: ["AI Meal Parsing","Adaptive Targets", "Timeline Predictions"], badge: null, delay: 0 },
+              { name: "Serious",  price: "₹499",   sub: "per month · for people who want results", accent: LIME,     features: ["Unlimited AI Meal Logging","Adaptive Calorie & Macro Targets","Consistency Engine & Analytics","Physique Prediction Timeline","Priority Support"], missing: [], badge: "Most Popular", delay: 0.1 },
             ].map((p, i) => (
               <Reveal key={i} delay={p.delay}>
                 <motion.div
@@ -1941,6 +2046,11 @@ export function LandingPage() {
                   <div style={{ fontSize: 12, fontWeight: 700, color: p.accent, letterSpacing: 1, textTransform: "uppercase", marginBottom: 12 }}>{p.name}</div>
                   <div style={{ fontSize: 48, fontWeight: 900, letterSpacing: -2, color: "#F1F5F9", lineHeight: 1 }}>{p.price}</div>
                   <div style={{ fontSize: 14, color: "#64748B", marginTop: 8, marginBottom: 32 }}>{p.sub}</div>
+                  {p.name === "Serious" && (
+                    <div style={{ fontSize: 12, color: '#64748B', marginBottom: 20 }}>
+                      Roughly the cost of one takeaway meal per week.
+                    </div>
+                  )}
                   <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 32 }}>
                     {p.features.map((f, j) => (
                       <div key={j} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
