@@ -23,6 +23,7 @@ import { mealService } from "../services/mealService";
 import { profileService } from "@/features/profile/services/profileService";
 import { complianceService } from "@/features/reports/services/complianceService";
 import { supabase } from "@/shared/utils/supabase";
+import { authService } from "@/features/auth/services/authService";
 import { motion, AnimatePresence } from "motion/react";
 import { useVisualViewport, useKeyboardOpen } from "@/shared/hooks/useVisualViewport";
 import { lookupCachedMeal } from '../constants/data';
@@ -32,6 +33,7 @@ import { analytics } from '@/shared/utils/analytics';
 import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
 import { MealLoggerSkeleton } from '@/shared/components/Skeletons';
 import { useToast } from '@/shared/components/Toast';
+import { useAiCredits } from '@/features/nutrition/hooks/useAiCredits';
 import { devLog } from '@/shared/utils/logger';
 import { getKolkataDateString, getKolkataHour, shiftKolkataDateString, kolkataDateStringToUtcMidnight, msSinceKolkataMidnight } from '@/shared/utils/timezone';
 
@@ -224,6 +226,7 @@ export function MealLoggerPage() {
   const setAiStatus = useNutritionStore(s => s.setAiStatus);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { credits, refetch: refetchCredits } = useAiCredits();
   const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => profileService.getProfile() });
   const keyboardOffset = useVisualViewport();
   const isKeyboardOpen = useKeyboardOpen();
@@ -235,14 +238,38 @@ export function MealLoggerPage() {
     }
   }, [profile?.id, initializeSession]);
 
+  type PendingMeal = {
+    text: string;
+    data: any;
+    request_id?: string;
+    source?: string;
+    creditsConsumed?: boolean;   // true when source === 'llm'
+  };
+
   const [selectedDateStr, setSelectedDateStr] = useState<string>(() => getKolkataDateString());
-  const [pendingMeal, setPendingMeal] = useState<{ text: string; data: any } | null>(null);
+  const [pendingMeal, setPendingMeal] = useState<PendingMeal | null>(null);
   const [failedMealText, setFailedMealText] = useState<string | null>(null);
   const [failedMealError, setFailedMealError] = useState<string | null>(null);
   const [isCustomMealModalOpen, setIsCustomMealModalOpen] = useState(false);
   const [retryCount, setRetryCount] = useState<number>(0);
   const [editingMeal, setEditingMeal] = useState<(DbMealLog & { id: string }) | null>(null);
   const [editingPending, setEditingPending] = useState(false);
+
+  const refundParseCredit = useCallback(async (pm: PendingMeal | null) => {
+    if (!pm || pm.source !== 'llm' || !pm.request_id) return;
+    try {
+      const userId = await authService.getUserId();
+      await supabase.rpc('refund_api_usage', {
+        p_user_id: userId,
+        p_endpoint: 'parse-meal',
+        p_date: getKolkataDateString(),
+        p_request_id: pm.request_id,
+      });
+    } catch (e) {
+      // Best-effort. If it fails, the credit stays consumed; user can retry.
+      console.warn('[credits] refund failed', e);
+    }
+  }, []);
 
   const isToday = (dateStr: string) => dateStr === getKolkataDateString();
   const isYesterday = (dateStr: string) =>
@@ -563,10 +590,19 @@ export function MealLoggerPage() {
         analytics.trackEvent('AI Parse Failure', { error: data._errorMessage, input: text });
         setFailedMealError(data._errorMessage);
         setFailedMealText(null);
+        refetchCredits();
+        if (typeof data._errorMessage === 'string' && data._errorMessage.includes('Daily AI limit reached')) {
+          toast({
+            type: 'warning',
+            message: 'Daily AI parses used up. Resets at midnight IST.',
+            duration: 5000,
+          });
+        }
       } else if (data.confidence && data.confidence < 80) {
         analytics.trackEvent('AI Parse Failure', { error: 'Low confidence', input: text });
         setFailedMealText(text);
         setFailedMealError(null);
+        refetchCredits();
       } else {
         setRetryCount(0);
         analytics.trackEvent('Meal Parse Analytics', eventData);
@@ -586,8 +622,15 @@ export function MealLoggerPage() {
           confirmMealMutation.mutate({ text, data, source: 'ai', client_token: crypto.randomUUID() });
         } else {
           // LLM estimate — keep the confirmation modal so users can review.
-          setPendingMeal({ text, data });
+          setPendingMeal({
+            text,
+            data,
+            request_id: data.request_id,
+            source: data.source,
+            creditsConsumed: data.source === 'llm',
+          });
         }
+        refetchCredits();
       }
     },
     onError: (err: any, variables) => {
@@ -601,6 +644,7 @@ export function MealLoggerPage() {
       setFailedMealError(errorMessage);
       setFailedMealText(null);
       setLoading(false);
+      refetchCredits();
     }
   });
 
@@ -952,6 +996,18 @@ export function MealLoggerPage() {
                     <div className="w-1.5 h-1.5 rounded-full bg-[#D4FF00] shadow-[0_0_6px_#D4FF00] animate-pulse-glow" style={{ animation: 'pulseGlow 2s infinite ease-in-out' }} />
                     <style>{'@keyframes pulseGlow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }'}</style>
                     <span>Groq AI Active</span>
+                    {credits && (
+                      <div className="flex items-center gap-1 text-[11px] font-medium text-[rgba(255,255,255,0.45)]">
+                        <span className={cn(
+                          'tabular-nums',
+                          credits.remaining === 0 && 'text-[#FF4D1C]',
+                          credits.remaining > 0 && credits.remaining <= 3 && 'text-[#D4FF00]',
+                        )}>
+                          {credits.remaining}
+                        </span>
+                        <span>/ {credits.limit} AI parses left</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1015,7 +1071,7 @@ export function MealLoggerPage() {
                           {confirmMealMutation.isPending ? 'Logging...' : 'Confirm'}
                         </button>
                         <button 
-                          onClick={() => setPendingMeal(null)}
+                          onClick={() => refundParseCredit(pendingMeal).finally(() => { setPendingMeal(null); refetchCredits(); })}
                           disabled={confirmMealMutation.isPending}
                           className="flex-1 bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] text-white font-bold py-2 rounded-[12px] text-[13px] transition-colors"
                         >
@@ -1181,6 +1237,9 @@ export function MealLoggerPage() {
           if (!pendingMeal) return;
           setPendingMeal({
             text: updates.meal_text,
+            request_id: pendingMeal.request_id,
+            source: pendingMeal.source,
+            creditsConsumed: pendingMeal.creditsConsumed,
             data: {
               ...pendingMeal.data,
               calories: updates.calories,

@@ -824,6 +824,18 @@ function responseFor(data: MealResult, corsHeaders: Record<string, string>): Res
   return new Response(JSON.stringify(data), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
 
+async function fetchUsageCount(
+  client: ReturnType<typeof createClient>,
+  userId: string,
+  endpoint: string,
+  date: string,
+): Promise<number> {
+  const { data } = await client
+    .rpc("get_api_usage", { p_user_id: userId, p_endpoint: endpoint, p_date: date });
+  const rows = Array.isArray(data) ? data : data ? [data] : [];
+  return (rows[0] as { usage_count?: number } | undefined)?.usage_count ?? 0;
+}
+
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -878,7 +890,13 @@ serve(async (req) => {
     if (knowledgeBaseResult) {
       const validated = validator.validate(knowledgeBaseResult);
       console.log(JSON.stringify({ level: "info", stage: "KnowledgeBase", event: "hit", request_id: requestId, latency_ms: Date.now() - knowledgeBaseStartedAt }));
-      return responseFor({ ...validated, source: "kb" }, corsHeaders);
+      const kbUsed = await fetchUsageCount(supabase, user.id, endpoint, today);
+      return responseFor({
+        ...validated,
+        source: "kb",
+        request_id: requestId,
+        credits: { used: kbUsed, limit, remaining: Math.max(0, limit - kbUsed) },
+      }, corsHeaders);
     }
     console.log(JSON.stringify({ level: "info", stage: "KnowledgeBase", event: "miss", request_id: requestId, latency_ms: Date.now() - knowledgeBaseStartedAt }));
 
@@ -889,7 +907,13 @@ serve(async (req) => {
     const exactMemoryHit = memoryEntries.find((entry) => entry.normalizedText === context.normalizedText);
     if (exactMemoryHit) {
       console.log(JSON.stringify({ level: "info", stage: "MemoryCache", event: "hit", request_id: requestId, latency_ms: Date.now() - cacheStartedAt }));
-      return responseFor({ ...exactMemoryHit.result, source: "memory_cache" }, corsHeaders);
+      const exactMemUsed = await fetchUsageCount(supabase, user.id, endpoint, today);
+      return responseFor({
+        ...exactMemoryHit.result,
+        source: "memory_cache",
+        request_id: requestId,
+        credits: { used: exactMemUsed, limit, remaining: Math.max(0, limit - exactMemUsed) },
+      }, corsHeaders);
     }
 
     const scaledMemoryHit = memoryEntries.find((entry) => {
@@ -900,7 +924,13 @@ serve(async (req) => {
       const ratio = safeScalingRatio(scaledMemoryHit.quantities, queryQuantities);
       const scaledResult = ratio ? scaleMealResult(scaledMemoryHit.result, ratio) : scaledMemoryHit.result;
       console.log(JSON.stringify({ level: "info", stage: "MemoryCache", event: "scaled_hit", request_id: requestId, latency_ms: Date.now() - cacheStartedAt, ratio }));
-      return responseFor({ ...scaledResult, source: "memory_cache" }, corsHeaders);
+      const scaledMemUsed = await fetchUsageCount(supabase, user.id, endpoint, today);
+      return responseFor({
+        ...scaledResult,
+        source: "memory_cache",
+        request_id: requestId,
+        credits: { used: scaledMemUsed, limit, remaining: Math.max(0, limit - scaledMemUsed) },
+      }, corsHeaders);
     }
 
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -934,7 +964,13 @@ serve(async (req) => {
             dbEntries.push(cachedEntry);
             memoryCache.set(cacheKey, dbEntries.slice(-25));
             console.log(JSON.stringify({ level: "info", stage: "DBCache", event: "hit", request_id: requestId, latency_ms: Date.now() - cacheStartedAt }));
-            return responseFor({ ...validated, source: "db_cache" }, corsHeaders);
+            const dbCacheUsed = await fetchUsageCount(supabase, user.id, endpoint, today);
+            return responseFor({
+              ...validated,
+              source: "db_cache",
+              request_id: requestId,
+              credits: { used: dbCacheUsed, limit, remaining: Math.max(0, limit - dbCacheUsed) },
+            }, corsHeaders);
           }
         }
       } catch {
@@ -1024,7 +1060,13 @@ serve(async (req) => {
     }
 
     console.log(JSON.stringify({ level: "info", stage: "Pipeline", event: "success", parser: "Gemini", request_id: requestId, total_latency_ms: Date.now() - startedAt }));
-    return responseFor({ ...data, source: "llm" }, corsHeaders);
+    const usedAfter = quotaResult?.usage_count ?? 0;
+    return responseFor({
+      ...data,
+      source: "llm",
+      request_id: requestId,
+      credits: { used: usedAfter, limit, remaining: Math.max(0, limit - usedAfter) },
+    }, corsHeaders);
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("Unauthorized")) {
       return new Response(JSON.stringify({ error: error.message }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
