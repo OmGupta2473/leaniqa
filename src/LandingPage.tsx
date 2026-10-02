@@ -1668,7 +1668,7 @@ function InteractiveMealDemo() {
                 <div className="rounded-xl border border-zinc-800/60 bg-[#141416] px-3 py-2.5 flex items-start gap-2 mb-3">
                   <Sparkles className="w-3.5 h-3.5 text-[#D4FF00] mt-0.5 shrink-0" />
                   <div className="text-[11.5px] leading-relaxed text-zinc-400">
-                    Good plant protein from soya, balanced carbs. You're on track for your goal.
+                    35g protein is excellent for a plant-based meal. Fat is under 2g — add a few almonds or a teaspoon of ghee to round it out.
                   </div>
                 </div>
 
