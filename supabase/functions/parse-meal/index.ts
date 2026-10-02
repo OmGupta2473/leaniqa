@@ -555,6 +555,45 @@ class GroqParser implements MealParser {
         status: response.status,
         body_preview: errBody.slice(0, 500),
       }));
+
+      // On 403 model_permission_blocked_org, retry once with the smaller model
+      // (openai/gpt-oss-20b is enabled on most orgs by default).
+      if (response.status === 403 && errBody.includes("model_permission_blocked_org")) {
+        console.log(JSON.stringify({ level: "info", stage: "Groq", event: "retry_smaller_model", request_id: context.requestId }));
+        const retryController = new AbortController();
+        const retryTimeoutId = setTimeout(() => retryController.abort(), 8_000);
+        if (externalSignal) {
+          externalSignal.addEventListener('abort', () => retryController.abort(), { once: true });
+        }
+        try {
+          const retryResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+            body: JSON.stringify({
+              model: "openai/gpt-oss-20b",
+              messages: [{ role: "user", content: buildGeminiPrompt(context) }],
+              temperature: 0.1,
+              response_format: { type: "json_object" },
+              max_tokens: 1024,
+            }),
+            signal: retryController.signal,
+          });
+          if (retryResponse.ok) {
+            const retryBody = await retryResponse.json();
+            const retryContent = retryBody.choices?.[0]?.message?.content;
+            if (retryContent) {
+              clearTimeout(retryTimeoutId);
+              return MealSchema.parse(JSON.parse(retryContent));
+            }
+          }
+          console.error(JSON.stringify({ level: "error", stage: "Groq", event: "retry_smaller_failed", status: retryResponse.status, request_id: context.requestId }));
+        } catch (retryErr) {
+          console.error(JSON.stringify({ level: "error", stage: "Groq", event: "retry_smaller_error", request_id: context.requestId, error_message: retryErr instanceof Error ? retryErr.message : String(retryErr) }));
+        } finally {
+          clearTimeout(retryTimeoutId);
+        }
+      }
+
       throw new MealAiError("provider_error", 502);
     }
     let body: { choices?: Array<{ message?: { content?: string } }> };
@@ -847,11 +886,11 @@ serve(async (req) => {
     body = await req.json();
     console.log(JSON.stringify({ level: "debug", stage: "request", event: "body_received", request_id: requestId, body_keys: Object.keys(body) }));
   } catch {
-    return new Response(JSON.stringify({ error: "Invalid request body" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ error: "Invalid request body", request_id: requestId, error_code: "invalid_body" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
   const text = typeof body.text === "string" ? body.text.trim() : "";
-  if (!text) return new Response(JSON.stringify({ error: "Meal text is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  if (!text) return new Response(JSON.stringify({ error: "Meal text is required", request_id: requestId, error_code: "meal_text_required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   const mealType = typeof body.mealType === "string" && body.mealType.trim() ? body.mealType.trim().toLowerCase() : "unspecified";
   const remainingCalories = typeof body.remainingCalories === "number" || typeof body.remainingCalories === "string" ? body.remainingCalories : "unknown";
   const remainingProtein = typeof body.remainingProtein === "number" || typeof body.remainingProtein === "string" ? body.remainingProtein : "unknown";
@@ -1007,20 +1046,20 @@ serve(async (req) => {
         error_type: typeof error,
         error_keys: error && typeof error === "object" ? Object.keys(error as object) : [],
       }));
-      return new Response(JSON.stringify({ error: "Unable to reserve Gemini quota right now. Please try again." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Unable to reserve Gemini quota right now. Please try again.", request_id: requestId, error_code: "reserve_failed" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     if (!quotaResult) {
       const { data: usageData, error: usageError } = await supabase.from("api_usage").select("usage_count").eq("user_id", user.id).eq("endpoint", endpoint).eq("date", today).maybeSingle();
       if (usageError) {
         console.error(JSON.stringify({ level: "error", stage: "UsageTracking", event: "quota_status_lookup_failed", request_id: requestId, error: usageError.message }));
-        return new Response(JSON.stringify({ error: "Unable to reserve Gemini quota right now. Please try again." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return new Response(JSON.stringify({ error: "Unable to reserve Gemini quota right now. Please try again.", request_id: requestId, error_code: "quota_lookup_failed" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       const used = usageData?.usage_count ?? 0;
       const istTime = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
       istTime.setUTCHours(24, 0, 0, 0);
       const resetsAt = new Date(istTime.getTime() - 5.5 * 60 * 60 * 1000);
-      return new Response(JSON.stringify({ error: "Daily AI limit reached", limit, used, resets_at: resetsAt.toISOString(), _limitReached: true }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Daily AI limit reached", limit, used, resets_at: resetsAt.toISOString(), _limitReached: true, request_id: requestId, error_code: "daily_limit" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const chain = new MealParserChain([
@@ -1028,7 +1067,46 @@ serve(async (req) => {
       { name: "gemini", parser: new GeminiParser() },
       { name: "cloudflare", parser: new CloudflareParser() },
     ]);
-    const data = validator.validate(await chain.parse(context));
+    let data: MealResult;
+    try {
+      data = validator.validate(await chain.parse(context));
+    } catch (chainErr) {
+      // Chain failed after quota was reserved — refund the credit
+      // so a server-side error doesn't consume the user's daily parse.
+      try {
+        await supabase.rpc("refund_api_usage", {
+          p_user_id: user.id,
+          p_endpoint: endpoint,
+          p_date: today,
+          p_request_id: requestId,
+        });
+        console.log(JSON.stringify({
+          level: "info",
+          stage: "UsageTracking",
+          event: "auto_refunded",
+          request_id: requestId,
+        }));
+      } catch (refundErr) {
+        console.error(JSON.stringify({
+          level: "error",
+          stage: "UsageTracking",
+          event: "auto_refund_failed",
+          request_id: requestId,
+          error_message: refundErr instanceof Error ? refundErr.message : String(refundErr),
+        }));
+      }
+      const isTimeout = chainErr instanceof MealAiError && chainErr.code === "timeout";
+      const status = chainErr instanceof MealAiError ? chainErr.status : 502;
+      return new Response(
+        JSON.stringify({
+          error: isTimeout ? "Meal analysis took too long. Please try again." : "Unable to parse this meal right now. Please try again.",
+          request_id: requestId,
+          error_code: chainErr instanceof MealAiError ? chainErr.code : "unknown",
+          _refunded: true,
+        }),
+        { status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
     const cacheEntry: CacheEntry = {
       normalizedText: context.normalizedText,
       result: data,
@@ -1069,13 +1147,13 @@ serve(async (req) => {
     }, corsHeaders);
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("Unauthorized")) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: error.message, request_id: requestId, error_code: "unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     if (error instanceof MealAiError) {
       console.error(JSON.stringify({ level: "error", stage: "Gemini", event: error.code, request_id: requestId }));
-      return new Response(JSON.stringify({ error: "Meal analysis is temporarily unavailable. Please try again." }), { status: error.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Meal analysis is temporarily unavailable. Please try again.", request_id: requestId, error_code: error.code }), { status: error.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     console.error(JSON.stringify({ level: "error", stage: "Pipeline", event: "failed", request_id: requestId }));
-    return new Response(JSON.stringify({ error: "Unable to parse this meal right now. Please try again." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ error: "Unable to parse this meal right now. Please try again.", request_id: requestId, error_code: "unhandled" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });

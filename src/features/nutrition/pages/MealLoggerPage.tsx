@@ -591,6 +591,13 @@ export function MealLoggerPage() {
         setFailedMealError(data._errorMessage);
         setFailedMealText(null);
         refetchCredits();
+        if (data._refunded) {
+          toast({
+            type: 'info',
+            message: 'No credit used — parse failed',
+            duration: 3000,
+          });
+        }
         if (typeof data._errorMessage === 'string' && data._errorMessage.includes('Daily AI limit reached')) {
           toast({
             type: 'warning',
