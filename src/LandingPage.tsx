@@ -169,7 +169,7 @@ function DisciplineAdvantage() {
                     <span className="text-[10px] font-medium bg-[#D4FF00]/10 text-[#D4FF00] px-2.5 py-1.5 rounded-full border border-[#D4FF00]/20 hover:bg-[#D4FF00]/20 transition-colors cursor-pointer">Paneer</span>
                  </div>
                </div>
-               <div className="relative w-16 h-16 flex-shrink-0 flex items-center justify-center bg-zinc-950 rounded-full border border-white/5">
+                <div className="relative w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 flex items-center justify-center bg-zinc-950 rounded-full border border-white/5">
                  <svg className="absolute inset-0 w-full h-full -rotate-90 drop-shadow-[0_0_8px_rgba(212,255,0,0.3)]" viewBox="0 0 36 36">
                     <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#27272A" strokeWidth="3" />
                     <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#D4FF00" strokeWidth="3" strokeDasharray="91, 100" />
@@ -237,7 +237,7 @@ function DisciplineAdvantage() {
         demo: (
           <div className="bg-zinc-900/80 rounded-xl border border-white/5 p-3 mt-3 shadow-xl shadow-[#D4FF00]/5">
              <div className="flex items-center gap-6">
-               <div className="relative w-20 h-20 flex-shrink-0 flex items-center justify-center bg-zinc-950 rounded-full border border-white/5">
+                <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 flex items-center justify-center bg-zinc-950 rounded-full border border-white/5">
                  <svg className="absolute inset-0 w-full h-full -rotate-90 drop-shadow-[0_0_10px_rgba(212,255,0,0.4)]" viewBox="0 0 36 36">
                     <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#27272A" strokeWidth="4" />
                     <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#D4FF00" strokeWidth="4" strokeDasharray="91, 100" strokeLinecap="round" />
@@ -313,13 +313,13 @@ function DisciplineAdvantage() {
         desc: "No guessing. A real timeline.",
         demo: (
           <div className="bg-zinc-900/80 rounded-xl border border-white/5 p-3 mt-3 shadow-xl shadow-[#D4FF00]/5">
-             <div className="flex items-center justify-between mb-4 px-2">
+              <div className="flex items-center sm:items-start justify-between gap-3 mb-4 px-2">
                <div>
                  <div className="text-[10px] text-zinc-500 font-medium mb-1">Starting</div>
                  <div className="text-sm font-semibold text-zinc-300">62.0 kg</div>
                  <div className="text-[10px] text-zinc-500 mt-1">Today</div>
                </div>
-               <div className="text-center bg-[#D4FF00]/10 px-4 py-2 rounded-xl border border-[#D4FF00]/20">
+                <div className="text-center bg-[#D4FF00]/10 px-4 sm:px-3 py-2 rounded-xl border border-[#D4FF00]/20">
                  <div className="text-[10px] text-[#D4FF00] font-medium mb-1">Goal</div>
                  <div className="text-2xl font-bold text-[#D4FF00] tracking-tight">55.0 <span className="text-sm">kg</span></div>
                </div>
@@ -394,7 +394,7 @@ function DisciplineAdvantage() {
           
           <div className="space-y-4 md:space-y-6 relative z-10">
             {battles.map((b, i) => (
-              <div key={i} className="relative flex flex-col md:flex-row items-stretch gap-8 md:gap-0">
+              <div key={i} className="relative flex flex-col md:flex-row items-stretch gap-0">
                  
                  {/* Connecting horizontal lines for center icon */}
                  <div className="hidden md:block absolute left-[45%] right-[50%] top-1/2 -translate-y-1/2 h-px border-b border-dashed border-zinc-800 z-0" />
@@ -414,13 +414,14 @@ function DisciplineAdvantage() {
 
                  {/* Other Apps (Left) */}
                  <div className="w-full md:w-[47%] flex flex-col">
-                   <div className="md:hidden flex justify-center mb-4">
-                     <div className="px-4 py-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 text-[10px] font-semibold text-zinc-400 uppercase tracking-widest inline-flex items-center gap-2">
-                       <X className="w-3 h-3 text-red-500" /> OTHER APPS
-                     </div>
-                   </div>
+                    <div className="md:hidden flex items-center gap-3 mb-3">
+                      <div className="flex items-center gap-1.5 text-[10px] font-semibold text-zinc-500 uppercase tracking-widest">
+                        <X className="w-3 h-3 text-red-500/80" /> Other apps
+                      </div>
+                      <div className="flex-1 h-px bg-gradient-to-r from-zinc-800 to-transparent" />
+                    </div>
                    <Reveal delay={i * 0.1} className="flex-1">
-                     <div className="bg-gradient-to-br from-[#111112] to-[#0A0A0B] rounded-2xl p-4 md:p-5 border border-zinc-800/80 h-full flex flex-col hover:border-zinc-700 transition-colors duration-300 shadow-xl shadow-black/50">
+                      <div className="bg-gradient-to-br from-[#111112] to-[#0A0A0B] rounded-2xl p-5 md:p-5 border border-zinc-800/80 h-full flex flex-col hover:border-zinc-700 transition-colors duration-300 shadow-xl shadow-black/50">
                        <div className="flex items-center gap-3 mb-2">
                          <div className="w-6 h-6 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20 flex-shrink-0">
                            <X className="w-3 h-3 text-red-500" />
@@ -441,14 +442,23 @@ function DisciplineAdvantage() {
 
                  {/* Leaniqa (Right) */}
                  <div className="w-full md:w-[47%] flex flex-col">
-                   <div className="md:hidden flex justify-center mt-6 mb-4 relative z-10">
-                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[200%] w-px h-8 bg-gradient-to-b from-transparent to-[#D4FF00]/50" />
-                     <div className="px-4 py-1.5 rounded-full border border-[#D4FF00]/30 bg-[#D4FF00]/10 text-[10px] font-semibold text-[#D4FF00] uppercase tracking-widest inline-flex items-center gap-2">
-                       <Check className="w-3 h-3" /> LEANIQA
-                     </div>
-                   </div>
+                    {/* Mobile divider between the two cards */}
+                    <div className="md:hidden flex items-center gap-3 my-4 relative">
+                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-zinc-800 to-transparent" />
+                      <div className="flex items-center justify-center w-7 h-7 rounded-full bg-[#0A0A0B] border border-zinc-800 z-10">
+                        <ArrowRight className="w-3.5 h-3.5 text-[#D4FF00]" />
+                      </div>
+                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-zinc-800 to-transparent" />
+                    </div>
+
+                    <div className="md:hidden flex items-center gap-3 mb-3">
+                      <div className="flex items-center gap-1.5 text-[10px] font-semibold text-[#D4FF00] uppercase tracking-widest">
+                        <Check className="w-3 h-3" /> LeanIQA
+                      </div>
+                      <div className="flex-1 h-px bg-gradient-to-r from-[#D4FF00]/40 to-transparent" />
+                    </div>
                    <Reveal delay={i * 0.1 + 0.1} className="flex-1">
-                     <div className="bg-gradient-to-b from-[#111112] to-[#0A0A0B] rounded-2xl p-4 md:p-5 border border-[#D4FF00]/30 h-full relative group overflow-hidden flex flex-col hover:border-[#D4FF00]/60 transition-all duration-500 hover:shadow-[0_0_40px_rgba(212,255,0,0.1)]">
+                      <div className="bg-gradient-to-b from-[#111112] to-[#0A0A0B] rounded-2xl p-5 md:p-5 border border-[#D4FF00]/30 h-full relative group overflow-hidden flex flex-col hover:border-[#D4FF00]/60 transition-all duration-500 hover:shadow-[0_0_40px_rgba(212,255,0,0.1)]">
                        <div className="absolute inset-0 bg-gradient-to-br from-[#D4FF00]/5 via-transparent to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
                        
                        {/* Shimmer effect */}
