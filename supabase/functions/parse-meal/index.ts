@@ -64,6 +64,8 @@ function normalizeInput(input: string): string {
   normalized = normalized.replace(/\b(raw|uncooked|dry)\s+(rice|oats|dal|moong dal|masoor dal|chicken( breast)?|mutton|fish)\b/g, "raw $2");
   normalized = normalized.replace(/\b(cooked|boiled|steamed|plain)\s+(rice|oats|dal|moong dal|masoor dal|chicken( breast)?|mutton|fish)\b/g, "$2");
   normalized = normalized.replace(/[,+&]/g, " and ");
+  normalized = normalized.replace(/\s+with\s+/g, " and ");
+  normalized = normalized.replace(/\s+and\s+and\s+/g, " and ");
   normalized = normalized.replace(/[^a-z0-9\s.]/g, " ");
   normalized = normalized.replace(/\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|half)\b/g, (word) => numberWords[word]);
   normalized = normalized.replace(/\s+/g, " ").trim();
@@ -202,6 +204,8 @@ const KnowledgeBase: Record<string, KnowledgeFood> = {
   "vermicelli":         { calories: 140, protein: 4.0,  fat: 4.0,  carbs: 22.0, fiber: 1.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
   "oats":  { calories: 389, protein: 16.9, fat: 6.9,  carbs: 66.3, fiber: 10.6, referenceAmount: 100, referenceUnit: "g" },
   "bread": { calories: 265, protein: 8.5,  fat: 3.2,  carbs: 49.0, fiber: 2.7,  referenceAmount: 100, referenceUnit: "g", unitWeights: { slice: 30, piece: 30 }, defaultUnit: "slice" },
+  "butter naan":           { calories: 350, protein: 9.5,  fat: 12.0, carbs: 50.0, fiber: 2.0, referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 90 }, defaultUnit: "piece" },
+  "garlic naan":           { calories: 330, protein: 9.8,  fat: 10.0, carbs: 50.0, fiber: 2.2, referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 90 }, defaultUnit: "piece" },
 
   // ============================================================
   // DALS & LEGUMES — cooked, per 100g
@@ -241,6 +245,8 @@ const KnowledgeBase: Record<string, KnowledgeFood> = {
   "methi aloo":         { calories: 121, protein: 2.2,  fat: 5.4,  carbs: 16.0, fiber: 2.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 130 }, defaultUnit: "bowl" },
   "mixed vegetable":    { calories: 103, protein: 1.3,  fat: 4.7,  carbs: 12.3, fiber: 3.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
   "salad":              { calories: 50,  protein: 2.0,  fat: 0.0,  carbs: 10.0, fiber: 2.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "paneer tikka":          { calories: 200, protein: 12.0, fat: 15.0, carbs: 4.0,  fiber: 1.0, referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 35 }, defaultUnit: "piece" },
+  "paneer tikka masala":   { calories: 170, protein: 9.0,  fat: 13.0, carbs: 5.0,  fiber: 1.0, referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 200 }, defaultUnit: "bowl" },
 
   // ============================================================
   // DAIRY — per 100g / 100ml
@@ -273,6 +279,9 @@ const KnowledgeBase: Record<string, KnowledgeFood> = {
   "mutton biryani":     { calories: 175, protein: 9.5,  fat: 7.0,  carbs: 20.0, fiber: 0.8,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 200 }, defaultUnit: "bowl" },
   "egg curry":          { calories: 120, protein: 8.0,  fat: 8.0,  carbs: 4.0,  fiber: 0.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
   "whey protein": { calories: 400, protein: 80.0, fat: 3.3, carbs: 10.0, fiber: 0.0, referenceAmount: 100, referenceUnit: "g", unitWeights: { scoop: 30 }, defaultUnit: "scoop" },
+  "chicken tikka masala": { calories: 150, protein: 12.0, fat: 9.0,  carbs: 5.0,  fiber: 0.8, referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 200 }, defaultUnit: "bowl" },
+  "butter chicken":        { calories: 190, protein: 13.0, fat: 13.0, carbs: 6.0,  fiber: 0.5, referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 200 }, defaultUnit: "bowl" },
+  "tandoori chicken":      { calories: 160, protein: 22.0, fat: 8.0,  carbs: 1.5,  fiber: 0.0, referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 90 }, defaultUnit: "piece" },
 
   // ============================================================
   // SNACKS & STREET FOOD — per 100g
