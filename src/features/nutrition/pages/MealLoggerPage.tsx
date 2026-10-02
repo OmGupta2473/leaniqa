@@ -503,12 +503,20 @@ export function MealLoggerPage() {
 
             if (functionError) {
               let msg = functionError.message || 'Server error';
+              let errorMeta: { _refunded?: boolean; request_id?: string; error_code?: string } = {};
               
               if (functionError.context && typeof functionError.context.json === 'function') {
                 try {
                   const errorBody = await functionError.context.json();
                   if (errorBody && errorBody.error) {
                     msg = errorBody.error;
+                  }
+                  if (errorBody) {
+                    errorMeta = {
+                      _refunded: errorBody._refunded === true,
+                      request_id: errorBody.request_id,
+                      error_code: errorBody.error_code,
+                    };
                   }
                 } catch(e) {}
               }
@@ -536,7 +544,11 @@ export function MealLoggerPage() {
               }
 
               if (msg) {
-                throw new Error(msg.includes('Friendly Retry') ? msg : `AI Service Error: ${msg}`);
+                const err = new Error(msg.includes('Friendly Retry') ? msg : `AI Service Error: ${msg}`);
+                (err as any)._refunded = errorMeta._refunded === true;
+                (err as any).request_id = errorMeta.request_id;
+                (err as any).error_code = errorMeta.error_code;
+                throw err;
               }
             }
 
@@ -554,6 +566,8 @@ export function MealLoggerPage() {
             
             return data;
           } catch (err: any) {
+            // err may carry _refunded/request_id/error_code attached in the
+            // functionError branch above — keep the object, don't rewrap it.
             lastError = err as Error;
           }
         }
@@ -564,7 +578,12 @@ export function MealLoggerPage() {
         return msg || 'AI temporarily unavailable';
       })();
       
-      return { _errorMessage: errorContext, text };
+      return {
+        _errorMessage: errorContext,
+        text,
+        _refunded: (lastError as any)?._refunded === true,
+        request_id: (lastError as any)?.request_id,
+      };
     },
     onSuccess: (data, text) => {
       isSubmittingRef.current = false;
