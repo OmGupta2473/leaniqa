@@ -1497,10 +1497,10 @@ function InteractiveMealDemo() {
   const [state, setState] = useState<'idle' | 'loading' | 'success'>('idle');
   const [isHovered, setIsHovered] = useState(false);
 
-  const cal = useDemoNumber(496, 1000, state === 'success', 0);
-  const pro = useDemoNumber(20.7, 1000, state === 'success', 1);
-  const fat = useDemoNumber(13.8, 1000, state === 'success', 1);
-  const carbs = useDemoNumber(74.8, 1000, state === 'success', 1);
+  const cal = useDemoNumber(473, 1000, state === 'success', 0);
+  const pro = useDemoNumber(35, 1000, state === 'success', 0);
+  const fat = useDemoNumber(1.5, 1000, state === 'success', 1);
+  const carbs = useDemoNumber(70.5, 1000, state === 'success', 1);
 
   const handleLog = () => {
     if (state !== 'idle') return;
@@ -1554,7 +1554,7 @@ function InteractiveMealDemo() {
                       Your meal
                     </div>
                     <div className="text-[14px] text-zinc-200 font-medium truncate">
-                      soya sabji + 3 roti
+                      soya chunks cooked 150g + 3 roti
                     </div>
                   </div>
                   <span className="w-[2px] h-5 bg-[#D4FF00] rounded-full" />
@@ -1604,7 +1604,7 @@ function InteractiveMealDemo() {
                       Your meal
                     </div>
                     <div className="text-[14px] text-zinc-200 font-medium truncate">
-                      soya sabji + 3 roti
+                      soya chunks cooked 150g + 3 roti
                     </div>
                   </div>
                 </div>
@@ -1633,7 +1633,7 @@ function InteractiveMealDemo() {
                 </div>
 
                 <div className="text-[13px] text-zinc-300 mb-4 pb-4 border-b border-zinc-800/60">
-                  soya sabji + 3 roti
+                  soya chunks cooked 150g + 3 roti
                 </div>
 
                 <div className="grid grid-cols-4 gap-2 mb-4">
