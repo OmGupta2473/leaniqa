@@ -810,40 +810,6 @@ function TestimonialStrip() {
 
 
 
-function FounderStory() {
-  return (
-    <section className="py-16 sm:py-24 px-6 border-t border-zinc-900 bg-[#0A0A0B]">
-      <div className="max-w-3xl mx-auto">
-        <Reveal>
-          <div className="mb-8">
-            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white mb-6">
-              Built by someone who was tired of being skinny fat.
-            </h2>
-            <div className="w-12 h-1 bg-[#D4FF00] mb-8" />
-          </div>
-          <div className="space-y-6 text-zinc-300 text-base sm:text-lg leading-relaxed">
-            <p>
-              I used to hit the gym 5 days a week, lift heavy, and then go home to eat whatever was made. I thought training hard was enough.
-            </p>
-            <p>
-              It wasn't. I was stuck in this weird phase where I had muscle, but you couldn't tell because I was covered in a layer of fat. I was skinny fat, and I was frustrated.
-            </p>
-            <p>
-              The problem was my diet. I was eating randomly. I never hit my protein goal because I didn't even know what my protein goal was. And when I tried using calorie trackers, logging Indian food—like parathas, dal, and sabzi—was a nightmare.
-            </p>
-            <p>
-              I built LeaniQA because it was the app I wished existed. I didn't need a barcode scanner; I needed a friend who understood my meals and just told me how much protein I needed to eat for the rest of the day to stay on track.
-            </p>
-            <p className="text-white font-semibold">
-              The gym does its job. Let LeaniQA help your diet do its part.
-            </p>
-          </div>
-        </Reveal>
-      </div>
-    </section>
-  );
-}
-
 function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const faqs = [
@@ -1876,7 +1842,6 @@ export function LandingPage() {
       <HowItWorks />
       <TestimonialStrip />
       <FAQSection />
-      <FounderStory />
 
       {/* ── Pricing ── */}
       <section id="pricing" className="border-t border-zinc-900 bg-[#0A0A0B] py-16 sm:py-24 px-6">
