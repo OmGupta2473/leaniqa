@@ -1077,26 +1077,34 @@ serve(async (req) => {
     } catch (chainErr) {
       // Chain failed after quota was reserved — refund the credit
       // so a server-side error doesn't consume the user's daily parse.
-      try {
-        await supabase.rpc("refund_api_usage", {
-          p_user_id: user.id,
-          p_endpoint: endpoint,
-          p_date: today,
-          p_request_id: requestId,
-        });
-        console.log(JSON.stringify({
-          level: "info",
-          stage: "UsageTracking",
-          event: "auto_refunded",
-          request_id: requestId,
-        }));
-      } catch (refundErr) {
+      // NOTE: supabase.rpc() returns { data, error } and does NOT throw on
+      // Postgres errors, so the error must be read from the return value.
+      const refundClient = cacheClient ?? supabase;
+      const { data: refundData, error: refundError } = await refundClient.rpc("refund_api_usage", {
+        p_user_id: user.id,
+        p_endpoint: endpoint,
+        p_date: today,
+        p_request_id: requestId,
+      });
+
+      if (refundError) {
         console.error(JSON.stringify({
           level: "error",
           stage: "UsageTracking",
           event: "auto_refund_failed",
           request_id: requestId,
-          error_message: refundErr instanceof Error ? refundErr.message : String(refundErr),
+          error_message: refundError.message,
+          error_code: refundError.code,
+          error_details: refundError.details,
+          error_hint: refundError.hint,
+        }));
+      } else {
+        console.log(JSON.stringify({
+          level: "info",
+          stage: "UsageTracking",
+          event: "auto_refunded",
+          request_id: requestId,
+          refund_result: refundData,
         }));
       }
       const isTimeout = chainErr instanceof MealAiError && chainErr.code === "timeout";
