@@ -15,25 +15,20 @@ import {
 } from 'lucide-react';
 
 /**
- * Single linear wizard showing BOTH install paths. No device detection:
- * every user sees the same 8 screens, so there is nothing to sniff on mount
+ * Platform-scoped install wizard. No device detection anywhere: the user picks
+ * their own device on the picker screen, so there is nothing to sniff on mount
  * and no wrong-platform mismatch.
  *
- *   0  intro
- *   1  Android 1 — open the Chrome menu
- *   2  Android 2 — Install app
- *   3  Android 3 — confirm
- *   4  iOS 1 — open the Safari share sheet
- *   5  iOS 2 — Add to Home Screen
- *   6  iOS 3 — confirm
- *   7  outro
+ *   platform === null      -> picker (Android / iPhone / iPad cards)
+ *   platform === 'android' -> step 0, 1, 2 (Android instructions)
+ *   platform === 'ios'     -> step 0, 1, 2 (iOS instructions)
+ *   step === 3             -> shared outro
  */
-const WIZARD_LENGTH = 8;
-const ANDROID_BASE = 1;
-const IOS_BASE = 4;
+const WIZARD_LENGTH = 4;
 
 export function InstallLeaniqa() {
   const [isOpen, setIsOpen] = useState(false);
+  const [platform, setPlatform] = useState<'android' | 'ios' | null>(null);
   const [step, setStep] = useState(0);
 
   useEffect(() => {
@@ -47,16 +42,28 @@ export function InstallLeaniqa() {
 
   const close = () => {
     setIsOpen(false);
-    setTimeout(() => setStep(0), 300);
+    setTimeout(() => {
+      setStep(0);
+      setPlatform(null);
+    }, 300);
   };
 
   const next = () => setStep((s) => Math.min(s + 1, WIZARD_LENGTH - 1));
-  const prev = () => setStep((s) => Math.max(s - 1, 0));
 
-  const platform =
-    step >= ANDROID_BASE && step < IOS_BASE ? 'android'
-      : step >= IOS_BASE && step < IOS_BASE + 3 ? 'ios'
-        : null;
+  // Back on the first instruction step returns to the picker rather than
+  // stepping further back. On the outro the arrow is hidden entirely.
+  const prev = () => {
+    if (step === 0) {
+      setPlatform(null);
+      return;
+    }
+    setStep((s) => s - 1);
+  };
+
+  const pick = (p: 'android' | 'ios') => {
+    setPlatform(p);
+    setStep(0);
+  };
 
   return (
     <>
@@ -92,7 +99,7 @@ export function InstallLeaniqa() {
               >
                 <div className="p-6 pb-2 border-b border-zinc-900 flex items-center justify-between flex-shrink-0">
                   <div className="flex items-center gap-3">
-                    {step > 0 ? (
+                    {platform !== null && step < WIZARD_LENGTH - 1 ? (
                       <button
                         onClick={prev}
                         aria-label="Previous step"
@@ -108,7 +115,7 @@ export function InstallLeaniqa() {
                     <div>
                       <h2 className="text-lg font-semibold text-white leading-tight">Install LeaniQA</h2>
                       <p className="text-xs text-zinc-500">
-                        {platform === 'android' ? 'On Android' : platform === 'ios' ? 'On iPhone' : 'Premium App Experience'}
+                        {platform === 'android' ? 'On Android' : platform === 'ios' ? 'On iPhone' : 'Choose your device'}
                       </p>
                     </div>
                   </div>
@@ -124,26 +131,31 @@ export function InstallLeaniqa() {
                 <div className="p-6 flex-1 min-h-0 overflow-y-auto flex flex-col">
                   <AnimatePresence mode="wait">
                     <motion.div
-                      key={step}
+                      key={`${platform}-${step}`}
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -20 }}
                       transition={{ duration: 0.3 }}
                       className="flex-1"
                     >
-                      {step === 0 && <IntroScreen />}
-                      {step >= ANDROID_BASE && step < IOS_BASE && (
-                        <AndroidInstructions step={step - ANDROID_BASE + 1} />
+                      {platform === null && <PickerScreen onPick={pick} />}
+                      {platform === 'android' && step < WIZARD_LENGTH - 1 && (
+                        <AndroidInstructions step={step + 1} />
                       )}
-                      {step >= IOS_BASE && step < IOS_BASE + 3 && (
-                        <IOSInstructions step={step - IOS_BASE + 1} />
+                      {platform === 'ios' && step < WIZARD_LENGTH - 1 && (
+                        <IOSInstructions step={step + 1} />
                       )}
-                      {step === WIZARD_LENGTH - 1 && <OutroScreen onDone={close} />}
+                      {platform !== null && step === WIZARD_LENGTH - 1 && (
+                        <OutroScreen onDone={close} />
+                      )}
                     </motion.div>
                   </AnimatePresence>
                 </div>
 
-                <div className="p-6 pt-4 border-t border-zinc-900 bg-zinc-950/50 flex items-center justify-between flex-shrink-0">
+                {/* Dot progress + Next/Done only exist once a platform is chosen — on the
+                    picker the two platform cards are the CTA. */}
+                {platform !== null && (
+                  <div className="p-6 pt-4 border-t border-zinc-900 bg-zinc-950/50 flex items-center justify-between flex-shrink-0">
                   <div className="flex items-center gap-2">
                     {Array.from({ length: WIZARD_LENGTH }).map((_, i) => (
                       <div key={i} className="flex items-center">
@@ -174,8 +186,9 @@ export function InstallLeaniqa() {
                     >
                       Done
                     </button>
-                  )}
-                </div>
+                      )}
+                  </div>
+                )}
               </motion.div>
             </div>
           )}
@@ -186,25 +199,58 @@ export function InstallLeaniqa() {
   );
 }
 
-function IntroScreen() {
+function PickerScreen({
+  onPick,
+}: {
+  onPick: (p: 'android' | 'ios') => void;
+}) {
   return (
-    <div className="flex flex-col items-center justify-center h-full text-center py-8">
-      <div className="w-20 h-20 bg-black border border-zinc-800 rounded-3xl flex items-center justify-center mb-6 shadow-2xl relative">
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ type: 'spring', delay: 0.2 }}
-          className="w-12 h-12 bg-[#D4FF00] rounded-full blur-md opacity-30 absolute"
-        />
-        <Smartphone className="w-8 h-8 text-[#D4FF00] relative z-10" />
+    <div className="flex flex-col h-full justify-center py-4">
+      <div className="flex flex-col items-center text-center mb-7">
+        <div className="w-16 h-16 bg-black border border-zinc-800 rounded-2xl flex items-center justify-center mb-4 shadow-2xl relative">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', delay: 0.15 }}
+            className="w-10 h-10 bg-[#D4FF00] rounded-full blur-md opacity-30 absolute"
+          />
+          <Smartphone className="w-7 h-7 text-[#D4FF00] relative z-10" />
+        </div>
+        <h3 className="text-xl font-bold text-white mb-1.5">Add LeanIQA to your home screen</h3>
+        <p className="text-zinc-400 text-sm max-w-[280px]">
+          Works offline and opens instantly. Choose your device to see the steps.
+        </p>
       </div>
-      <h3 className="text-2xl font-bold text-white mb-2">Ready to Install</h3>
-      <p className="text-zinc-400 text-sm mb-8">
-        LeaniQA will appear on your home screen like a native app — works offline, opens instantly.
-      </p>
-      <p className="text-xs text-zinc-500 leading-relaxed max-w-[280px]">
-        Pick your device below. We&apos;ll walk through both Android and iPhone.
-      </p>
+
+      <div className="grid grid-cols-2 gap-3 w-full">
+        <motion.button
+          onClick={() => onPick('android')}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+          className="bg-zinc-900/50 border border-zinc-800 hover:border-[#D4FF00]/50 rounded-2xl p-5 flex flex-col items-center gap-2.5 transition-colors"
+        >
+          <div className="w-11 h-11 rounded-xl bg-[#D4FF00]/10 flex items-center justify-center">
+            <Smartphone className="w-5 h-5 text-[#D4FF00]" />
+          </div>
+          <span className="text-white font-medium text-sm">Android</span>
+          <span className="text-[11px] text-zinc-500">Chrome browser</span>
+        </motion.button>
+
+        <motion.button
+          onClick={() => onPick('ios')}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+          className="bg-zinc-900/50 border border-zinc-800 hover:border-[#378ADD]/50 rounded-2xl p-5 flex flex-col items-center gap-2.5 transition-colors"
+        >
+          <div className="w-11 h-11 rounded-xl bg-[#378ADD]/10 flex items-center justify-center">
+            <Share className="w-5 h-5 text-[#378ADD]" />
+          </div>
+          <span className="text-white font-medium text-sm">iPhone / iPad</span>
+          <span className="text-[11px] text-zinc-500">Safari browser</span>
+        </motion.button>
+      </div>
     </div>
   );
 }
