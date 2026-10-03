@@ -1566,7 +1566,7 @@ function StickyScrollFeatures() {
     <section
       ref={containerRef}
       className="relative bg-[#0A0A0B] text-zinc-50 border-t border-zinc-900"
-      style={{ height: `${STORY.length * 160}vh` }}
+      style={{ height: `${STORY.length * 110}vh` }}
     >
       <div className="sticky top-0 h-[100dvh] w-full overflow-hidden">
         <div className="h-full w-full max-w-7xl mx-auto px-6 lg:px-16 py-6 lg:py-0 flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-16">
