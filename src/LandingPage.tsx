@@ -1293,10 +1293,10 @@ function TimelineScreen() {
 function PhoneScreen({ children }: { children: React.ReactNode }) {
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+      initial={{ opacity: 0, scale: 0.96, filter: 'blur(4px)' }}
+      animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+      exit={{ opacity: 0, scale: 1.04, filter: 'blur(4px)' }}
+      transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
       className="absolute inset-0 w-full h-full bg-[#0C0C0D] overflow-hidden rounded-[1.8rem]"
     >
       {children}
@@ -1432,10 +1432,10 @@ function StickyScrollFeatures() {
 function StickyStoryText({ step }: { step: { title: string; subtitle: string } }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -14 }}
-      transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
+      initial={{ opacity: 0, filter: 'blur(10px)', y: 14 }}
+      animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
+      exit={{ opacity: 0, filter: 'blur(10px)', y: -14 }}
+      transition={{ duration: 0.42, ease: 'easeInOut' }}
       className="absolute inset-0 flex flex-col items-center justify-center text-center lg:items-start lg:text-left"
     >
       <h3 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-semibold leading-[1.15] tracking-tight text-white">
