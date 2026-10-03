@@ -1255,39 +1255,56 @@ function TimelineScreen({ isActive }: { isActive: boolean }) {
 }
 
 function getScrollRanges(index: number, total: number) {
-  // Peaks at [0.15, 0.50, 0.85] for 3 stories.
-  // FADE=0.30 gives a 0.60-wide crossfade window between adjacent stories
-  // (visible overlap between peak-0.30 and peak+0.30), producing a slow,
-  // deliberate fade as the user scrolls.
-  const FADE = 0.30;
-  const peak = total === 1 ? 0.5 : 0.15 + (index / (total - 1)) * 0.70;
-  const inputPoints = [Math.max(0, peak - FADE), peak, Math.min(1, peak + FADE)];
-  const opacityOut = [0, 1, 0];
-  return { input: inputPoints, opacity: opacityOut };
+  // Sequential (non-overlapping) fades.
+  //
+  // The scroll timeline [0, 1] is split into `total` equal segments, one per
+  // story. Within each segment:
+  //   - first 30% of segment: fade in from 0 -> 1
+  //   - middle 45% of segment: hold at 1
+  //   - final 25% of segment: fade out from 1 -> 0
+  //
+  // Story N's fade-out ENDS exactly when story N+1's fade-in BEGINS, so the
+  // two never overlap. At the boundary progress value, both are at opacity 0
+  // for a single frame - this is the "cut" between stories.
+  //
+  // For 3 stories, segment = 1/3 = 0.333:
+  //   Story 0: input [0.000, 0.100, 0.250, 0.333], opacity [0, 1, 1, 0]
+  //   Story 1: input [0.333, 0.433, 0.583, 0.666], opacity [0, 1, 1, 0]
+  //   Story 2: input [0.666, 0.766, 0.916, 1.000], opacity [0, 1, 1, 0]
+  const segmentSize = 1 / total;
+  const start = index * segmentSize;
+  const fadeInEnd = start + segmentSize * 0.30;
+  const holdEnd = fadeInEnd + segmentSize * 0.45;
+  const fadeOutEnd = Math.min(1, holdEnd + segmentSize * 0.25);
+
+  const input   = [start, fadeInEnd, holdEnd, fadeOutEnd];
+  const opacity = [0, 1, 1, 0];
+  const y       = [8, 0, 0, -8];
+
+  return { input, opacity, y };
 }
 
 function PhoneScreen({
   children,
   layerIndex,
-  scrollYProgress,
+  scrollProgress,
 }: {
   children: React.ReactNode;
   layerIndex: number;
-  scrollYProgress: any;
+  scrollProgress: any;
 }) {
-  const { input, opacity: opacityOut } = getScrollRanges(layerIndex, STORY.length);
+  const ranges = getScrollRanges(layerIndex, STORY.length);
+  const opacity = useTransform(scrollProgress, ranges.input, ranges.opacity);
 
-  const opacity = useTransform(scrollYProgress, input, opacityOut);
-
-  const peak = 0.15 + (layerIndex / (STORY.length - 1)) * 0.70;
+  const peak = (layerIndex + 0.5) / STORY.length;
   const pointerEvents = useTransform(
-    scrollYProgress,
+    scrollProgress,
     (v: number) => Math.abs(v - peak) < 0.20 ? 'auto' : 'none'
   );
 
   return (
     <motion.div
-      style={{ opacity, pointerEvents }}
+      style={{ opacity, pointerEvents, willChange: 'opacity' }}
       className="absolute inset-0 w-full h-full bg-[#0C0C0D] overflow-hidden rounded-[1.8rem] z-10"
     >
       {children}
@@ -1315,23 +1332,26 @@ const STORY = [
 
 function StickyScrollFeatures() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
+  const { scrollYProgress: rawProgress } = useScroll({
     target: containerRef,
     offset: ['start start', 'end end'],
   });
 
+  // Smooth the raw scroll signal: raw scroll events step abruptly, the spring
+  // interpolates them into continuous values so crossfades track smoothly.
+  const scrollProgress = useSpring(rawProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001,
+  });
+
   // Track which story is currently active so PhoneScreen can fire internals.
   const [activeIndex, setActiveIndex] = useState(0);
-  useMotionValueEvent(scrollYProgress, 'change', (v) => {
-    // Peaks are at 0.15, 0.50, 0.85. Round to nearest peak.
-    const peaks = [0.15, 0.50, 0.85];
-    let nearest = 0;
-    let bestDist = Infinity;
-    peaks.forEach((p, i) => {
-      const d = Math.abs(v - p);
-      if (d < bestDist) { bestDist = d; nearest = i; }
-    });
-    if (nearest !== activeIndex) setActiveIndex(nearest);
+  useMotionValueEvent(scrollProgress, 'change', (v) => {
+    // Sequential timeline: each story owns an equal segment, so the active
+    // index is just the segment the progress value falls in.
+    const idx = Math.min(Math.floor(v * STORY.length), STORY.length - 1);
+    if (idx !== activeIndex) setActiveIndex(idx);
   });
 
   return (
@@ -1349,7 +1369,7 @@ function StickyScrollFeatures() {
                 step={step}
                 index={i}
                 total={STORY.length}
-                scrollYProgress={scrollYProgress}
+                scrollProgress={scrollProgress}
               />
             ))}
           </div>
@@ -1360,7 +1380,7 @@ function StickyScrollFeatures() {
                 <PhoneScreen
                   key={i}
                   layerIndex={i}
-                  scrollYProgress={scrollYProgress}
+                  scrollProgress={scrollProgress}
                 >
                   {i === 0 && <AICoachScreen isActive={activeIndex === 0} />}
                   {i === 1 && <DashboardScreen isActive={activeIndex === 1} />}
@@ -1379,21 +1399,20 @@ function StickyStoryText({
   step,
   index,
   total,
-  scrollYProgress,
+  scrollProgress,
 }: {
   step: { title: string; subtitle: string };
   index: number;
   total: number;
-  scrollYProgress: any;
+  scrollProgress: any;
 }) {
   const ranges = getScrollRanges(index, total);
-  const opacity = useTransform(scrollYProgress, ranges.input, ranges.opacity);
-  // Smaller travel range for subtle motion — no big jumps in/out
-  const y = useTransform(scrollYProgress, ranges.input, [16, 0, -16]);
+  const opacity = useTransform(scrollProgress, ranges.input, ranges.opacity);
+  const y = useTransform(scrollProgress, ranges.input, ranges.y);
 
   return (
     <motion.div
-      style={{ opacity, y }}
+      style={{ opacity, y, willChange: 'opacity, transform' }}
       className="absolute inset-0 flex flex-col items-center justify-center text-center lg:items-start lg:text-left"
     >
       <h3 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-semibold leading-[1.15] tracking-tight text-white">
