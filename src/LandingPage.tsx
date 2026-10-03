@@ -1371,6 +1371,12 @@ function StickyScrollFeatures() {
   // then swap displayIndex and show new content.
   useEffect(() => {
     if (!hasEntered) return;
+    // First entry: skip the delay so content appears immediately
+    if (displayIndex === 0 && activeIndex === 0 && !showContent) {
+      setDisplayIndex(0);
+      setShowContent(true);
+      return;
+    }
     setShowContent(false);
     const t = setTimeout(() => {
       setDisplayIndex(activeIndex);
