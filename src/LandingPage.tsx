@@ -648,7 +648,7 @@ function HowItWorks() {
   const lineHeight = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
 
   return (
-    <section className="py-10 sm:py-16 px-6 border-t border-zinc-900 bg-[#0A0A0B] overflow-hidden" id="how-it-works">
+    <section className="py-10 sm:py-16 px-6 border-t border-zinc-900 bg-[#0A0A0B] overflow-x-clip" id="how-it-works">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-20 max-w-2xl mx-auto">
           <Reveal>
@@ -664,6 +664,7 @@ function HowItWorks() {
           </Reveal>
         </div>
 
+        <div className="hidden lg:block">
         <div className="relative max-w-4xl mx-auto pl-6 md:pl-0" ref={containerRef}>
           {/* Central connecting line for Desktop, Left line for Mobile */}
           <div className="absolute left-0 md:left-1/2 top-0 bottom-0 w-px bg-zinc-800 md:-translate-x-1/2" />
@@ -734,8 +735,135 @@ function HowItWorks() {
             })}
           </div>
         </div>
+        </div>
+
+        <div className="lg:hidden -mx-6">
+          <MobileHowItWorks steps={steps} />
+        </div>
       </div>
     </section>
+  );
+}
+
+function MobileHowItWorks({ steps }: { steps: any[] }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const progress = useMotionValue(0);
+  const smooth = useSpring(progress, {
+    stiffness: 90,
+    damping: 26,
+    restDelta: 0.001,
+  });
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    let rafId: number;
+    const update = () => {
+      const rect = el.getBoundingClientRect();
+      const viewportH = window.innerHeight;
+      const scrollRange = rect.height - viewportH;
+      const p = scrollRange > 0
+        ? Math.max(0, Math.min(1, -rect.top / scrollRange))
+        : 0;
+      progress.set(p);
+      rafId = requestAnimationFrame(update);
+    };
+    update();
+    return () => cancelAnimationFrame(rafId);
+  }, [progress]);
+
+  const total = steps.length;
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative"
+      style={{ height: `${(total + 2) * 100}vh` }}
+    >
+      <div className="sticky top-0 h-[100dvh] w-full overflow-hidden">
+        {steps.map((step, i) => (
+          <StackedStep
+            key={i}
+            step={step}
+            index={i}
+            total={total}
+            progress={smooth}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StackedStep({
+  step,
+  index,
+  total,
+  progress,
+}: {
+  step: any;
+  index: number;
+  total: number;
+  progress: any;
+}) {
+  const isLast = index === total - 1;
+  const isLeft = index % 2 === 0;
+  const xFrom = isLeft ? -140 : 140;
+
+  // Section is divided into (total + 1) equal scroll segments. Card `index`
+  // enters during segment `index` and pushes back during segment `index + 1`.
+  const segmentSize = 1 / (total + 1);
+  const entryStart = index * segmentSize;
+  const entryEnd = (index + 1) * segmentSize;
+  const pushEnd = Math.min(1, (index + 2) * segmentSize);
+  const entryHold = entryStart + (entryEnd - entryStart) * 0.55;
+
+  const xRange = isLast ? [entryStart, entryEnd] : [entryStart, entryEnd, pushEnd];
+  const xOut = isLast ? [xFrom, 0] : [xFrom, 0, 0];
+  const x = useTransform(progress, xRange, xOut);
+
+  const yRange = isLast ? [entryStart, entryEnd] : [entryStart, entryEnd, pushEnd];
+  const yOut = isLast ? [56, 0] : [56, 0, -28];
+  const y = useTransform(progress, yRange, yOut);
+
+  const scaleRange = isLast ? [entryStart, entryEnd] : [entryStart, entryEnd, pushEnd];
+  const scaleOut = isLast ? [0.9, 1] : [0.9, 1, 0.92];
+  const scale = useTransform(progress, scaleRange, scaleOut);
+
+  const opacityRange = isLast
+    ? [entryStart, entryHold, entryEnd]
+    : [entryStart, entryHold, entryEnd, pushEnd];
+  const opacityOut = isLast ? [0, 1, 1] : [0, 1, 1, 0.35];
+  const opacity = useTransform(progress, opacityRange, opacityOut);
+
+  return (
+    <motion.div
+      style={{ x, y, scale, opacity, willChange: 'transform, opacity' }}
+      className="absolute inset-0 flex items-center justify-center px-6"
+    >
+      <div className="w-full max-w-md max-h-[82vh] overflow-hidden bg-[#111112] border border-zinc-800/60 rounded-2xl p-6 relative">
+        {/* Faded step number in background */}
+        <div className="absolute -right-4 -bottom-6 text-8xl font-black text-white/5 blur-sm select-none pointer-events-none">
+          {step.number}
+        </div>
+
+        <div className="relative z-10">
+          <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-4">
+            <step.icon className="w-5 h-5 text-zinc-400" />
+          </div>
+          <h3 className="text-base sm:text-lg font-semibold text-white mb-2 tracking-tight">
+            {step.title}
+          </h3>
+          <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed">
+            {step.desc}
+          </p>
+
+          <div className="mt-6">
+            {step.demo}
+          </div>
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
