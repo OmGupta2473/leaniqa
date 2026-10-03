@@ -1397,43 +1397,35 @@ function StickyScrollFeatures() {
     const el = containerRef.current;
     if (!el) return;
 
-    let first = true;
+    let rafId: number;
+    let lastP = -1;
 
     const update = () => {
       const rect = el.getBoundingClientRect();
       const viewportH = window.innerHeight;
       const scrollRange = rect.height - viewportH;
-      const scrolled = -rect.top;
-      const p = scrollRange > 0 ? Math.max(0, Math.min(1, scrolled / scrollRange)) : 0;
+      const p = scrollRange > 0
+        ? Math.max(0, Math.min(1, -rect.top / scrollRange))
+        : 0;
 
-      // TEMPORARY DEBUG - remove after fix is confirmed
-      // eslint-disable-next-line no-console
-      console.log(
-        '[story]',
-        first ? 'MOUNT' : 'scroll',
-        'p=', p.toFixed(3),
-        'rect.top=', Math.round(rect.top),
-        'rect.height=', Math.round(rect.height),
-        'viewportH=', viewportH,
-        'range=', Math.round(scrollRange)
-      );
-      first = false;
-
-      if (scrollRange <= 0) {
-        scrollProgress.set(0);
-        return;
+      if (Math.abs(p - lastP) > 0.0005) {
+        scrollProgress.set(p);
+        lastP = p;
+        // TEMPORARY DEBUG — remove after fix is confirmed
+        // eslint-disable-next-line no-console
+        console.log(
+          '[story] rAF p=', p.toFixed(3),
+          'scrollY=', Math.round(window.scrollY),
+          'rect.top=', Math.round(rect.top),
+          'range=', Math.round(scrollRange)
+        );
       }
 
-      scrollProgress.set(p);
+      rafId = requestAnimationFrame(update);
     };
 
     update();
-    window.addEventListener('scroll', update, { passive: true });
-    window.addEventListener('resize', update, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', update);
-      window.removeEventListener('resize', update);
-    };
+    return () => cancelAnimationFrame(rafId);
   }, [scrollProgress]);
 
   useMotionValueEvent(scrollProgress, 'change', (v) => {
