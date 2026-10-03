@@ -1051,20 +1051,18 @@ function PhoneFrame({
    PHONE SCREENS
 ───────────────────────────────────────────── */
 
-function AICoachScreen({ isActive }: { isActive: boolean }) {
+function AICoachScreen() {
   const bubbleEase = [0.22, 1, 0.36, 1] as const;
 
   return (
     <div className="w-full h-full bg-[#0A0A0A] flex flex-col overflow-hidden relative pt-[16%]">
       <div className="flex-1 p-[5%] flex flex-col justify-end gap-[4%] pb-[20%]">
 
-        {/* User message */}
+        {/* User message — slides in from right */}
         <motion.div
-          initial={false}
-          animate={isActive
-            ? { opacity: 1, y: 0, x: 0 }
-            : { opacity: 0, y: 12, x: 24 }}
-          transition={{ duration: 0.45, delay: isActive ? 0.15 : 0, ease: bubbleEase }}
+          initial={{ opacity: 0, x: 24, y: 12 }}
+          animate={{ opacity: 1, x: 0, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.15, ease: bubbleEase }}
           className="self-end bg-white/10 rounded-[24px] rounded-tr-sm px-[5%] py-[4%] max-w-[85%]"
         >
           <p className="text-white" style={{ fontSize: "clamp(9px, 3.5%, 14px)" }}>
@@ -1072,20 +1070,18 @@ function AICoachScreen({ isActive }: { isActive: boolean }) {
           </p>
         </motion.div>
 
-        {/* AI response card */}
+        {/* AI response card — slides in from left */}
         <motion.div
-          initial={false}
-          animate={isActive
-            ? { opacity: 1, y: 0, x: 0 }
-            : { opacity: 0, y: 12, x: -24 }}
-          transition={{ duration: 0.5, delay: isActive ? 0.5 : 0, ease: bubbleEase }}
+          initial={{ opacity: 0, x: -24, y: 12 }}
+          animate={{ opacity: 1, x: 0, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.5, ease: bubbleEase }}
           className="self-start bg-[#1C1C1E] border border-white/10 rounded-[24px] rounded-tl-sm px-[5%] py-[5%] max-w-[90%]"
         >
           {/* Header */}
           <motion.div
-            initial={false}
-            animate={isActive ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ duration: 0.3, delay: isActive ? 0.7 : 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3, delay: 0.75 }}
             className="flex items-center gap-[3%] mb-[6%]"
           >
             <div className="w-[12%] aspect-square rounded-full bg-[#378ADD]/20 flex items-center justify-center">
@@ -1096,22 +1092,20 @@ function AICoachScreen({ isActive }: { isActive: boolean }) {
 
           {/* "Logged!" text */}
           <motion.p
-            initial={false}
-            animate={isActive ? { opacity: 1, y: 0 } : { opacity: 0, y: 6 }}
-            transition={{ duration: 0.35, delay: isActive ? 0.85 : 0 }}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.9 }}
             className="text-white/90 mb-[6%] leading-relaxed"
             style={{ fontSize: "clamp(9px, 3.5%, 14px)" }}
           >
             Logged! Here is the breakdown:
           </motion.p>
 
-          {/* Macro summary box */}
+          {/* Macro summary box — scales in */}
           <motion.div
-            initial={false}
-            animate={isActive
-              ? { opacity: 1, scale: 1, y: 0 }
-              : { opacity: 0, scale: 0.94, y: 8 }}
-            transition={{ duration: 0.4, delay: isActive ? 1.0 : 0, ease: bubbleEase }}
+            initial={{ opacity: 0, scale: 0.94, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 1.05, ease: bubbleEase }}
             className="bg-black/40 rounded-lg p-[5%] flex justify-between mb-[6%] border border-white/5"
           >
             <div className="text-center flex-1">
@@ -1127,9 +1121,9 @@ function AICoachScreen({ isActive }: { isActive: boolean }) {
 
           {/* Coaching tip */}
           <motion.p
-            initial={false}
-            animate={isActive ? { opacity: 1, y: 0 } : { opacity: 0, y: 6 }}
-            transition={{ duration: 0.35, delay: isActive ? 1.25 : 0 }}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 1.3 }}
             className="text-white/80 leading-relaxed"
             style={{ fontSize: "clamp(8.5px, 3.2%, 13px)" }}
           >
@@ -1140,9 +1134,9 @@ function AICoachScreen({ isActive }: { isActive: boolean }) {
 
       {/* Input bar */}
       <motion.div
-        initial={false}
-        animate={isActive ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
-        transition={{ duration: 0.4, delay: isActive ? 1.45 : 0 }}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 1.5 }}
         className="absolute bottom-0 w-full p-[5%] border-t border-white/5 bg-[#1C1C1E]/90 backdrop-blur-md"
       >
         <div className="bg-black rounded-full px-[5%] py-[3%] flex items-center justify-between border border-white/10">
@@ -1156,11 +1150,11 @@ function AICoachScreen({ isActive }: { isActive: boolean }) {
   );
 }
 
-function DashboardScreen({ isActive }: { isActive: boolean }) {
-  const eatenKcal = useDemoNumber(1420, 1200, isActive, 0);
-  const proteinVal = useDemoNumber(80, 900, isActive, 0);
-  const fatVal = useDemoNumber(45, 900, isActive, 0);
-  const carbsVal = useDemoNumber(120, 900, isActive, 0);
+function DashboardScreen() {
+  const eatenKcal = useDemoNumber(1420, 1200, true, 0);
+  const proteinVal = useDemoNumber(80, 900, true, 0);
+  const fatVal = useDemoNumber(45, 900, true, 0);
+  const carbsVal = useDemoNumber(120, 900, true, 0);
   const easeOut = [0.22, 1, 0.36, 1] as const;
 
   return (
@@ -1183,9 +1177,9 @@ function DashboardScreen({ isActive }: { isActive: boolean }) {
           <svg className="absolute inset-0 w-full h-full transform -rotate-90">
             <circle cx="50%" cy="50%" r="42%" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8%" />
             <motion.circle
-              initial={false}
-              animate={{ pathLength: isActive ? 0.645 : 0 }}
-              transition={{ duration: 1.3, delay: isActive ? 0.15 : 0, ease: easeOut }}
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 0.645 }}
+              transition={{ duration: 1.3, delay: 0.15, ease: easeOut }}
               cx="50%" cy="50%" r="42%" fill="none" stroke="#D4FF00" strokeWidth="8%" strokeLinecap="round"
             />
           </svg>
@@ -1208,9 +1202,9 @@ function DashboardScreen({ isActive }: { isActive: boolean }) {
                 <motion.div
                   className="h-full rounded-full"
                   style={{ backgroundColor: m.col }}
-                  initial={false}
-                  animate={{ width: isActive ? m.pct : '0%' }}
-                  transition={{ duration: 0.85, delay: isActive ? 0.4 + i * 0.1 : 0, ease: easeOut }}
+                  initial={{ width: '0%' }}
+                  animate={{ width: m.pct }}
+                  transition={{ duration: 0.85, delay: 0.4 + i * 0.1, ease: easeOut }}
                 />
               </div>
             </div>
@@ -1220,9 +1214,9 @@ function DashboardScreen({ isActive }: { isActive: boolean }) {
 
       <div className="flex-1 px-[6%] pt-[2%]">
         <motion.div
-          initial={false}
-          animate={isActive ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
-          transition={{ duration: 0.5, delay: isActive ? 0.9 : 0, ease: easeOut }}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.9, ease: easeOut }}
           className="bg-white/5 border border-white/5 rounded-[20px] p-[6%]"
         >
           <div className="font-semibold text-white/50 uppercase tracking-wider mb-2" style={{ fontSize: "clamp(7px, 2.8%, 11px)" }}>Adjusted Target</div>
@@ -1234,9 +1228,9 @@ function DashboardScreen({ isActive }: { isActive: boolean }) {
   );
 }
 
-function TimelineScreen({ isActive }: { isActive: boolean }) {
-  const projectedWeight = useDemoNumber(72.5, 1200, isActive, 1);
-  const percentDrop = useDemoNumber(12, 900, isActive, 0);
+function TimelineScreen() {
+  const projectedWeight = useDemoNumber(72.5, 1200, true, 1);
+  const percentDrop = useDemoNumber(12, 900, true, 0);
   const easeOut = [0.22, 1, 0.36, 1] as const;
 
   return (
@@ -1253,9 +1247,9 @@ function TimelineScreen({ isActive }: { isActive: boolean }) {
             {projectedWeight.toFixed(1)}<span className="text-white/40 font-normal ml-1" style={{ fontSize: "0.5em" }}>kg</span>
           </span>
           <motion.div
-            initial={false}
-            animate={isActive ? { opacity: 1, scale: 1, y: 0 } : { opacity: 0, scale: 0.85, y: 6 }}
-            transition={{ duration: 0.4, delay: isActive ? 0.4 : 0, ease: easeOut }}
+            initial={{ opacity: 0, scale: 0.85, y: 6 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.4, ease: easeOut }}
             className="flex items-center bg-[#D4FF00]/10 text-[#D4FF00] px-[3%] py-[1%] rounded-full mb-[2%]"
             style={{ fontSize: "clamp(8px, 3.2%, 13px)" }}
           >
@@ -1278,18 +1272,18 @@ function TimelineScreen({ isActive }: { isActive: boolean }) {
             fill="none"
             stroke="#D4FF00"
             strokeWidth="3"
-            initial={false}
-            animate={{ pathLength: isActive ? 1 : 0 }}
-            transition={{ duration: 1.6, delay: isActive ? 0.3 : 0, ease: easeOut }}
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 1.6, delay: 0.3, ease: easeOut }}
           />
         </svg>
 
         <motion.div
           className="absolute bg-[#D4FF00] rounded-full border-2 border-[#1C1C1E] shadow-[0_0_15px_#D4FF00]"
           style={{ width: "8%", aspectRatio: "1", right: "0%", bottom: "10%", x: "50%", y: "50%" }}
-          initial={false}
-          animate={{ scale: isActive ? 1 : 0, opacity: isActive ? 1 : 0 }}
-          transition={{ delay: isActive ? 1.6 : 0, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 1.6, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
         />
       </div>
     </div>
@@ -1374,7 +1368,7 @@ function StickyScrollFeatures() {
     <section
       ref={containerRef}
       className="relative bg-[#0A0A0B] text-zinc-50 border-t border-zinc-900"
-      style={{ height: `${STORY.length * 120}vh` }}
+      style={{ height: `${STORY.length * 180}vh` }}
     >
       <div className="sticky top-0 h-[100dvh] w-full overflow-hidden">
         <div className="h-full w-full max-w-7xl mx-auto px-6 lg:px-16 py-6 lg:py-0 flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-16">
@@ -1396,9 +1390,9 @@ function StickyScrollFeatures() {
               <AnimatePresence mode="wait">
                 {hasEntered && (
                   <PhoneScreen key={activeIndex}>
-                    {activeIndex === 0 && <AICoachScreen isActive={true} />}
-                    {activeIndex === 1 && <DashboardScreen isActive={true} />}
-                    {activeIndex === 2 && <TimelineScreen isActive={true} />}
+{activeIndex === 0 && <AICoachScreen />}
+                  {activeIndex === 1 && <DashboardScreen />}
+                  {activeIndex === 2 && <TimelineScreen />}
                   </PhoneScreen>
                 )}
               </AnimatePresence>
