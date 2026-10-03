@@ -1300,8 +1300,8 @@ function TimelineScreen({ isActive }: { isActive: boolean }) {
 function getScrollRanges(index: number, total: number) {
   const segmentSize = 1 / total;
 
-  // Story 0 starts fully visible at progress 0 so the section is never blank
-  // when it first enters the viewport or on initial mount.
+  // Story 0: starts fully visible at p=0 (never blank on load), holds until
+  // 75% of its segment, then fades out at the segment boundary.
   if (index === 0) {
     const holdEnd = segmentSize * 0.75;
     const fadeOutEnd = segmentSize;
@@ -1312,25 +1312,34 @@ function getScrollRanges(index: number, total: number) {
     };
   }
 
-  // Stories 1..N-1: fade in during the first 30% of their segment, hold for
-  // 45%, fade out during the final 25%. Non-overlapping with the previous
-  // story's fade-out window (see commit 7830474).
-  //
+  // Last story: fades in at the start of its segment, then holds at opacity 1
+  // all the way to p=1.0. No fade-out - the section transition itself handles
+  // the exit. Prevents the blank tail at the end of the scroll range.
+  if (index === total - 1) {
+    const start = index * segmentSize;
+    const fadeInEnd = start + segmentSize * 0.30;
+    return {
+      input: [start, fadeInEnd, 1.0],
+      opacity: [0, 1, 1],
+      y: [8, 0, 0],
+    };
+  }
+
+  // Middle stories: standard 4-point curve with fade in, hold, fade out.
   // For 3 stories, segment = 1/3 = 0.333:
   //   Story 1: input [0.333, 0.433, 0.583, 0.666], opacity [0, 1, 1, 0]
-  //   Story 2: input [0.666, 0.766, 0.916, 1.000], opacity [0, 1, 1, 0]
-  // The boundary at p=0.333 has both story 0 and story 1 at opacity 0 for a
-  // single frame - the same intentional "cut" behavior as before.
+  // The boundary at each segment edge has both neighbouring stories at opacity
+  // 0 for a single frame - the intentional "cut" from commit 7830474.
   const start = index * segmentSize;
   const fadeInEnd = start + segmentSize * 0.30;
   const holdEnd = fadeInEnd + segmentSize * 0.45;
   const fadeOutEnd = Math.min(1, holdEnd + segmentSize * 0.25);
 
-  const input   = [start, fadeInEnd, holdEnd, fadeOutEnd];
-  const opacity = [0, 1, 1, 0];
-  const y       = [8, 0, 0, -8];
-
-  return { input, opacity, y };
+  return {
+    input: [start, fadeInEnd, holdEnd, fadeOutEnd],
+    opacity: [0, 1, 1, 0],
+    y: [8, 0, 0, -8],
+  };
 }
 
 function PhoneScreen({
@@ -1394,13 +1403,9 @@ function StickyScrollFeatures() {
       const rect = el.getBoundingClientRect();
       const viewportH = window.innerHeight;
       const scrollRange = rect.height - viewportH;
-      if (scrollRange <= 0) {
-        scrollProgress.set(0);
-        return;
-      }
       const scrolled = -rect.top;
-      const p = Math.max(0, Math.min(1, scrolled / scrollRange));
-      scrollProgress.set(p);
+      const p = scrollRange > 0 ? Math.max(0, Math.min(1, scrolled / scrollRange)) : 0;
+
       // TEMPORARY DEBUG - remove after fix is confirmed
       // eslint-disable-next-line no-console
       console.log(
@@ -1413,6 +1418,13 @@ function StickyScrollFeatures() {
         'range=', Math.round(scrollRange)
       );
       first = false;
+
+      if (scrollRange <= 0) {
+        scrollProgress.set(0);
+        return;
+      }
+
+      scrollProgress.set(p);
     };
 
     update();
