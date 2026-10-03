@@ -3,7 +3,7 @@ import { PerfProfiler } from '@/shared/utils/perfDebug';
 import { useAppStore } from "@/app/store";
 import { reportService } from "@/features/reports/services/reportService";
 import { calculateCurrentDailyStreak, isDailyGoalMet, toUtcDay } from "@/shared/utils/streaks";
-import { Target, Footprints, Flame, Sparkles, ChevronRight, Activity, TrendingDown, TrendingUp, Plus, Droplet, Wheat, Dna, Star } from "lucide-react";
+import { Footprints, Flame, Sparkles, ChevronRight, Activity, TrendingDown, TrendingUp, Plus, Droplet, Wheat, Dna, Star } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useCalculatedProfile } from "@/shared/hooks/useCalculatedProfile";
 import { useDailyNutrition } from "@/features/nutrition/hooks/useDailyNutrition";
@@ -143,15 +143,7 @@ export function DashboardPage() {
     month: "long",
   });
 
-  const getAiInsight = () => {
-    if (completionScore >= 100) return "Incredible work today. You've hit your nutritional targets perfectly. Keep resting and hydrating.";
-    if (eatenKcal === 0) return "Good morning! Start your day strong with a protein-rich breakfast to set the tone.";
-    if (proPct < calPct) return "You're consuming calories faster than protein. Prioritize a high-protein source in your next meal.";
-    if (remainingKcal < 300 && remainingProtein > 30) return "Calories are running low but protein is still needed. Opt for lean sources like egg whites or a shake.";
-    return "You're consuming calories better than yesterday. Maintain a high-protein stance in your next meal.";
-  };
-
-  const ringCircumference = 2 * Math.PI * 42;
+const ringCircumference = 2 * Math.PI * 42;
   const ringOffset = ringCircumference - calPct * ringCircumference;
   
   const scoreCircumference = 2 * Math.PI * 26;
@@ -200,20 +192,6 @@ export function DashboardPage() {
           />
         ) : (
           <>
-            {/* AI Insight Card */}
-            <motion.div 
-              whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
-              className="rounded-[20px] p-5 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] shadow-sm backdrop-blur-xl"
-            >
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-[11px] font-bold text-[#D4FF00] tracking-widest uppercase">Today's Mission</span>
-                <Target size={14} className="text-[#D4FF00]" />
-              </div>
-              <p className="text-[14px] font-medium text-[rgba(255,255,255,0.85)] leading-relaxed">
-                {getAiInsight()}
-              </p>
-            </motion.div>
-
             {/* Calories Hero */}
             <motion.div 
               whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
