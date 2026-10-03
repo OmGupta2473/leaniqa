@@ -7,7 +7,6 @@ import {
   useTransform,
   useMotionValue,
   useSpring,
-  useMotionValueEvent,
   AnimatePresence,
   useInView,
 } from "motion/react";
@@ -1297,73 +1296,14 @@ function TimelineScreen({ isActive }: { isActive: boolean }) {
   );
 }
 
-function getScrollRanges(index: number, total: number) {
-  const segmentSize = 1 / total;
-
-  // Story 0: starts fully visible at p=0 (never blank on load), holds until
-  // 75% of its segment, then fades out at the segment boundary.
-  if (index === 0) {
-    const holdEnd = segmentSize * 0.75;
-    const fadeOutEnd = segmentSize;
-    return {
-      input: [0, holdEnd, fadeOutEnd],
-      opacity: [1, 1, 0],
-      y: [0, 0, -8],
-    };
-  }
-
-  // Last story: fades in at the start of its segment, then holds at opacity 1
-  // all the way to p=1.0. No fade-out - the section transition itself handles
-  // the exit. Prevents the blank tail at the end of the scroll range.
-  if (index === total - 1) {
-    const start = index * segmentSize;
-    const fadeInEnd = start + segmentSize * 0.30;
-    return {
-      input: [start, fadeInEnd, 1.0],
-      opacity: [0, 1, 1],
-      y: [8, 0, 0],
-    };
-  }
-
-  // Middle stories: standard 4-point curve with fade in, hold, fade out.
-  // For 3 stories, segment = 1/3 = 0.333:
-  //   Story 1: input [0.333, 0.433, 0.583, 0.666], opacity [0, 1, 1, 0]
-  // The boundary at each segment edge has both neighbouring stories at opacity
-  // 0 for a single frame - the intentional "cut" from commit 7830474.
-  const start = index * segmentSize;
-  const fadeInEnd = start + segmentSize * 0.30;
-  const holdEnd = fadeInEnd + segmentSize * 0.45;
-  const fadeOutEnd = Math.min(1, holdEnd + segmentSize * 0.25);
-
-  return {
-    input: [start, fadeInEnd, holdEnd, fadeOutEnd],
-    opacity: [0, 1, 1, 0],
-    y: [8, 0, 0, -8],
-  };
-}
-
-function PhoneScreen({
-  children,
-  layerIndex,
-  scrollProgress,
-}: {
-  children: React.ReactNode;
-  layerIndex: number;
-  scrollProgress: any;
-}) {
-  const ranges = getScrollRanges(layerIndex, STORY.length);
-  const opacity = useTransform(scrollProgress, ranges.input, ranges.opacity);
-
-  const peak = (layerIndex + 0.5) / STORY.length;
-  const pointerEvents = useTransform(
-    scrollProgress,
-    (v: number) => Math.abs(v - peak) < 0.20 ? 'auto' : 'none'
-  );
-
+function PhoneScreen({ children }: { children: React.ReactNode }) {
   return (
     <motion.div
-      style={{ opacity, pointerEvents, willChange: 'opacity' }}
-      className="absolute inset-0 w-full h-full bg-[#0C0C0D] overflow-hidden rounded-[1.8rem] z-10"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      className="absolute inset-0 w-full h-full bg-[#0C0C0D] overflow-hidden rounded-[1.8rem]"
     >
       {children}
     </motion.div>
@@ -1390,15 +1330,16 @@ const STORY = [
 
 function StickyScrollFeatures() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const scrollProgress = useMotionValue(0);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [hasEntered, setHasEntered] = useState(false);
 
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
     let rafId: number;
-    let lastP = -1;
+    let entered = false;
+    let lastIdx = 0;
 
     const update = () => {
       const rect = el.getBoundingClientRect();
@@ -1408,17 +1349,18 @@ function StickyScrollFeatures() {
         ? Math.max(0, Math.min(1, -rect.top / scrollRange))
         : 0;
 
-      if (Math.abs(p - lastP) > 0.0005) {
-        scrollProgress.set(p);
-        lastP = p;
-        // TEMPORARY DEBUG — remove after fix is confirmed
-        // eslint-disable-next-line no-console
-        console.log(
-          '[story] rAF p=', p.toFixed(3),
-          'scrollY=', Math.round(window.scrollY),
-          'rect.top=', Math.round(rect.top),
-          'range=', Math.round(scrollRange)
-        );
+      // Flip hasEntered the first time the section top reaches or passes the
+      // viewport top — i.e., the sticky wrapper pins. Before this, the story
+      // section renders nothing, so first-load animations don't play offscreen.
+      if (!entered && rect.top <= 0) {
+        entered = true;
+        setHasEntered(true);
+      }
+
+      const idx = Math.min(Math.floor(p * STORY.length), STORY.length - 1);
+      if (idx !== lastIdx) {
+        lastIdx = idx;
+        setActiveIndex(idx);
       }
 
       rafId = requestAnimationFrame(update);
@@ -1426,12 +1368,7 @@ function StickyScrollFeatures() {
 
     update();
     return () => cancelAnimationFrame(rafId);
-  }, [scrollProgress]);
-
-  useMotionValueEvent(scrollProgress, 'change', (v) => {
-    const idx = Math.min(Math.floor(v * STORY.length), STORY.length - 1);
-    if (idx !== activeIndex) setActiveIndex(idx);
-  });
+  }, []);
 
   return (
     <section
@@ -1441,31 +1378,30 @@ function StickyScrollFeatures() {
     >
       <div className="sticky top-0 h-[100dvh] w-full overflow-hidden">
         <div className="h-full w-full max-w-7xl mx-auto px-6 lg:px-16 py-6 lg:py-0 flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-16">
+          {/* Text panel */}
           <div className="relative w-full lg:w-[45%] h-[26vh] lg:h-full flex items-center order-1 shrink-0 lg:shrink">
-            {STORY.map((step, i) => (
-              <StickyStoryText
-                key={i}
-                step={step}
-                index={i}
-                total={STORY.length}
-                scrollProgress={scrollProgress}
-              />
-            ))}
+            <AnimatePresence mode="wait">
+              {hasEntered && (
+                <StickyStoryText
+                  key={activeIndex}
+                  step={STORY[activeIndex]}
+                />
+              )}
+            </AnimatePresence>
           </div>
 
+          {/* Phone panel */}
           <div className="relative flex-1 min-h-0 w-full lg:w-[45%] lg:flex-none lg:h-full flex items-center justify-center order-2">
             <PhoneFrame widthClass="w-[clamp(140px,24dvh,200px)] lg:w-[clamp(200px,15vw,280px)]">
-              {STORY.map((_, i) => (
-                <PhoneScreen
-                  key={i}
-                  layerIndex={i}
-                  scrollProgress={scrollProgress}
-                >
-                  {i === 0 && <AICoachScreen isActive={activeIndex === 0} />}
-                  {i === 1 && <DashboardScreen isActive={activeIndex === 1} />}
-                  {i === 2 && <TimelineScreen isActive={activeIndex === 2} />}
-                </PhoneScreen>
-              ))}
+              <AnimatePresence mode="wait">
+                {hasEntered && (
+                  <PhoneScreen key={activeIndex}>
+                    {activeIndex === 0 && <AICoachScreen isActive={true} />}
+                    {activeIndex === 1 && <DashboardScreen isActive={true} />}
+                    {activeIndex === 2 && <TimelineScreen isActive={true} />}
+                  </PhoneScreen>
+                )}
+              </AnimatePresence>
             </PhoneFrame>
           </div>
         </div>
@@ -1474,24 +1410,13 @@ function StickyScrollFeatures() {
   );
 }
 
-function StickyStoryText({
-  step,
-  index,
-  total,
-  scrollProgress,
-}: {
-  step: { title: string; subtitle: string };
-  index: number;
-  total: number;
-  scrollProgress: any;
-}) {
-  const ranges = getScrollRanges(index, total);
-  const opacity = useTransform(scrollProgress, ranges.input, ranges.opacity);
-  const y = useTransform(scrollProgress, ranges.input, ranges.y);
-
+function StickyStoryText({ step }: { step: { title: string; subtitle: string } }) {
   return (
     <motion.div
-      style={{ opacity, y, willChange: 'opacity, transform' }}
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -24 }}
+      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
       className="absolute inset-0 flex flex-col items-center justify-center text-center lg:items-start lg:text-left"
     >
       <h3 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-semibold leading-[1.15] tracking-tight text-white">
