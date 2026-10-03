@@ -1375,24 +1375,39 @@ const STORY = [
 
 function StickyScrollFeatures() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress: rawProgress } = useScroll({
-    target: containerRef,
-    offset: ['start start', 'end end'],
-  });
-
-  // Smooth the raw scroll signal: raw scroll events step abruptly, the spring
-  // interpolates them into continuous values so crossfades track smoothly.
-  const scrollProgress = useSpring(rawProgress, {
-    stiffness: 100,
-    damping: 30,
-    restDelta: 0.001,
-  });
-
-  // Track which story is currently active so PhoneScreen can fire internals.
+  const scrollProgress = useMotionValue(0);
   const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const update = () => {
+      const rect = el.getBoundingClientRect();
+      const viewportH = window.innerHeight;
+      const scrollRange = rect.height - viewportH;
+      if (scrollRange <= 0) {
+        scrollProgress.set(0);
+        return;
+      }
+      const scrolled = -rect.top;
+      const p = Math.max(0, Math.min(1, scrolled / scrollRange));
+      scrollProgress.set(p);
+      // TEMPORARY DEBUG - remove after fix is confirmed
+      // eslint-disable-next-line no-console
+      console.log('[story] progress', p.toFixed(3), 'rect.top', Math.round(rect.top), 'range', Math.round(scrollRange));
+    };
+
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [scrollProgress]);
+
   useMotionValueEvent(scrollProgress, 'change', (v) => {
-    // Sequential timeline: each story owns an equal segment, so the active
-    // index is just the segment the progress value falls in.
     const idx = Math.min(Math.floor(v * STORY.length), STORY.length - 1);
     if (idx !== activeIndex) setActiveIndex(idx);
   });
