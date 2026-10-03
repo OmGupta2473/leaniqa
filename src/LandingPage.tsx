@@ -7,6 +7,7 @@ import {
   useTransform,
   useMotionValue,
   useSpring,
+  useMotionValueEvent,
   AnimatePresence,
   useInView,
 } from "motion/react";
@@ -1051,13 +1052,14 @@ function PhoneFrame({
    PHONE SCREENS
 ───────────────────────────────────────────── */
 
-function AICoachScreen() {
+function AICoachScreen({ isActive }: { isActive: boolean }) {
   return (
     <div className="w-full h-full bg-[#0A0A0A] flex flex-col overflow-hidden relative pt-[16%]">
       <div className="flex-1 p-[5%] flex flex-col justify-end gap-[4%] pb-[20%]">
         <motion.div 
+          key={isActive ? 'in' : 'out'}
           initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
+          animate={isActive ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
           transition={{ delay: 0.2 }}
           className="self-end bg-white/10 rounded-[24px] rounded-tr-sm px-[5%] py-[4%] max-w-[85%]"
         >
@@ -1065,8 +1067,9 @@ function AICoachScreen() {
         </motion.div>
         
         <motion.div 
+          key={`reply-${isActive ? 'in' : 'out'}`}
           initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
+          animate={isActive ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
           transition={{ delay: 0.8 }}
           className="self-start bg-[#1C1C1E] border border-white/10 rounded-[24px] rounded-tl-sm px-[5%] py-[5%] max-w-[90%]"
         >
@@ -1106,7 +1109,7 @@ function AICoachScreen() {
   );
 }
 
-function DashboardScreen() {
+function DashboardScreen({ isActive }: { isActive: boolean }) {
   return (
     <div className="w-full h-full bg-[#0A0A0A] flex flex-col overflow-hidden pt-[16%]">
       <div className="flex items-center justify-between px-[6%] py-[6%] border-b border-white/5 bg-white/[0.01]">
@@ -1127,9 +1130,9 @@ function DashboardScreen() {
              <svg className="absolute inset-0 w-full h-full transform -rotate-90">
                <circle cx="50%" cy="50%" r="42%" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8%" />
                <motion.circle 
+                  key={isActive ? 'in' : 'out'}
                  initial={{ pathLength: 0 }}
-                 whileInView={{ pathLength: 0.15 }}
-                 viewport={{ once: true }}
+                  animate={isActive ? { pathLength: 0.15 } : { pathLength: 0 }}
                  transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
                  cx="50%" cy="50%" r="42%" fill="none" stroke="#D4FF00" strokeWidth="8%" strokeLinecap="round"
                />
@@ -1151,11 +1154,11 @@ function DashboardScreen() {
                  <div className="font-semibold text-white mb-2" style={{ fontSize: "clamp(10px, 4%, 16px)" }}>{m.val}</div>
                  <div className="w-full h-[3px] bg-white/10 rounded-full overflow-hidden">
                     <motion.div 
+                       key={`bar-${i}-${isActive ? 'in' : 'out'}`}
                       className="h-full rounded-full" 
                       style={{ backgroundColor: m.col }}
                       initial={{ width: "0%" }}
-                      whileInView={{ width: m.pct }}
-                      viewport={{ once: true }}
+                       animate={isActive ? { width: m.pct } : { width: "0%" }}
                       transition={{ duration: 0.9, delay: i * 0.08, ease: [0.22, 1, 0.36, 1] }}
                     />
                  </div>
@@ -1175,7 +1178,7 @@ function DashboardScreen() {
   );
 }
 
-function TimelineScreen() {
+function TimelineScreen({ isActive }: { isActive: boolean }) {
   return (
     <div className="w-full h-full bg-[#0A0A0A] flex flex-col p-[6%] pt-[16%]">
        <div className="flex items-center gap-2 mb-[8%] mt-[4%]">
@@ -1212,22 +1215,22 @@ function TimelineScreen() {
               strokeDasharray="4 4"
             />
             <motion.path 
+              key={isActive ? 'in' : 'out'}
               d="M0,20 Q25,30 50,60 T100,90" 
               fill="none" 
               stroke="#D4FF00" 
               strokeWidth="3"
               initial={{ pathLength: 0 }}
-              whileInView={{ pathLength: 1 }}
-              viewport={{ once: true }}
+              animate={isActive ? { pathLength: 1 } : { pathLength: 0 }}
               transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
             />
           </svg>
           <motion.div 
+             key={`dot-${isActive ? 'in' : 'out'}`}
             className="absolute bg-[#D4FF00] rounded-full border-2 border-[#1C1C1E] shadow-[0_0_15px_#D4FF00]"
             style={{ width: "8%", aspectRatio: "1", right: "0%", bottom: "10%", x: "50%", y: "50%" }}
             initial={{ scale: 0 }}
-            whileInView={{ scale: 1 }}
-            viewport={{ once: true }}
+             animate={isActive ? { scale: 1 } : { scale: 0 }}
             transition={{ delay: 1.2, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
           />
        </div>
@@ -1237,23 +1240,26 @@ function TimelineScreen() {
 
 function getScrollRanges(index: number, total: number) {
   // Peaks at [0.15, 0.50, 0.85] for 3 stories.
-  // Wider fade (0.20) so consecutive stories crossfade smoothly without a gap.
-  const FADE = 0.20;
+  // FADE=0.30 gives a 0.60-wide crossfade window between adjacent stories
+  // (visible overlap between peak-0.30 and peak+0.30), producing a slow,
+  // deliberate fade as the user scrolls.
+  const FADE = 0.30;
   const peak = total === 1 ? 0.5 : 0.15 + (index / (total - 1)) * 0.70;
   const inputPoints = [Math.max(0, peak - FADE), peak, Math.min(1, peak + FADE)];
   const opacityOut = [0, 1, 0];
-  const yOut = [28, 0, -28];
-  return { input: inputPoints, opacity: opacityOut, y: yOut };
+  return { input: inputPoints, opacity: opacityOut };
 }
 
 function PhoneScreen({
   children,
   layerIndex,
   scrollYProgress,
+  isActive,
 }: {
   children: React.ReactNode;
   layerIndex: number;
   scrollYProgress: any;
+  isActive: boolean;
 }) {
   const { input, opacity: opacityOut } = getScrollRanges(layerIndex, STORY.length);
 
@@ -1262,13 +1268,14 @@ function PhoneScreen({
   const peak = 0.15 + (layerIndex / (STORY.length - 1)) * 0.70;
   const pointerEvents = useTransform(
     scrollYProgress,
-    (v: number) => Math.abs(v - peak) < 0.15 ? "auto" : "none"
+    (v: number) => Math.abs(v - peak) < 0.20 ? 'auto' : 'none'
   );
 
   return (
     <motion.div
       style={{ opacity, pointerEvents }}
       className="absolute inset-0 w-full h-full bg-[#0C0C0D] overflow-hidden rounded-[1.8rem] z-10"
+      data-active={isActive}
     >
       {children}
     </motion.div>
@@ -1300,15 +1307,36 @@ function StickyScrollFeatures() {
     offset: ['start start', 'end end'],
   });
 
+  // Smooth scroll progress: this is the key to eliminating jitter on mobile.
+  // Motion docs recommend useSpring for interpolated, hardware-friendly values.
+  const smoothProgress = useSpring(scrollYProgress, {
+    stiffness: 80,
+    damping: 25,
+    restDelta: 0.001,
+  });
+
+  // Track which story is currently active so PhoneScreen can fire internals.
+  const [activeIndex, setActiveIndex] = useState(0);
+  useMotionValueEvent(smoothProgress, 'change', (v) => {
+    // Peaks are at 0.15, 0.50, 0.85. Round to nearest peak.
+    const peaks = [0.15, 0.50, 0.85];
+    let nearest = 0;
+    let bestDist = Infinity;
+    peaks.forEach((p, i) => {
+      const d = Math.abs(v - p);
+      if (d < bestDist) { bestDist = d; nearest = i; }
+    });
+    if (nearest !== activeIndex) setActiveIndex(nearest);
+  });
+
   return (
     <section
       ref={containerRef}
       className="relative bg-[#0A0A0B] text-zinc-50 border-t border-zinc-900"
-      style={{ height: `${STORY.length * 100}vh` }}
+      style={{ height: `${STORY.length * 120}vh` }}
     >
       <div className="sticky top-0 h-[100dvh] w-full overflow-hidden">
         <div className="h-full w-full max-w-7xl mx-auto px-6 lg:px-16 py-6 lg:py-0 flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-16">
-          {/* Text panel — sticky with the phone, crossfades through the 3 stories */}
           <div className="relative w-full lg:w-[45%] h-[26vh] lg:h-full flex items-center order-1 shrink-0 lg:shrink">
             {STORY.map((step, i) => (
               <StickyStoryText
@@ -1316,23 +1344,23 @@ function StickyScrollFeatures() {
                 step={step}
                 index={i}
                 total={STORY.length}
-                scrollYProgress={scrollYProgress}
+                scrollYProgress={smoothProgress}
               />
             ))}
           </div>
 
-          {/* Phone panel — stays pinned in the sticky viewport */}
           <div className="relative flex-1 min-h-0 w-full lg:w-[45%] lg:flex-none lg:h-full flex items-center justify-center order-2">
             <PhoneFrame widthClass="w-[clamp(140px,24dvh,200px)] lg:w-[clamp(200px,15vw,280px)]">
               {STORY.map((_, i) => (
                 <PhoneScreen
                   key={i}
                   layerIndex={i}
-                  scrollYProgress={scrollYProgress}
+                  scrollYProgress={smoothProgress}
+                  isActive={activeIndex === i}
                 >
-                  {i === 0 && <AICoachScreen />}
-                  {i === 1 && <DashboardScreen />}
-                  {i === 2 && <TimelineScreen />}
+                  {i === 0 && <AICoachScreen isActive={activeIndex === 0} />}
+                  {i === 1 && <DashboardScreen isActive={activeIndex === 1} />}
+                  {i === 2 && <TimelineScreen isActive={activeIndex === 2} />}
                 </PhoneScreen>
               ))}
             </PhoneFrame>
@@ -1356,7 +1384,8 @@ function StickyStoryText({
 }) {
   const ranges = getScrollRanges(index, total);
   const opacity = useTransform(scrollYProgress, ranges.input, ranges.opacity);
-  const y = useTransform(scrollYProgress, ranges.input, [24, 0, -24]);
+  // Smaller travel range for subtle motion — no big jumps in/out
+  const y = useTransform(scrollYProgress, ranges.input, [16, 0, -16]);
 
   return (
     <motion.div
