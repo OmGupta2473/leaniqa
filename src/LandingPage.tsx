@@ -1296,7 +1296,7 @@ function PhoneScreen({ children }: { children: React.ReactNode }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
       className="absolute inset-0 w-full h-full bg-[#0C0C0D] overflow-hidden rounded-[1.8rem]"
     >
       {children}
@@ -1325,6 +1325,8 @@ const STORY = [
 function StickyScrollFeatures() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [displayIndex, setDisplayIndex] = useState(0);
+  const [showContent, setShowContent] = useState(false);
   const [hasEntered, setHasEntered] = useState(false);
 
   useEffect(() => {
@@ -1343,17 +1345,15 @@ function StickyScrollFeatures() {
         ? Math.max(0, Math.min(1, -rect.top / scrollRange))
         : 0;
 
-      // Flip hasEntered the first time the section top reaches or passes the
-      // viewport top — i.e., the sticky wrapper pins. Before this, the story
-      // section renders nothing, so first-load animations don't play offscreen.
       if (!entered && rect.top <= 0) {
         entered = true;
         setHasEntered(true);
       }
 
-      // Pre-trigger: fires ~6% earlier so the change begins as the user
-      // approaches the end of a story, not after they cross it.
-      const idx = Math.min(Math.floor((p + 0.06) * STORY.length), STORY.length - 1);
+      const idx = Math.min(
+        Math.floor((p + 0.06) * STORY.length),
+        STORY.length - 1
+      );
       if (idx !== lastIdx) {
         lastIdx = idx;
         setActiveIndex(idx);
@@ -1366,6 +1366,19 @@ function StickyScrollFeatures() {
     return () => cancelAnimationFrame(rafId);
   }, []);
 
+  // Content phasing: when activeIndex changes (or hasEntered flips true for the
+  // first time), hide phone content, wait 400ms for the outer text to appear,
+  // then swap displayIndex and show new content.
+  useEffect(() => {
+    if (!hasEntered) return;
+    setShowContent(false);
+    const t = setTimeout(() => {
+      setDisplayIndex(activeIndex);
+      setShowContent(true);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [activeIndex, hasEntered]);
+
   return (
     <section
       ref={containerRef}
@@ -1374,7 +1387,7 @@ function StickyScrollFeatures() {
     >
       <div className="sticky top-0 h-[100dvh] w-full overflow-hidden">
         <div className="h-full w-full max-w-7xl mx-auto px-6 lg:px-16 py-6 lg:py-0 flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-16">
-          {/* Text panel */}
+          {/* Text panel — crossfades on activeIndex change */}
           <div className="relative w-full lg:w-[45%] h-[26vh] lg:h-full flex items-center order-1 shrink-0 lg:shrink">
             <AnimatePresence mode="wait">
               {hasEntered && (
@@ -1386,15 +1399,19 @@ function StickyScrollFeatures() {
             </AnimatePresence>
           </div>
 
-          {/* Phone panel */}
+          {/* Phone panel — permanent empty base + delayed content layer */}
           <div className="relative flex-1 min-h-0 w-full lg:w-[45%] lg:flex-none lg:h-full flex items-center justify-center order-2">
             <PhoneFrame widthClass="w-[clamp(140px,24dvh,200px)] lg:w-[clamp(200px,15vw,280px)]">
+              {/* Permanent empty base — always visible, no key */}
+              <div className="absolute inset-0 bg-[#0C0C0D] rounded-[1.8rem]" />
+
+              {/* Content layer — mounts only when showContent */}
               <AnimatePresence mode="wait">
-                {hasEntered && (
-                  <PhoneScreen key={activeIndex}>
-{activeIndex === 0 && <AICoachScreen />}
-                  {activeIndex === 1 && <DashboardScreen />}
-                  {activeIndex === 2 && <TimelineScreen />}
+                {showContent && (
+                  <PhoneScreen key={displayIndex}>
+                    {displayIndex === 0 && <AICoachScreen />}
+                    {displayIndex === 1 && <DashboardScreen />}
+                    {displayIndex === 2 && <TimelineScreen />}
                   </PhoneScreen>
                 )}
               </AnimatePresence>
