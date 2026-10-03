@@ -1298,23 +1298,29 @@ function TimelineScreen({ isActive }: { isActive: boolean }) {
 }
 
 function getScrollRanges(index: number, total: number) {
-  // Sequential (non-overlapping) fades.
-  //
-  // The scroll timeline [0, 1] is split into `total` equal segments, one per
-  // story. Within each segment:
-  //   - first 30% of segment: fade in from 0 -> 1
-  //   - middle 45% of segment: hold at 1
-  //   - final 25% of segment: fade out from 1 -> 0
-  //
-  // Story N's fade-out ENDS exactly when story N+1's fade-in BEGINS, so the
-  // two never overlap. At the boundary progress value, both are at opacity 0
-  // for a single frame - this is the "cut" between stories.
+  const segmentSize = 1 / total;
+
+  // Story 0 starts fully visible at progress 0 so the section is never blank
+  // when it first enters the viewport or on initial mount.
+  if (index === 0) {
+    const holdEnd = segmentSize * 0.75;
+    const fadeOutEnd = segmentSize;
+    return {
+      input: [0, holdEnd, fadeOutEnd],
+      opacity: [1, 1, 0],
+      y: [0, 0, -8],
+    };
+  }
+
+  // Stories 1..N-1: fade in during the first 30% of their segment, hold for
+  // 45%, fade out during the final 25%. Non-overlapping with the previous
+  // story's fade-out window (see commit 7830474).
   //
   // For 3 stories, segment = 1/3 = 0.333:
-  //   Story 0: input [0.000, 0.100, 0.250, 0.333], opacity [0, 1, 1, 0]
   //   Story 1: input [0.333, 0.433, 0.583, 0.666], opacity [0, 1, 1, 0]
   //   Story 2: input [0.666, 0.766, 0.916, 1.000], opacity [0, 1, 1, 0]
-  const segmentSize = 1 / total;
+  // The boundary at p=0.333 has both story 0 and story 1 at opacity 0 for a
+  // single frame - the same intentional "cut" behavior as before.
   const start = index * segmentSize;
   const fadeInEnd = start + segmentSize * 0.30;
   const holdEnd = fadeInEnd + segmentSize * 0.45;
@@ -1382,6 +1388,8 @@ function StickyScrollFeatures() {
     const el = containerRef.current;
     if (!el) return;
 
+    let first = true;
+
     const update = () => {
       const rect = el.getBoundingClientRect();
       const viewportH = window.innerHeight;
@@ -1395,7 +1403,16 @@ function StickyScrollFeatures() {
       scrollProgress.set(p);
       // TEMPORARY DEBUG - remove after fix is confirmed
       // eslint-disable-next-line no-console
-      console.log('[story] progress', p.toFixed(3), 'rect.top', Math.round(rect.top), 'range', Math.round(scrollRange));
+      console.log(
+        '[story]',
+        first ? 'MOUNT' : 'scroll',
+        'p=', p.toFixed(3),
+        'rect.top=', Math.round(rect.top),
+        'rect.height=', Math.round(rect.height),
+        'viewportH=', viewportH,
+        'range=', Math.round(scrollRange)
+      );
+      first = false;
     };
 
     update();
