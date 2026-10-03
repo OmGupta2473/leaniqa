@@ -1062,7 +1062,7 @@ function AICoachScreen() {
         <motion.div
           initial={{ opacity: 0, x: 24, y: 12 }}
           animate={{ opacity: 1, x: 0, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.15, ease: bubbleEase }}
+          transition={{ duration: 0.30, delay: 0.05, ease: bubbleEase }}
           className="self-end bg-white/10 rounded-[24px] rounded-tr-sm px-[5%] py-[4%] max-w-[85%]"
         >
           <p className="text-white" style={{ fontSize: "clamp(9px, 3.5%, 14px)" }}>
@@ -1074,14 +1074,14 @@ function AICoachScreen() {
         <motion.div
           initial={{ opacity: 0, x: -24, y: 12 }}
           animate={{ opacity: 1, x: 0, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.5, ease: bubbleEase }}
+          transition={{ duration: 0.35, delay: 0.15, ease: bubbleEase }}
           className="self-start bg-[#1C1C1E] border border-white/10 rounded-[24px] rounded-tl-sm px-[5%] py-[5%] max-w-[90%]"
         >
           {/* Header */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.3, delay: 0.75 }}
+            transition={{ duration: 0.22, delay: 0.25 }}
             className="flex items-center gap-[3%] mb-[6%]"
           >
             <div className="w-[12%] aspect-square rounded-full bg-[#378ADD]/20 flex items-center justify-center">
@@ -1094,7 +1094,7 @@ function AICoachScreen() {
           <motion.p
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: 0.9 }}
+            transition={{ duration: 0.25, delay: 0.32 }}
             className="text-white/90 mb-[6%] leading-relaxed"
             style={{ fontSize: "clamp(9px, 3.5%, 14px)" }}
           >
@@ -1105,7 +1105,7 @@ function AICoachScreen() {
           <motion.div
             initial={{ opacity: 0, scale: 0.94, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 1.05, ease: bubbleEase }}
+            transition={{ duration: 0.30, delay: 0.42, ease: bubbleEase }}
             className="bg-black/40 rounded-lg p-[5%] flex justify-between mb-[6%] border border-white/5"
           >
             <div className="text-center flex-1">
@@ -1123,7 +1123,7 @@ function AICoachScreen() {
           <motion.p
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: 1.3 }}
+            transition={{ duration: 0.25, delay: 0.52 }}
             className="text-white/80 leading-relaxed"
             style={{ fontSize: "clamp(8.5px, 3.2%, 13px)" }}
           >
@@ -1136,7 +1136,7 @@ function AICoachScreen() {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 1.5 }}
+        transition={{ duration: 0.30, delay: 0.62 }}
         className="absolute bottom-0 w-full p-[5%] border-t border-white/5 bg-[#1C1C1E]/90 backdrop-blur-md"
       >
         <div className="bg-black rounded-full px-[5%] py-[3%] flex items-center justify-between border border-white/10">
@@ -1151,10 +1151,10 @@ function AICoachScreen() {
 }
 
 function DashboardScreen() {
-  const eatenKcal = useDemoNumber(1420, 1200, true, 0);
-  const proteinVal = useDemoNumber(80, 900, true, 0);
-  const fatVal = useDemoNumber(45, 900, true, 0);
-  const carbsVal = useDemoNumber(120, 900, true, 0);
+  const eatenKcal = useDemoNumber(1420, 900, true, 0);
+  const proteinVal = useDemoNumber(80, 700, true, 0);
+  const fatVal = useDemoNumber(45, 700, true, 0);
+  const carbsVal = useDemoNumber(120, 700, true, 0);
   const easeOut = [0.22, 1, 0.36, 1] as const;
 
   return (
@@ -1179,7 +1179,7 @@ function DashboardScreen() {
             <motion.circle
               initial={{ pathLength: 0 }}
               animate={{ pathLength: 0.645 }}
-              transition={{ duration: 1.3, delay: 0.15, ease: easeOut }}
+              transition={{ duration: 0.9, delay: 0.05, ease: easeOut }}
               cx="50%" cy="50%" r="42%" fill="none" stroke="#D4FF00" strokeWidth="8%" strokeLinecap="round"
             />
           </svg>
@@ -1204,7 +1204,7 @@ function DashboardScreen() {
                   style={{ backgroundColor: m.col }}
                   initial={{ width: '0%' }}
                   animate={{ width: m.pct }}
-                  transition={{ duration: 0.85, delay: 0.4 + i * 0.1, ease: easeOut }}
+                  transition={{ duration: 0.6, delay: 0.2 + i * 0.06, ease: easeOut }}
                 />
               </div>
             </div>
@@ -1216,7 +1216,7 @@ function DashboardScreen() {
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.9, ease: easeOut }}
+          transition={{ duration: 0.35, delay: 0.5, ease: easeOut }}
           className="bg-white/5 border border-white/5 rounded-[20px] p-[6%]"
         >
           <div className="font-semibold text-white/50 uppercase tracking-wider mb-2" style={{ fontSize: "clamp(7px, 2.8%, 11px)" }}>Adjusted Target</div>
@@ -1229,8 +1229,8 @@ function DashboardScreen() {
 }
 
 function TimelineScreen() {
-  const projectedWeight = useDemoNumber(72.5, 1200, true, 1);
-  const percentDrop = useDemoNumber(12, 900, true, 0);
+  const projectedWeight = useDemoNumber(72.5, 900, true, 1);
+  const percentDrop = useDemoNumber(12, 700, true, 0);
   const easeOut = [0.22, 1, 0.36, 1] as const;
 
   return (
@@ -1249,7 +1249,7 @@ function TimelineScreen() {
           <motion.div
             initial={{ opacity: 0, scale: 0.85, y: 6 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.4, ease: easeOut }}
+            transition={{ duration: 0.3, delay: 0.2, ease: easeOut }}
             className="flex items-center bg-[#D4FF00]/10 text-[#D4FF00] px-[3%] py-[1%] rounded-full mb-[2%]"
             style={{ fontSize: "clamp(8px, 3.2%, 13px)" }}
           >
@@ -1274,7 +1274,7 @@ function TimelineScreen() {
             strokeWidth="3"
             initial={{ pathLength: 0 }}
             animate={{ pathLength: 1 }}
-            transition={{ duration: 1.6, delay: 0.3, ease: easeOut }}
+            transition={{ duration: 1.0, delay: 0.15, ease: easeOut }}
           />
         </svg>
 
@@ -1283,7 +1283,7 @@ function TimelineScreen() {
           style={{ width: "8%", aspectRatio: "1", right: "0%", bottom: "10%", x: "50%", y: "50%" }}
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 1.6, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+          transition={{ delay: 1.05, duration: 0.4, ease: [0.34, 1.56, 0.64, 1] }}
         />
       </div>
     </div>
@@ -1296,7 +1296,7 @@ function PhoneScreen({ children }: { children: React.ReactNode }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
       className="absolute inset-0 w-full h-full bg-[#0C0C0D] overflow-hidden rounded-[1.8rem]"
     >
       {children}
@@ -1351,7 +1351,9 @@ function StickyScrollFeatures() {
         setHasEntered(true);
       }
 
-      const idx = Math.min(Math.floor(p * STORY.length), STORY.length - 1);
+      // +0.04 shifts the boundary ~4% earlier so the change fires as the user
+      // approaches the end of a story, not after they cross it. Feels responsive.
+      const idx = Math.min(Math.floor((p + 0.04) * STORY.length), STORY.length - 1);
       if (idx !== lastIdx) {
         lastIdx = idx;
         setActiveIndex(idx);
@@ -1407,10 +1409,10 @@ function StickyScrollFeatures() {
 function StickyStoryText({ step }: { step: { title: string; subtitle: string } }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -24 }}
-      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+      exit={{ opacity: 0, y: -14 }}
+      transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
       className="absolute inset-0 flex flex-col items-center justify-center text-center lg:items-start lg:text-left"
     >
       <h3 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-semibold leading-[1.15] tracking-tight text-white">
