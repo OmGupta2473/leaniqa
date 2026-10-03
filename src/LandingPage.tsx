@@ -1235,55 +1235,14 @@ function TimelineScreen() {
   );
 }
 
-/* ─────────────────────────────────────────────
-   ANIMATED PHONE
-───────────────────────────────────────────── */
-function PremiumPhone({ scrollYProgress: _ }: { scrollYProgress: any }) {
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const mouseXSpring = useSpring(x, { stiffness: 160, damping: 28 });
-  const mouseYSpring = useSpring(y, { stiffness: 160, damping: 28 });
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["6deg", "-6deg"]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-6deg", "6deg"]);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    x.set((e.clientX - r.left) / r.width - 0.5);
-    y.set((e.clientY - r.top) / r.height - 0.5);
-  };
-
-  return (
-    <motion.div
-      onMouseMove={handleMouseMove}
-      onMouseLeave={() => { x.set(0); y.set(0); }}
-      style={{ rotateX, rotateY, transformStyle: "preserve-3d", willChange: "transform" }}
-    >
-      <PhoneFrame>
-        <PhoneScreen layerIndex={0} scrollYProgress={_}>
-          <AICoachScreen />
-        </PhoneScreen>
-        <PhoneScreen layerIndex={1} scrollYProgress={_}>
-          <DashboardScreen />
-        </PhoneScreen>
-        <PhoneScreen layerIndex={2} scrollYProgress={_}>
-          <TimelineScreen />
-        </PhoneScreen>
-      </PhoneFrame>
-    </motion.div>
-  );
-}
-
 function getScrollRanges(index: number, total: number) {
-  // Peaks are inset from 0 and 1 so every item gets a full symmetric fade window.
-  // With total=3: peaks = [0.15, 0.50, 0.85]
-  // Each item is fully visible at its peak and fully invisible 0.18 either side.
-  const FADE = 0.17; // half-width of the crossfade window
+  // Peaks at [0.15, 0.50, 0.85] for 3 stories.
+  // Wider fade (0.20) so consecutive stories crossfade smoothly without a gap.
+  const FADE = 0.20;
   const peak = total === 1 ? 0.5 : 0.15 + (index / (total - 1)) * 0.70;
-
-  const inputPoints  = [Math.max(0, peak - FADE), peak, Math.min(1, peak + FADE)];
-  const opacityOut   = [0, 1, 0];
-  const yOut         = [28, 0, -28];
-
+  const inputPoints = [Math.max(0, peak - FADE), peak, Math.min(1, peak + FADE)];
+  const opacityOut = [0, 1, 0];
+  const yOut = [28, 0, -28];
   return { input: inputPoints, opacity: opacityOut, y: yOut };
 }
 
@@ -1334,154 +1293,85 @@ const STORY = [
   },
 ];
 
-/* ─────────────────────────────────────────────
-   STICKY SCROLL
-───────────────────────────────────────────── */
-function MobilePhoneReveal({ step }: { step: number }) {
-  const [hasEntered, setHasEntered] = useState(false);
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-100px" }}
-      onViewportEnter={() => setHasEntered(true)}
-      transition={{ duration: 0.6 }}
-      className="flex justify-center"
-    >
-      <PhoneFrame>
-        {hasEntered && (
-           <>
-             {step === 0 && <AICoachScreen />}
-             {step === 1 && <DashboardScreen />}
-             {step === 2 && <TimelineScreen />}
-           </>
-        )}
-      </PhoneFrame>
-    </motion.div>
-  );
-}
+function StickyScrollFeatures() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ['start start', 'end end'],
+  });
 
-/* ─────────────────────────────────────────────
-   MOBILE STORY (Updated for Single-Screen View)
-───────────────────────────────────────────── */
-function MobileStory() {
   return (
-    <div className="lg:hidden flex flex-col">
-      {STORY.map((step, i) => (
-        // Each block now takes up exactly one screen height minimum
-        <div key={i} className="min-h-[100dvh] flex flex-col px-6 pt-24 pb-12">
-          
-          {/* Top Text Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.5 }}
-            className="mb-10"
-          >
-            <h3 className="text-3xl sm:text-4xl font-semibold leading-[1.1] text-zinc-50 tracking-tight">
-              {step.title}
-            </h3>
-            <p className="mt-4 text-base sm:text-lg text-zinc-400 leading-relaxed">
-              {step.subtitle}
-            </p>
-          </motion.div>
-          
-          {/* Bottom Phone Section - Centered in remaining space */}
-          <div className="flex-1 flex items-center justify-center">
-            <MobilePhoneReveal step={i} />
+    <section
+      ref={containerRef}
+      className="relative bg-[#0A0A0B] text-zinc-50 border-t border-zinc-900"
+      style={{ height: `${STORY.length * 100}vh` }}
+    >
+      <div className="sticky top-0 h-[100dvh] w-full overflow-hidden">
+        <div className="h-full w-full max-w-7xl mx-auto px-6 lg:px-16 py-6 lg:py-0 flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-16">
+          {/* Text panel — sticky with the phone, crossfades through the 3 stories */}
+          <div className="relative w-full lg:w-[45%] h-[26vh] lg:h-full flex items-center order-1 shrink-0 lg:shrink">
+            {STORY.map((step, i) => (
+              <StickyStoryText
+                key={i}
+                step={step}
+                index={i}
+                total={STORY.length}
+                scrollYProgress={scrollYProgress}
+              />
+            ))}
           </div>
 
+          {/* Phone panel — stays pinned in the sticky viewport */}
+          <div className="relative flex-1 min-h-0 w-full lg:w-[45%] lg:flex-none lg:h-full flex items-center justify-center order-2">
+            <PhoneFrame widthClass="w-[clamp(140px,24dvh,200px)] lg:w-[clamp(200px,15vw,280px)]">
+              {STORY.map((_, i) => (
+                <PhoneScreen
+                  key={i}
+                  layerIndex={i}
+                  scrollYProgress={scrollYProgress}
+                >
+                  {i === 0 && <AICoachScreen />}
+                  {i === 1 && <DashboardScreen />}
+                  {i === 2 && <TimelineScreen />}
+                </PhoneScreen>
+              ))}
+            </PhoneFrame>
+          </div>
         </div>
-      ))}
-    </div>
+      </div>
+    </section>
   );
 }
-function StoryTextItem({
+
+function StickyStoryText({
   step,
   index,
+  total,
   scrollYProgress,
 }: {
-  step: any;
+  step: { title: string; subtitle: string };
   index: number;
+  total: number;
   scrollYProgress: any;
 }) {
-  const { input, opacity: opacityOut, y: yOut } = getScrollRanges(index, STORY.length);
-
-  const opacity = useTransform(scrollYProgress, input, opacityOut);
-  const y = useTransform(scrollYProgress, input, yOut);
-
-  const peak = 0.15 + (index / (STORY.length - 1)) * 0.70;
-  const pointerEvents = useTransform(
-    scrollYProgress,
-    (v: number) => Math.abs(v - peak) < 0.1 ? "auto" : "none"
-  );
+  const ranges = getScrollRanges(index, total);
+  const opacity = useTransform(scrollYProgress, ranges.input, ranges.opacity);
+  const y = useTransform(scrollYProgress, ranges.input, [24, 0, -24]);
 
   return (
     <motion.div
-      style={{ opacity, y, pointerEvents }}
-      className="absolute inset-x-0 top-1/2 -translate-y-1/2 pr-8"
+      style={{ opacity, y }}
+      className="absolute inset-0 flex flex-col items-center justify-center text-center lg:items-start lg:text-left"
     >
-      <h3 className="text-4xl lg:text-5xl xl:text-6xl font-semibold leading-[1.1] text-zinc-50 tracking-tight">
+      <h3 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-semibold leading-[1.15] tracking-tight text-white">
         {step.title}
       </h3>
-      <p className="mt-6 text-lg text-zinc-400 leading-relaxed max-w-md">
+      <p className="mt-3 lg:mt-5 text-sm sm:text-base lg:text-lg text-zinc-400 leading-relaxed max-w-md">
         {step.subtitle}
       </p>
     </motion.div>
   );
 }
-
-function DesktopStory() {
-  return (
-    <div className="hidden lg:flex flex-col py-24 gap-32">
-      {STORY.map((step, i) => (
-        <div key={i} className="min-h-screen flex items-center px-6 lg:px-16 max-w-7xl mx-auto w-full">
-          <div className={`flex w-full items-center justify-between gap-24 ${i % 2 === 1 ? 'flex-row-reverse' : 'flex-row'}`}>
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-200px" }}
-              transition={{ duration: 0.6 }}
-              className="w-[47%]"
-            >
-              <h3 className="text-4xl lg:text-5xl font-semibold leading-[1.1] text-zinc-50 tracking-tight">
-                {step.title}
-              </h3>
-              <p className="mt-6 text-lg lg:text-xl text-zinc-400 leading-relaxed">
-                {step.subtitle}
-              </p>
-            </motion.div>
-
-            <motion.div 
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-200px" }}
-              transition={{ duration: 0.8 }}
-              className="w-[47%] flex items-center justify-center"
-            >
-              <PhoneFrame>
-                 {i === 0 && <AICoachScreen />}
-                 {i === 1 && <DashboardScreen />}
-                 {i === 2 && <TimelineScreen />}
-              </PhoneFrame>
-            </motion.div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function StickyScrollFeatures() {
-  return (
-    <section className="bg-[#0A0A0B] text-zinc-50 border-t border-zinc-900">
-      <DesktopStory />
-      <MobileStory />
-    </section>
-  );
-}
-
 /* ─────────────────────────────────────────────
    LANDING PAGE
 ───────────────────────────────────────────── */
