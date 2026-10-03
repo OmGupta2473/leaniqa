@@ -640,17 +640,34 @@ function HowItWorks() {
   ];
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start center", "end center"]
-  });
+  const lineHeightProgress = useMotionValue(0);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    let rafId: number;
+    const update = () => {
+      const rect = el.getBoundingClientRect();
+      const viewportH = window.innerHeight;
+      const scrollRange = rect.height - viewportH;
+      // Use center offset for this timeline: progress starts when section
+      // center hits viewport center
+      const centerOffset = rect.top + rect.height / 2 - viewportH / 2;
+      const p = scrollRange > 0
+        ? Math.max(0, Math.min(1, (-centerOffset) / scrollRange + 0.5))
+        : 0;
+      lineHeightProgress.set(p);
+      rafId = requestAnimationFrame(update);
+    };
+    update();
+    return () => cancelAnimationFrame(rafId);
+  }, [lineHeightProgress]);
 
-  const lineHeight = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
+  const lineHeight = useTransform(lineHeightProgress, [0, 1], ["0%", "100%"]);
 
   return (
     <section className="py-10 sm:py-16 px-6 border-t border-zinc-900 bg-[#0A0A0B] overflow-x-clip" id="how-it-works">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-20 max-w-2xl mx-auto">
+        <div className="hidden lg:block text-center mb-20 max-w-2xl mx-auto">
           <Reveal>
             <p className="text-xs font-mono text-[#D4FF00] uppercase tracking-widest mb-2">
               THE LEAN SYSTEM
@@ -780,16 +797,32 @@ function MobileHowItWorks({ steps }: { steps: any[] }) {
       className="relative"
       style={{ height: `${(total + 2) * 100}vh` }}
     >
-      <div className="sticky top-0 h-[100dvh] w-full overflow-hidden">
-        {steps.map((step, i) => (
-          <StackedStep
-            key={i}
-            step={step}
-            index={i}
-            total={total}
-            progress={smooth}
-          />
-        ))}
+      <div className="sticky top-0 h-[100dvh] w-full overflow-hidden flex flex-col">
+        {/* Sticky header */}
+        <div className="flex-shrink-0 px-6 pt-8 pb-6 text-center">
+          <p className="text-xs font-mono text-[#D4FF00] uppercase tracking-widest mb-2">
+            THE LEAN SYSTEM
+          </p>
+          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white mb-3 leading-tight">
+            Protein first. Excuses later.
+          </h2>
+          <p className="text-zinc-400 text-sm leading-relaxed">
+            Everything is designed to keep you accountable. No more guessing.
+          </p>
+        </div>
+
+        {/* Cards area — fills remaining space */}
+        <div className="relative flex-1 min-h-0 overflow-hidden">
+          {steps.map((step, i) => (
+            <StackedStep
+              key={i}
+              step={step}
+              index={i}
+              total={total}
+              progress={smooth}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -810,30 +843,46 @@ function StackedStep({
   const isLeft = index % 2 === 0;
   const xFrom = isLeft ? -140 : 140;
 
-  // Section is divided into (total + 1) equal scroll segments. Card `index`
-  // enters during segment `index` and pushes back during segment `index + 1`.
   const segmentSize = 1 / (total + 1);
   const entryStart = index * segmentSize;
-  const entryEnd = (index + 1) * segmentSize;
-  const pushEnd = Math.min(1, (index + 2) * segmentSize);
-  const entryHold = entryStart + (entryEnd - entryStart) * 0.55;
+  const entryCenter = entryStart + segmentSize * 0.8;   // 80% mark
+  const entryEnd = entryStart + segmentSize;            // 100% of entry window
+  const pushEnd = Math.min(1, entryStart + segmentSize * 2);
 
-  const xRange = isLast ? [entryStart, entryEnd] : [entryStart, entryEnd, pushEnd];
-  const xOut = isLast ? [xFrom, 0] : [xFrom, 0, 0];
-  const x = useTransform(progress, xRange, xOut);
+  // Non-last cards: 4-point curve through [entryStart, entryCenter, entryEnd, pushEnd]
+  // Last card:      2-point curve through [entryStart, entryCenter]
 
-  const yRange = isLast ? [entryStart, entryEnd] : [entryStart, entryEnd, pushEnd];
-  const yOut = isLast ? [56, 0] : [56, 0, -28];
-  const y = useTransform(progress, yRange, yOut);
+  const xRange = isLast
+    ? [entryStart, entryCenter]
+    : [entryStart, entryCenter, entryEnd, pushEnd];
+  const xOut = isLast
+    ? [xFrom, 0]
+    : [xFrom, 0, 0, 0];
 
-  const scaleRange = isLast ? [entryStart, entryEnd] : [entryStart, entryEnd, pushEnd];
-  const scaleOut = isLast ? [0.9, 1] : [0.9, 1, 0.92];
-  const scale = useTransform(progress, scaleRange, scaleOut);
+  const yRange = isLast
+    ? [entryStart, entryCenter]
+    : [entryStart, entryCenter, entryEnd, pushEnd];
+  const yOut = isLast
+    ? [56, 0]
+    : [56, 0, 0, -28];
+
+  const scaleRange = isLast
+    ? [entryStart, entryCenter]
+    : [entryStart, entryCenter, entryEnd, pushEnd];
+  const scaleOut = isLast
+    ? [0.9, 1]
+    : [0.9, 1, 1, 0.92];
 
   const opacityRange = isLast
-    ? [entryStart, entryHold, entryEnd]
-    : [entryStart, entryHold, entryEnd, pushEnd];
-  const opacityOut = isLast ? [0, 1, 1] : [0, 1, 1, 0.35];
+    ? [entryStart, entryCenter]
+    : [entryStart, entryCenter, entryEnd, pushEnd];
+  const opacityOut = isLast
+    ? [0, 1]
+    : [0, 1, 1, 0.3];
+
+  const x = useTransform(progress, xRange, xOut);
+  const y = useTransform(progress, yRange, yOut);
+  const scale = useTransform(progress, scaleRange, scaleOut);
   const opacity = useTransform(progress, opacityRange, opacityOut);
 
   return (
