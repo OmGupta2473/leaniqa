@@ -1053,204 +1053,247 @@ function PhoneFrame({
 ───────────────────────────────────────────── */
 
 function AICoachScreen({ isActive }: { isActive: boolean }) {
+  const bubbleEase = [0.22, 1, 0.36, 1] as const;
+
   return (
-    <motion.div
-      key={isActive ? 'a-in' : 'a-out'}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      className="w-full h-full bg-[#0A0A0A] flex flex-col overflow-hidden relative pt-[16%]"
-    >
+    <div className="w-full h-full bg-[#0A0A0A] flex flex-col overflow-hidden relative pt-[16%]">
       <div className="flex-1 p-[5%] flex flex-col justify-end gap-[4%] pb-[20%]">
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+
+        {/* User message */}
+        <motion.div
+          initial={false}
+          animate={isActive
+            ? { opacity: 1, y: 0, x: 0 }
+            : { opacity: 0, y: 12, x: 24 }}
+          transition={{ duration: 0.45, delay: isActive ? 0.15 : 0, ease: bubbleEase }}
           className="self-end bg-white/10 rounded-[24px] rounded-tr-sm px-[5%] py-[4%] max-w-[85%]"
         >
-           <p className="text-white" style={{ fontSize: "clamp(9px, 3.5%, 14px)" }}>2 roti + 1 bowl dal + 100g paneer</p>
+          <p className="text-white" style={{ fontSize: "clamp(9px, 3.5%, 14px)" }}>
+            2 roti + 1 bowl dal + 100g paneer
+          </p>
         </motion.div>
-        
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
+
+        {/* AI response card */}
+        <motion.div
+          initial={false}
+          animate={isActive
+            ? { opacity: 1, y: 0, x: 0 }
+            : { opacity: 0, y: 12, x: -24 }}
+          transition={{ duration: 0.5, delay: isActive ? 0.5 : 0, ease: bubbleEase }}
           className="self-start bg-[#1C1C1E] border border-white/10 rounded-[24px] rounded-tl-sm px-[5%] py-[5%] max-w-[90%]"
         >
-           <div className="flex items-center gap-[3%] mb-[6%]">
-             <div className="w-[12%] aspect-square rounded-full bg-[#378ADD]/20 flex items-center justify-center">
-               <Sparkles className="w-[60%] h-[60%] text-[#378ADD]" />
-             </div>
-             <span className="text-[#378ADD] font-semibold" style={{ fontSize: "clamp(8px, 3%, 12px)" }}>AI Coach</span>
-           </div>
-           <p className="text-white/90 mb-[6%] leading-relaxed" style={{ fontSize: "clamp(9px, 3.5%, 14px)" }}>Logged! Here is the breakdown:</p>
-           
-           <div className="bg-black/40 rounded-lg p-[5%] flex justify-between mb-[6%] border border-white/5">
-              <div className="text-center flex-1">
-                 <div className="text-white/50 uppercase tracking-wider mb-1" style={{ fontSize: "clamp(6px, 2.2%, 10px)" }}>Calories</div>
-                 <div className="text-[#FF4D1C] font-bold" style={{ fontSize: "clamp(12px, 5%, 20px)" }}>480</div>
-              </div>
-              <div className="w-[1px] bg-white/10 mx-2" />
-              <div className="text-center flex-1">
-                 <div className="text-white/50 uppercase tracking-wider mb-1" style={{ fontSize: "clamp(6px, 2.2%, 10px)" }}>Protein</div>
-                 <div className="text-[#D4FF00] font-bold" style={{ fontSize: "clamp(12px, 5%, 20px)" }}>28g</div>
-              </div>
-           </div>
-           
-           <p className="text-white/80 leading-relaxed" style={{ fontSize: "clamp(8.5px, 3.2%, 13px)" }}>You're 15g short on protein. I've adjusted your dinner target.</p>
+          {/* Header */}
+          <motion.div
+            initial={false}
+            animate={isActive ? { opacity: 1 } : { opacity: 0 }}
+            transition={{ duration: 0.3, delay: isActive ? 0.7 : 0 }}
+            className="flex items-center gap-[3%] mb-[6%]"
+          >
+            <div className="w-[12%] aspect-square rounded-full bg-[#378ADD]/20 flex items-center justify-center">
+              <Sparkles className="w-[60%] h-[60%] text-[#378ADD]" />
+            </div>
+            <span className="text-[#378ADD] font-semibold" style={{ fontSize: "clamp(8px, 3%, 12px)" }}>AI Coach</span>
+          </motion.div>
+
+          {/* "Logged!" text */}
+          <motion.p
+            initial={false}
+            animate={isActive ? { opacity: 1, y: 0 } : { opacity: 0, y: 6 }}
+            transition={{ duration: 0.35, delay: isActive ? 0.85 : 0 }}
+            className="text-white/90 mb-[6%] leading-relaxed"
+            style={{ fontSize: "clamp(9px, 3.5%, 14px)" }}
+          >
+            Logged! Here is the breakdown:
+          </motion.p>
+
+          {/* Macro summary box */}
+          <motion.div
+            initial={false}
+            animate={isActive
+              ? { opacity: 1, scale: 1, y: 0 }
+              : { opacity: 0, scale: 0.94, y: 8 }}
+            transition={{ duration: 0.4, delay: isActive ? 1.0 : 0, ease: bubbleEase }}
+            className="bg-black/40 rounded-lg p-[5%] flex justify-between mb-[6%] border border-white/5"
+          >
+            <div className="text-center flex-1">
+              <div className="text-white/50 uppercase tracking-wider mb-1" style={{ fontSize: "clamp(6px, 2.2%, 10px)" }}>Calories</div>
+              <div className="text-[#FF4D1C] font-bold" style={{ fontSize: "clamp(12px, 5%, 20px)" }}>480</div>
+            </div>
+            <div className="w-[1px] bg-white/10 mx-2" />
+            <div className="text-center flex-1">
+              <div className="text-white/50 uppercase tracking-wider mb-1" style={{ fontSize: "clamp(6px, 2.2%, 10px)" }}>Protein</div>
+              <div className="text-[#D4FF00] font-bold" style={{ fontSize: "clamp(12px, 5%, 20px)" }}>28g</div>
+            </div>
+          </motion.div>
+
+          {/* Coaching tip */}
+          <motion.p
+            initial={false}
+            animate={isActive ? { opacity: 1, y: 0 } : { opacity: 0, y: 6 }}
+            transition={{ duration: 0.35, delay: isActive ? 1.25 : 0 }}
+            className="text-white/80 leading-relaxed"
+            style={{ fontSize: "clamp(8.5px, 3.2%, 13px)" }}
+          >
+            You're 15g short on protein. I've adjusted your dinner target.
+          </motion.p>
         </motion.div>
       </div>
-      
-      <div className="absolute bottom-0 w-full p-[5%] border-t border-white/5 bg-[#1C1C1E]/90 backdrop-blur-md">
-         <div className="bg-black rounded-full px-[5%] py-[3%] flex items-center justify-between border border-white/10">
-            <span className="text-white/30" style={{ fontSize: "clamp(9px, 3.5%, 14px)" }}>Type your meal...</span>
-            <div className="w-[12%] aspect-square bg-[#D4FF00] rounded-full flex items-center justify-center">
-               <ArrowRight className="w-[50%] h-[50%] text-black" />
-            </div>
-         </div>
-      </div>
-    </motion.div>
+
+      {/* Input bar */}
+      <motion.div
+        initial={false}
+        animate={isActive ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+        transition={{ duration: 0.4, delay: isActive ? 1.45 : 0 }}
+        className="absolute bottom-0 w-full p-[5%] border-t border-white/5 bg-[#1C1C1E]/90 backdrop-blur-md"
+      >
+        <div className="bg-black rounded-full px-[5%] py-[3%] flex items-center justify-between border border-white/10">
+          <span className="text-white/30" style={{ fontSize: "clamp(9px, 3.5%, 14px)" }}>Type your meal...</span>
+          <div className="w-[12%] aspect-square bg-[#D4FF00] rounded-full flex items-center justify-center">
+            <ArrowRight className="w-[50%] h-[50%] text-black" />
+          </div>
+        </div>
+      </motion.div>
+    </div>
   );
 }
 
 function DashboardScreen({ isActive }: { isActive: boolean }) {
+  const eatenKcal = useDemoNumber(1420, 1200, isActive, 0);
+  const proteinVal = useDemoNumber(80, 900, isActive, 0);
+  const fatVal = useDemoNumber(45, 900, isActive, 0);
+  const carbsVal = useDemoNumber(120, 900, isActive, 0);
+  const easeOut = [0.22, 1, 0.36, 1] as const;
+
   return (
-    <motion.div
-      key={isActive ? 'd-in' : 'd-out'}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      className="w-full h-full bg-[#0A0A0A] flex flex-col overflow-hidden pt-[16%]"
-    >
+    <div className="w-full h-full bg-[#0A0A0A] flex flex-col overflow-hidden pt-[16%]">
       <div className="flex items-center justify-between px-[6%] py-[6%] border-b border-white/5 bg-white/[0.01]">
         <div className="flex items-center gap-[4%] w-full">
-           <div style={{ width: "12%", aspectRatio: "1", borderRadius: "50%", background: "#D4FF00", display: "flex", alignItems: "center", justifyContent: "center", color: "black", fontWeight: "bold", fontSize: "clamp(8px, 3.5%, 14px)" }}>L</div>
-           <div>
-             <div className="text-white font-semibold" style={{ fontSize: "clamp(10px, 4%, 16px)" }}>Today's Plan</div>
-             <div className="text-white/40" style={{ fontSize: "clamp(7px, 2.5%, 11px)" }}>Thursday, Oct 12</div>
-           </div>
-           <div className="ml-auto bg-white/5 px-[4%] py-[2%] rounded-full flex items-center">
-             <span className="text-[#FF4D1C] font-bold" style={{ fontSize: "clamp(8px, 3%, 12px)" }}>🔥 12</span>
-           </div>
+          <div style={{ width: "12%", aspectRatio: "1", borderRadius: "50%", background: "#D4FF00", display: "flex", alignItems: "center", justifyContent: "center", color: "black", fontWeight: "bold", fontSize: "clamp(8px, 3.5%, 14px)" }}>L</div>
+          <div>
+            <div className="text-white font-semibold" style={{ fontSize: "clamp(10px, 4%, 16px)" }}>Today's Plan</div>
+            <div className="text-white/40" style={{ fontSize: "clamp(7px, 2.5%, 11px)" }}>Thursday, Oct 12</div>
+          </div>
+          <div className="ml-auto bg-white/5 px-[4%] py-[2%] rounded-full flex items-center">
+            <span className="text-[#FF4D1C] font-bold" style={{ fontSize: "clamp(8px, 3%, 12px)" }}>🔥 12</span>
+          </div>
         </div>
       </div>
-      
+
       <div className="flex flex-col items-center justify-center py-[12%]">
-         <div className="relative w-[50%] aspect-square flex items-center justify-center mb-[8%]">
-             <svg className="absolute inset-0 w-full h-full transform -rotate-90">
-               <circle cx="50%" cy="50%" r="42%" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8%" />
-               <motion.circle 
-                 initial={{ pathLength: 0 }}
-                  whileInView={{ pathLength: 0.15 }}
-                  viewport={{ once: true }}
-                 transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
-                 cx="50%" cy="50%" r="42%" fill="none" stroke="#D4FF00" strokeWidth="8%" strokeLinecap="round"
-               />
-             </svg>
-             <div className="text-center mt-2">
-               <div className="font-bold text-white leading-none" style={{ fontSize: "clamp(24px, 10%, 40px)" }}>1,420</div>
-               <div className="text-white/40 uppercase tracking-widest mt-1" style={{ fontSize: "clamp(6px, 2.5%, 10px)" }}>Eaten / 2200</div>
-             </div>
-         </div>
-         
-         <div className="flex justify-between w-[85%]">
-             {[
-               { name: 'Protein', val: '80g', col: '#378ADD', pct: '70%' },
-               { name: 'Fat', val: '45g', col: '#FF4D1C', pct: '40%' },
-               { name: 'Carbs', val: '120g', col: '#D4FF00', pct: '85%' }
-             ].map((m, i) => (
-               <div key={i} className="text-center w-[28%]">
-                 <div className="uppercase text-white/40 tracking-wider mb-1" style={{ fontSize: "clamp(6px, 2.5%, 10px)" }}>{m.name}</div>
-                 <div className="font-semibold text-white mb-2" style={{ fontSize: "clamp(10px, 4%, 16px)" }}>{m.val}</div>
-                 <div className="w-full h-[3px] bg-white/10 rounded-full overflow-hidden">
-                    <motion.div 
-                      className="h-full rounded-full" 
-                      style={{ backgroundColor: m.col }}
-                      initial={{ width: "0%" }}
-                       whileInView={{ width: m.pct }}
-                       viewport={{ once: true }}
-                      transition={{ duration: 0.9, delay: i * 0.08, ease: [0.22, 1, 0.36, 1] }}
-                    />
-                 </div>
-               </div>
-             ))}
-         </div>
+        <div className="relative w-[50%] aspect-square flex items-center justify-center mb-[8%]">
+          <svg className="absolute inset-0 w-full h-full transform -rotate-90">
+            <circle cx="50%" cy="50%" r="42%" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8%" />
+            <motion.circle
+              initial={false}
+              animate={{ pathLength: isActive ? 0.645 : 0 }}
+              transition={{ duration: 1.3, delay: isActive ? 0.15 : 0, ease: easeOut }}
+              cx="50%" cy="50%" r="42%" fill="none" stroke="#D4FF00" strokeWidth="8%" strokeLinecap="round"
+            />
+          </svg>
+          <div className="text-center mt-2">
+            <div className="font-bold text-white leading-none tabular-nums" style={{ fontSize: "clamp(24px, 10%, 40px)" }}>{eatenKcal.toLocaleString()}</div>
+            <div className="text-white/40 uppercase tracking-widest mt-1" style={{ fontSize: "clamp(6px, 2.5%, 10px)" }}>Eaten / 2200</div>
+          </div>
+        </div>
+
+        <div className="flex justify-between w-[85%]">
+          {[
+            { name: 'Protein', val: proteinVal, col: '#378ADD', pct: '70%' },
+            { name: 'Fat', val: fatVal, col: '#FF4D1C', pct: '40%' },
+            { name: 'Carbs', val: carbsVal, col: '#D4FF00', pct: '85%' }
+          ].map((m, i) => (
+            <div key={i} className="text-center w-[28%]">
+              <div className="uppercase text-white/40 tracking-wider mb-1" style={{ fontSize: "clamp(6px, 2.5%, 10px)" }}>{m.name}</div>
+              <div className="font-semibold text-white mb-2 tabular-nums" style={{ fontSize: "clamp(10px, 4%, 16px)" }}>{m.val}g</div>
+              <div className="w-full h-[3px] bg-white/10 rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{ backgroundColor: m.col }}
+                  initial={false}
+                  animate={{ width: isActive ? m.pct : '0%' }}
+                  transition={{ duration: 0.85, delay: isActive ? 0.4 + i * 0.1 : 0, ease: easeOut }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-      
+
       <div className="flex-1 px-[6%] pt-[2%]">
-         <div className="bg-white/5 border border-white/5 rounded-[20px] p-[6%]">
-            <div className="font-semibold text-white/50 uppercase tracking-wider mb-2" style={{ fontSize: "clamp(7px, 2.8%, 11px)" }}>Adjusted Target</div>
-            <div className="text-[#D4FF00] font-semibold mb-1" style={{ fontSize: "clamp(10px, 4%, 16px)" }}>Dinner: 450 kcal</div>
-            <div className="text-white/70" style={{ fontSize: "clamp(8px, 3.2%, 13px)" }}>Must include 45g Protein</div>
-         </div>
+        <motion.div
+          initial={false}
+          animate={isActive ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
+          transition={{ duration: 0.5, delay: isActive ? 0.9 : 0, ease: easeOut }}
+          className="bg-white/5 border border-white/5 rounded-[20px] p-[6%]"
+        >
+          <div className="font-semibold text-white/50 uppercase tracking-wider mb-2" style={{ fontSize: "clamp(7px, 2.8%, 11px)" }}>Adjusted Target</div>
+          <div className="text-[#D4FF00] font-semibold mb-1" style={{ fontSize: "clamp(10px, 4%, 16px)" }}>Dinner: 450 kcal</div>
+          <div className="text-white/70" style={{ fontSize: "clamp(8px, 3.2%, 13px)" }}>Must include 45g Protein</div>
+        </motion.div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
 function TimelineScreen({ isActive }: { isActive: boolean }) {
+  const projectedWeight = useDemoNumber(72.5, 1200, isActive, 1);
+  const percentDrop = useDemoNumber(12, 900, isActive, 0);
+  const easeOut = [0.22, 1, 0.36, 1] as const;
+
   return (
-    <motion.div
-      key={isActive ? 't-in' : 't-out'}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      className="w-full h-full bg-[#0A0A0A] flex flex-col p-[6%] pt-[16%]"
-    >
-       <div className="flex items-center gap-2 mb-[8%] mt-[4%]">
-         <LineChart className="text-[#D4FF00] w-[1em] h-[1em]" style={{ fontSize: "clamp(12px, 5%, 20px)" }} />
-         <p className="text-white/80 font-semibold" style={{ fontSize: "clamp(10px, 4%, 16px)" }}>
-           Transformation
-         </p>
-       </div>
-       
-       <div className="bg-[#1C1C1E] border border-white/5 rounded-[24px] p-[6%] mb-[6%] shadow-lg">
-          <div className="text-white/50 uppercase tracking-wider mb-[2%]" style={{ fontSize: "clamp(7px, 2.8%, 11px)" }}>Projected Weight</div>
-          <div className="flex items-end gap-[4%]">
-            <span className="text-white font-bold tracking-tight" style={{ fontSize: "clamp(28px, 12%, 48px)" }}>72.5<span className="text-white/40 font-normal ml-1" style={{ fontSize: "0.5em" }}>kg</span></span>
-            <div className="flex items-center bg-[#D4FF00]/10 text-[#D4FF00] px-[3%] py-[1%] rounded-full mb-[2%]" style={{ fontSize: "clamp(8px, 3.2%, 13px)" }}>
-               <TrendingDown className="w-[1em] h-[1em] mr-1" />
-               12%
-            </div>
-          </div>
-          <div className="text-white/40 mt-[4%]" style={{ fontSize: "clamp(7px, 2.8%, 11px)" }}>In 12 Weeks (Based on 85% compliance)</div>
-       </div>
-       
-       <div className="flex-1 bg-white/[0.02] border border-white/5 rounded-[24px] relative overflow-hidden flex flex-col justify-end p-[5%] mt-[2%]">
-          {/* Grid lines */}
-          <div className="absolute inset-0 flex flex-col justify-between py-[10%] opacity-20">
-            {[1,2,3,4].map(i => <div key={i} className="w-full h-[1px] bg-white/20" />)}
-          </div>
-          
-          <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
-            <path 
-              d="M0,20 Q25,30 50,60 T100,90" 
-              fill="none" 
-              stroke="rgba(255,255,255,0.1)" 
-              strokeWidth="2" 
-              strokeDasharray="4 4"
-            />
-            <motion.path 
-              d="M0,20 Q25,30 50,60 T100,90" 
-              fill="none" 
-              stroke="#D4FF00" 
-              strokeWidth="3"
-              initial={{ pathLength: 0 }}
-              whileInView={{ pathLength: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
-            />
-          </svg>
-          <motion.div 
-            className="absolute bg-[#D4FF00] rounded-full border-2 border-[#1C1C1E] shadow-[0_0_15px_#D4FF00]"
-            style={{ width: "8%", aspectRatio: "1", right: "0%", bottom: "10%", x: "50%", y: "50%" }}
-            initial={{ scale: 0 }}
-             whileInView={{ scale: 1 }}
-             viewport={{ once: true }}
-            transition={{ delay: 1.2, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+    <div className="w-full h-full bg-[#0A0A0A] flex flex-col p-[6%] pt-[16%]">
+      <div className="flex items-center gap-2 mb-[8%] mt-[4%]">
+        <LineChart className="text-[#D4FF00] w-[1em] h-[1em]" style={{ fontSize: "clamp(12px, 5%, 20px)" }} />
+        <p className="text-white/80 font-semibold" style={{ fontSize: "clamp(10px, 4%, 16px)" }}>Transformation</p>
+      </div>
+
+      <div className="bg-[#1C1C1E] border border-white/5 rounded-[24px] p-[6%] mb-[6%] shadow-lg">
+        <div className="text-white/50 uppercase tracking-wider mb-[2%]" style={{ fontSize: "clamp(7px, 2.8%, 11px)" }}>Projected Weight</div>
+        <div className="flex items-end gap-[4%]">
+          <span className="text-white font-bold tracking-tight tabular-nums" style={{ fontSize: "clamp(28px, 12%, 48px)" }}>
+            {projectedWeight.toFixed(1)}<span className="text-white/40 font-normal ml-1" style={{ fontSize: "0.5em" }}>kg</span>
+          </span>
+          <motion.div
+            initial={false}
+            animate={isActive ? { opacity: 1, scale: 1, y: 0 } : { opacity: 0, scale: 0.85, y: 6 }}
+            transition={{ duration: 0.4, delay: isActive ? 0.4 : 0, ease: easeOut }}
+            className="flex items-center bg-[#D4FF00]/10 text-[#D4FF00] px-[3%] py-[1%] rounded-full mb-[2%]"
+            style={{ fontSize: "clamp(8px, 3.2%, 13px)" }}
+          >
+            <TrendingDown className="w-[1em] h-[1em] mr-1" />
+            <span className="tabular-nums">{percentDrop}%</span>
+          </motion.div>
+        </div>
+        <div className="text-white/40 mt-[4%]" style={{ fontSize: "clamp(7px, 2.8%, 11px)" }}>In 12 Weeks (Based on 85% compliance)</div>
+      </div>
+
+      <div className="flex-1 bg-white/[0.02] border border-white/5 rounded-[24px] relative overflow-hidden flex flex-col justify-end p-[5%] mt-[2%]">
+        <div className="absolute inset-0 flex flex-col justify-between py-[10%] opacity-20">
+          {[1,2,3,4].map(i => <div key={i} className="w-full h-[1px] bg-white/20" />)}
+        </div>
+
+        <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
+          <path d="M0,20 Q25,30 50,60 T100,90" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2" strokeDasharray="4 4" />
+          <motion.path
+            d="M0,20 Q25,30 50,60 T100,90"
+            fill="none"
+            stroke="#D4FF00"
+            strokeWidth="3"
+            initial={false}
+            animate={{ pathLength: isActive ? 1 : 0 }}
+            transition={{ duration: 1.6, delay: isActive ? 0.3 : 0, ease: easeOut }}
           />
-       </div>
-    </motion.div>
+        </svg>
+
+        <motion.div
+          className="absolute bg-[#D4FF00] rounded-full border-2 border-[#1C1C1E] shadow-[0_0_15px_#D4FF00]"
+          style={{ width: "8%", aspectRatio: "1", right: "0%", bottom: "10%", x: "50%", y: "50%" }}
+          initial={false}
+          animate={{ scale: isActive ? 1 : 0, opacity: isActive ? 1 : 0 }}
+          transition={{ delay: isActive ? 1.6 : 0, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+        />
+      </div>
+    </div>
   );
 }
 
