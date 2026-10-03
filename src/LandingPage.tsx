@@ -797,7 +797,7 @@ function MobileHowItWorks({ steps }: { steps: any[] }) {
       className="relative"
       style={{ height: `${(total + 2) * 100}vh` }}
     >
-      <div className="sticky top-0 h-[100dvh] w-full overflow-hidden flex flex-col">
+      <div className="sticky top-14 h-[calc(100dvh-3.5rem)] w-full overflow-hidden flex flex-col">
         {/* Sticky header */}
         <div className="flex-shrink-0 px-6 pt-8 pb-6 text-center">
           <p className="text-xs font-mono text-[#D4FF00] uppercase tracking-widest mb-2">
@@ -845,7 +845,7 @@ function StackedStep({
 
   const segmentSize = 1 / (total + 1);
   const entryStart = index * segmentSize;
-  const entryCenter = entryStart + segmentSize * 0.8;   // 80% mark
+  const entryCenter = entryStart + segmentSize * 0.6;   // 60% mark
   const entryEnd = entryStart + segmentSize;            // 100% of entry window
   const pushEnd = Math.min(1, entryStart + segmentSize * 2);
 
