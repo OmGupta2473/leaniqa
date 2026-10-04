@@ -1,830 +1,733 @@
-import { createPortal } from "react-dom";
-import { useNavigate } from "react-router-dom";
-import { useState, useEffect, useRef } from 'react';
-import { useUserStore } from '@/features/profile/store/userStore';
-import { useAppStore } from '@/app/store';
-import { cn } from '@/shared/utils/utils';
-import { CheckCircle2, ArrowRight, ChevronLeft, LogOut } from 'lucide-react';
-import { authService } from '@/features/auth/services/authService';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useEffect, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'motion/react';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  AlertTriangle, Armchair, ArrowLeft, ArrowRight, Calendar, Check, Dumbbell,
+  Flame, Footprints, Sliders, Target, TrendingDown, TrendingUp, X, Zap,
+} from 'lucide-react';
+import { useAuthSession } from '@/router/useAuthSession';
 import { profileService } from '@/features/profile/services/profileService';
-import { complianceService } from '@/features/reports/services/complianceService';
-import { motion, AnimatePresence } from 'motion/react';
-import { hover, tap } from '@/features/reports/components/motion';
-import { calculateMacros } from '@/shared/utils/profileCalculations';
-import { analytics } from '@/shared/utils/analytics';
+import { ScreenSkeleton } from '@/shared/components/ScreenSkeleton';
 import { useToast } from '@/shared/components/Toast';
+import { analytics } from '@/shared/utils/analytics';
+import {
+  calculateBMI,
+  calculatePlan,
+  estimateTimeline,
+  suggestGoal,
+  type ActivityLevel,
+  type GoalType,
+  type OnboardingInput,
+} from '@/shared/utils/onboardingMath';
+import { useOnboardingDraft } from '../useOnboardingDraft';
+import type { OnboardingDraft } from '../types';
 
-function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: number }) {
-  const [displayValue, setDisplayValue] = useState(0);
-  useEffect(() => {
-    let start: number | null = null;
-    let animationFrameId: number;
-    const update = (time: number) => {
-      if (!start) start = time;
-      const elapsed = time - start;
-      const progress = Math.min(elapsed / duration, 1);
-      const ease = 1 - Math.pow(1 - progress, 4); 
-      setDisplayValue(Math.round(ease * value));
-      if (progress < 1) {
-        animationFrameId = requestAnimationFrame(update);
-      }
-    };
-    animationFrameId = requestAnimationFrame(update);
-    return () => cancelAnimationFrame(animationFrameId);
-  }, [value, duration]);
-  return <span>{displayValue}</span>;
+type DraftProps = {
+  draft: OnboardingDraft;
+  setDraft: (updater: OnboardingDraft | ((prev: OnboardingDraft) => OnboardingDraft)) => void;
+};
+
+const INPUT_CLASS =
+  'w-full bg-zinc-900/60 border border-zinc-800 rounded-xl px-4 py-3 text-[15px] text-white placeholder:text-zinc-600 focus:border-[#D4FF00] outline-none transition-colors';
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "2026-04-16" -> "16 Apr 2026" without ever parsing through Date (timezone safe). */
+function formatIsoDate(iso: string): string {
+  const [year, month, day] = iso.split('-').map(Number);
+  return `${day} ${MONTHS[month - 1]} ${year}`;
 }
 
-export function OnboardingPage() {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const onboardingData = useUserStore(s => s.onboardingData);
-  const setOnboardingData = useUserStore(s => s.setOnboardingData);
-  const activeModal = useAppStore(s => s.activeModal);
-  const setActiveModal = useAppStore(s => s.setActiveModal);
-  const editProfileMode = useUserStore(s => s.editProfileMode);
-  const setEditProfileMode = useUserStore(s => s.setEditProfileMode);
-  const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => profileService.getProfile() });
-  const queryClient = useQueryClient();
-  const resetConfirmOpen = activeModal === 'reset_confirm';
-  const setResetConfirmOpen = (isOpen: boolean) => setActiveModal(isOpen ? 'reset_confirm' : null);
-  
-  const name = useUserStore(s => s.temporaryOnboardingValues.name || "");
-  const setName = (val: string) => useUserStore.getState().setTemporaryOnboardingValues({ name: val });
-  const age = useUserStore(s => s.temporaryOnboardingValues.age || "");
-  const setAge = (val: string) => useUserStore.getState().setTemporaryOnboardingValues({ age: val });
-  const height = useUserStore(s => s.temporaryOnboardingValues.height || "");
-  const setHeight = (val: string) => useUserStore.getState().setTemporaryOnboardingValues({ height: val });
-  const heightUnit = useUserStore(s => s.temporaryOnboardingValues.heightUnit || "cm");
-  const setHeightUnit = (val: "cm"|"ft") => useUserStore.getState().setTemporaryOnboardingValues({ heightUnit: val });
+/** Engine activity level -> the exact string the profiles table stores. */
+function mapActivity(activity: ActivityLevel): string {
+  return {
+    sedentary: 'Sedentary',
+    light: 'Light',
+    moderate: 'Moderate',
+    active: 'Active',
+    athlete: 'Very active',
+  }[activity];
+}
 
-  const heightFt = useUserStore(s => s.temporaryOnboardingValues.heightFt || "");
-  const setHeightFt = (val: string) => useUserStore.getState().setTemporaryOnboardingValues({ heightFt: val });
-  const heightIn = useUserStore(s => s.temporaryOnboardingValues.heightIn || "");
-  const setHeightIn = (val: string) => useUserStore.getState().setTemporaryOnboardingValues({ heightIn: val });
-  const weight = useUserStore(s => s.temporaryOnboardingValues.weight || "");
-  const setWeight = (val: string) => useUserStore.getState().setTemporaryOnboardingValues({ weight: val });
-  
-  const gender = useUserStore(s => s.temporaryOnboardingValues.gender || "");
-  const setGender = (val: "Male"|"Female"|"") => useUserStore.getState().setTemporaryOnboardingValues({ gender: val });
-  const activity = useUserStore(s => s.temporaryOnboardingValues.activity || "");
-  const setActivity = (val: "Sedentary"|"Lightly Active"|"Moderately Active"|"Very Active"|"Athlete"|"") => useUserStore.getState().setTemporaryOnboardingValues({ activity: val });
-  
-  const [step, setStepState] = useState(0);
-  const [direction, setDirection] = useState(1);
-  const setStep = (newStep: number) => {
-    setDirection(newStep > step ? 1 : -1);
-    setStepState(newStep);
-  }; // 0: Welcome, 1: Name, 2: Gender, 3: Age, 4: Height, 5: Weight, 6: Activity, 7: AI Analysis, 8: Results
+function AnimatedValue({ value, className = '' }: { value: number; className?: string }) {
+  return (
+    <motion.span
+      key={value}
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
+      className={className}
+    >
+      {value.toLocaleString()}
+    </motion.span>
+  );
+}
 
-  useEffect(() => {
-    if (document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
-    // Scroll to top of both window and app-scroll container on step change
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    const scrollContainer = document.querySelector('.app-scroll');
-    if (scrollContainer) {
-      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }, [step]);
+function ProgressDots({ step }: { step: 1 | 2 | 3 }) {
+  return (
+    <div className="pt-8 pb-4 flex justify-center gap-2">
+      {[1, 2, 3].map((i) => (
+        <div
+          key={i}
+          className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
+            i === step
+              ? 'bg-[#D4FF00] shadow-[0_0_8px_#D4FF00]'
+              : i < step ? 'bg-zinc-600' : 'bg-zinc-800'
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
 
-  
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (step > 0 && step < 8 && !editProfileMode) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [step, editProfileMode]);
+function UnitInput({ value, onChange, placeholder, unit }: {
+  value: number | null;
+  onChange: (next: number | null) => void;
+  placeholder: string;
+  unit: string;
+}) {
+  return (
+    <div className="flex items-center bg-zinc-900/60 border border-zinc-800 rounded-xl px-4 focus-within:border-[#D4FF00] transition-colors">
+      <input
+        inputMode="numeric"
+        value={value ?? ''}
+        onChange={(e) => {
+          const raw = e.target.value.replace(/[^0-9]/g, '');
+          onChange(raw === '' ? null : Number(raw));
+        }}
+        placeholder={placeholder}
+        className="w-full min-w-0 bg-transparent py-3 text-[15px] text-white placeholder:text-zinc-600 outline-none"
+      />
+      <span className="text-[12px] text-zinc-500 pl-2 shrink-0">{unit}</span>
+    </div>
+  );
+}
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && step > 0 && step < 7) {
-        setStep(step - 1);
-      } else if (e.key === 'ArrowLeft' && e.altKey && step > 0 && step < 7) {
-        e.preventDefault();
-        setStep(step - 1);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [step]);
+function BasicsScreen({ draft, setDraft }: DraftProps) {
+  const isValid =
+    draft.name.trim().length > 0 &&
+    draft.sex !== null &&
+    draft.age !== null && draft.age >= 13 && draft.age <= 120 &&
+    draft.heightCm !== null && draft.heightCm > 0 &&
+    draft.weightKg !== null && draft.weightKg > 0;
 
-  const [aiStatus, setAiStatus] = useState(0);
-  
-  const [results, setResults] = useState<any>(null);
-  const [physique, setPhysique] = useState<number | null>(null);
+  return (
+    <div className="flex-1 flex flex-col px-6 pb-8 w-full max-w-md mx-auto">
+      <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white">
+        Let&apos;s get to know you
+      </h1>
+      <p className="text-zinc-400 text-sm mt-2">Takes 60 seconds.</p>
 
-  useEffect(() => {
-    if (step === 0 && !editProfileMode) {
-      analytics.trackEvent('Onboarding Started');
-    }
-  }, [step, editProfileMode]);
+      <div className="mt-10 space-y-4">
+        <input
+          value={draft.name}
+          onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
+          placeholder="Your name"
+          className={INPUT_CLASS}
+        />
 
-  useEffect(() => {
-    if (step === 8) {
-        // Run AI animation sequence
-        const seq = async () => {
-            await new Promise(r => setTimeout(r, 800));
-            setAiStatus(1);
-            await new Promise(r => setTimeout(r, 800));
-            setAiStatus(2);
-            await new Promise(r => setTimeout(r, 800));
-            setAiStatus(3);
-            await new Promise(r => setTimeout(r, 800));
-            setAiStatus(4);
-            await new Promise(r => setTimeout(r, 800));
-            setAiStatus(5);
-            await new Promise(r => setTimeout(r, 800));
-            
-            // Calculate results
-            const w = parseFloat(weight) || 80;
-            const h = getComputedHeight();
-            const a = parseFloat(age) || 30;
-            const macros = calculateMacros(w, h, a, gender || 'Male', activity || 'Lightly Active');
-            setResults({
-              tdee: macros.tdee,
-              proteinMin: macros.proteinMin,
-              proteinMax: macros.proteinMax,
-              proteinMid: macros.proteinMid,
-              fatMin: macros.fatMin,
-              fatMax: macros.fatMax,
-              fatMid: macros.fatMid,
-              carbMin: macros.carbMin,
-              carbMax: macros.carbMax,
-              carbMid: macros.carbMid,
-              fiberMin: macros.fiberMin,
-              fiberMax: macros.fiberMax,
-            });
-            
-            setStep(9);
-        };
-        seq();
-    }
-  }, [step]);
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-1 flex gap-1">
+            {(['Male', 'Female'] as const).map((option) => (
+              <button
+                key={option}
+                onClick={() => setDraft((d) => ({ ...d, sex: option }))}
+                className={`flex-1 py-2 rounded-lg text-[14px] font-medium transition-colors ${
+                  draft.sex === option
+                    ? 'bg-[#D4FF00] text-black'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
 
-  useEffect(() => {
-    if (!editProfileMode) return;
-    if (onboardingData?.name) setName(onboardingData.name);
-    if (onboardingData?.age) setAge(String(onboardingData.age));
-    if (onboardingData?.weightKg) setWeight(String(onboardingData.weightKg));
-    if (onboardingData?.heightCm) {
-      setHeight(String(onboardingData.heightCm));
-      setHeightUnit('cm');
-    }
-    if (onboardingData?.gender) setGender(onboardingData.gender as 'Male' | 'Female');
-    if (onboardingData?.activityLevel) setActivity(onboardingData.activityLevel as any);
-    setStep(1); // Jump to first question if edit mode
-  }, [editProfileMode, onboardingData]);
-
-  const saveMutation = useMutation({
-    mutationFn: async (profile: any) => {
-      return await profileService.upsertProfile(profile);
-    },
-    onError: (error: any) => {
-      console.error("Save mutation failed:", error);
-      toast({ type: 'error', message: "Failed to save profile: " + (error.message || "Unknown error") });
-    }
-  });
-
-  const getComputedHeight = () => {
-    if (heightUnit === 'cm') return parseFloat(height) || 170;
-    const ft = parseFloat(heightFt) || 0;
-    const inc = parseFloat(heightIn) || 0;
-    return Math.round(((ft * 12) + inc) * 2.54) || 170;
-  };
-
-  const handleSave = async () => {
-    if (!results) return;
-    const w = parseFloat(weight) || 80;
-    const h = getComputedHeight();
-    const a = parseFloat(age) || 30;
-
-    try {
-      const data = await saveMutation.mutateAsync({
-        name: name.trim() || 'User', 
-        age: a, 
-        height: h, 
-        weight: w, 
-        gender: gender || 'Male', 
-        activity_level: activity || 'Lightly Active',
-        maintenance_kcal: results.tdee, 
-        protein_target: results.proteinMid
-      });
-
-      if (data) {
-        queryClient.setQueryData(['profile'], data);
-      }
-
-      setOnboardingData({
-        ...onboardingData,
-        name: name.trim() || 'User',
-        weightKg: w,
-        heightCm: h,
-        age: a,
-        gender,
-        activityLevel: activity,
-        tdee: results.tdee,
-        proteinMin: results.proteinMin,
-        proteinMax: results.proteinMax,
-        proteinMid: results.proteinMid,
-        fatMin: results.fatMin,
-        fatMax: results.fatMax,
-        fatMid: results.fatMid,
-        carbMin: results.carbMin,
-        carbMax: results.carbMax,
-        carbMid: results.carbMid,
-        fiberMin: results.fiberMin,
-        fiberMax: results.fiberMax,
-      });
-
-      complianceService.updateTodayScore().then(() => {
-        queryClient.invalidateQueries({ queryKey: ['complianceScore'] });
-      }).catch(console.error);
-
-      if (editProfileMode) {
-        setEditProfileMode(false);
-        navigate('/profile');
-      } else {
-        analytics.trackEvent('Onboarding Completed', {
-          gender,
-          activity_level: activity,
-          tdee: results.tdee,
-          protein_target: results.proteinMid
-        });
-        navigate('/goal');
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const isEditMode = editProfileMode;
-
-  const resetMutation = useMutation({
-    mutationFn: async () => {
-      await profileService.deleteProfile();
-      await profileService.deleteGoal();
-      useUserStore.getState().clearUserStore();
-      queryClient.setQueryData(['profile'], null);
-      queryClient.setQueryData(['goal'], null);
-    },
-    onSuccess: () => {
-      setResetConfirmOpen(false);
-      setStep(0);
-      toast({ type: 'success', message: 'Profile reset successfully' });
-    }
-  });
-
-  if (profile && !isEditMode) {
-    return (
-      <div className="screen-container animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col justify-center min-h-screen">
-        <div className="text-center py-6">
-          <CheckCircle2 className="w-16 h-16 text-[#D4FF00] mx-auto mb-4" />
-          <h2 className="text-[34px] font-bold text-white tracking-[-0.5px] mb-2">Profile Completed</h2>
-          <p className="text-[15px] font-normal tracking-[-0.1px] text-[#EBEBF5CC]">You have already set up your profile and goals.</p>
+          <UnitInput
+            value={draft.age}
+            onChange={(v) => setDraft((d) => ({ ...d, age: v }))}
+            placeholder="Age"
+            unit="years"
+          />
         </div>
-        <button 
-          onClick={() => setResetConfirmOpen(true)}
-          className="w-full py-[14px] bg-[rgba(255,255,255,0.1)] text-white font-semibold text-[15px] rounded-full border-[0.5px] border-[rgba(255,255,255,0.2)] transition-transform active:scale-[0.96]"
-        >
-          Reset profile
-        </button>
-        <button 
-          onClick={() => navigate('/goal')}
-          style={{
-            width: '100%', padding: '14px', borderRadius: '100px',
-            background: 'rgba(212,255,0,0.1)', border: '0.5px solid rgba(212,255,0,0.3)',
-            color: '#D4FF00', fontWeight: 600, fontSize: 'var(--font-md)',
-            cursor: 'pointer', marginTop: '12px'
-          }}
-        >
-          Continue to Goals
-        </button>
 
-        {typeof document !== 'undefined' && createPortal(
-          <AnimatePresence>
-            {resetConfirmOpen && (
-              <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-                  onClick={() => !resetMutation.isPending && setResetConfirmOpen(false)}
-                />
-                
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                  transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                  className="bg-[#1A1A1C] border border-[rgba(255,255,255,0.06)] rounded-3xl p-6 w-full max-w-[340px] relative z-10 flex flex-col items-center text-center shadow-2xl"
-                >
-                  <h3 className="text-[24px] font-bold tracking-tight mb-2 text-white mb-2 tracking-tight">Reset Everything?</h3>
-                  <p className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed mb-6 leading-relaxed">
-                    This will delete your body stats and goals. Your logged meals and progress will remain, but you will need to complete onboarding again.
-                  </p>
-                  
-                  <div className="flex flex-col w-full gap-3">
-                    <button 
-                      onClick={() => resetMutation.mutate()} 
-                      disabled={resetMutation.isPending}
-                      className="btn-primary-style rounded-full w-full py-3.5 bg-[#FF3B30] text-white text-[18px] font-semibold tracking-tight disabled:opacity-50 transition-opacity hover:opacity-90"
-                    >
-                      {resetMutation.isPending ? 'Resetting...' : 'Yes, reset profile'}
-                    </button>
-                    <button 
-                      onClick={() => setResetConfirmOpen(false)} 
-                      disabled={resetMutation.isPending}
-                      className="btn-ghost w-full py-3.5 text-[15px] font-medium"
-                    >
-                      Keep my profile
-                    </button>
-                  </div>
-                </motion.div>
-              </div>
-            )}
-          </AnimatePresence>,
-          document.body
-        )}
+        <div className="grid grid-cols-2 gap-3">
+          <UnitInput
+            value={draft.heightCm}
+            onChange={(v) => setDraft((d) => ({ ...d, heightCm: v }))}
+            placeholder="Height"
+            unit="cm"
+          />
+          <UnitInput
+            value={draft.weightKg}
+            onChange={(v) => setDraft((d) => ({ ...d, weightKg: v }))}
+            placeholder="Weight"
+            unit="kg"
+          />
+        </div>
       </div>
-    );
-  }
-  
-  const prefersReducedMotion = typeof window !== 'undefined' ? window.matchMedia('(prefers-reduced-motion: reduce)').matches : false;
-  const stepVariants = {
-    initial: (dir: number) => ({
-      opacity: 0,
-      y: prefersReducedMotion ? 0 : (dir > 0 ? 20 : -20),
-      scale: prefersReducedMotion ? 1 : 0.98
-    }),
-    animate: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as any, stiffness: 300, damping: 25 } },
-    exit: (dir: number) => ({
-      opacity: 0,
-      y: prefersReducedMotion ? 0 : (dir > 0 ? -20 : 20),
-      scale: prefersReducedMotion ? 1 : 0.98,
-      transition: { duration: 0.2 }
-    })
+
+      <div className="flex-1" />
+
+      <button
+        disabled={!isValid}
+        onClick={() => setDraft((d) => ({ ...d, step: 2 }))}
+        className={`mt-8 w-full py-4 rounded-full font-semibold text-[15px] transition-all ${
+          isValid
+            ? 'bg-[#D4FF00] text-black hover:brightness-110'
+            : 'bg-zinc-900 text-zinc-600 cursor-not-allowed'
+        }`}
+      >
+        Continue
+      </button>
+    </div>
+  );
+}
+
+const ACTIVITY_OPTIONS: { id: ActivityLevel; label: string; desc: string; Icon: typeof Armchair }[] = [
+  { id: 'sedentary', label: 'Sedentary', desc: 'Desk job, no exercise', Icon: Armchair },
+  { id: 'light', label: 'Lightly active', desc: 'Light exercise 1-3 days/week', Icon: Footprints },
+  { id: 'moderate', label: 'Moderately active', desc: 'Exercise 3-5 days/week', Icon: Dumbbell },
+  { id: 'active', label: 'Very active', desc: 'Hard exercise 6-7 days/week', Icon: Zap },
+  { id: 'athlete', label: 'Athlete', desc: 'Twice-a-day training, physical job', Icon: Flame },
+];
+
+function ActivityScreen({ draft, setDraft }: DraftProps) {
+  const canContinue = draft.activity !== null;
+
+  const handleContinue = () => {
+    if (!draft.activity) return;
+    // Suggest a goal from BMI so screen 3 opens on something sensible. The user
+    // can still change it there.
+    const suggested =
+      draft.heightCm && draft.weightKg
+        ? suggestGoal(calculateBMI(draft.heightCm, draft.weightKg))
+        : null;
+    setDraft((d) => ({ ...d, step: 3, goalOverride: d.goalOverride ?? suggested }));
   };
 
   return (
-    <div className="flex-1 min-h-full w-full bg-[#0A0A0B] text-white flex flex-col relative font-sans">
-        
-      {/* Background glow */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none"><div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[120vh] bg-[radial-gradient(ellipse_at_center,rgba(212,255,0,0.03)_0%,rgba(0,0,0,0)_60%)]" /></div>
+    <div className="flex-1 flex flex-col px-6 pb-8 w-full max-w-md mx-auto">
+      <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white">
+        How active are you?
+      </h1>
+      <p className="text-zinc-400 text-sm mt-2">Be honest — this changes your calorie target.</p>
 
-      {/* Progress Indicator */}
-      {step > 0 && step < 8 && (
-        <div className="sticky top-0 w-full px-4 sm:px-8 py-3 sm:py-4 z-50 flex items-center bg-[#0A0A0B]/90 backdrop-blur-md border-b border-[rgba(255,255,255,0.05)] shadow-md">
-           <div className="w-[48px] shrink-0 flex justify-start">
-             <button 
-               onClick={() => setStep(step === 9 ? 6 : (step === 8 ? 6 : step - 1))}
-               className="text-zinc-500 hover:text-white transition-colors p-2 flex items-center justify-center bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-full hover:bg-[rgba(255,255,255,0.05)]"
-               aria-label="Go Back"
-             >
-               <ChevronLeft size={24} />
-             </button>
-           </div>
-           <div className="flex gap-2 flex-1 justify-center">
-             {step < 8 && [1,2,3,4,5,6].map(s => (
-               <motion.div 
-                 key={s}
-                 className={cn("h-1 rounded-full", step >= s ? "bg-[#D4FF00]" : "bg-zinc-800")}
-                 animate={{ width: step === s ? 40 : 8 }}
-                 transition={{ type: "spring" as any, stiffness: 300, damping: 30 }}
-               />
-             ))}
-           </div>
-           <div className="w-[48px] shrink-0 flex justify-end">
-             <button 
-               onClick={() => authService.logout()}
-               className="text-[rgba(255,255,255,0.4)] hover:text-white transition-colors p-2 flex items-center justify-center bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-full hover:bg-[rgba(255,255,255,0.05)]"
-               aria-label="Logout"
-             >
-               <LogOut size={18} />
-             </button>
-           </div>
-           
+      <div className="mt-10 space-y-3">
+        {ACTIVITY_OPTIONS.map(({ id, label, desc, Icon }) => {
+          const active = draft.activity === id;
+          return (
+            <button
+              key={id}
+              onClick={() => setDraft((d) => ({ ...d, activity: id }))}
+              className={`w-full flex items-center gap-4 rounded-2xl border p-4 text-left transition-colors ${
+                active
+                  ? 'border-[#D4FF00]/50 bg-[#D4FF00]/5'
+                  : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
+              }`}
+            >
+              <div
+                className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
+                  active ? 'bg-[#D4FF00]/15' : 'bg-zinc-900'
+                }`}
+              >
+                <Icon className={`w-5 h-5 ${active ? 'text-[#D4FF00]' : 'text-zinc-400'}`} />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[15px] font-semibold text-white">{label}</div>
+                <div className="text-[12px] text-zinc-500">{desc}</div>
+              </div>
+              {active && <Check className="w-4 h-4 text-[#D4FF00] ml-auto shrink-0" />}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="flex-1" />
+
+      <div className="mt-8 grid grid-cols-2 gap-3">
+        <button
+          onClick={() => setDraft((d) => ({ ...d, step: 1 }))}
+          className="py-4 rounded-full font-semibold text-[15px] bg-zinc-900/60 border border-zinc-800 text-zinc-300 hover:text-white transition-colors"
+        >
+          Back
+        </button>
+        <button
+          disabled={!canContinue}
+          onClick={handleContinue}
+          className={`py-4 rounded-full font-semibold text-[15px] transition-all flex items-center justify-center gap-1.5 ${
+            canContinue
+              ? 'bg-[#D4FF00] text-black hover:brightness-110'
+              : 'bg-zinc-900 text-zinc-600 cursor-not-allowed'
+          }`}
+        >
+          Continue
+          <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+const GOAL_OPTIONS: { id: GoalType; label: string; desc: string; Icon: typeof Target }[] = [
+  { id: 'cut', label: 'Lose Fat', desc: 'Reduce body fat · 15% deficit', Icon: TrendingDown },
+  { id: 'recomp', label: 'Recomp', desc: 'Lose fat and build muscle · maintenance', Icon: Target },
+  { id: 'bulk', label: 'Build Muscle', desc: 'Gain muscle · 10% surplus', Icon: TrendingUp },
+];
+
+/** Shared bottom-sheet chrome: portal, backdrop, spring entrance, Escape to close. */
+function Sheet({ open, onClose, title, children }: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  children: ReactNode;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
+  return createPortal(
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={onClose}
+          />
+          <motion.div
+            initial={{ y: '100%', opacity: 0, scale: 0.96 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: '100%', opacity: 0, scale: 0.96 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+            className="relative w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-t-[32px] sm:rounded-[32px] overflow-hidden shadow-2xl"
+          >
+            <div className="p-5 border-b border-zinc-900 flex items-center justify-between">
+              <h3 className="text-base font-semibold text-white">{title}</h3>
+              <button
+                onClick={onClose}
+                aria-label="Close"
+                className="p-2 -mr-2 bg-zinc-900 rounded-full text-zinc-400 hover:text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5">{children}</div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>,
+    document.body
+  );
+}
+
+function GoalSheet({ open, onClose, draft, setDraft }: {
+  open: boolean;
+  onClose: () => void;
+} & DraftProps) {
+  const current = draft.goalOverride ?? 'cut';
+
+  return (
+    <Sheet open={open} onClose={onClose} title="Change goal">
+      <div className="space-y-3">
+        {GOAL_OPTIONS.map(({ id, label, desc, Icon }) => {
+          const active = current === id;
+          return (
+            <button
+              key={id}
+              onClick={() => {
+                setDraft((d) => ({ ...d, goalOverride: id }));
+                onClose();
+              }}
+              className={`w-full flex items-center gap-3 rounded-2xl border p-4 text-left transition-colors ${
+                active
+                  ? 'border-[#D4FF00]/50 bg-[#D4FF00]/5'
+                  : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
+              }`}
+            >
+              <div
+                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                  active ? 'bg-[#D4FF00]/15' : 'bg-zinc-900'
+                }`}
+              >
+                <Icon className={`w-5 h-5 ${active ? 'text-[#D4FF00]' : 'text-zinc-400'}`} />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[15px] font-semibold text-white">{label}</div>
+                <div className="text-[12px] text-zinc-500">{desc}</div>
+              </div>
+              {active && <Check className="w-4 h-4 text-[#D4FF00] ml-auto shrink-0" />}
+            </button>
+          );
+        })}
+      </div>
+    </Sheet>
+  );
+}
+function MacroInput({ label, value, onChange }: {
+  label: string;
+  value: number | null;
+  onChange: (next: number | null) => void;
+}) {
+  return (
+    <div className="flex items-center bg-zinc-900/60 border border-zinc-800 rounded-xl px-4 focus-within:border-[#D4FF00] transition-colors">
+      <span className="text-[13px] text-zinc-400 w-20 shrink-0">{label}</span>
+      <input
+        inputMode="numeric"
+        value={value ?? ''}
+        onChange={(e) => {
+          const raw = e.target.value.replace(/[^0-9]/g, '');
+          onChange(raw === '' ? null : Number(raw));
+        }}
+        className="w-full min-w-0 bg-transparent py-3 text-[15px] text-white text-right outline-none tabular-nums"
+      />
+      <span className="text-[12px] text-zinc-500 pl-2 shrink-0">g</span>
+    </div>
+  );
+}
+
+function MacrosSheet({ open, onClose, draft, setDraft, recommended }: {
+  open: boolean;
+  onClose: () => void;
+  recommended: { proteinG: number; fatG: number; carbsG: number };
+} & DraftProps) {
+  const [protein, setProtein] = useState<number | null>(null);
+  const [fat, setFat] = useState<number | null>(null);
+  const [carbs, setCarbs] = useState<number | null>(null);
+
+  // Re-seed from the draft every time the sheet opens.
+  useEffect(() => {
+    if (!open) return;
+    setProtein(draft.macroOverrides?.proteinG ?? recommended.proteinG);
+    setFat(draft.macroOverrides?.fatG ?? recommended.fatG);
+    setCarbs(draft.macroOverrides?.carbsG ?? recommended.carbsG);
+  }, [open, draft.macroOverrides, recommended.proteinG, recommended.fatG, recommended.carbsG]);
+
+  const calories = (protein ?? 0) * 4 + (fat ?? 0) * 9 + (carbs ?? 0) * 4;
+
+  return (
+    <Sheet open={open} onClose={onClose} title="Edit macros">
+      <div className="space-y-3">
+        <MacroInput label="Protein" value={protein} onChange={setProtein} />
+        <MacroInput label="Fat" value={fat} onChange={setFat} />
+        <MacroInput label="Carbs" value={carbs} onChange={setCarbs} />
+      </div>
+
+      <div className="mt-4 text-center text-[13px] text-zinc-400">
+        = <span className="text-white font-semibold tabular-nums">{calories.toLocaleString()}</span> kcal
+      </div>
+
+      <button
+        onClick={() => {
+          setDraft((d) => ({ ...d, macroOverrides: null }));
+          onClose();
+        }}
+        className="mt-4 w-full py-2 text-center text-[13px] text-zinc-500 hover:text-[#D4FF00] transition-colors"
+      >
+        Reset to recommended
+      </button>
+
+      <button
+        onClick={() => {
+          setDraft((d) => ({
+            ...d,
+            macroOverrides: {
+              proteinG: protein ?? recommended.proteinG,
+              fatG: fat ?? recommended.fatG,
+              carbsG: carbs ?? recommended.carbsG,
+            },
+          }));
+          onClose();
+        }}
+        className="mt-1 w-full py-3.5 rounded-full bg-[#D4FF00] text-black font-semibold text-[15px] hover:brightness-110 transition-all"
+      >
+        Apply
+      </button>
+    </Sheet>
+  );
+}
+const DIET_OPTIONS: { id: 'veg' | 'egg' | 'nonveg'; label: string }[] = [
+  { id: 'veg', label: 'Vegetarian' },
+  { id: 'egg', label: 'Eggetarian' },
+  { id: 'nonveg', label: 'Non-veg' },
+];
+
+function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
+  /** Accepted for call-site symmetry; profileService resolves the user itself. */
+  userId: string;
+  onCommit: () => void;
+}) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [goalSheetOpen, setGoalSheetOpen] = useState(false);
+  const [macroSheetOpen, setMacroSheetOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // The engine rejects impossible input. A draft that reached screen 3 is
+  // already validated, so these fallbacks are belt-and-braces only.
+  const input: OnboardingInput = {
+    sex: draft.sex ?? 'Male',
+    age: draft.age && draft.age > 0 ? draft.age : 30,
+    heightCm: draft.heightCm && draft.heightCm > 0 ? draft.heightCm : 170,
+    weightKg: draft.weightKg && draft.weightKg > 0 ? draft.weightKg : 70,
+    activity: draft.activity ?? 'sedentary',
+  };
+
+  const goal: GoalType = draft.goalOverride ?? 'cut';
+  const plan = calculatePlan(input, goal);
+  const timeline = estimateTimeline(input, goal, plan);
+  const bmi = plan.bmi;
+
+  const displayProtein = draft.macroOverrides?.proteinG ?? plan.proteinG;
+  const displayFat = draft.macroOverrides?.fatG ?? plan.fatG;
+  const displayCarbs = draft.macroOverrides?.carbsG ?? plan.carbsG;
+  const displayCalories = draft.macroOverrides
+    ? displayProtein * 4 + displayFat * 9 + displayCarbs * 4
+    : plan.targetCalories;
+
+  const goalMeta = GOAL_OPTIONS.find((option) => option.id === goal) ?? GOAL_OPTIONS[0];
+  const GoalIcon = goalMeta.Icon;
+
+  const commit = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const protein = draft.macroOverrides?.proteinG ?? plan.proteinG;
+      const fat = draft.macroOverrides?.fatG ?? plan.fatG;
+      const carbs = draft.macroOverrides?.carbsG ?? plan.carbsG;
+      const calories = protein * 4 + fat * 9 + carbs * 4;
+
+      // Placeholder body-fat values: both goals columns are NOT NULL. Phase 4
+      // replaces these with real optional user entry.
+      const currentBf = bmi < 20 ? 15 : bmi < 25 ? 20 : bmi < 30 ? 25 : 30;
+      const targetBf =
+        goal === 'cut' ? Math.max(10, currentBf - 5)
+        : goal === 'recomp' ? Math.max(10, currentBf - 3)
+        : currentBf + 2;
+
+      const profileRow = await profileService.upsertProfile({
+        name: draft.name.trim(),
+        age: draft.age!,
+        gender: draft.sex!,
+        height: draft.heightCm!,
+        weight: draft.weightKg!,
+        activity_level: mapActivity(input.activity),
+        maintenance_kcal: plan.maintenance,
+        protein_target: protein,
+        carbs_target: carbs,
+        fat_target: fat,
+        dietary_preference: draft.dietaryPreference!,
+        // Column exists (migration 20260706000000) but is not on DbProfile yet.
+        onboarding_completed: true,
+      } as any);
+
+      const goalRow = await profileService.upsertGoal({
+        goal_type: goal,
+        current_bf: currentBf,
+        target_bf: targetBf,
+        strategy: goal,
+        deficit_kcal: Math.round(plan.maintenance - calories),
+      } as any);
+
+      // The router gate reads profile + goal through react-query with a 5 min
+      // staleTime, so seed and refresh both caches before redirecting -
+      // otherwise ProtectedRoute bounces the user straight back here.
+      if (profileRow) queryClient.setQueryData(['profile'], profileRow);
+      if (goalRow) queryClient.setQueryData(['goal'], goalRow);
+      await queryClient.invalidateQueries({ queryKey: ['profile'] });
+      await queryClient.invalidateQueries({ queryKey: ['goal'] });
+
+      analytics.trackEvent('Onboarding Completed', {
+        goal_type: goal,
+        activity_level: input.activity,
+        tdee: plan.maintenance,
+        calories,
+      });
+
+      onCommit();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      toast({ type: 'error', message: `Could not save your plan: ${message}` });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex-1 flex flex-col px-6 pb-8 w-full max-w-md mx-auto">
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => setDraft((d) => ({ ...d, step: 2 }))}
+          aria-label="Back to activity"
+          className="p-2 -ml-2 bg-zinc-900/60 hover:bg-zinc-800 rounded-full text-zinc-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white">Your plan</h1>
+          <p className="text-zinc-400 text-sm mt-1">Based on your stats.</p>
+        </div>
+      </div>
+{bmi < 18.5 && (
+        <div className="mt-5 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
+          <div className="text-[13px] text-amber-200/90 leading-relaxed">
+            Your BMI is {bmi}. Cutting further may not be ideal — consider Build Muscle instead.
+            <button
+              onClick={() => setDraft((d) => ({ ...d, goalOverride: 'bulk' }))}
+              className="underline ml-1 hover:text-amber-100 transition-colors"
+            >
+              Switch to Build Muscle
+            </button>
+          </div>
         </div>
       )}
 
-      <div className="flex-1 flex flex-col justify-center items-center px-6 relative z-10 w-full max-w-xl mx-auto py-8">
-        <AnimatePresence mode="wait" custom={direction}>
-            {step === 0 && (
-                <motion.div key="welcome" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="text-center w-full">
-                    <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight mb-4">Let's build your transformation.</h1>
-                    <p className="text-zinc-400 text-lg mb-12 max-w-sm mx-auto">I'll ask a few quick questions to create your personalized AI plan.</p>
-                    <motion.button 
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => setStep(1)}
-                        className="bg-white text-black font-semibold rounded-full px-8 py-4 w-full max-w-[240px]"
-                    >
-                        Begin
-                    </motion.button>
-                </motion.div>
-            )}
+      <div className="mt-6">
+        <div className="text-[11px] uppercase tracking-wider text-zinc-500 mb-3">How do you eat?</div>
+        <div className="grid grid-cols-3 gap-2">
+          {DIET_OPTIONS.map(({ id, label }) => {
+            const active = draft.dietaryPreference === id;
+            return (
+              <button
+                key={id}
+                onClick={() => setDraft((d) => ({ ...d, dietaryPreference: id }))}
+                className={`py-2.5 rounded-xl text-[12.5px] transition-colors ${
+                  active
+                    ? 'bg-[#D4FF00] text-black font-semibold'
+                    : 'bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-white'
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-            {step === 1 && (
-                <motion.div key="name" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="w-full">
-                    <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-8 text-center">What should I call you?</h2>
-                    <input aria-label="First name" 
-                        type="text" 
-                        autoFocus
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        onFocus={(e) => {
-                            const target = e.target;
-                            setTimeout(() => {
-                                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            }, 300);
-                        }}
-                        placeholder="Your name"
-                        className="w-full bg-transparent text-center text-4xl font-semibold text-white placeholder-zinc-800 outline-none border-none caret-[#D4FF00]"
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' && name.trim()) setStep(2);
-                        }}
-                    />
-                    <div className="mt-12 flex justify-center">
-                        <motion.button 
-                            disabled={!name.trim()}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => setStep(2)}
-                            className="bg-[#D4FF00] text-black font-semibold rounded-full px-12 py-4 disabled:opacity-30 transition-opacity"
-                        >
-                            Continue
-                        </motion.button>
-                    </div>
-                </motion.div>
-            )}
+      <div className="mt-6 rounded-3xl border border-zinc-800 bg-zinc-900/40 p-6">
+        <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-[#D4FF00]">
+          Your daily targets
+        </div>
+        <div className="mt-2 flex items-end gap-2">
+          <AnimatedValue value={displayCalories} className="text-5xl font-bold tabular-nums text-white" />
+          <span className="text-sm text-zinc-500 mb-2">kcal</span>
+        </div>
 
-            {step === 2 && (
-                <motion.div key="gender" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="w-full">
-                    <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-8 text-center">What's your gender?</h2>
-                    <div className="grid grid-cols-2 gap-4">
-                        {["Male", "Female"].map(g => (
-                            <button
-                                key={g}
-                                onClick={() => {
-                                    setGender(g as any);
-                                    setTimeout(() => setStep(3), 400);
-                                }}
-                                className={cn(
-                                    "p-8 rounded-3xl border transition-all duration-300 relative overflow-hidden",
-                                    gender === g ? "bg-[rgba(212,255,0,0.1)] border-[#D4FF00]" : "bg-[rgba(255,255,255,0.02)] border-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.05)]"
-                                )}
-                            >
-                                <span className={cn("text-xl font-medium", gender === g ? "text-[#D4FF00]" : "text-white")}>{g}</span>
-                            </button>
-                        ))}
-                    </div>
-                                    <div className="mt-12 flex justify-center">
-                        <motion.button 
-                            disabled={!gender}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => setStep(3)}
-                            className="bg-[#D4FF00] text-black font-semibold rounded-full px-12 py-4 disabled:opacity-30 transition-opacity"
-                        >
-                            Continue
-                        </motion.button>
-                    </div>
-                </motion.div>
-            )}
-            {step === 3 && (
-                <motion.div key="age" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="w-full">
-                    <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-8 text-center">How old are you?</h2>
-                    <div className="flex items-center justify-center gap-4">
-                        <input aria-label="Age" 
-                            type="number" 
-                            autoFocus
-                            value={age}
-                            onChange={(e) => setAge(e.target.value)}
-                            onFocus={(e) => {
-                                const target = e.target;
-                                setTimeout(() => {
-                                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                }, 300);
-                            }}
-                            placeholder="30"
-                            className="w-[120px] bg-transparent text-center text-6xl font-semibold text-white placeholder-zinc-800 outline-none border-none caret-[#D4FF00]"
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && age) setStep(4);
-                            }}
-                        />
-                        <span className="text-2xl text-zinc-500 font-medium pb-2">years</span>
-                    </div>
-                    <div className="mt-12 flex justify-center">
-                        <motion.button 
-                            disabled={!age}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => setStep(4)}
-                            className="bg-[#D4FF00] text-black font-semibold rounded-full px-12 py-4 disabled:opacity-30 transition-opacity"
-                        >
-                            Continue
-                        </motion.button>
-                    </div>
-                </motion.div>
-            )}
+        <div className="mt-6 grid grid-cols-3 gap-3">
+          {[
+            { label: 'Protein', value: displayProtein },
+            { label: 'Fat', value: displayFat },
+            { label: 'Carbs', value: displayCarbs },
+          ].map((macro) => (
+            <div
+              key={macro.label}
+              className="rounded-xl bg-zinc-950/60 border border-zinc-800/70 px-3 py-3 text-center"
+            >
+              <AnimatedValue
+                value={macro.value}
+                className="block text-lg font-semibold tabular-nums text-white"
+              />
+              <div className="text-[10px] uppercase tracking-wider text-zinc-500 mt-1">{macro.label}</div>
+            </div>
+          ))}
+        </div>
 
-            {step === 4 && (
-                <motion.div key="height" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="w-full flex flex-col items-center">
-                    <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-8 text-center">How tall are you?</h2>
-                    
-                    <div className="bg-[rgba(255,255,255,0.05)] p-1 rounded-full flex gap-1 mb-8 relative">
-                        <div 
-                            className="absolute inset-y-1 bg-[#D4FF00] rounded-full transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]" 
-                            style={{ width: '48%', left: heightUnit === 'cm' ? '1%' : '51%' }}
-                        />
-                        <button onClick={() => setHeightUnit('cm')} className={cn("px-6 py-2 rounded-full text-sm font-medium transition-colors relative z-10 w-20", heightUnit === 'cm' ? "text-black" : "text-zinc-400")}>cm</button>
-                        <button onClick={() => setHeightUnit('ft')} className={cn("px-6 py-2 rounded-full text-sm font-medium transition-colors relative z-10 w-20", heightUnit === 'ft' ? "text-black" : "text-zinc-400")}>ft/in</button>
-                    </div>
+        <div className="mt-5 pt-4 border-t border-zinc-800/60 flex items-center gap-2 text-[13px] text-zinc-300">
+          <GoalIcon className="w-4 h-4 text-[#D4FF00]" />
+          <span>{goalMeta.label}</span>
+        </div>
+        <div className="mt-2 flex items-center gap-2 text-[13px] text-zinc-500">
+          <Calendar className="w-4 h-4 shrink-0" />
+          <span>
+            {timeline.weeksToGoal !== null && timeline.estimatedGoalDate
+              ? `In ~${timeline.weeksToGoal} weeks · Goal by ${formatIsoDate(timeline.estimatedGoalDate)}`
+              : 'Maintain weight · Recomp mode'}
+          </span>
+        </div>
+      </div>
 
-                    {heightUnit === 'cm' ? (
-                         <div className="flex items-center justify-center gap-4">
-                             <input aria-label="Height in centimeters" 
-                                 type="number" 
-                                 autoFocus
-                                 value={height}
-                                 onChange={(e) => setHeight(e.target.value)}
-                                 onFocus={(e) => {
-                                     const target = e.target;
-                                     setTimeout(() => {
-                                         target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                     }, 300);
-                                 }}
-                                 placeholder="175"
-                                 className="w-[160px] bg-transparent text-center text-6xl font-semibold text-white placeholder-zinc-800 outline-none border-none caret-[#D4FF00]"
-                                 onKeyDown={(e) => {
-                                     if (e.key === 'Enter' && height) setStep(5);
-                                 }}
-                             />
-                             <span className="text-2xl text-zinc-500 font-medium pb-2">cm</span>
-                         </div>
-                    ) : (
-                         <div className="flex items-center justify-center gap-4">
-                             <input aria-label="Height in feet" 
-                                 type="number" 
-                                 autoFocus
-                                 value={heightFt}
-                                 onChange={(e) => setHeightFt(e.target.value)}
-                                 onFocus={(e) => {
-                                     const target = e.target;
-                                     setTimeout(() => {
-                                         target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                     }, 300);
-                                 }}
-                                 placeholder="5"
-                                 className="w-[80px] bg-transparent text-center text-6xl font-semibold text-white placeholder-zinc-800 outline-none border-none caret-[#D4FF00]"
-                             />
-                             <span className="text-2xl text-zinc-500 font-medium pb-2">ft</span>
-                             <input aria-label="Height in inches" 
-                                 type="number" 
-                                 value={heightIn}
-                                 onChange={(e) => setHeightIn(e.target.value)}
-                                 onFocus={(e) => {
-                                     const target = e.target;
-                                     setTimeout(() => {
-                                         target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                     }, 300);
-                                 }}
-                                 placeholder="9"
-                                 className="w-[80px] bg-transparent text-center text-6xl font-semibold text-white placeholder-zinc-800 outline-none border-none caret-[#D4FF00]"
-                                 onKeyDown={(e) => {
-                                     if (e.key === 'Enter' && heightFt) setStep(5);
-                                 }}
-                             />
-                             <span className="text-2xl text-zinc-500 font-medium pb-2">in</span>
-                         </div>
-                    )}
-                    
-                    <div className="mt-12 flex justify-center">
-                        <motion.button 
-                            disabled={heightUnit === 'cm' ? !height : (!heightFt && !heightIn)}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => setStep(5)}
-                            className="bg-[#D4FF00] text-black font-semibold rounded-full px-12 py-4 disabled:opacity-30 transition-opacity"
-                        >
-                            Continue
-                        </motion.button>
-                    </div>
-                </motion.div>
-            )}
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <button
+          onClick={() => setGoalSheetOpen(true)}
+          className="flex items-center justify-center gap-2 py-3 rounded-full bg-zinc-900/60 border border-zinc-800 text-[13px] text-zinc-300 hover:text-white transition-colors"
+        >
+          <Target className="w-4 h-4" />
+          Change goal
+        </button>
+        <button
+          onClick={() => setMacroSheetOpen(true)}
+          className="flex items-center justify-center gap-2 py-3 rounded-full bg-zinc-900/60 border border-zinc-800 text-[13px] text-zinc-300 hover:text-white transition-colors"
+        >
+          <Sliders className="w-4 h-4" />
+          Edit macros
+        </button>
+      </div>
 
-            {step === 5 && (
-                <motion.div key="weight" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="w-full">
-                    <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-8 text-center">Current weight?</h2>
-                    <div className="flex items-center justify-center gap-4">
-                        <input aria-label="Weight" 
-                            type="number" 
-                            autoFocus
-                            value={weight}
-                            onChange={(e) => setWeight(e.target.value)}
-                            onFocus={(e) => {
-                                const target = e.target;
-                                setTimeout(() => {
-                                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                }, 300);
-                            }}
-                            placeholder="70"
-                            className="w-[160px] bg-transparent text-center text-6xl font-semibold text-white placeholder-zinc-800 outline-none border-none caret-[#D4FF00]"
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && weight) setStep(6);
-                            }}
-                        />
-                        <span className="text-2xl text-zinc-500 font-medium pb-2">kg</span>
-                    </div>
-                    <div className="mt-12 flex justify-center">
-                        <motion.button 
-                            disabled={!weight}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => setStep(6)}
-                            className="bg-[#D4FF00] text-black font-semibold rounded-full px-12 py-4 disabled:opacity-30 transition-opacity"
-                        >
-                            Continue
-                        </motion.button>
-                    </div>
-                </motion.div>
-            )}
+      <div className="flex-1" />
 
-            {step === 6 && (
-                <motion.div key="activity" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="w-full">
-                    <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-8 text-center">How active are you?</h2>
-                    <div className="flex flex-col gap-3">
-                        {[
-                            { label: 'Sedentary', desc: 'Desk job, little or no exercise', icon: '🛋️' },
-                            { label: 'Lightly Active', desc: 'Daily walks, occasional yoga', icon: '🚶' },
-                            { label: 'Moderately Active', desc: 'Gym 3–4 times a week', icon: '🏃' },
-                            { label: 'Very Active', desc: 'Intense gym 5–6 times a week', icon: '🏋️' }
-                        ].map(a => (
-                            <button
-                                key={a.label}
-                                onClick={() => {
-                                    setActivity(a.label as any);
-                                    setTimeout(() => setStep(8), 400);
-                                }}
-                                className={cn(
-                                    "p-5 rounded-2xl border transition-all duration-300 text-left flex items-center gap-4 group",
-                                    activity === a.label ? "bg-[rgba(212,255,0,0.1)] border-[#D4FF00]" : "bg-[rgba(255,255,255,0.02)] border-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.05)] hover:border-[rgba(255,255,255,0.1)]"
-                                )}
-                            >
-                                <span className="text-3xl group-hover:scale-110 transition-transform">{a.icon}</span>
-                                <div>
-                                    <div className={cn("text-lg font-semibold", activity === a.label ? "text-[#D4FF00]" : "text-white")}>{a.label}</div>
-                                    <div className="text-sm text-zinc-400 mt-1">{a.desc}</div>
-                                </div>
-                            </button>
-                        ))}
-                    </div>
-                                    <div className="mt-12 flex justify-center">
-                        <motion.button 
-                            disabled={!activity}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => setStep(8)}
-                            className="bg-[#D4FF00] text-black font-semibold rounded-full px-12 py-4 disabled:opacity-30 transition-opacity"
-                        >
-                            Continue
-                        </motion.button>
-                    </div>
-                </motion.div>
-            )}
-                        {step === 8 && (
-                <motion.div key="ai-analysis" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="w-full flex flex-col items-center justify-center">
-                    <div className="relative w-32 h-32 mb-12">
-                        <motion.div 
-                            animate={{ rotate: 360, scale: [1, 1.05, 1] }} 
-                            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                            className="absolute inset-0 rounded-full border-2 border-dashed border-[rgba(212,255,0,0.3)]"
-                        />
-                        <motion.div 
-                            animate={{ rotate: -360, scale: [1, 1.1, 1] }} 
-                            transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-                            className="absolute inset-2 rounded-full border border-[rgba(255,255,255,0.1)]"
-                        />
-                        <div className="absolute inset-4 rounded-full bg-[rgba(212,255,0,0.2)] blur-xl animate-pulse" />
-                        <div className="absolute inset-8 rounded-full bg-[#D4FF00] shadow-[0_0_40px_rgba(212,255,0,0.5)] flex items-center justify-center overflow-hidden">
-                            <motion.div 
-                                animate={{ y: [0, -10, 0] }}
-                                transition={{ duration: 2, repeat: Infinity }}
-                                className="w-8 h-1 bg-black rounded-full"
-                            />
-                        </div>
-                    </div>
-                    
-                    <div className="h-8 relative w-full overflow-hidden flex justify-center">
-                        <AnimatePresence mode="popLayout">
-                            {aiStatus === 0 && <motion.p key="msg0" initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} exit={{opacity: 0, y: -10}} className="text-xl text-white font-medium">Analyzing body profile...</motion.p>}
-                            {aiStatus === 1 && <motion.p key="msg1" initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} exit={{opacity: 0, y: -10}} className="text-xl text-white font-medium">Calculating maintenance calories...</motion.p>}
-                            {aiStatus === 2 && <motion.p key="msg2" initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} exit={{opacity: 0, y: -10}} className="text-xl text-white font-medium">Estimating body fat...</motion.p>}
-                            {aiStatus === 3 && <motion.p key="msg3" initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} exit={{opacity: 0, y: -10}} className="text-xl text-white font-medium">Generating nutrition targets...</motion.p>}
-                            {aiStatus === 4 && <motion.p key="msg4" initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} exit={{opacity: 0, y: -10}} className="text-xl text-white font-medium">Building your transformation roadmap...</motion.p>}
-                            {aiStatus === 5 && <motion.p key="msg5" initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} exit={{opacity: 0, y: -10}} className="text-xl text-white font-medium">Almost ready...</motion.p>}
-                        </AnimatePresence>
-                    </div>
-                </motion.div>
-            )}
+      <button
+        disabled={!draft.dietaryPreference || saving}
+        onClick={commit}
+        className={`mt-8 w-full py-4 rounded-full font-semibold text-[15px] transition-all ${
+          draft.dietaryPreference && !saving
+            ? 'bg-[#D4FF00] text-black hover:brightness-110'
+            : 'bg-zinc-900 text-zinc-600 cursor-not-allowed'
+        }`}
+      >
+        {saving ? 'Saving…' : 'Start tracking →'}
+      </button>
 
-            {step === 9 && results && (
-                <motion.div key="results" variants={stepVariants} custom={direction} initial="initial" animate="animate" exit="exit" className="w-full py-12">
-                    <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2, duration: 0.6 }}
-                        className="text-center mb-10"
-                    >
-                        <h2 className="text-4xl font-semibold tracking-tight text-white mb-4">Your Transformation Plan</h2>
-                        <p className="text-zinc-400">Based on your profile, here are your optimized daily targets.</p>
-                    </motion.div>
+      <GoalSheet
+        open={goalSheetOpen}
+        onClose={() => setGoalSheetOpen(false)}
+        draft={draft}
+        setDraft={setDraft}
+      />
+      <MacrosSheet
+        open={macroSheetOpen}
+        onClose={() => setMacroSheetOpen(false)}
+        draft={draft}
+        setDraft={setDraft}
+        recommended={{ proteinG: plan.proteinG, fatG: plan.fatG, carbsG: plan.carbsG }}
+      />
+    </div>
+  );
+}
+export function OnboardingPage() {
+  const { session } = useAuthSession();
+  const navigate = useNavigate();
+  const userId = session?.user.id ?? '';
+  const { draft, setDraft, clearDraft, isLoading } = useOnboardingDraft(userId);
 
-                    <div className="grid grid-cols-2 gap-4 mb-8">
-                        <motion.div 
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.6, type: "spring" as any, stiffness: 200 }}
-                            className="col-span-2 bg-[rgba(212,255,0,0.05)] border border-[rgba(212,255,0,0.2)] rounded-3xl p-6 flex items-center"
-                        >
-                            <div>
-                                <div className="text-sm text-[rgba(212,255,0,0.7)] font-semibold uppercase tracking-wider mb-1">Maintenance Calories</div>
-                                <div className="text-5xl font-bold text-[#D4FF00] tracking-tight"><AnimatedNumber value={results.tdee} /></div>
-                            </div>
-                            <div className="text-4xl">🔥</div>
-                        </motion.div>
+  if (isLoading || !draft || !userId) return <ScreenSkeleton />;
 
-                        <motion.div 
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 1.0 }}
-                            className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] rounded-3xl p-6"
-                        >
-                            <div className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-2">Protein</div>
-                            <div className="text-2xl font-bold text-white"><AnimatedNumber value={results.proteinMid} />g</div>
-                        </motion.div>
-                        
-                        <motion.div 
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 1.2 }}
-                            className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] rounded-3xl p-6"
-                        >
-                            <div className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-2">Fats</div>
-                            <div className="text-2xl font-bold text-white"><AnimatedNumber value={results.fatMid} />g</div>
-                        </motion.div>
+  return (
+    <div className="min-h-[100dvh] bg-[#0A0A0B] text-zinc-50 font-sans flex flex-col">
+      <ProgressDots step={draft.step} />
 
-                        <motion.div 
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 1.4 }}
-                            className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] rounded-3xl p-6"
-                        >
-                            <div className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-2">Carbs</div>
-                            <div className="text-2xl font-bold text-white"><AnimatedNumber value={results.carbMid} />g</div>
-                        </motion.div>
-                        
-                    </div>
-
-                    <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 2.2 }}
-                        className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] rounded-3xl p-6 mb-12 flex gap-4"
-                    >
-                        <div className="text-3xl">🤖</div>
-                        <div className="text-sm text-zinc-300 leading-relaxed">
-                            Based on your profile, losing approximately 0.5 kg/week is realistic. Your first milestone is expected in 8 weeks if you stay consistent.
-                        </div>
-                    </motion.div>
-                    
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 3.0, duration: 1 }}
-                        className="flex justify-center pb-8"
-                    >
-                        <motion.button 
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={handleSave}
-                            disabled={saveMutation.isPending}
-                            className="bg-[#D4FF00] text-black font-semibold rounded-full px-12 py-4 flex items-center justify-center gap-2 min-w-[200px]"
-                        >
-                            {saveMutation.isPending ? 'Saving...' : 'Continue'}
-                            {!saveMutation.isPending && <ArrowRight size={20} />}
-                        </motion.button>
-                    </motion.div>
-                </motion.div>
-            )}
-        </AnimatePresence>
+      <div className="flex-1 flex flex-col">
+        {draft.step === 1 && <BasicsScreen draft={draft} setDraft={setDraft} />}
+        {draft.step === 2 && <ActivityScreen draft={draft} setDraft={setDraft} />}
+        {draft.step === 3 && (
+          <PlanScreen
+            draft={draft}
+            setDraft={setDraft}
+            userId={userId}
+            onCommit={() => {
+              clearDraft();
+              navigate('/dashboard', { replace: true });
+            }}
+          />
+        )}
       </div>
     </div>
   );
