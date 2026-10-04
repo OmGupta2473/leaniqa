@@ -14,6 +14,8 @@ export interface DbProfile {
   protein_target: number;
   carbs_target?: number;
   fat_target?: number;
+  /** Onboarding v2: captured during onboarding. Null for legacy rows. */
+  dietary_preference?: 'veg' | 'egg' | 'nonveg' | null;
   created_at?: string;
 }
 
@@ -23,6 +25,8 @@ export interface DbGoal {
   current_bf: number;
   target_bf: number;
   strategy: string;
+  /** Onboarding v2: required - the migration backfills legacy rows to 'cut'. */
+  goal_type: 'cut' | 'recomp' | 'bulk';
   deficit_kcal: number;
   target_date?: string;
   target_weight?: number;
