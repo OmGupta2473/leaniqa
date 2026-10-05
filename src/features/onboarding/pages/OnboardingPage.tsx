@@ -896,7 +896,7 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
         </div>
       </section>
 
-      <div className="mt-[clamp(0.75rem,2dvh,1.25rem)] rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-[clamp(0.75rem,2dvh,1.1rem)] relative">
+      <div className="mt-[clamp(0.75rem,2dvh,1.25rem)] rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-[clamp(0.5rem,1.4dvh,1rem)] relative">
         {/* Header row: label + Adjust link */}
         <div className="flex items-center justify-between mb-[clamp(0.4rem,1.2dvh,0.6rem)]">
           <div className="text-[clamp(0.65rem,1.7dvh,0.78rem)] uppercase tracking-wider text-[#D4FF00]/80 font-semibold">
@@ -920,12 +920,12 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
         </div>
 
         {/* Deficit line */}
-        <div className="mt-1 text-[clamp(0.68rem,1.75dvh,0.8rem)] text-zinc-500 tabular-nums">
+        <div className="mt-0.5 text-[clamp(0.68rem,1.75dvh,0.8rem)] text-zinc-500 tabular-nums">
           {deficitLine}
         </div>
 
         {/* 3 macro tiles */}
-        <div className="grid grid-cols-3 gap-[clamp(0.4rem,1.2dvh,0.6rem)] mt-[clamp(0.6rem,1.6dvh,0.9rem)]">
+        <div className="grid grid-cols-3 gap-[clamp(0.4rem,1.2dvh,0.6rem)] mt-[clamp(0.4rem,1.1dvh,0.75rem)]">
           {[
             { label: 'Protein', value: displayProtein },
             { label: 'Fat', value: displayFat },
@@ -946,7 +946,7 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
         </div>
 
         {/* Goal + timeline row */}
-        <div className="mt-[clamp(0.6rem,1.6dvh,0.9rem)] pt-[clamp(0.5rem,1.4dvh,0.75rem)] border-t border-zinc-800/60 flex items-center justify-between gap-3">
+        <div className="mt-[clamp(0.4rem,1.1dvh,0.75rem)] pt-[clamp(0.35rem,1dvh,0.6rem)] border-t border-zinc-800/60 flex items-center justify-between gap-3">
           <div className="flex items-center gap-1.5 text-[clamp(0.7rem,1.8dvh,0.82rem)] text-zinc-300 font-medium">
             <GOAL_ICON className="w-[clamp(0.8rem,2dvh,0.95rem)] h-[clamp(0.8rem,2dvh,0.95rem)] text-[#D4FF00]" />
             {GOAL_LABEL}
@@ -964,7 +964,7 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
 
       <button
         onClick={() => setScienceTriggered(true)}
-        className="mt-[clamp(0.3rem,1dvh,0.5rem)] w-full rounded-2xl border border-[#D4FF00]/25 bg-[#D4FF00]/5 p-[clamp(0.4rem,1.2dvh,0.6rem)] flex items-center gap-[clamp(0.5rem,1.4dvh,0.75rem)] text-left transition-colors hover:border-[#D4FF00]/50 hover:bg-[#D4FF00]/8"
+        className="mt-[clamp(0.2rem,0.8dvh,0.4rem)] w-full rounded-2xl border border-[#D4FF00]/25 bg-[#D4FF00]/5 p-[clamp(0.35rem,1dvh,0.55rem)] flex items-center gap-[clamp(0.5rem,1.4dvh,0.75rem)] text-left transition-colors hover:border-[#D4FF00]/50 hover:bg-[#D4FF00]/8"
       >
         <div className="w-[clamp(1.75rem,4.5dvh,2.25rem)] h-[clamp(1.75rem,4.5dvh,2.25rem)] rounded-full bg-[#D4FF00]/15 flex items-center justify-center shrink-0">
           <ShieldCheck className="w-[60%] h-[60%] text-[#D4FF00]" />
