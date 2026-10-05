@@ -200,6 +200,11 @@ export const profileService = {
       const payload = {
         ...goalData,
         user_id: userId,
+        // goal_type is NOT NULL in the schema (added in Phase 1A). Legacy
+        // callers (EditProfileModal, EditNutritionModal) may omit it. Default
+        // to 'cut' so an INSERT never throws 23502 — the row can be updated
+        // later when the user completes the new onboarding flow.
+        goal_type: goalData.goal_type ?? 'cut',
       };
 
       devLog('Attempting goal upsert for user_id:', userId, 'Payload:', payload);

@@ -35,7 +35,7 @@ export function RootRedirect() {
   }
 
   if (!goal) {
-    return <Navigate to="/goal" replace />;
+    return <Navigate to="/onboarding" replace />;
   }
 
   return <Navigate to="/dashboard" replace />;

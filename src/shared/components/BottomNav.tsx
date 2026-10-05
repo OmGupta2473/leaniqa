@@ -3,7 +3,6 @@ import { PerfProfiler } from '@/shared/utils/perfDebug';
 import {
   LayoutDashboard,
   TrendingUp,
-  Target,
   FileBarChart,
   Plus
 } from "lucide-react";
@@ -13,7 +12,6 @@ import { motion, AnimatePresence } from "motion/react";
 import { haptics } from "@/shared/utils/haptics";
 
 const navItems = [
-  { id: "/goal", icon: Target, label: "Goal" },
   { id: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { id: "/meals", icon: Plus, label: "Log" },
   { id: "/progress", icon: TrendingUp, label: "Progress" },

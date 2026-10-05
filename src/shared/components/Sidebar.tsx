@@ -13,7 +13,6 @@ import {
   FileBarChart,
   CreditCard,
   LogOut,
-  Target,
   User,
 } from "lucide-react";
 import { supabase } from "@/shared/utils/supabase";
@@ -23,7 +22,6 @@ import { useHasCompletedOnboarding } from '@/shared/hooks/useHasCompletedOnboard
 import { motion, AnimatePresence } from 'motion/react';
 
 const navItems = [
-  { id: "/goal", icon: Target, label: "Goal Setter" },
   { id: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { id: "/meals", icon: MessageSquare, label: "Meals", dot: true },
   { id: "/progress", icon: TrendingUp, label: "Progress" },
