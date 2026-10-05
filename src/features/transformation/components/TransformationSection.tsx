@@ -3,7 +3,6 @@ import { motion } from 'motion/react';
 import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
 import { ArrowRight, Clock, Target, Zap } from 'lucide-react';
 import { cn } from '@/shared/utils/utils';
-import { useNavigate } from 'react-router-dom';
 
 function displayVal(val: any) {
   if (val === undefined || val === null || val === '') return '—';
@@ -38,7 +37,6 @@ function BodyFatImagePlaceholder({ gender, categoryRange, className }: { gender:
 }
 
 export function TransformationSection() {
-  const navigate = useNavigate();
   const { profileData, isLoading } = useCalculatedProfile();
 
   if (isLoading || !profileData || !profileData.currentBodyFatPct || !profileData.targetBodyFatPct) {
@@ -100,13 +98,6 @@ export function TransformationSection() {
             <div className="text-[13px] text-[rgba(235,235,245,0.5)]">Target physique & strategy</div>
           </div>
         </div>
-        <button 
-          onClick={() => navigate('/goal')} 
-          className="bg-[rgba(55,138,221,0.12)] border-[0.5px] border-[rgba(55,138,221,0.3)] rounded-lg text-[#378ADD] font-semibold transition-all active:scale-95"
-          style={{ padding: '6px 12px', fontSize: '12px' }}
-        >
-          Update
-        </button>
       </div>
 
       <div className="bg-[#111113] border border-[rgba(255,255,255,0.06)] rounded-3xl p-5 shadow-2xl relative overflow-hidden">

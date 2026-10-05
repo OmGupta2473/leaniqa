@@ -10,7 +10,7 @@ import { ScrollHandler } from '@/shared/components/ScrollHandler';
 import { ScreenSkeleton } from '@/shared/components/ScreenSkeleton';
 import { RouteMetadata } from '@/shared/components/RouteMetadata';
 import { AnalyticsObserver } from '@/shared/components/AnalyticsObserver';
-import { DashboardSkeleton, MealLoggerSkeleton, ProgressSkeleton, WeeklyReportSkeleton, ProfileSkeleton, NutritionDetailSkeleton, AwardsSkeleton, GoalSkeleton } from '@/shared/components/Skeletons';
+import { DashboardSkeleton, MealLoggerSkeleton, ProgressSkeleton, WeeklyReportSkeleton, ProfileSkeleton, NutritionDetailSkeleton, AwardsSkeleton } from '@/shared/components/Skeletons';
 
 const DashboardPage = lazy(() => import('@/features/dashboard/pages/DashboardPage').then(module => ({ default: module.DashboardPage })));
 const MealLoggerPage = lazy(() => import('@/features/nutrition/pages/MealLoggerPage').then(module => ({ default: module.MealLoggerPage })));
@@ -24,7 +24,6 @@ const AwardsPage = lazy(() => import('@/features/awards/pages/AwardsPage').then(
 const AuthPage = lazy(() => import('@/features/auth/pages/AuthPage').then(module => ({ default: module.AuthPage })));
 const OnboardingPage = lazy(() => import('@/features/onboarding/pages/OnboardingPage').then(module => ({ default: module.OnboardingPage })));
 const SciencePage = lazy(() => import('@/features/onboarding/pages/SciencePage').then(module => ({ default: module.SciencePage })));
-const GoalSetterPage = lazy(() => import('@/features/goal/pages/GoalSetterPage').then(module => ({ default: module.GoalSetterPage })));
 const LandingPage = lazy(() => import('@/LandingPage').then(module => ({ default: module.LandingPage })));
 const NotFoundPage = lazy(() => import('@/shared/components/NotFoundPage').then(module => ({ default: module.NotFoundPage })));
 
@@ -89,7 +88,6 @@ export const routes: RouteObject[] = [
             children: [
               { path: '/onboarding', element: <Suspense fallback={<ScreenSkeleton />}><OnboardingPage /></Suspense>, handle: { title: 'Welcome', description: 'Get started with LeanIQA.' } },
               { path: '/science', element: <Suspense fallback={<ScreenSkeleton />}><SciencePage /></Suspense>, handle: { title: 'Why these numbers', description: 'Research behind your plan.' } },
-              { path: '/goal', element: <Suspense fallback={<GoalSkeleton />}><GoalSetterPage /></Suspense>, handle: { title: 'Set Goal', description: 'Set your nutrition and body goals.' } },
               { path: '/dashboard', element: <Suspense fallback={<DashboardSkeleton />}><DashboardPage /></Suspense>, handle: { title: 'Dashboard', description: 'Your daily nutrition and progress overview.' } },
               { path: '/meals', element: <Suspense fallback={<MealLoggerSkeleton />}><MealLoggerPage /></Suspense>, handle: { title: 'Log Meal', description: 'Log your meals and track your macros.' } },
               { path: '/progress', element: <Suspense fallback={<ProgressSkeleton />}><ProgressPage /></Suspense>, handle: { title: 'Progress', description: 'Track your long-term body transformation.' } },
