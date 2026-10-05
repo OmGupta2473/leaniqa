@@ -24,6 +24,7 @@ import {
 } from '@/shared/utils/onboardingMath';
 import { useOnboardingDraft } from '../useOnboardingDraft';
 import type { OnboardingDraft } from '../types';
+import { useViewport } from '@/shared/styles/responsive';
 
 type DraftProps = {
   draft: OnboardingDraft;
@@ -165,12 +166,16 @@ function BasicsScreen({ draft, setDraft }: DraftProps) {
   };
 
   return (
-    <div className="flex-1 flex flex-col px-6 pb-8 w-full max-w-md mx-auto">
-      <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white">
-        Let&apos;s get to know you
-      </h1>
-      <p className="text-zinc-400 text-sm mt-2">Takes 60 seconds.</p>
+    <div className="flex flex-col h-full min-h-0 w-full max-w-md mx-auto">
+      <header className="flex-shrink-0 px-6 pt-2 pb-2">
+        <ProgressDots step={draft.step} />
+        <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white mt-4 mb-2">
+          Let&apos;s get to know you
+        </h1>
+        <p className="text-zinc-400 text-sm mt-2">Takes 60 seconds.</p>
+      </header>
 
+      <main className="flex-1 min-h-0 overflow-y-auto px-6">
       <div className="mt-10 space-y-4">
         <input
           value={draft.name}
@@ -244,9 +249,9 @@ function BasicsScreen({ draft, setDraft }: DraftProps) {
           />
         </div>
       </div>
+      </main>
 
-      <div className="flex-1" />
-
+      <footer className="flex-shrink-0 px-6 pb-8">
       <button
         disabled={!isValid}
         onClick={() => setDraft((d) => ({ ...d, step: 2 }))}
@@ -258,6 +263,7 @@ function BasicsScreen({ draft, setDraft }: DraftProps) {
       >
         Continue
       </button>
+      </footer>
     </div>
   );
 }
@@ -271,78 +277,88 @@ const ACTIVITY_OPTIONS: { id: ActivityLevel; label: string; desc: string; Icon: 
 ];
 
 function ActivityScreen({ draft, setDraft }: DraftProps) {
-  const canContinue = draft.activity !== null;
-
-  const handleContinue = () => {
-    if (!draft.activity) return;
-    // Suggest a goal from BMI so screen 3 opens on something sensible. The user
-    // can still change it there.
-    const suggested =
-      draft.heightCm && draft.weightKg
-        ? suggestGoal(calculateBMI(draft.heightCm, draft.weightKg))
-        : null;
-    setDraft((d) => ({ ...d, step: 3, goalOverride: d.goalOverride ?? suggested }));
-  };
+  const { isCompact, isShort } = useViewport();
 
   return (
-    <div className="flex-1 flex flex-col px-6 pb-8 w-full max-w-md mx-auto">
-      <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white">
-        How active are you?
-      </h1>
-      <p className="text-zinc-400 text-sm mt-2">Be honest — this changes your calorie target.</p>
+    <div className="flex flex-col h-full min-h-0">
+      {/* Fixed header */}
+      <header className="flex-shrink-0 px-[clamp(1rem,4vw,1.5rem)] pt-2 pb-[clamp(0.75rem,2dvh,1.25rem)]">
+        <ProgressDots step={draft.step} />
+        <h1 className="text-[clamp(1.5rem,4.5dvh,2rem)] font-semibold tracking-tight text-white mt-4 mb-2">
+          How active are you?
+        </h1>
+        <p className="text-[clamp(0.8rem,2.2dvh,0.95rem)] text-zinc-400 leading-relaxed">
+          Be honest — this changes your calorie target.
+        </p>
+      </header>
 
-      <div className="mt-10 space-y-3">
-        {ACTIVITY_OPTIONS.map(({ id, label, desc, Icon }) => {
-          const active = draft.activity === id;
-          return (
-            <button
-              key={id}
-              onClick={() => setDraft((d) => ({ ...d, activity: id }))}
-              className={`w-full flex items-center gap-4 rounded-2xl border p-4 text-left transition-colors ${
-                active
-                  ? 'border-[#D4FF00]/50 bg-[#D4FF00]/5'
-                  : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
-              }`}
-            >
-              <div
-                className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
-                  active ? 'bg-[#D4FF00]/15' : 'bg-zinc-900'
-                }`}
+      {/* Flexible middle - 5 cards */}
+      <main className="flex-1 min-h-0 overflow-y-auto px-[clamp(1rem,4vw,1.5rem)]">
+        <div className="flex flex-col gap-[clamp(0.4rem,1.4dvh,0.75rem)]">
+          {ACTIVITY_OPTIONS.map((opt) => {
+            const selected = draft.activity === opt.id;
+            return (
+              <button
+                key={opt.id}
+                onClick={() => setDraft((d) => ({ ...d, activity: opt.id }))}
+                className={`w-full flex items-center gap-[clamp(0.75rem,2dvh,1rem)] rounded-2xl border text-left transition-colors ${
+                  selected
+                    ? 'border-[#D4FF00]/50 bg-[#D4FF00]/5'
+                    : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
+                } p-[clamp(0.7rem,2.2dvh,1rem)]`}
               >
-                <Icon className={`w-5 h-5 ${active ? 'text-[#D4FF00]' : 'text-zinc-400'}`} />
-              </div>
-              <div className="min-w-0">
-                <div className="text-[15px] font-semibold text-white">{label}</div>
-                <div className="text-[12px] text-zinc-500">{desc}</div>
-              </div>
-              {active && <Check className="w-4 h-4 text-[#D4FF00] ml-auto shrink-0" />}
-            </button>
-          );
-        })}
-      </div>
+                <div
+                  className={`flex-shrink-0 rounded-xl flex items-center justify-center ${
+                    selected ? 'bg-[#D4FF00]/15' : 'bg-zinc-900'
+                  } w-[clamp(2.25rem,5.5dvh,2.75rem)] h-[clamp(2.25rem,5.5dvh,2.75rem)]`}
+                >
+                  <opt.Icon
+                    className={`w-[55%] h-[55%] ${selected ? 'text-[#D4FF00]' : 'text-zinc-400'}`}
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[clamp(0.85rem,2.4dvh,1rem)] font-semibold text-white tracking-tight">
+                    {opt.label}
+                  </div>
+                  {!isShort && (
+                    <div className="text-[clamp(0.72rem,1.9dvh,0.85rem)] text-zinc-500 mt-0.5">
+                      {opt.desc}
+                    </div>
+                  )}
+                </div>
+                {selected && (
+                  <Check className="w-5 h-5 text-[#D4FF00] shrink-0" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </main>
 
-      <div className="flex-1" />
-
-      <div className="mt-8 grid grid-cols-2 gap-3">
+      {/* Fixed footer */}
+      <footer className="flex-shrink-0 px-[clamp(1rem,4vw,1.5rem)] pt-[clamp(0.6rem,1.8dvh,1rem)] pb-[max(0.75rem,env(safe-area-inset-bottom))] flex gap-3">
         <button
           onClick={() => setDraft((d) => ({ ...d, step: 1 }))}
-          className="py-4 rounded-full font-semibold text-[15px] bg-zinc-900/60 border border-zinc-800 text-zinc-300 hover:text-white transition-colors"
+          className="flex-1 rounded-full bg-zinc-900/60 border border-zinc-800 text-zinc-300 font-semibold py-[clamp(0.6rem,1.8dvh,0.85rem)] text-[clamp(0.85rem,2.2dvh,0.95rem)]"
         >
           Back
         </button>
         <button
-          disabled={!canContinue}
-          onClick={handleContinue}
-          className={`py-4 rounded-full font-semibold text-[15px] transition-all flex items-center justify-center gap-1.5 ${
-            canContinue
-              ? 'bg-[#D4FF00] text-black hover:brightness-110'
-              : 'bg-zinc-900 text-zinc-600 cursor-not-allowed'
-          }`}
+          disabled={draft.activity === null}
+          onClick={() => {
+            const bmi = calculateBMI(draft.heightCm!, draft.weightKg!);
+            const suggested = suggestGoal(bmi);
+            setDraft((d) => ({
+              ...d,
+              step: 3,
+              goalOverride: d.goalOverride ?? suggested,
+            }));
+          }}
+          className="flex-1 rounded-full bg-[#D4FF00] text-black font-semibold py-[clamp(0.6rem,1.8dvh,0.85rem)] text-[clamp(0.85rem,2.2dvh,0.95rem)] disabled:opacity-40 flex items-center justify-center gap-2"
         >
-          Continue
-          <ArrowRight className="w-4 h-4" />
+          Continue <ArrowRight className="w-4 h-4" />
         </button>
-      </div>
+      </footer>
     </div>
   );
 }
@@ -604,7 +620,9 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
   };
 
   return (
-    <div className="flex-1 flex flex-col px-6 pb-8 w-full max-w-md mx-auto">
+    <div className="flex flex-col h-full min-h-0 w-full max-w-md mx-auto">
+      <header className="flex-shrink-0 px-6 pt-2 pb-2">
+        <ProgressDots step={draft.step} />
       <div className="flex items-center gap-3">
         <button
           onClick={() => setDraft((d) => ({ ...d, step: 2 }))}
@@ -618,6 +636,9 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
           <p className="text-zinc-400 text-sm mt-1">Based on your stats.</p>
         </div>
       </div>
+      </header>
+
+      <main className="flex-1 min-h-0 overflow-y-auto px-6">
 {bmi < 18.5 && (
         <div className="mt-5 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 flex items-start gap-2">
           <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
@@ -743,8 +764,9 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
         </button>
       </div>
 
-      <div className="flex-1" />
+      </main>
 
+      <footer className="flex-shrink-0 px-6 pb-8">
       <button
         disabled={!draft.dietaryPreference || saving}
         onClick={commit}
@@ -756,6 +778,7 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
       >
         {saving ? 'Saving…' : 'Start tracking →'}
       </button>
+      </footer>
 
       <MacrosSheet
         open={macroSheetOpen}
@@ -776,10 +799,8 @@ export function OnboardingPage() {
   if (isLoading || !draft || !userId) return <ScreenSkeleton />;
 
   return (
-    <div className="min-h-[100dvh] bg-[#0A0A0B] text-zinc-50 font-sans flex flex-col">
-      <ProgressDots step={draft.step} />
-
-      <div className="flex-1 flex flex-col">
+    <div className="h-[100dvh] min-h-0 bg-[#0A0A0B] text-zinc-50 font-sans flex flex-col">
+      <div className="flex-1 min-h-0 flex flex-col">
         {draft.step === 1 && <BasicsScreen draft={draft} setDraft={setDraft} />}
         {draft.step === 2 && <ActivityScreen draft={draft} setDraft={setDraft} />}
         {draft.step === 3 && (
