@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle, Armchair, ArrowLeft, ArrowRight, Calendar, Check, Dumbbell,
-  Flame, Footprints, Sliders, Target, TrendingDown, TrendingUp, X, Zap,
+  Flame, Footprints, Target, TrendingDown, TrendingUp, X, Zap,
 } from 'lucide-react';
 import { useAuthSession } from '@/router/useAuthSession';
 import { profileService } from '@/features/profile/services/profileService';
@@ -538,7 +538,8 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
     : plan.targetCalories;
 
   const goalMeta = GOAL_OPTIONS.find((option) => option.id === goal) ?? GOAL_OPTIONS[0];
-  const GoalIcon = goalMeta.Icon;
+  const GOAL_ICON = goalMeta.Icon;
+  const GOAL_LABEL = goalMeta.label;
 
   // goalAdjustmentPct already comes out of the engine in percent (e.g. -22),
   // so it is rounded here rather than multiplied again.
@@ -650,114 +651,134 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
         </div>
       )}
 
-      <div className="mt-6">
-        <div className="text-sm text-zinc-400 uppercase tracking-wider mb-3">What's your goal?</div>
-        <div className="space-y-2">
-          {GOAL_OPTIONS.map(({ id, label, desc, Icon }) => {
-            const active = goal === id;
+      <section className="mt-[clamp(0.75rem,2dvh,1.25rem)]">
+        <div className="text-[clamp(0.7rem,1.8dvh,0.8rem)] uppercase tracking-wider text-zinc-500 mb-[clamp(0.4rem,1.2dvh,0.6rem)]">
+          Your goal
+        </div>
+
+        {/* Horizontal pill row — 3 equal-width pills */}
+        <div className="grid grid-cols-3 gap-[clamp(0.35rem,1dvh,0.5rem)]">
+          {GOAL_OPTIONS.map((opt) => {
+            const active = goal === opt.id;
             return (
               <button
-                key={id}
-                type="button"
-                onClick={() => setDraft((d) => ({ ...d, goalOverride: id }))}
-                className={`w-full flex items-center gap-3 rounded-xl border p-3 text-left transition-colors ${
+                key={opt.id}
+                onClick={() => setDraft((d) => ({ ...d, goalOverride: opt.id }))}
+                className={`flex flex-col items-center justify-center gap-1 rounded-xl border py-[clamp(0.45rem,1.4dvh,0.7rem)] px-[clamp(0.25rem,1vw,0.5rem)] transition-colors ${
                   active
-                    ? 'border-[#D4FF00]/50 bg-[#D4FF00]/5'
+                    ? 'border-[#D4FF00]/60 bg-[#D4FF00]/8'
                     : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
                 }`}
               >
-                <div
-                  className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                    active ? 'bg-[#D4FF00]/15' : 'bg-zinc-900'
+                <opt.Icon
+                  className={`w-[clamp(0.9rem,2.2dvh,1.1rem)] h-[clamp(0.9rem,2.2dvh,1.1rem)] ${
+                    active ? 'text-[#D4FF00]' : 'text-zinc-400'
                   }`}
-                >
-                  <Icon className={`w-4 h-4 ${active ? 'text-[#D4FF00]' : 'text-zinc-400'}`} />
-                </div>
-                <div className="min-w-0">
-                  <div className={`text-[14px] font-semibold ${active ? 'text-white' : 'text-zinc-300'}`}>
-                    {label}
-                  </div>
-                  <div className="text-[12px] text-zinc-500">{desc}</div>
-                </div>
+                />
+                <span className={`text-[clamp(0.68rem,1.75dvh,0.82rem)] font-semibold tracking-tight ${
+                  active ? 'text-white' : 'text-zinc-300'
+                }`}>
+                  {opt.label}
+                </span>
               </button>
             );
           })}
         </div>
-      </div>
 
-      <div className="mt-6">
-        <div className="text-[11px] uppercase tracking-wider text-zinc-500 mb-3">How do you eat?</div>
-        <div className="grid grid-cols-3 gap-2">
-          {DIET_OPTIONS.map(({ id, label }) => {
-            const active = draft.dietaryPreference === id;
+        {/* Description of the currently selected goal */}
+        <div className="mt-[clamp(0.4rem,1.2dvh,0.6rem)] text-[clamp(0.65rem,1.6dvh,0.78rem)] text-zinc-500 leading-snug text-center">
+          {GOAL_OPTIONS.find((g) => g.id === goal)?.desc}
+        </div>
+      </section>
+
+      <section className="mt-[clamp(0.65rem,1.8dvh,1rem)]">
+        <div className="text-[clamp(0.7rem,1.8dvh,0.8rem)] uppercase tracking-wider text-zinc-500 mb-[clamp(0.4rem,1.2dvh,0.6rem)]">
+          How do you eat?
+        </div>
+        <div className="grid grid-cols-3 gap-[clamp(0.35rem,1dvh,0.5rem)]">
+          {DIET_OPTIONS.map((opt) => {
+            const active = draft.dietaryPreference === opt.id;
             return (
               <button
-                key={id}
-                onClick={() => setDraft((d) => ({ ...d, dietaryPreference: id }))}
-                className={`py-2.5 rounded-xl text-[12.5px] transition-colors ${
+                key={opt.id}
+                onClick={() => setDraft((d) => ({ ...d, dietaryPreference: opt.id }))}
+                className={`rounded-full border py-[clamp(0.4rem,1.2dvh,0.6rem)] text-[clamp(0.7rem,1.85dvh,0.85rem)] font-medium tracking-tight transition-colors ${
                   active
-                    ? 'bg-[#D4FF00] text-black font-semibold'
-                    : 'bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-white'
+                    ? 'border-[#D4FF00] bg-[#D4FF00] text-black'
+                    : 'border-zinc-800 bg-zinc-900/40 text-zinc-400 hover:border-zinc-700'
                 }`}
               >
-                {label}
+                {opt.label}
               </button>
             );
           })}
         </div>
-      </div>
+      </section>
 
-      <div className="mt-6 rounded-3xl border border-zinc-800 bg-zinc-900/40 p-6">
-        <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-[#D4FF00]">
-          Your daily targets
+      <div className="mt-[clamp(0.75rem,2dvh,1.25rem)] rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-[clamp(0.75rem,2dvh,1.1rem)] relative">
+        {/* Header row: label + Adjust link */}
+        <div className="flex items-center justify-between mb-[clamp(0.4rem,1.2dvh,0.6rem)]">
+          <div className="text-[clamp(0.65rem,1.7dvh,0.78rem)] uppercase tracking-wider text-[#D4FF00]/80 font-semibold">
+            Your daily targets
+          </div>
+          <button
+            onClick={() => setMacroSheetOpen(true)}
+            className="text-[clamp(0.65rem,1.65dvh,0.78rem)] text-zinc-500 hover:text-white transition-colors"
+          >
+            Adjust ›
+          </button>
         </div>
-        <div className="mt-2 flex items-end gap-2">
-          <AnimatedValue value={displayCalories} className="text-5xl font-bold tabular-nums text-white" />
-          <span className="text-sm text-zinc-500 mb-2">kcal</span>
-        </div>
-        <p className="text-[12px] text-zinc-500 mt-1 tabular-nums">{deficitLine}</p>
 
-        <div className="mt-6 grid grid-cols-3 gap-3">
+        {/* Big calorie number */}
+        <div className="flex items-baseline gap-1.5">
+          <AnimatedValue
+            value={displayCalories}
+            className="text-[clamp(2rem,7dvh,2.75rem)] font-semibold tabular-nums tracking-tight text-white leading-none"
+          />
+          <span className="text-[clamp(0.8rem,2.2dvh,1rem)] text-zinc-500 font-medium">kcal</span>
+        </div>
+
+        {/* Deficit line */}
+        <div className="mt-1 text-[clamp(0.68rem,1.75dvh,0.8rem)] text-zinc-500 tabular-nums">
+          {deficitLine}
+        </div>
+
+        {/* 3 macro tiles */}
+        <div className="grid grid-cols-3 gap-[clamp(0.4rem,1.2dvh,0.6rem)] mt-[clamp(0.6rem,1.6dvh,0.9rem)]">
           {[
             { label: 'Protein', value: displayProtein },
             { label: 'Fat', value: displayFat },
             { label: 'Carbs', value: displayCarbs },
-          ].map((macro) => (
+          ].map((m) => (
             <div
-              key={macro.label}
-              className="rounded-xl bg-zinc-950/60 border border-zinc-800/70 px-3 py-3 text-center"
+              key={m.label}
+              className="rounded-xl border border-zinc-800 bg-black/20 py-[clamp(0.4rem,1.2dvh,0.6rem)] text-center"
             >
-              <AnimatedValue
-                value={macro.value}
-                className="block text-lg font-semibold tabular-nums text-white"
-              />
-              <div className="text-[10px] uppercase tracking-wider text-zinc-500 mt-1">{macro.label}</div>
+              <div className="text-[clamp(0.95rem,2.6dvh,1.15rem)] font-semibold tabular-nums text-white leading-none">
+                <AnimatedValue value={m.value} />g
+              </div>
+              <div className="mt-1 text-[clamp(0.58rem,1.5dvh,0.68rem)] uppercase tracking-wider text-zinc-500">
+                {m.label}
+              </div>
             </div>
           ))}
         </div>
 
-        <div className="mt-5 pt-4 border-t border-zinc-800/60 flex items-center gap-2 text-[13px] text-zinc-300">
-          <GoalIcon className="w-4 h-4 text-[#D4FF00]" />
-          <span>{goalMeta.label}</span>
+        {/* Goal + timeline row */}
+        <div className="mt-[clamp(0.6rem,1.6dvh,0.9rem)] pt-[clamp(0.5rem,1.4dvh,0.75rem)] border-t border-zinc-800/60 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 text-[clamp(0.7rem,1.8dvh,0.82rem)] text-zinc-300 font-medium">
+            <GOAL_ICON className="w-[clamp(0.8rem,2dvh,0.95rem)] h-[clamp(0.8rem,2dvh,0.95rem)] text-[#D4FF00]" />
+            {GOAL_LABEL}
+          </div>
+          <div className="flex items-center gap-1.5 text-[clamp(0.65rem,1.65dvh,0.78rem)] text-zinc-500 tabular-nums">
+            <Calendar className="w-[clamp(0.7rem,1.8dvh,0.85rem)] h-[clamp(0.7rem,1.8dvh,0.85rem)] shrink-0" />
+            <span>
+              {timeline.weeksToGoal !== null && timeline.estimatedGoalDate
+                ? `In ~${timeline.weeksToGoal} weeks · Goal by ${formatIsoDate(timeline.estimatedGoalDate)}`
+                : 'Maintain weight · Recomp mode'}
+            </span>
+          </div>
         </div>
-        <div className="mt-2 flex items-center gap-2 text-[13px] text-zinc-500">
-          <Calendar className="w-4 h-4 shrink-0" />
-          <span>
-            {timeline.weeksToGoal !== null && timeline.estimatedGoalDate
-              ? `In ~${timeline.weeksToGoal} weeks · Goal by ${formatIsoDate(timeline.estimatedGoalDate)}`
-              : 'Maintain weight · Recomp mode'}
-          </span>
-        </div>
-      </div>
-
-      <div className="mt-4">
-        <button
-          onClick={() => setMacroSheetOpen(true)}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-full bg-zinc-900/60 border border-zinc-800 text-[13px] text-zinc-300 hover:text-white transition-colors"
-        >
-          <Sliders className="w-4 h-4" />
-          Edit macros
-        </button>
       </div>
 
       </main>
