@@ -41,6 +41,23 @@ function formatIsoDate(iso: string): string {
   return `${day} ${MONTHS[month - 1]} ${year}`;
 }
 
+/** Height conversions. The draft always stores centimetres; ft/in is display only. */
+function cmToFtIn(cm: number): { ft: number; inch: number } {
+  const totalInches = cm / 2.54;
+  let ft = Math.floor(totalInches / 12);
+  let inch = Math.round(totalInches - ft * 12);
+  // Rounding can tip 11.6" up to 12" - carry it into the next foot.
+  if (inch >= 12) {
+    ft += 1;
+    inch -= 12;
+  }
+  return { ft, inch };
+}
+
+function ftInToCm(ft: number, inch: number): number {
+  return Math.round((ft * 12 + inch) * 2.54 * 10) / 10;
+}
+
 /** Engine activity level -> the exact string the profiles table stores. */
 const ACTIVITY_TO_DB_LABEL = {
     sedentary: 'Sedentary',
@@ -109,12 +126,43 @@ function UnitInput({ value, onChange, placeholder, unit }: {
 }
 
 function BasicsScreen({ draft, setDraft }: DraftProps) {
+  const [heightMode, setHeightMode] = useState<'cm' | 'ftin'>('cm');
+  const [ft, setFt] = useState<number | null>(null);
+  const [inch, setInch] = useState<number | null>(null);
+
   const isValid =
     draft.name.trim().length > 0 &&
     draft.sex !== null &&
     draft.age !== null && draft.age >= 13 && draft.age <= 120 &&
     draft.heightCm !== null && draft.heightCm > 0 &&
     draft.weightKg !== null && draft.weightKg > 0;
+
+  /** Convert the current value when switching modes so the equivalent shows at once. */
+  const switchHeightMode = (next: 'cm' | 'ftin') => {
+    if (next === heightMode) return;
+    if (next === 'ftin') {
+      if (draft.heightCm) {
+        const converted = cmToFtIn(draft.heightCm);
+        setFt(converted.ft);
+        setInch(converted.inch);
+      }
+    } else if (ft !== null || inch !== null) {
+      setDraft((d) => ({ ...d, heightCm: ftInToCm(ft ?? 0, inch ?? 0) }));
+    }
+    setHeightMode(next);
+  };
+
+  const updateFt = (value: number | null) => {
+    const next = value === null ? null : Math.min(8, Math.max(0, value));
+    setFt(next);
+    setDraft((d) => ({ ...d, heightCm: ftInToCm(next ?? 0, inch ?? 0) }));
+  };
+
+  const updateInch = (value: number | null) => {
+    const next = value === null ? null : Math.min(11, Math.max(0, value));
+    setInch(next);
+    setDraft((d) => ({ ...d, heightCm: ftInToCm(ft ?? 0, next ?? 0) }));
+  };
 
   return (
     <div className="flex-1 flex flex-col px-6 pb-8 w-full max-w-md mx-auto">
@@ -156,13 +204,38 @@ function BasicsScreen({ draft, setDraft }: DraftProps) {
           />
         </div>
 
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">Height</span>
+          <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-0.5 flex gap-0.5">
+            {(['cm', 'ftin'] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => switchHeightMode(mode)}
+                className={`px-3 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                  heightMode === mode ? 'bg-[#D4FF00] text-black' : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                {mode === 'cm' ? 'cm' : 'ft/in'}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
-          <UnitInput
-            value={draft.heightCm}
-            onChange={(v) => setDraft((d) => ({ ...d, heightCm: v }))}
-            placeholder="Height"
-            unit="cm"
-          />
+          {heightMode === 'cm' ? (
+            <UnitInput
+              value={draft.heightCm}
+              onChange={(v) => setDraft((d) => ({ ...d, heightCm: v }))}
+              placeholder="Height"
+              unit="cm"
+            />
+          ) : (
+            <>
+              <UnitInput value={ft} onChange={updateFt} placeholder="ft" unit="ft" />
+              <UnitInput value={inch} onChange={updateInch} placeholder="in" unit="in" />
+            </>
+          )}
           <UnitInput
             value={draft.weightKg}
             onChange={(v) => setDraft((d) => ({ ...d, weightKg: v }))}
@@ -274,9 +347,9 @@ function ActivityScreen({ draft, setDraft }: DraftProps) {
   );
 }
 const GOAL_OPTIONS: { id: GoalType; label: string; desc: string; Icon: typeof Target }[] = [
-  { id: 'cut', label: 'Lose Fat', desc: 'Reduce body fat · 15% deficit', Icon: TrendingDown },
+  { id: 'cut', label: 'Lose Fat', desc: 'Reduce body fat · 22% deficit', Icon: TrendingDown },
   { id: 'recomp', label: 'Recomp', desc: 'Lose fat and build muscle · maintenance', Icon: Target },
-  { id: 'bulk', label: 'Build Muscle', desc: 'Gain muscle · 10% surplus', Icon: TrendingUp },
+  { id: 'bulk', label: 'Build Muscle', desc: 'Gain muscle · 8% surplus', Icon: TrendingUp },
 ];
 
 /** Shared bottom-sheet chrome: portal, backdrop, spring entrance, Escape to close. */
@@ -332,49 +405,6 @@ function Sheet({ open, onClose, title, children }: {
   );
 }
 
-function GoalSheet({ open, onClose, draft, setDraft }: {
-  open: boolean;
-  onClose: () => void;
-} & DraftProps) {
-  const current = draft.goalOverride ?? 'cut';
-
-  return (
-    <Sheet open={open} onClose={onClose} title="Change goal">
-      <div className="space-y-3">
-        {GOAL_OPTIONS.map(({ id, label, desc, Icon }) => {
-          const active = current === id;
-          return (
-            <button
-              key={id}
-              onClick={() => {
-                setDraft((d) => ({ ...d, goalOverride: id }));
-                onClose();
-              }}
-              className={`w-full flex items-center gap-3 rounded-2xl border p-4 text-left transition-colors ${
-                active
-                  ? 'border-[#D4FF00]/50 bg-[#D4FF00]/5'
-                  : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
-              }`}
-            >
-              <div
-                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                  active ? 'bg-[#D4FF00]/15' : 'bg-zinc-900'
-                }`}
-              >
-                <Icon className={`w-5 h-5 ${active ? 'text-[#D4FF00]' : 'text-zinc-400'}`} />
-              </div>
-              <div className="min-w-0">
-                <div className="text-[15px] font-semibold text-white">{label}</div>
-                <div className="text-[12px] text-zinc-500">{desc}</div>
-              </div>
-              {active && <Check className="w-4 h-4 text-[#D4FF00] ml-auto shrink-0" />}
-            </button>
-          );
-        })}
-      </div>
-    </Sheet>
-  );
-}
 function MacroInput({ label, value, onChange }: {
   label: string;
   value: number | null;
@@ -470,7 +500,6 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [goalSheetOpen, setGoalSheetOpen] = useState(false);
   const [macroSheetOpen, setMacroSheetOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -498,6 +527,17 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
 
   const goalMeta = GOAL_OPTIONS.find((option) => option.id === goal) ?? GOAL_OPTIONS[0];
   const GoalIcon = goalMeta.Icon;
+
+  // goalAdjustmentPct already comes out of the engine in percent (e.g. -22),
+  // so it is rounded here rather than multiplied again.
+  const adjustmentPct = Math.abs(Math.round(plan.goalAdjustmentPct));
+  const deficitLine = draft.macroOverrides
+    ? `Custom macros · base maintenance ${plan.maintenance.toLocaleString()} kcal`
+    : goal === 'recomp'
+      ? 'at maintenance — no deficit or surplus'
+      : `${goal === 'cut' ? '−' : '+'}${adjustmentPct}% ${
+          goal === 'cut' ? 'from your maintenance' : 'above your maintenance'
+        } (${plan.maintenance.toLocaleString()} kcal)`;
 
   const commit = async () => {
     if (saving) return;
@@ -594,6 +634,41 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
       )}
 
       <div className="mt-6">
+        <div className="text-sm text-zinc-400 uppercase tracking-wider mb-3">What's your goal?</div>
+        <div className="space-y-2">
+          {GOAL_OPTIONS.map(({ id, label, desc, Icon }) => {
+            const active = goal === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setDraft((d) => ({ ...d, goalOverride: id }))}
+                className={`w-full flex items-center gap-3 rounded-xl border p-3 text-left transition-colors ${
+                  active
+                    ? 'border-[#D4FF00]/50 bg-[#D4FF00]/5'
+                    : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
+                }`}
+              >
+                <div
+                  className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                    active ? 'bg-[#D4FF00]/15' : 'bg-zinc-900'
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 ${active ? 'text-[#D4FF00]' : 'text-zinc-400'}`} />
+                </div>
+                <div className="min-w-0">
+                  <div className={`text-[14px] font-semibold ${active ? 'text-white' : 'text-zinc-300'}`}>
+                    {label}
+                  </div>
+                  <div className="text-[12px] text-zinc-500">{desc}</div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="mt-6">
         <div className="text-[11px] uppercase tracking-wider text-zinc-500 mb-3">How do you eat?</div>
         <div className="grid grid-cols-3 gap-2">
           {DIET_OPTIONS.map(({ id, label }) => {
@@ -623,6 +698,7 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
           <AnimatedValue value={displayCalories} className="text-5xl font-bold tabular-nums text-white" />
           <span className="text-sm text-zinc-500 mb-2">kcal</span>
         </div>
+        <p className="text-[12px] text-zinc-500 mt-1 tabular-nums">{deficitLine}</p>
 
         <div className="mt-6 grid grid-cols-3 gap-3">
           {[
@@ -657,17 +733,10 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <button
-          onClick={() => setGoalSheetOpen(true)}
-          className="flex items-center justify-center gap-2 py-3 rounded-full bg-zinc-900/60 border border-zinc-800 text-[13px] text-zinc-300 hover:text-white transition-colors"
-        >
-          <Target className="w-4 h-4" />
-          Change goal
-        </button>
+      <div className="mt-4">
         <button
           onClick={() => setMacroSheetOpen(true)}
-          className="flex items-center justify-center gap-2 py-3 rounded-full bg-zinc-900/60 border border-zinc-800 text-[13px] text-zinc-300 hover:text-white transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-full bg-zinc-900/60 border border-zinc-800 text-[13px] text-zinc-300 hover:text-white transition-colors"
         >
           <Sliders className="w-4 h-4" />
           Edit macros
@@ -688,12 +757,6 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
         {saving ? 'Saving…' : 'Start tracking →'}
       </button>
 
-      <GoalSheet
-        open={goalSheetOpen}
-        onClose={() => setGoalSheetOpen(false)}
-        draft={draft}
-        setDraft={setDraft}
-      />
       <MacrosSheet
         open={macroSheetOpen}
         onClose={() => setMacroSheetOpen(false)}
