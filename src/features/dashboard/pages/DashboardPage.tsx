@@ -6,6 +6,7 @@ import { calculateCurrentDailyStreak, isDailyGoalMet, toUtcDay } from "@/shared/
 import { Footprints, Flame, Sparkles, ChevronRight, Activity, TrendingDown, TrendingUp, Plus, Droplet, Wheat, Dna, Star } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useCalculatedProfile } from "@/shared/hooks/useCalculatedProfile";
+import { WelcomeMessage } from "@/features/dashboard/components/WelcomeMessage";
 import { useDailyNutrition } from "@/features/nutrition/hooks/useDailyNutrition";
 import { getKolkataDateString } from "@/shared/utils/timezone";
 import { mealService } from "@/features/nutrition/services/mealService";
@@ -173,6 +174,8 @@ const ringCircumference = 2 * Math.PI * 42;
             <span className="text-[15px] font-bold text-white">{currentStreak}</span>
           </div>
         </div>
+
+        <WelcomeMessage />
 
         {isMealsError && isOnline ? (
           <div className="rounded-[24px] border border-red-500/30 bg-red-500/10 p-5 flex flex-col items-center justify-center text-center backdrop-blur-xl">
