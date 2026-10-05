@@ -31,6 +31,7 @@ interface ParseContext {
   remainingCalories: number | string;
   remainingProtein: number | string;
   userGoal: string;
+  dietaryPreference: "veg" | "egg" | "nonveg" | "unspecified";
   geminiApiKey?: string;
   requestId: string;
 }
@@ -407,6 +408,11 @@ Instructions:
 3. Use standard serving conversions only when the food and serving are clear. For ambiguous dishes, make a conservative estimate and lower confidence.
 4. Confidence: 95-100 for named items with quantities, 80-94 for named items without quantities, and 60-79 for ambiguous descriptions.
 5. Write one concise, personalized coaching tip based on the user's remaining targets and goal.
+6. The user's dietary preference is ${context.dietaryPreference}. In your coaching_tip, only recommend foods consistent with this preference:
+   - 'veg': no meat, fish, or eggs. Recommend dal, paneer, curd, soya, tofu, legumes, nuts.
+   - 'egg': no meat or fish, but eggs are fine. Recommend eggs, dal, paneer, curd, soya.
+   - 'nonveg': any food is fine.
+   - 'unspecified': do not recommend specific foods; keep advice general.
 Return JSON only with this exact shape:
 {
   "calories": number,
@@ -920,6 +926,10 @@ serve(async (req) => {
   const remainingCalories = typeof body.remainingCalories === "number" || typeof body.remainingCalories === "string" ? body.remainingCalories : "unknown";
   const remainingProtein = typeof body.remainingProtein === "number" || typeof body.remainingProtein === "string" ? body.remainingProtein : "unknown";
   const userGoal = typeof body.userGoal === "string" && body.userGoal.trim() ? body.userGoal : "maintenance";
+  const dietaryPreference =
+    typeof body.dietaryPreference === "string" && ["veg", "egg", "nonveg"].includes(body.dietaryPreference)
+      ? (body.dietaryPreference as "veg" | "egg" | "nonveg")
+      : "unspecified";
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -943,6 +953,7 @@ serve(async (req) => {
       remainingCalories,
       remainingProtein,
       userGoal,
+      dietaryPreference,
       geminiApiKey: Deno.env.get("GEMINI_API_KEY"),
       requestId,
     };

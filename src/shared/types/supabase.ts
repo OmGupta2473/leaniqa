@@ -16,6 +16,8 @@ export interface DbProfile {
   fat_target?: number;
   /** Onboarding v2: captured during onboarding. Null for legacy rows. */
   dietary_preference?: 'veg' | 'egg' | 'nonveg' | null;
+  /** Set to true once onboarding commits (migration 20260706000000). */
+  onboarding_completed?: boolean;
   created_at?: string;
 }
 

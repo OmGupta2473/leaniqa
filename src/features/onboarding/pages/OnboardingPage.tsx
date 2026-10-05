@@ -12,6 +12,7 @@ import { profileService } from '@/features/profile/services/profileService';
 import { ScreenSkeleton } from '@/shared/components/ScreenSkeleton';
 import { useToast } from '@/shared/components/Toast';
 import { analytics } from '@/shared/utils/analytics';
+import type { DbProfile } from '@/shared/types/supabase';
 import {
   calculateBMI,
   calculatePlan,
@@ -41,14 +42,16 @@ function formatIsoDate(iso: string): string {
 }
 
 /** Engine activity level -> the exact string the profiles table stores. */
-function mapActivity(activity: ActivityLevel): string {
-  return {
+const ACTIVITY_TO_DB_LABEL = {
     sedentary: 'Sedentary',
     light: 'Light',
     moderate: 'Moderate',
     active: 'Active',
     athlete: 'Very active',
-  }[activity];
+  } as const;
+
+function mapActivity(activity: ActivityLevel): DbProfile['activity_level'] {
+  return ACTIVITY_TO_DB_LABEL[activity];
 }
 
 function AnimatedValue({ value, className = '' }: { value: number; className?: string }) {
@@ -525,9 +528,8 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
         carbs_target: carbs,
         fat_target: fat,
         dietary_preference: draft.dietaryPreference!,
-        // Column exists (migration 20260706000000) but is not on DbProfile yet.
         onboarding_completed: true,
-      } as any);
+      });
 
       const goalRow = await profileService.upsertGoal({
         goal_type: goal,
@@ -535,7 +537,7 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
         target_bf: targetBf,
         strategy: goal,
         deficit_kcal: Math.round(plan.maintenance - calories),
-      } as any);
+      });
 
       // The router gate reads profile + goal through react-query with a 5 min
       // staleTime, so seed and refresh both caches before redirecting -

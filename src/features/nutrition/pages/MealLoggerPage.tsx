@@ -533,7 +533,8 @@ export function MealLoggerPage() {
                 remainingCalories, 
                 remainingProtein, 
                 mealType: selectedMealSlot, 
-                userGoal: onboardingData?.goal 
+                userGoal: onboardingData?.goal,
+                dietaryPreference: profile?.dietary_preference ?? 'unspecified'
               }
             });
 
