@@ -277,8 +277,6 @@ const ACTIVITY_OPTIONS: { id: ActivityLevel; label: string; desc: string; Icon: 
 ];
 
 function ActivityScreen({ draft, setDraft }: DraftProps) {
-  const { isCompact } = useViewport();
-
   return (
     <div className="flex flex-col h-full min-h-0 w-full max-w-md mx-auto">
       {/* Fixed header */}
@@ -294,37 +292,35 @@ function ActivityScreen({ draft, setDraft }: DraftProps) {
 
       {/* Flexible middle - 5 cards */}
       <main className="flex-1 min-h-0 overflow-y-auto px-[clamp(1rem,4vw,1.5rem)]">
-        <div className="flex flex-col gap-[clamp(0.4rem,1.4dvh,0.75rem)]">
+        <div className="flex flex-col gap-[clamp(0.3rem,1dvh,0.75rem)]">
           {ACTIVITY_OPTIONS.map((opt) => {
             const selected = draft.activity === opt.id;
             return (
               <button
                 key={opt.id}
                 onClick={() => setDraft((d) => ({ ...d, activity: opt.id }))}
-                className={`w-full flex items-center gap-[clamp(0.75rem,2dvh,1rem)] rounded-2xl border text-left transition-colors ${
+                className={`w-full flex items-center gap-[clamp(0.55rem,1.5dvh,1rem)] rounded-2xl border text-left transition-colors ${
                   selected
                     ? 'border-[#D4FF00]/50 bg-[#D4FF00]/5'
                     : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
-                } p-[clamp(0.7rem,2.2dvh,1rem)]`}
+                } p-[clamp(0.5rem,1.7dvh,1rem)]`}
               >
                 <div
                   className={`flex-shrink-0 rounded-xl flex items-center justify-center ${
                     selected ? 'bg-[#D4FF00]/15' : 'bg-zinc-900'
-                  } w-[clamp(2.25rem,5.5dvh,2.75rem)] h-[clamp(2.25rem,5.5dvh,2.75rem)]`}
+                  } w-[clamp(1.75rem,4.5dvh,2.75rem)] h-[clamp(1.75rem,4.5dvh,2.75rem)]`}
                 >
                   <opt.Icon
                     className={`w-[55%] h-[55%] ${selected ? 'text-[#D4FF00]' : 'text-zinc-400'}`}
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-[clamp(0.85rem,2.4dvh,1rem)] font-semibold text-white tracking-tight">
+                  <div className="text-[clamp(0.78rem,2dvh,1rem)] leading-tight font-semibold text-white tracking-tight">
                     {opt.label}
                   </div>
-                  {!isCompact && (
-                    <div className="text-[clamp(0.72rem,1.9dvh,0.85rem)] text-zinc-500 mt-0.5">
-                      {opt.desc}
-                    </div>
-                  )}
+                  <div className="text-[clamp(0.62rem,1.55dvh,0.85rem)] text-zinc-500 mt-0.5 leading-snug">
+                    {opt.desc}
+                  </div>
                 </div>
                 {selected && (
                   <Check className="w-5 h-5 text-[#D4FF00] shrink-0" />
