@@ -16,7 +16,7 @@ export function ProtectedRoute() {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
   
-  const isAllowedDuringOnboarding = location.pathname === '/onboarding' || location.pathname === '/goal';
+  const isAllowedDuringOnboarding = location.pathname === '/onboarding' || location.pathname === '/goal' || location.pathname === '/science';
   
   if (!hasCompletedOnboarding && !isAllowedDuringOnboarding) {
     return <Navigate to="/onboarding" replace />;
