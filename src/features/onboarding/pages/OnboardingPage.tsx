@@ -88,7 +88,7 @@ function AnimatedValue({ value, className = '' }: { value: number; className?: s
 
 function ProgressDots({ step }: { step: 1 | 2 | 3 }) {
   return (
-    <div className="pt-8 pb-4 flex justify-center gap-2">
+    <div className="pt-4 pb-2 flex justify-center gap-2">
       {[1, 2, 3].map((i) => (
         <div
           key={i}
@@ -787,7 +787,7 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
       <button
         disabled={!draft.dietaryPreference || saving}
         onClick={commit}
-        className={`mt-8 w-full py-4 rounded-full font-semibold text-[15px] transition-all ${
+        className={`mt-3 w-full py-4 rounded-full font-semibold text-[15px] transition-all ${
           draft.dietaryPreference && !saving
             ? 'bg-[#D4FF00] text-black hover:brightness-110'
             : 'bg-zinc-900 text-zinc-600 cursor-not-allowed'
