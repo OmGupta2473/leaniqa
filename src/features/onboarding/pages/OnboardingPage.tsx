@@ -277,10 +277,10 @@ const ACTIVITY_OPTIONS: { id: ActivityLevel; label: string; desc: string; Icon: 
 ];
 
 function ActivityScreen({ draft, setDraft }: DraftProps) {
-  const { isCompact, isShort } = useViewport();
+  const { isCompact } = useViewport();
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="flex flex-col h-full min-h-0 w-full max-w-md mx-auto">
       {/* Fixed header */}
       <header className="flex-shrink-0 px-[clamp(1rem,4vw,1.5rem)] pt-2 pb-[clamp(0.75rem,2dvh,1.25rem)]">
         <ProgressDots step={draft.step} />
@@ -320,7 +320,7 @@ function ActivityScreen({ draft, setDraft }: DraftProps) {
                   <div className="text-[clamp(0.85rem,2.4dvh,1rem)] font-semibold text-white tracking-tight">
                     {opt.label}
                   </div>
-                  {!isShort && (
+                  {!isCompact && (
                     <div className="text-[clamp(0.72rem,1.9dvh,0.85rem)] text-zinc-500 mt-0.5">
                       {opt.desc}
                     </div>
