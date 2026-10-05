@@ -86,15 +86,15 @@ describe('onboardingMath', () => {
     expect(plan.bmr).toBe(1780);
     expect(calculateMaintenance(baseInput)).toBe(2136); // 1780 * ACTIVITY_MULTIPLIERS.sedentary
     expect(plan.maintenance).toBe(2136);
-    expect(plan.targetCalories).toBe(1816); // 2136 * (1 + GOAL_ADJUSTMENTS.cut)
+    expect(plan.targetCalories).toBe(1666); // 2136 * (1 + GOAL_ADJUSTMENTS.cut)
     expect(plan.proteinG).toBe(Math.round(80 * PROTEIN_G_PER_KG.cut)); // 160
     expect(plan.proteinG).toBe(160);
     expect(plan.fatG).toBe(Math.round(80 * FAT_G_PER_KG.cut)); // 64
     expect(plan.fatG).toBe(64);
-    expect(plan.carbsG).toBe(150); // (1816 - 640 - 576) / 4
+    expect(plan.carbsG).toBe(113); // (1666 - 640 - 576) / 4 = 112.5
     expect(plan.bmi).toBe(24.69);
     expect(plan.goalType).toBe('cut');
-    expect(plan.goalAdjustmentPct).toBe(-15);
+    expect(plan.goalAdjustmentPct).toBe(-22);
   });
 
   it('T-11: calculatePlan for a recomp keeps maintenance and shifts macros', () => {
@@ -111,12 +111,12 @@ describe('onboardingMath', () => {
   it('T-12: calculatePlan for a bulk raises target calories and lowers protein', () => {
     const plan = calculatePlan(baseInput, 'bulk');
 
-    expect(plan.targetCalories).toBe(2350); // 2136 * (1 + GOAL_ADJUSTMENTS.bulk)
+    expect(plan.targetCalories).toBe(2307); // 2136 * (1 + GOAL_ADJUSTMENTS.bulk)
     expect(plan.proteinG).toBe(Math.round(80 * PROTEIN_G_PER_KG.bulk)); // 128
     expect(plan.fatG).toBe(Math.round(80 * FAT_G_PER_KG.bulk)); // 72
-    expect(plan.carbsG).toBe(298); // (2350 - 512 - 648) / 4 = 297.5
+    expect(plan.carbsG).toBe(287); // (2307 - 512 - 648) / 4 = 286.75
     expect(plan.goalType).toBe('bulk');
-    expect(plan.goalAdjustmentPct).toBe(10);
+    expect(plan.goalAdjustmentPct).toBe(8);
   });
 
   it('T-13: macros reconcile with target calories within 5 kcal for every goal', () => {

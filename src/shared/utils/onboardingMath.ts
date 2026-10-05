@@ -50,9 +50,9 @@ export const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {
 };
 
 export const GOAL_ADJUSTMENTS: Record<GoalType, number> = {
-  cut: -0.15,
+  cut: -0.22,
   recomp: 0,
-  bulk: 0.10,
+  bulk: 0.08,
 };
 
 export const PROTEIN_G_PER_KG: Record<GoalType, number> = {
