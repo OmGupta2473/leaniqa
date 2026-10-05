@@ -73,16 +73,16 @@ export function WelcomeMessage() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -12 }}
           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          className="rounded-2xl border border-[#D4FF00]/25 bg-[#D4FF00]/5 p-4 flex items-start gap-3"
+          className="rounded-2xl border border-[#D4FF00]/25 bg-[#D4FF00]/5 p-[clamp(0.6rem,1.7dvh,0.9rem)] flex items-start gap-3"
         >
-          <div className="w-8 h-8 rounded-full bg-[#D4FF00]/10 flex items-center justify-center shrink-0">
+          <div className="w-[clamp(1.75rem,4.5dvh,2.25rem)] h-[clamp(1.75rem,4.5dvh,2.25rem)] rounded-full bg-[#D4FF00]/10 flex items-center justify-center shrink-0">
             <Sparkles className="w-4 h-4 text-[#D4FF00]" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[14px] font-semibold text-white mb-1">
+            <p className="text-[clamp(0.78rem,2dvh,0.92rem)] font-semibold text-white mb-1">
               Welcome to Team Lean, {firstName}.
             </p>
-            <p className="text-[13px] text-zinc-400 leading-relaxed">
+            <p className="text-[clamp(0.68rem,1.75dvh,0.8rem)] text-zinc-400 leading-relaxed">
               Your goal: <span className="text-[#D4FF00] font-medium">{goalLabel}</span>
               {kcal !== null && (
                 <>

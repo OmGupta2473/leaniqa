@@ -152,15 +152,16 @@ const ringCircumference = 2 * Math.PI * 42;
 
   return (
     <PerfProfiler id="DashboardPage">
-      <div className="page-enter px-4 pb-[calc(80px+env(safe-area-inset-bottom))] pt-6 space-y-4">
-        
+      <div className="page-enter flex flex-col h-[100dvh] min-h-0 bg-[#0A0A0A] w-full max-w-md mx-auto">
+
+        <header className="flex-shrink-0 px-[clamp(1rem,4vw,1.5rem)] pt-[calc(env(safe-area-inset-top)+12px)] pb-[clamp(0.6rem,1.6dvh,0.9rem)]">
         {/* Header */}
-        <div className="flex justify-between items-start mb-4">
+        <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-[32px] font-semibold tracking-tight text-white flex items-center gap-2 leading-tight">
+            <h2 className="text-[clamp(1.5rem,4.5dvh,2.25rem)] font-semibold tracking-tight text-white flex items-center gap-2 leading-tight">
               Ready, {name.split(' ')[0]}!
             </h2>
-            <div className="text-[14px] font-medium text-[rgba(235,235,245,0.5)] mt-0.5 flex items-center gap-2">
+            <div className="text-[clamp(0.72rem,1.9dvh,0.85rem)] font-medium text-[rgba(235,235,245,0.5)] mt-[clamp(0.05rem,0.2dvh,0.15rem)] flex items-center gap-2">
               {dateString}
               {!isOnline && (
                 <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
@@ -169,12 +170,15 @@ const ringCircumference = 2 * Math.PI * 42;
               )}
             </div>
           </div>
-          <div className="flex items-center gap-1.5 mt-2 bg-[rgba(255,255,255,0.05)] px-3 py-1.5 rounded-full border border-[rgba(255,255,255,0.05)] shadow-sm">
+          <div className="flex items-center gap-1.5 mt-2 bg-[rgba(255,255,255,0.05)] px-[clamp(0.5rem,1.4dvh,0.75rem)] py-[clamp(0.25rem,0.7dvh,0.4rem)] rounded-full border border-[rgba(255,255,255,0.05)] shadow-sm">
             <Flame size={16} className={currentStreak > 0 ? "text-[#FF4D1C]" : "text-[rgba(235,235,245,0.3)]"} strokeWidth={2.5} />
-            <span className="text-[15px] font-bold text-white">{currentStreak}</span>
+            <span className="text-[clamp(0.7rem,1.8dvh,0.82rem)] font-bold text-white">{currentStreak}</span>
           </div>
         </div>
+        </header>
 
+        <main className="flex-1 min-h-0 overflow-y-auto px-[clamp(1rem,4vw,1.5rem)]">
+          <div className="space-y-[clamp(0.6rem,1.6dvh,1rem)]">
         <WelcomeMessage />
 
         {isMealsError && isOnline ? (
@@ -199,22 +203,22 @@ const ringCircumference = 2 * Math.PI * 42;
             <motion.div 
               whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
               onClick={() => navigate('/calorie')}
-              className="rounded-[24px] p-6 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] shadow-sm backdrop-blur-xl cursor-pointer"
+              className="rounded-[24px] p-[clamp(0.75rem,2dvh,1.25rem)] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] shadow-sm backdrop-blur-xl cursor-pointer"
             >
-              <div className="flex justify-between items-center mb-5">
-                <div className="text-[12px] font-semibold text-[rgba(235,235,245,0.5)] uppercase tracking-widest">Calories</div>
+              <div className="flex justify-between items-center mb-[clamp(0.35rem,1dvh,0.55rem)]">
+                <div className="text-[clamp(0.65rem,1.7dvh,0.78rem)] font-semibold text-[rgba(235,235,245,0.5)] uppercase tracking-widest">Calories</div>
                 <ChevronRight size={16} className="text-[rgba(235,235,245,0.4)]" />
               </div>
               
-              <div className="flex items-baseline gap-1 mb-6">
-                <span className="text-[48px] font-bold text-white tracking-tighter leading-none"><AnimatedNumber value={eatenKcal} duration={1000} /></span>
-                <span className="text-[20px] font-semibold text-[rgba(235,235,245,0.4)]">/ {dailyTargetKcal}</span>
-                <span className="text-[13px] font-medium text-[rgba(235,235,245,0.4)] ml-1 uppercase tracking-widest">kcal</span>
+              <div className="flex items-baseline gap-1 mb-[clamp(0.5rem,1.5dvh,0.85rem)]">
+                <span className="text-[clamp(1.75rem,6dvh,2.5rem)] font-bold tabular-nums text-white tracking-tighter leading-none"><AnimatedNumber value={eatenKcal} duration={1000} /></span>
+                <span className="text-[clamp(0.72rem,1.9dvh,0.85rem)] font-semibold text-[rgba(235,235,245,0.4)]">/ {dailyTargetKcal}</span>
+                <span className="text-[clamp(0.72rem,1.9dvh,0.85rem)] font-medium text-[rgba(235,235,245,0.4)] ml-1 uppercase tracking-widest">kcal</span>
               </div>
 
               <div className="flex items-center gap-6">
-                <div className="relative flex items-center justify-center w-[100px] h-[100px] shrink-0">
-                  <svg width="100" height="100" viewBox="0 0 100 100" className="transform -rotate-90">
+                <div className="relative flex items-center justify-center w-[clamp(7rem,24dvh,9.5rem)] h-[clamp(7rem,24dvh,9.5rem)] shrink-0">
+                  <svg width="100" height="100" viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
                     <circle cx="50" cy="50" r="42" fill="transparent" stroke="rgba(255,255,255,0.05)" strokeWidth="10" />
                     <circle cx="50" cy="50" r="42" fill="transparent" stroke="#D4FF00" strokeWidth="10" strokeLinecap="round"
                       strokeDasharray={ringCircumference}
@@ -222,7 +226,7 @@ const ringCircumference = 2 * Math.PI * 42;
                     />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <div className="text-[22px] font-bold text-white tracking-tighter leading-none">
+                    <div className="text-[clamp(1.1rem,3.2dvh,1.5rem)] font-bold text-white tracking-tighter leading-none">
                       {Math.round((calPct) * 100)}%
                     </div>
                   </div>
@@ -230,13 +234,13 @@ const ringCircumference = 2 * Math.PI * 42;
                 
                 <div className="flex flex-col">
                   <div className="flex items-baseline gap-1 mb-1">
-                    <span className="text-[32px] font-bold text-white tracking-tight leading-none"><AnimatedNumber value={remainingKcal > 0 ? remainingKcal : 0} duration={800} /></span>
+                    <span className="text-[clamp(1.1rem,3.2dvh,1.5rem)] font-bold tabular-nums text-white tracking-tight leading-none"><AnimatedNumber value={remainingKcal > 0 ? remainingKcal : 0} duration={800} /></span>
                     <span className="text-[14px] font-medium text-white/60">kcal</span>
                   </div>
-                  <div className="text-[14px] font-medium text-white/50 mb-3">Remaining</div>
+                  <div className="text-[clamp(0.7rem,1.8dvh,0.82rem)] font-medium text-white/50 mb-[clamp(0.25rem,0.8dvh,0.4rem)]">Remaining</div>
                   <div className="flex items-center gap-1.5">
                     <Flame size={14} className={remainingKcal >= 0 ? "text-[#D4FF00]" : "text-[#FF4D1C]"} />
-                    <span className={`text-[12px] font-bold tracking-wide uppercase ${remainingKcal >= 0 ? 'text-[#D4FF00]' : 'text-[#FF4D1C]'}`}>{remainingKcal >= 0 ? 'On track' : 'Over limit'}</span>
+                    <span className={`text-[clamp(0.72rem,1.9dvh,0.85rem)] font-bold tracking-wide uppercase ${remainingKcal >= 0 ? 'text-[#D4FF00]' : 'text-[#FF4D1C]'}`}>{remainingKcal >= 0 ? 'On track' : 'Over limit'}</span>
                   </div>
                 </div>
               </div>
@@ -245,69 +249,69 @@ const ringCircumference = 2 * Math.PI * 42;
             {/* Macronutrients */}
             <motion.div 
               whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
-              className="rounded-[24px] p-6 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] shadow-sm backdrop-blur-xl"
+              className="rounded-[24px] p-[clamp(0.75rem,2dvh,1.25rem)] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] shadow-sm backdrop-blur-xl"
             >
-              <div className="flex justify-between items-center mb-7">
-                <div className="text-[12px] font-semibold text-[rgba(235,235,245,0.5)] uppercase tracking-widest">Macronutrients</div>
-                <div className="text-[12px] font-bold text-[#D4FF00] flex items-center gap-1 cursor-pointer tracking-wide" onClick={() => navigate('/protein')}>
+              <div className="flex justify-between items-center mb-[clamp(0.35rem,1dvh,0.55rem)]">
+                <div className="text-[clamp(0.65rem,1.7dvh,0.78rem)] font-semibold text-[rgba(235,235,245,0.5)] uppercase tracking-widest">Macronutrients</div>
+                <div className="text-[clamp(0.68rem,1.75dvh,0.8rem)] font-bold text-[#D4FF00] flex items-center gap-1 cursor-pointer tracking-wide" onClick={() => navigate('/protein')}>
                   Details <ChevronRight size={14} />
                 </div>
               </div>
 
-              <div className="flex flex-col gap-7">
+              <div className="flex flex-col gap-[clamp(0.25rem,0.8dvh,0.4rem)]">
                 {/* Protein */}
-                <div>
-                  <div className="flex justify-between items-center mb-3">
+                <div className="py-[clamp(0.35rem,1dvh,0.55rem)]">
+                  <div className="flex justify-between items-center mb-[clamp(0.25rem,0.8dvh,0.4rem)]">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-[12px] bg-[rgba(55,138,221,0.1)] flex items-center justify-center">
                          <Dna size={16} className="text-[#378ADD]" />
                       </div>
-                      <span className="text-[15px] font-bold text-white tracking-tight">Protein</span>
+                      <span className="text-[clamp(0.72rem,1.9dvh,0.85rem)] font-bold text-white tracking-tight">Protein</span>
                     </div>
-                    <div className="text-[15px] font-bold tracking-tight">
+                    <div className="text-[clamp(0.75rem,2dvh,0.9rem)] font-bold tracking-tight tabular-nums">
                       <span className="text-white">{eatenProtein}</span>
                       <span className="text-[rgba(235,235,245,0.4)]"> / {proteinTarget}g</span>
                     </div>
                   </div>
-                  <div className="w-full h-2 rounded-full bg-[rgba(255,255,255,0.05)] overflow-hidden shadow-inner">
+                  <div className="w-full h-[clamp(0.3rem,0.9dvh,0.45rem)] rounded-full bg-[rgba(255,255,255,0.05)] overflow-hidden shadow-inner">
                     <div className="h-full bg-[#378ADD] rounded-full" style={{ width: mounted ? `${proPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.3s" }} />
                   </div>
                 </div>
 
                 {/* Fat */}
-                <div>
-                  <div className="flex justify-between items-center mb-3">
+                <div className="py-[clamp(0.35rem,1dvh,0.55rem)]">
+                  <div className="flex justify-between items-center mb-[clamp(0.25rem,0.8dvh,0.4rem)]">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-[12px] bg-[rgba(255,255,255,0.1)] flex items-center justify-center">
                          <Droplet size={16} className="text-white" />
                       </div>
-                      <span className="text-[15px] font-bold text-white tracking-tight">Fat</span>
+                      <span className="text-[clamp(0.72rem,1.9dvh,0.85rem)] font-bold text-white tracking-tight">Fat</span>
                     </div>
-                    <div className="text-[15px] font-bold tracking-tight">
+                    <div className="text-[clamp(0.75rem,2dvh,0.9rem)] font-bold tracking-tight tabular-nums">
                       <span className="text-white">{eatenFat}</span>
                       <span className="text-[rgba(235,235,245,0.4)]"> / {fatTarget}g</span>
                     </div>
                   </div>
-                  <div className="w-full h-2 rounded-full bg-[rgba(255,255,255,0.05)] overflow-hidden shadow-inner">
+                  <div className="w-full h-[clamp(0.3rem,0.9dvh,0.45rem)] rounded-full bg-[rgba(255,255,255,0.05)] overflow-hidden shadow-inner">
                     <div className="h-full bg-white rounded-full" style={{ width: mounted ? `${fatPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.4s" }} />
                   </div>
                 </div>
 
                 {/* Carbs */}
-                <div>
-                  <div className="flex justify-between items-center mb-3">
+                <div className="py-[clamp(0.35rem,1dvh,0.55rem)]">
+                  <div className="flex justify-between items-center mb-[clamp(0.25rem,0.8dvh,0.4rem)]">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-[12px] bg-[rgba(255,255,255,0.1)] flex items-center justify-center">
                          <Wheat size={16} className="text-white" />
                       </div>
-                      <span className="text-[15px] font-bold text-white tracking-tight">Carbs</span>
+                      <span className="text-[clamp(0.72rem,1.9dvh,0.85rem)] font-bold text-white tracking-tight">Carbs</span>
                     </div>
-                    <div className="text-[15px] font-bold tracking-tight">
+                    <div className="text-[clamp(0.75rem,2dvh,0.9rem)] font-bold tracking-tight tabular-nums">
                       <span className="text-white">{eatenCarbs}</span>
                       <span className="text-[rgba(235,235,245,0.4)]"> / {carbsTarget}g</span>
                     </div>
                   </div>
-                  <div className="w-full h-2 rounded-full bg-[rgba(255,255,255,0.05)] overflow-hidden shadow-inner">
+                  <div className="w-full h-[clamp(0.3rem,0.9dvh,0.45rem)] rounded-full bg-[rgba(255,255,255,0.05)] overflow-hidden shadow-inner">
                     <div className="h-full bg-white rounded-full" style={{ width: mounted ? `${carbPct * 100}%` : '0%', transition: "width 1s cubic-bezier(0.34,1.56,0.64,1) 0.5s" }} />
                   </div>
                 </div>
@@ -401,6 +405,8 @@ const ringCircumference = 2 * Math.PI * 42;
             </motion.div>
           </>
         )}
+          </div>
+        </main>
 
       </div>
       
