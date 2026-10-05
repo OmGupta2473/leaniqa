@@ -499,6 +499,174 @@ function MacrosSheet({ open, onClose, draft, setDraft, recommended }: {
     </Sheet>
   );
 }
+function ScienceSheet({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <Sheet open={open} onClose={onClose} title="The science behind your plan">
+      <div className="space-y-[clamp(1rem,2.8dvh,1.4rem)] pb-4">
+        <ScienceSection
+          title="How we calculate your maintenance calories"
+          body={
+            <>
+              We use the <span className="text-white font-medium">Mifflin–St Jeor equation</span>,
+              the most accurate predictive formula for resting metabolic rate in
+              healthy adults. It uses your weight, height, age, and sex: <br />
+              <span className="block mt-1 font-mono text-[11px] text-zinc-400">
+                BMR = 10 × weight(kg) + 6.25 × height(cm) − 5 × age + s
+              </span>
+              where s = +5 for males, −161 for females. We then multiply by an
+              activity factor (1.2 sedentary up to 1.9 athlete) to estimate your
+              total daily energy expenditure.
+            </>
+          }
+          source={{
+            label: 'Mifflin et al. 1990, Am J Clin Nutr',
+            url: 'https://pubmed.ncbi.nlm.nih.gov/2305711/',
+          }}
+        />
+
+        <ScienceSection
+          title="Why protein is high — especially when cutting"
+          body={
+            <>
+              Your protein target scales to bodyweight and goal:
+              <ul className="mt-1.5 space-y-0.5 list-disc list-inside text-zinc-400">
+                <li><span className="text-white">Cut:</span> 2.0 g/kg — preserves muscle in a deficit</li>
+                <li><span className="text-white">Recomp / Bulk:</span> 1.6–1.8 g/kg</li>
+              </ul>
+              A meta-analysis of 49 trials found muscle gains plateau at ~1.6
+              g/kg/day; during a deficit, reviews recommend 2.3–3.1 g/kg of lean
+              mass to protect muscle.
+            </>
+          }
+          source={{
+            label: 'Morton 2018, Br J Sports Med · Helms 2014, JISSN',
+            url: 'https://pubmed.ncbi.nlm.nih.gov/28698222/',
+          }}
+          secondarySource={{
+            label: 'Helms et al. 2014, JISSN',
+            url: 'https://pubmed.ncbi.nlm.nih.gov/24864135/',
+          }}
+        />
+
+        <ScienceSection
+          title="Why fat has a floor"
+          body={
+            <>
+              Fat is set at 0.8–0.9 g/kg for a reason. Below ~0.5 g/kg
+              long-term, testosterone and other hormone production drop, and
+              fat-soluble vitamin absorption suffers.
+            </>
+          }
+          source={{
+            label: 'Iraki et al. 2019, Sports',
+            url: 'https://pubmed.ncbi.nlm.nih.gov/31234309/',
+          }}
+        />
+
+        <ScienceSection
+          title="Why carbs fill the rest"
+          body={
+            <>
+              Carbohydrates fuel high-intensity training and refill muscle
+              glycogen. Low glycogen reduces strength output and slows recovery.
+              So carbs absorb whatever calories remain after protein and fat
+              are set.
+            </>
+          }
+          source={{
+            label: 'Henselmans et al. 2022, Sports',
+            url: 'https://pubmed.ncbi.nlm.nih.gov/35409220/',
+          }}
+        />
+
+        <ScienceSection
+          title="Why the deficit / surplus varies by goal"
+          body={
+            <>
+              <ul className="space-y-1.5 list-disc list-inside text-zinc-400">
+                <li>
+                  <span className="text-white font-medium">Cut (−22%):</span> a
+                  moderate deficit preserves muscle while producing ~0.5 kg/week
+                  fat loss. Faster deficits cost muscle.
+                </li>
+                <li>
+                  <span className="text-white font-medium">Recomp (0%):</span> research
+                  shows simultaneous fat loss and muscle gain is achievable at
+                  maintenance with high protein, especially for newer lifters.
+                </li>
+                <li>
+                  <span className="text-white font-medium">Bulk (+8%):</span> a small
+                  surplus (200–400 kcal/day) maximizes muscle growth; larger
+                  surpluses only add fat.
+                </li>
+              </ul>
+            </>
+          }
+          source={{
+            label: 'Helms 2014 · Slater & Phillips 2011, J Sports Sci',
+            url: 'https://pubmed.ncbi.nlm.nih.gov/21660839/',
+          }}
+        />
+
+        <p className="text-[11px] text-zinc-600 leading-relaxed pt-2 border-t border-zinc-800/60">
+          These recommendations are drawn from peer-reviewed research on
+          resistance-trained adults. Individual needs vary — talk to a doctor
+          or registered dietitian before major dietary changes.
+        </p>
+      </div>
+    </Sheet>
+  );
+}
+
+function ScienceSection({
+  title,
+  body,
+  source,
+  secondarySource,
+}: {
+  title: string;
+  body: React.ReactNode;
+  source: { label: string; url: string };
+  secondarySource?: { label: string; url: string };
+}) {
+  return (
+    <section>
+      <h3 className="text-[clamp(0.85rem,2.2dvh,1rem)] font-semibold text-white tracking-tight mb-[clamp(0.3rem,0.9dvh,0.5rem)]">
+        {title}
+      </h3>
+      <div className="text-[clamp(0.72rem,1.9dvh,0.85rem)] text-zinc-400 leading-relaxed">
+        {body}
+      </div>
+      <div className="mt-[clamp(0.4rem,1.2dvh,0.6rem)] flex flex-wrap gap-x-3 gap-y-1">
+        <a
+          href={source.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[clamp(0.65rem,1.65dvh,0.75rem)] text-[#D4FF00]/80 hover:text-[#D4FF00] underline underline-offset-2 transition-colors"
+        >
+          {source.label} ↗
+        </a>
+        {secondarySource && (
+          <a
+            href={secondarySource.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[clamp(0.65rem,1.65dvh,0.75rem)] text-[#D4FF00]/80 hover:text-[#D4FF00] underline underline-offset-2 transition-colors"
+          >
+            {secondarySource.label} ↗
+          </a>
+        )}
+      </div>
+    </section>
+  );
+}
+
 const DIET_OPTIONS: { id: 'veg' | 'egg' | 'nonveg'; label: string }[] = [
   { id: 'veg', label: 'Vegetarian' },
   { id: 'egg', label: 'Eggetarian' },
@@ -514,6 +682,7 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
   const queryClient = useQueryClient();
   const [macroSheetOpen, setMacroSheetOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [scienceOpen, setScienceOpen] = useState(false);
 
   // The engine rejects impossible input. A draft that reached screen 3 is
   // already validated, so these fallbacks are belt-and-braces only.
@@ -781,6 +950,13 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
         </div>
       </div>
 
+      <button
+        onClick={() => setScienceOpen(true)}
+        className="mt-[clamp(0.5rem,1.4dvh,0.75rem)] w-full text-center text-[clamp(0.7rem,1.8dvh,0.82rem)] text-zinc-500 hover:text-[#D4FF00] transition-colors font-medium"
+      >
+        Why these numbers? ›
+      </button>
+
       </main>
 
       <footer className="flex-shrink-0 px-6 pb-8">
@@ -804,6 +980,8 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
         setDraft={setDraft}
         recommended={{ proteinG: plan.proteinG, fatG: plan.fatG, carbsG: plan.carbsG }}
       />
+
+      <ScienceSheet open={scienceOpen} onClose={() => setScienceOpen(false)} />
     </div>
   );
 }
