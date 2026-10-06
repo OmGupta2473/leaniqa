@@ -38,6 +38,18 @@ describe('computeMaintenancePlan', () => {
 describe('computePacePlan', () => {
   const paceTests: Array<{ pace: CutPace; expected: ReturnType<typeof computePacePlan> }> = [
     {
+      pace: 26,
+      expected: {
+        pace: 26,
+        targetKcal: 1581,
+        proteinG: 187,
+        fatG: 47,
+        carbsG: 103,
+        deficitKcal: 555,
+        deficitPct: 26,
+      },
+    },
+    {
       pace: 22,
       expected: {
         pace: 22,
@@ -47,18 +59,6 @@ describe('computePacePlan', () => {
         carbsG: 121,
         deficitKcal: 470,
         deficitPct: 22,
-      },
-    },
-    {
-      pace: 20,
-      expected: {
-        pace: 20,
-        targetKcal: 1709,
-        proteinG: 164,
-        fatG: 59,
-        carbsG: 131,
-        deficitKcal: 427,
-        deficitPct: 20,
       },
     },
     {
@@ -74,15 +74,15 @@ describe('computePacePlan', () => {
       },
     },
     {
-      pace: 16,
+      pace: 14,
       expected: {
-        pace: 16,
-        targetKcal: 1794,
-        proteinG: 148,
-        fatG: 66,
-        carbsG: 152,
-        deficitKcal: 342,
-        deficitPct: 16,
+        pace: 14,
+        targetKcal: 1837,
+        proteinG: 140,
+        fatG: 70,
+        carbsG: 162,
+        deficitKcal: 299,
+        deficitPct: 14,
       },
     },
   ];
@@ -95,7 +95,7 @@ describe('computePacePlan', () => {
   });
 
   it('T-MONO-1: monotonicity — protein non-decreasing, targetKcal non-increasing as pace increases', () => {
-    const paces: CutPace[] = [16, 18, 20, 22];
+    const paces: CutPace[] = [...CUT_PACES].sort((a, b) => a - b);
     const results = paces.map((p) => computePacePlan({ ...base, pace: p }));
 
     for (let i = 1; i < results.length; i++) {
@@ -104,10 +104,10 @@ describe('computePacePlan', () => {
     }
   });
 
-  it('T-MONO-2: fat floor — fatG >= weightKg * 0.7 for every pace', () => {
+  it('T-MONO-2: fat floor — fatG >= weightKg * 0.5 for every pace (Iraki 2019 floor)', () => {
     CUT_PACES.forEach((pace) => {
       const result = computePacePlan({ ...base, pace });
-      expect(result.fatG).toBeGreaterThanOrEqual(base.weightKg * 0.7);
+      expect(result.fatG).toBeGreaterThanOrEqual(base.weightKg * 0.5);
     });
   });
 
@@ -128,8 +128,8 @@ describe('computePacePlan', () => {
     });
   });
 
-  it('T-VALID-1: throws when pace is not in [16, 18, 20, 22]', () => {
+  it('T-VALID-1: throws when pace is not in [14, 18, 22, 26]', () => {
     // @ts-expect-error testing runtime validation
-    expect(() => computePacePlan({ ...base, pace: 17 })).toThrow('pace must be one of 22, 20, 18, 16');
+    expect(() => computePacePlan({ ...base, pace: 17 })).toThrow('pace must be one of 26, 22, 18, 14');
   });
 });
