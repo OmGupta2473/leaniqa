@@ -1,3 +1,4 @@
+import { PricingSection } from '@/features/pricing/components/PricingSection';
 import { Logo } from "@/shared/components/Logo";
 import React, { useRef, useState, useEffect } from "react";
 import { InstallLeaniqa } from "@/components/InstallLeaniqa";
@@ -2005,87 +2006,8 @@ export function LandingPage() {
       <FAQSection />
 
       {/* ── Pricing ── */}
-      <section id="pricing" className="border-t border-zinc-900 bg-[#0A0A0B] py-16 sm:py-24 px-6">
-        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
-          <Reveal>
-            <div style={{ textAlign: "center", marginBottom: 48 }}>
-              <h2 style={{ fontSize: "clamp(28px,4vw,52px)", fontWeight: 800, letterSpacing: -2, marginBottom: 12, color: "#F1F5F9" }}>
-                Invest in your consistency.
-              </h2>
-              <p style={{ fontSize: 16, color: "#64748B", maxWidth: 600, margin: "0 auto" }}>
-                Simple pricing. No hidden fees. Unlock the full power of your AI Coach.
-              </p>
-            </div>
-          </Reveal>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 24, maxWidth: 800, margin: "0 auto" }}>
-            {[
-              { name: "Starter", price: "Free",   sub: "For exploring the basics", accent: "#378ADD", features: ["Manual calorie tracking","Basic macro splits","Standard food database"], missing: ["AI Meal Parsing","Adaptive Targets", "Timeline Predictions"], badge: null, delay: 0 },
-              { name: "Serious",  price: "₹499",   sub: "per month · for people who want results", accent: LIME,     features: ["Unlimited AI Meal Logging","Adaptive Calorie & Macro Targets","Consistency Engine & Analytics","Physique Prediction Timeline","Priority Support"], missing: [], badge: "Most Popular", delay: 0.1 },
-            ].map((p, i) => (
-              <Reveal key={i} delay={p.delay}>
-                <motion.div
-                  whileHover={{ y: -5 }}
-                  whileTap={{ scale: 0.99 }}
-                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                  style={{
-                    background: p.badge ? "rgba(212,255,0,0.04)" : "rgba(255,255,255,0.02)",
-                    border: p.badge ? `2px solid ${LIME}40` : "1px solid rgba(255,255,255,0.07)",
-                    borderRadius: 24,
-                    padding: "32px 24px",
-                    boxShadow: p.badge ? `0 0 60px ${LIME}10` : "none",
-                    position: "relative",
-                    overflow: "hidden",
-                    height: "100%",
-                    willChange: "transform",
-                  }}
-                >
-                  {p.badge && (
-                    <div style={{ position: "absolute", top: 0, right: 0, background: LIME, color: "#020817", fontSize: 10, fontWeight: 800, padding: "6px 16px", borderRadius: "0 22px 0 16px", letterSpacing: 1, textTransform: "uppercase" }}>
-                      {p.badge}
-                    </div>
-                  )}
-                  <div style={{ fontSize: 12, fontWeight: 700, color: p.accent, letterSpacing: 1, textTransform: "uppercase", marginBottom: 12 }}>{p.name}</div>
-                  <div style={{ fontSize: 48, fontWeight: 900, letterSpacing: -2, color: "#F1F5F9", lineHeight: 1 }}>{p.price}</div>
-                  <div style={{ fontSize: 14, color: "#64748B", marginTop: 8, marginBottom: 32 }}>{p.sub}</div>
-                  {p.name === "Serious" && (
-                    <div style={{ fontSize: 12, color: '#64748B', marginBottom: 20 }}>
-                      Roughly the cost of one takeaway meal per week.
-                    </div>
-                  )}
-                  <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 32 }}>
-                    {p.features.map((f, j) => (
-                      <div key={j} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                        <span style={{ color: p.accent, fontSize: 14, flexShrink: 0, marginTop: 2 }}>✓</span>
-                        <span style={{ fontSize: 14, color: "#94A3B8" }}>{f}</span>
-                      </div>
-                    ))}
-                    {p.missing.map((f, j) => (
-                      <div key={j} style={{ display: "flex", gap: 12, alignItems: "flex-start", opacity: 0.35 }}>
-                        <span style={{ color: "#475569", fontSize: 14, flexShrink: 0, marginTop: 2 }}>✗</span>
-                        <span style={{ fontSize: 14, color: "#475569", textDecoration: "line-through" }}>{f}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <button
-                    onClick={handleEnterApp}
-                    style={{
-                      width: "100%", padding: "14px 0",
-                      background: p.badge ? LIME : "transparent",
-                      border: p.badge ? "none" : "1px solid rgba(255,255,255,0.1)",
-                      borderRadius: 99, color: p.badge ? "#000" : "#94A3B8",
-                      fontSize: 15, fontWeight: 700, cursor: "pointer", transition: "all 0.2s",
-                    }}
-                    onMouseEnter={e => { if (!p.badge) { e.currentTarget.style.borderColor = p.accent; e.currentTarget.style.color = "#F1F5F9"; } }}
-                    onMouseLeave={e => { if (!p.badge) { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = "#94A3B8"; } }}
-                  >
-                    {p.price === "Free" ? "Get started free" : "Start free trial"}
-                  </button>
-                </motion.div>
-              </Reveal>
-            ))}
-          </div>
-        </div>
+      <section id="pricing" className="border-t border-zinc-900 bg-[#0A0A0B]">
+        <PricingSection variant="landing" />
       </section>
 
       {/* ── CTA ── */}
