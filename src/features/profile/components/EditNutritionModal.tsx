@@ -111,7 +111,7 @@ function EditNutritionModalInner({
   const saveMutation = useMutation({
     mutationFn: async () => {
       await profileService.upsertProfile({
-        maintenance_kcal: parsedCalories,
+        target_kcal: parsedCalories,
         protein_target: parsedProtein,
         fat_target: parsedFat,
         carbs_target: parsedCarbs,
