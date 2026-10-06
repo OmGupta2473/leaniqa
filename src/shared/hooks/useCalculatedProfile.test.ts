@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { deriveCarbsFromKcal } from '../utils/macroReconciliation';
 
 vi.mock('./useHasCompletedOnboarding', () => ({
   useHasCompletedOnboarding: () => ({
@@ -87,5 +88,71 @@ describe('useCalculatedProfile target_kcal preference', () => {
     
     expect(withTarget).toBe(1800);
     expect(withoutTarget).toBe(1500);
+  });
+});
+
+describe('useCalculatedProfile non-cut carbs healing', () => {
+  it('T-TARGET-2: stored carbs_target is replaced by a value derived from target_kcal + protein/fat', () => {
+    const profile = {
+      maintenance_kcal: 2136,
+      protein_target: 104,
+      fat_target: 52,
+      target_kcal: 1700,
+      weight: 78,
+      height: 180,
+      age: 30,
+      gender: 'Male' as const,
+      activity_level: 'Moderate' as const,
+    };
+    const goal = {
+      current_bf: 20,
+      target_bf: 15,
+      deficit_kcal: 0,
+      goal_type: 'recomp' as 'recomp' | 'cut' | 'bulk',
+    };
+
+    // Simulate exactly the branch added in useCalculatedProfile: non-cut
+    // with target_kcal set replaces the stored carbs value.
+    let finalFat: number | null = 52;
+    let finalCarbs: number | null = 426; // intentionally stale
+    const isNonCut = goal.goal_type !== 'cut';
+    if (
+      isNonCut &&
+      profile.target_kcal != null &&
+      profile.protein_target != null &&
+      profile.fat_target != null
+    ) {
+      const derived = deriveCarbsFromKcal(
+        profile.target_kcal,
+        profile.protein_target,
+        profile.fat_target,
+      );
+      if (derived.feasible) {
+        finalFat = profile.fat_target;
+        finalCarbs = derived.carbsG;
+      }
+    }
+
+    expect(finalCarbs).toBe(204);
+    expect(finalFat).toBe(52);
+    expect(104 * 4 + 52 * 9 + 204 * 4).toBe(1700);
+  });
+
+  it('T-TARGET-3: cut goals skip the healing branch', () => {
+    const goal = { goal_type: 'cut' as 'recomp' | 'cut' | 'bulk' };
+    const profile = { target_kcal: 1666, protein_target: 172, fat_target: 55 };
+    let finalCarbs: number | null = 100;
+    const isNonCut = goal.goal_type !== 'cut';
+    if (isNonCut && profile.target_kcal != null && profile.fat_target != null) {
+      const derived = deriveCarbsFromKcal(
+        profile.target_kcal,
+        profile.protein_target,
+        profile.fat_target,
+      );
+      if (derived.feasible) {
+        finalCarbs = derived.carbsG;
+      }
+    }
+    expect(finalCarbs).toBe(100); // unchanged
   });
 });

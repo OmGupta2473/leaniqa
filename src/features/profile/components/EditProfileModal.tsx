@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { profileService } from '../services/profileService';
 import { calculatePlan, type ActivityLevel } from '@/shared/utils/onboardingMath';
 import { computePacePlan, type CutPace } from '@/shared/utils/paceEngine';
+import { deriveCarbsFromKcal } from '@/shared/utils/macroReconciliation';
 import { cn } from '@/shared/utils/utils';
 import { haptics } from '@/shared/utils/haptics';
 
@@ -126,31 +127,55 @@ function EditProfileModalInner({ onClose, profileData, goalData }: Omit<EditProf
     parsedWeight > 0 &&
     diet !== null;
 
+  const goalType = (goalData?.goal_type ?? 'cut') as 'cut' | 'recomp' | 'bulk';
+
+  // Recalculate the plan from the current form values so we know what the
+  // new body stats imply for protein and fat. Only safe to compute when the
+  // numeric inputs are valid.
+  const recalculatedPlan =
+    parsedAge >= 13 && parsedAge <= 120 && parsedHeight > 0 && parsedWeight > 0
+      ? calculatePlan(
+          {
+            sex: (profileData?.gender ?? 'Male') as 'Male' | 'Female',
+            age: parsedAge,
+            heightCm: parsedHeight,
+            weightKg: parsedWeight,
+            activity,
+          },
+          goalType,
+        )
+      : null;
+
+  // For non-cut goals with a preserved target_kcal, derive carbs from the
+  // target plus the newly recalculated protein and fat.
+  const derivedCarbs =
+    goalType !== 'cut' &&
+    profileData?.target_kcal != null &&
+    recalculatedPlan != null
+      ? deriveCarbsFromKcal(
+          profileData.target_kcal,
+          recalculatedPlan.proteinG,
+          recalculatedPlan.fatG,
+        )
+      : null;
+
+  const canSave = isValid && (derivedCarbs == null || derivedCarbs.feasible);
+
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const goalType = (goalData?.goal_type ?? 'cut') as 'cut' | 'recomp' | 'bulk';
       const currentPace = (goalData?.cut_pace ?? 22) as CutPace;
 
-      const plan = calculatePlan(
-        {
-          sex: (profileData?.gender ?? 'Male') as 'Male' | 'Female',
-          age: parsedAge,
-          heightCm: parsedHeight,
-          weightKg: parsedWeight,
-          activity,
-        },
-        goalType,
-      );
+      if (!recalculatedPlan) {
+        throw new Error('Cannot save: profile values are incomplete');
+      }
 
       const pacePlan = goalType === 'cut'
         ? computePacePlan({
             weightKg: parsedWeight,
-            maintenanceKcal: plan.maintenance,
+            maintenanceKcal: recalculatedPlan.maintenance,
             pace: currentPace,
           })
         : null;
-
-      const macroSource = pacePlan ?? plan;
 
       const profilePayload: any = {
         name: name.trim(),
@@ -159,14 +184,24 @@ function EditProfileModalInner({ onClose, profileData, goalData }: Omit<EditProf
         height: parsedHeight,
         weight: parsedWeight,
         activity_level: (ACTIVITY_OPTIONS.find((o) => o.id === activity)?.dbLabel ?? 'Moderate') as any,
-        maintenance_kcal: plan.maintenance,
-        protein_target: macroSource.proteinG,
-        carbs_target: macroSource.carbsG,
-        fat_target: macroSource.fatG,
+        maintenance_kcal: recalculatedPlan.maintenance,
+        protein_target: recalculatedPlan.proteinG,
+        fat_target: recalculatedPlan.fatG,
+        carbs_target: recalculatedPlan.carbsG,
         dietary_preference: diet,
       };
+
       if (pacePlan) {
+        // Cut: pace plan is authoritative.
         profilePayload.target_kcal = pacePlan.targetKcal;
+        profilePayload.protein_target = pacePlan.proteinG;
+        profilePayload.fat_target = pacePlan.fatG;
+        profilePayload.carbs_target = pacePlan.carbsG;
+      } else if (derivedCarbs?.feasible) {
+        // Non-cut with a preserved target_kcal: keep it, use the newly recalculated
+        // protein and fat, derive carbs from the remainder.
+        profilePayload.carbs_target = derivedCarbs.carbsG;
+        // target_kcal is intentionally NOT written.
       }
 
       await profileService.upsertProfile(profilePayload);
@@ -357,9 +392,16 @@ function EditProfileModalInner({ onClose, profileData, goalData }: Omit<EditProf
         </div>
 
         <div className="flex-shrink-0 px-[clamp(1rem,4vw,1.5rem)] pt-[clamp(0.6rem,1.6dvh,0.9rem)] pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-zinc-900/60">
+          {derivedCarbs != null && !derivedCarbs.feasible && (
+            <div className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-[13px] text-amber-300 leading-relaxed">
+              Protein and fat alone exceed your saved calorie target of{' '}
+              {profileData.target_kcal} kcal. Lower your activity level, or adjust your
+              target from the Profile page's Edit nutrition.
+            </div>
+          )}
           <button
             onClick={() => saveMutation.mutate()}
-            disabled={!isValid || isSaving}
+            disabled={!canSave || isSaving}
             className="w-full py-[clamp(0.7rem,2dvh,0.95rem)] rounded-full bg-[#D4FF00] text-black font-semibold text-[clamp(0.85rem,2.2dvh,0.95rem)] disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isSaving ? 'Savingâ€¦' : 'Save changes'}
