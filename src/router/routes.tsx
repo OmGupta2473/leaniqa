@@ -32,9 +32,12 @@ const PrivacyPage = lazy(() => import('@/features/legal/pages/PrivacyPage').then
 const TermsPage = lazy(() => import('@/features/legal/pages/TermsPage').then(module => ({ default: module.TermsPage })));
 const RefundPage = lazy(() => import('@/features/legal/pages/RefundPage').then(module => ({ default: module.RefundPage })));
 import { PublicLayout } from './layouts/PublicLayout';
+import { useAwardsSync } from '@/features/awards/hooks/useAwardsSync';
+import { AwardCelebrationSheet } from '@/features/awards/components/AwardCelebrationSheet';
 import { AppLoadingScreen } from '@/shared/components/AppLoadingScreen';
 
 function RootLayout() {
+  useAwardsSync();
   return (
     <>
       <AppLoadingScreen />
@@ -42,6 +45,7 @@ function RootLayout() {
       <RouteMetadata />
       <ScrollHandler />
       <ScrollRestoration />
+      <AwardCelebrationSheet />
       <Outlet />
     </>
   );

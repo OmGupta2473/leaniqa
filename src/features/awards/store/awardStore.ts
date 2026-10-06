@@ -1,64 +1,44 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { createPersistConfig } from '@/shared/utils/store';
+import type { DbUserAward } from '@/shared/types/supabase';
 
 export interface AwardState {
-  // Award modal / Selected award
-  selectedAward: any | null;
-  setSelectedAward: (award: any | null) => void;
-
-  // Celebration queue
-  celebrationQueue: any[];
-  addCelebration: (award: any) => void;
-  shiftCelebrationQueue: () => void;
-
-  // Recently unlocked
-  recentlyUnlocked: any[];
-  setRecentlyUnlocked: (awards: any[]) => void;
-  addRecentlyUnlocked: (award: any) => void;
-
-  // Award notifications
+  // Durable acknowledgement flag. True when the user has at least one
+  // row with acknowledged_at IS NULL. Hydrated from DB on every session.
   hasUnseenAwards: boolean;
   setHasUnseenAwards: (hasUnseen: boolean) => void;
 
-  // Award animations
-  animationsEnabled: boolean;
-  setAnimationsEnabled: (enabled: boolean) => void;
-  
+  // In-memory queue of awards waiting to be celebrated. Rebuilt from
+  // DB on every session; never persisted.
+  pendingCelebrations: DbUserAward[];
+  setPendingCelebrations: (awards: DbUserAward[]) => void;
+  shiftPendingCelebration: () => void;
+  clearPendingCelebrations: () => void;
+
   clearAwardStore: () => void;
 }
 
 export const useAwardStore = create<AwardState>()(
   persist(
     (set) => ({
-      selectedAward: null,
-      setSelectedAward: (selectedAward) => set({ selectedAward }),
-
-      celebrationQueue: [],
-      addCelebration: (award) => set((state) => ({ celebrationQueue: [...state.celebrationQueue, award] })),
-      shiftCelebrationQueue: () => set((state) => ({ celebrationQueue: state.celebrationQueue.slice(1) })),
-
-      recentlyUnlocked: [],
-      setRecentlyUnlocked: (recentlyUnlocked) => set({ recentlyUnlocked }),
-      addRecentlyUnlocked: (award) => set((state) => ({ recentlyUnlocked: [award, ...state.recentlyUnlocked] })),
-
       hasUnseenAwards: false,
       setHasUnseenAwards: (hasUnseenAwards) => set({ hasUnseenAwards }),
 
-      animationsEnabled: true,
-      setAnimationsEnabled: (animationsEnabled) => set({ animationsEnabled }),
+      pendingCelebrations: [],
+      setPendingCelebrations: (pendingCelebrations) => set({ pendingCelebrations }),
+      shiftPendingCelebration: () =>
+        set((state) => ({ pendingCelebrations: state.pendingCelebrations.slice(1) })),
+      clearPendingCelebrations: () => set({ pendingCelebrations: [] }),
 
-      clearAwardStore: () => set({
-        selectedAward: null,
-        celebrationQueue: [],
-        recentlyUnlocked: [],
-        hasUnseenAwards: false
-      })
+      clearAwardStore: () =>
+        set({
+          hasUnseenAwards: false,
+          pendingCelebrations: [],
+        }),
     }),
     createPersistConfig('leaniqa-award-store', (state) => ({
-      recentlyUnlocked: state.recentlyUnlocked,
       hasUnseenAwards: state.hasUnseenAwards,
-      animationsEnabled: state.animationsEnabled
-    }))
-  )
+    })),
+  ),
 );

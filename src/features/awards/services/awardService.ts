@@ -70,6 +70,7 @@ export const awardService = {
         user_id: userId,
         award_id: id,
         unlocked_at: new Date().toISOString(),
+        acknowledged_at: null,
       }));
 
       const { error: awardsError } = await supabase
@@ -116,5 +117,56 @@ export const awardService = {
       .eq('user_id', userId);
 
     return data || [];
+  },
+
+  async getUnacknowledgedAwards(): Promise<DbUserAward[]> {
+    const userId = await authService.getUserId();
+    const { data, error } = await supabase
+      .from('user_awards')
+      .select('*')
+      .eq('user_id', userId)
+      .is('acknowledged_at', null)
+      .order('unlocked_at', { ascending: true, nullsFirst: true });
+    if (error) {
+      if (error.code !== 'PGRST116' && !error.code?.startsWith('PGRST20')) {
+        console.error('Error fetching unacknowledged awards:', error);
+      }
+      return [];
+    }
+    return data ?? [];
+  },
+
+  async acknowledgeAwards(awardIds: string[]): Promise<boolean> {
+    if (!awardIds.length) return true;
+    const userId = await authService.getUserId();
+    const { error } = await supabase
+      .from('user_awards')
+      .update({ acknowledged_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .in('award_id', awardIds)
+      .is('acknowledged_at', null);
+    if (error) {
+      if (error.code !== 'PGRST116' && !error.code?.startsWith('PGRST20')) {
+        console.error('Error acknowledging awards:', error);
+      }
+      return false;
+    }
+    return true;
+  },
+
+  async acknowledgeAllUnacknowledged(): Promise<boolean> {
+    const userId = await authService.getUserId();
+    const { error } = await supabase
+      .from('user_awards')
+      .update({ acknowledged_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .is('acknowledged_at', null);
+    if (error) {
+      if (error.code !== 'PGRST116' && !error.code?.startsWith('PGRST20')) {
+        console.error('Error acknowledging all awards:', error);
+      }
+      return false;
+    }
+    return true;
   },
 };

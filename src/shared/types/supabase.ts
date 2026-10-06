@@ -101,4 +101,5 @@ export interface DbUserAward {
   user_id: string;
   award_id: string;
   unlocked_at?: string;
+  acknowledged_at?: string | null;
 }
