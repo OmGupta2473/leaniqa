@@ -16,7 +16,7 @@
  * The macros are not scaled proportionally — protein is protected.
  */
 
-export const CUT_PACES = [22, 20, 18, 16] as const;
+export const CUT_PACES = [26, 22, 18, 14] as const;
 export type CutPace = typeof CUT_PACES[number];
 
 export const MAINTENANCE_PROTEIN_G_PER_KG = 1.6;
@@ -26,23 +26,27 @@ export const MAINTENANCE_FAT_G_PER_KG = 0.9;
  * Protein g/kg bodyweight scales UP with steeper cut (muscle protection).
  * Reference values from Helms 2014 (2.0 g/kg mid-range) and Longland 2016
  * (2.4 g/kg aggressive) — tempered for non-athletes at the low end.
+ * At 26% deficit: 2.4 g/kg (Longland 2016 used 2.4 at 40% deficit, so 2.4
+ * at 26% is conservative). At 14% deficit: 1.8 g/kg (matches recomp baseline).
  */
 export const CUT_PROTEIN_G_PER_KG: Record<CutPace, number> = {
+  26: 2.4,
   22: 2.2,
-  20: 2.1,
   18: 2.0,
-  16: 1.9,
+  14: 1.8,
 };
 
 /**
  * Fat g/kg bodyweight scales DOWN with steeper cut (floor ~0.5 g/kg for
  * hormone health per Iraki 2019). Kept comfortably above the floor.
+ * At 26% deficit: 0.6 g/kg (Iraki 2019 floor is ~0.5 g/kg, so 0.6 is safe).
+ * At 14% deficit: 0.9 g/kg (matches recomp baseline).
  */
 export const CUT_FAT_G_PER_KG: Record<CutPace, number> = {
+  26: 0.6,
   22: 0.7,
-  20: 0.75,
   18: 0.8,
-  16: 0.85,
+  14: 0.9,
 };
 
 export interface MaintenancePlan {
