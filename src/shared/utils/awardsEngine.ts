@@ -185,10 +185,13 @@ export function evaluateAwards(input: AwardEvaluationInput): AwardEvaluation {
     const raw = computeRawCurrent(def, input);
     const current = Math.min(raw, def.target);
     const eligible = raw >= def.target;
-    const unlockedAt = Object.prototype.hasOwnProperty.call(unlockedAtMap, def.id)
-      ? unlockedAtMap[def.id]
-      : null;
-    const unlocked = unlockedAt !== null;
+
+    // A row in user_awards is the source of truth that an award is
+    // unlocked. unlocked_at is display metadata and may be absent for
+    // legacy/manual rows.
+    const rowExists = Object.prototype.hasOwnProperty.call(unlockedAtMap, def.id);
+    const unlockedAt = rowExists ? unlockedAtMap[def.id] : null;
+    const unlocked = rowExists;
 
     if (unlocked) unlockedCount++;
     if (eligible) eligibleCount++;

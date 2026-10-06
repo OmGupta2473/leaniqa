@@ -190,6 +190,19 @@ describe('evaluateAwards', () => {
     expect(result.unlockedCount).toBe(1);
     expect(result.eligibleCount).toBe(2);
   });
+
+  it('T-A16: row with undefined unlocked_at still counts as unlocked', () => {
+    const unlockedAwards: DbUserAward[] = [
+      { user_id: 'u1', award_id: 'streak_1' },
+    ];
+    const result = evaluateAwards(baseInput({ unlockedAwards }));
+    const streak1 = result.progress.find((p) => p.id === 'streak_1');
+
+    expect(streak1?.unlocked).toBe(true);
+    expect(streak1?.unlockedAt).toBeNull();
+    expect(result.unlockedCount).toBe(1);
+    expect(result.newlyEligible).not.toContain('streak_1');
+  });
 });
 
 describe('nextClosestAward', () => {

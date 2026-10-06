@@ -3,33 +3,21 @@ import React from 'react';
 import { PerfProfiler } from '@/shared/utils/perfDebug';
 import { authService } from '@/features/auth/services/authService';
 import { useAppStore } from '@/app/store';
-import { reportService } from '@/features/reports/services/reportService';
-import { calculateEarnedAwards } from '@/shared/utils/streaks';
-import { useQuery } from '@tanstack/react-query';
-import { profileService } from '@/features/profile/services/profileService';
-import { supabase } from '@/shared/utils/supabase';
 import { useNetworkStatus } from '@/shared/utils/utils';
 import { WifiOff, ChevronLeft } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useHasCompletedOnboarding } from '@/shared/hooks/useHasCompletedOnboarding';
 import { motion } from 'motion/react';
-
-function getLocalDateString() {
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
+import { useAwardStore } from '@/features/awards/store/awardStore';
+import { supabase } from '@/shared/utils/supabase';
 
 export function Header() {
-  const { data: metrics = [] } = useQuery({ queryKey: ['dailyMetrics'], queryFn: () => reportService.getDailyMetrics() });
-  const earnedAwards = calculateEarnedAwards(metrics);
   const { isOnline } = useNetworkStatus();
   const [session, setSession] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const hasNewAwards = useAwardStore((state) => state.hasUnseenAwards);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -38,8 +26,6 @@ export function Header() {
   }, []);
 
   const { profile, hasCompletedOnboarding } = useHasCompletedOnboarding();
-  const todayStr = getLocalDateString();
-  const hasNewAwards = earnedAwards.some(a => a.earned && a.earnedDate === todayStr);
   
   // Show back button on sub-pages
   const showBack = false;
