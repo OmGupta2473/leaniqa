@@ -588,6 +588,7 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
 
       const goalRow = await profileService.upsertGoal({
         goal_type: goal,
+        cut_pace: goal === 'cut' ? 22 : null,
         current_bf: currentBf,
         target_bf: targetBf,
         strategy: goal,
