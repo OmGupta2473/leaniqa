@@ -159,12 +159,7 @@ export function computeProjection(input: ProjectionInput): ComputeProjectionResu
   let weeklyChangeKg: number;
   let rateCapped = false;
 
-  if (goalType === 'recomp') {
-    // Recomp is a composition story, not a scale story — ignore deltaKcal
-    // for the purposes of weight change (recomp at maintenance, Barakat 2020).
-    weeklyChangeKg = 0;
-    rateCapped = false;
-  } else if (goalType === 'cut') {
+  if (goalType === 'cut') {
     if (Math.abs(rawWeeklyKg) > cutCapKg) {
       weeklyChangeKg = -cutCapKg;
       rateCapped = true;
@@ -192,9 +187,9 @@ export function computeProjection(input: ProjectionInput): ComputeProjectionResu
   let estimatedWeeksToGoal: number | null = null;
   let estimatedGoalDate: string | null = null;
 
-  if (goalType !== 'recomp' && targetWeightKg !== null && weeklyChangeKg !== 0) {
+  if (targetWeightKg !== null && weeklyChangeKg !== 0) {
     const directionMatches =
-      goalType === 'cut' ? targetWeightKg < weightKg : targetWeightKg > weightKg;
+      weeklyChangeKg < 0 ? targetWeightKg < weightKg : targetWeightKg > weightKg;
 
     if (directionMatches) {
       const weeksNeeded = Math.ceil(
@@ -214,12 +209,14 @@ export function computeProjection(input: ProjectionInput): ComputeProjectionResu
   // 7. One-line human summary.
   const formatKg = (kg: number): string => kg.toFixed(2);
   let summary: string;
-  if (goalType === 'cut') {
+  if (weeklyChangeKg < 0) {
     summary = `Lose ${formatKg(Math.abs(weeklyChangeKg))} kg/week at ${dailyCalorieTarget} kcal`;
-  } else if (goalType === 'bulk') {
+  } else if (weeklyChangeKg > 0) {
     summary = `Gain ${formatKg(weeklyChangeKg)} kg/week at ${dailyCalorieTarget} kcal`;
-  } else {
+  } else if (goalType === 'recomp') {
     summary = `Maintain weight while recomposing at ${dailyCalorieTarget} kcal`;
+  } else {
+    summary = `Maintain weight at ${dailyCalorieTarget} kcal`;
   }
 
   return {

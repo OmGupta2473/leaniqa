@@ -152,4 +152,62 @@ describe('projectionEngine.computeProjection', () => {
     expect(result.projectionPoints).toHaveLength(3);
     expect(result.projectionPoints.map((p) => p.weekNumber)).toEqual([0, 8, 12]);
   });
+
+  it('T-16: recomp with a deficit projects weight loss', () => {
+    const result = computeProjection({
+      ...baseInput,
+      goalType: 'recomp',
+      maintenanceKcal: 2589,
+      dailyCalorieTarget: 2300,
+    });
+    expect(result.weeklyChangeKg).toBeLessThan(0);
+    expect(result.projectionPoints[2].estimatedWeightKg).toBeLessThan(78);
+    expect(result.summary).toContain('Lose');
+  });
+
+  it('T-17: recomp with a deficit and a matching target weight produces a timeline', () => {
+    const result = computeProjection({
+      ...baseInput,
+      goalType: 'recomp',
+      maintenanceKcal: 2589,
+      dailyCalorieTarget: 2300,
+      targetWeightKg: 72,
+    });
+    expect(result.estimatedWeeksToGoal).not.toBeNull();
+    expect(result.estimatedGoalDate).not.toBeNull();
+  });
+
+  it('T-18: recomp with a surplus projects weight gain', () => {
+    const result = computeProjection({
+      ...baseInput,
+      goalType: 'recomp',
+      maintenanceKcal: 2589,
+      dailyCalorieTarget: 2800,
+    });
+    expect(result.weeklyChangeKg).toBeGreaterThan(0);
+    expect(result.summary).toContain('Gain');
+  });
+
+  it('T-19: recomp at maintenance still reads as maintain', () => {
+    const result = computeProjection({
+      ...baseInput,
+      goalType: 'recomp',
+      maintenanceKcal: 2589,
+      dailyCalorieTarget: 2589,
+    });
+    expect(result.weeklyChangeKg).toBe(0);
+    expect(result.summary).toContain('Maintain weight while recomposing');
+  });
+
+  it('T-20: recomp with target on the wrong side of the projection returns no timeline', () => {
+    const result = computeProjection({
+      ...baseInput,
+      goalType: 'recomp',
+      maintenanceKcal: 2589,
+      dailyCalorieTarget: 2300,
+      targetWeightKg: 82,
+    });
+    expect(result.estimatedWeeksToGoal).toBeNull();
+    expect(result.estimatedGoalDate).toBeNull();
+  });
 });

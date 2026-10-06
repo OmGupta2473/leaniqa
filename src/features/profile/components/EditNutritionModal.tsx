@@ -99,6 +99,13 @@ function EditNutritionModalInner({
     [parsedCalories, parsedProtein, parsedFat],
   );
 
+  const deviation = parsedCalories - maintenanceKcal;
+  const deviationThreshold = Math.max(150, Math.round(maintenanceKcal * 0.05));
+  const showDeviationBanner =
+    goalType !== 'cut' &&
+    maintenanceKcal > 0 &&
+    Math.abs(deviation) >= deviationThreshold;
+
   const isValid =
     goalType === 'cut'
       ? pacePlan != null
@@ -124,13 +131,16 @@ function EditNutritionModalInner({
 
   const previewText = useMemo(() => {
     if (!preview) return 'Adjust a value to see impact';
-    if (goalType === 'cut') {
+    if (preview.weeklyChangeKg < 0) {
       return `Lose ~${Math.abs(preview.weeklyChangeKg).toFixed(2)} kg/week at this target`;
     }
-    if (goalType === 'bulk') {
+    if (preview.weeklyChangeKg > 0) {
       return `Gain ~${preview.weeklyChangeKg.toFixed(2)} kg/week at this target`;
     }
-    return 'Maintain weight while recomposing';
+    if (goalType === 'recomp') {
+      return 'Maintain weight while recomposing at this target';
+    }
+    return 'Maintain weight at this target';
   }, [preview, goalType]);
 
   const saveMutation = useMutation({
@@ -313,6 +323,46 @@ function EditNutritionModalInner({
             <section className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-[clamp(0.6rem,1.6dvh,0.9rem)]">
               <div className="text-[clamp(0.75rem,2dvh,0.9rem)] text-amber-300 leading-snug">
                 Protein and fat alone exceed your calorie target. Lower one of them or raise the target.
+              </div>
+            </section>
+          )}
+
+          {showDeviationBanner && (
+            <section className="mt-3 rounded-xl border border-[#D4FF00]/20 bg-[#D4FF00]/5 p-[clamp(0.6rem,1.6dvh,0.9rem)]">
+              <div className="text-[clamp(0.75rem,2dvh,0.9rem)] text-zinc-300 leading-snug">
+                {deviation < 0 ? (
+                  <>
+                    This target is{' '}
+                    <span className="text-white font-semibold tabular-nums">
+                      {Math.abs(deviation)}
+                    </span>{' '}
+                    kcal below maintenance. It projects to about{' '}
+                    <span className="text-white font-semibold tabular-nums">
+                      {Math.abs(preview?.weeklyChangeKg ?? 0).toFixed(2)}
+                    </span>{' '}
+                    kg/week of weight loss. Your goal remains{' '}
+                    <span className="text-[#D4FF00] font-medium">
+                      {goalType === 'recomp' ? 'Recomp' : 'Bulk'}
+                    </span>
+                    , but this calorie target creates a deficit.
+                  </>
+                ) : (
+                  <>
+                    This target is{' '}
+                    <span className="text-white font-semibold tabular-nums">
+                      {Math.abs(deviation)}
+                    </span>{' '}
+                    kcal above maintenance. It projects to about{' '}
+                    <span className="text-white font-semibold tabular-nums">
+                      {(preview?.weeklyChangeKg ?? 0).toFixed(2)}
+                    </span>{' '}
+                    kg/week of weight gain. Your goal remains{' '}
+                    <span className="text-[#D4FF00] font-medium">
+                      {goalType === 'recomp' ? 'Recomp' : 'Bulk'}
+                    </span>
+                    , but this calorie target creates a surplus.
+                  </>
+                )}
               </div>
             </section>
           )}

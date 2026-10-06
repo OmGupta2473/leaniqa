@@ -327,7 +327,7 @@ export function ProfilePage() {
 
               {projection.rateCapped && (
                 <div className="mt-[clamp(0.5rem,1.4dvh,0.75rem)] text-[clamp(0.65rem,1.65dvh,0.75rem)] text-amber-400/80 leading-snug">
-                  Your deficit was capped at {goalType === 'cut' ? '0.7%' : '0.35%'} of bodyweight per week to preserve muscle.
+                  Your {projection.weeklyChangeKg < 0 ? 'deficit' : 'surplus'} was capped at {projection.weeklyChangeKg < 0 ? '0.7%' : '0.35%'} of bodyweight per week to {projection.weeklyChangeKg < 0 ? 'preserve muscle' : 'keep the gain lean'}.
                 </div>
               )}
             </>
