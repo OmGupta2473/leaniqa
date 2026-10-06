@@ -142,9 +142,10 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="page-enter min-h-[100dvh] bg-[#0A0A0A] w-full max-w-md mx-auto px-[clamp(1rem,4vw,1.5rem)] pt-[calc(env(safe-area-inset-top)+16px)] pb-[calc(env(safe-area-inset-bottom)+100px)]">
+    <div className="page-enter min-h-[100dvh] bg-[#0A0A0A] w-full px-[clamp(1rem,4vw,1.5rem)] pt-[calc(env(safe-area-inset-top)+16px)] pb-[calc(env(safe-area-inset-bottom)+100px)]">
+      <div className="w-full max-w-md mx-auto md:max-w-2xl lg:max-w-6xl">
 
-    <header>
+        <header className="md:rounded-2xl md:border md:border-zinc-800/60 md:bg-zinc-900/40">
       <div className="flex justify-between items-center mb-6">
         <button onClick={() => navigate('/dashboard')} aria-label="Back to dashboard" className="w-[44px] h-[44px] rounded-full bg-[rgba(255,255,255,0.03)] flex items-center justify-center transition-colors hover:bg-[rgba(255,255,255,0.1)]">
           <ChevronLeft size={20} className="text-white" />
@@ -174,7 +175,7 @@ export function ProfilePage() {
     </header>
 
     <div>
-      <div className="space-y-[clamp(0.6rem,1.6dvh,1rem)]">
+      <div className="grid grid-cols-1 gap-[clamp(0.6rem,1.6dvh,1rem)] md:grid-cols-2 md:gap-4">
 
         {/* Card 1 — Your Plan */}
         <section className="rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-[clamp(0.75rem,2dvh,1.25rem)]">
@@ -235,7 +236,7 @@ export function ProfilePage() {
 
           {projection ? (
             <>
-              <div className="text-[clamp(0.75rem,2dvh,0.9rem)] text-zinc-300 mb-[clamp(0.6rem,1.6dvh,0.9rem)]">
+        <div className="text-[clamp(0.75rem,2dvh,0.9rem)] text-zinc-300 mb-[clamp(0.6rem,1.6dvh,0.9rem)] md:text-base">
                 {projection.summary}
               </div>
 
@@ -247,7 +248,7 @@ export function ProfilePage() {
                   style={{ width: `calc(${(100 * 12) / maxWeeks}% - 4px)` }}
                 />
 
-                <div className="relative grid grid-cols-4 gap-1">
+        <div className="relative grid grid-cols-4 gap-1 md:gap-4 md:py-2">
                   {markers.map((m, i) => (
                     <div key={i} className="flex flex-col items-center text-center">
                       <div className={`w-2.5 h-2.5 rounded-full ${i === 0 ? 'bg-[#D4FF00] shadow-[0_0_8px_#D4FF00]' : 'bg-zinc-600 border-2 border-zinc-900'} z-10`} />
@@ -325,7 +326,7 @@ export function ProfilePage() {
           </div>
         </section>
 {/* Card 5 — Danger zone (Sign Out + dev crash preserved) */}
-        <section className="flex flex-col gap-3 pt-[clamp(0.3rem,0.8dvh,0.5rem)]">
+        <section className="flex flex-col gap-3 pt-[clamp(0.3rem,0.8dvh,0.5rem)] md:col-span-2">
           {import.meta.env.MODE === 'development' && (
             <button
               onClick={() => { throw new Error('Test Crash from LeanIQA!'); }}
@@ -345,15 +346,16 @@ export function ProfilePage() {
         </section>
 
         {/* Card 6 — Reset */}
-        <section className="mt-[clamp(1rem,2.6dvh,1.4rem)]">
+        <section className="mt-[clamp(1rem,2.6dvh,1.4rem)] md:col-span-2">
           <button
             onClick={() => setShowResetModal(true)}
-            className="w-full text-center text-[clamp(0.72rem,1.85dvh,0.85rem)] text-red-500/80 hover:text-red-400"
+        className="w-full text-center text-[clamp(0.72rem,1.85dvh,0.85rem)] text-red-500/80 hover:text-red-400 md:py-3"
           >
             Reset profile
           </button>
         </section>
 
+      </div>
       </div>
     </div>
 
