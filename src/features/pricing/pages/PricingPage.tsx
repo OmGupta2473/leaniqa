@@ -16,12 +16,12 @@ export function PricingPage() {
 
   return (
     <div className="min-h-[100dvh] bg-[#0A0A0B] text-zinc-50">
+      <PricingSection variant="full" />
       {currentSubscription && (currentSubscription.plan || '').toLowerCase() !== 'free' && (
-        <div className="pt-8 text-center text-zinc-400 text-sm">
+        <div className="pb-8 text-center text-zinc-500 text-[13px]">
           You're on the <span className="text-[#D4FF00]">{currentSubscription.plan}</span> plan.
         </div>
       )}
-      <PricingSection variant="full" />
     </div>
   );
 }

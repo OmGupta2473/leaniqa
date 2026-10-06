@@ -145,10 +145,10 @@ export function ProfilePage() {
     <div className="page-enter min-h-[100dvh] bg-[#0A0A0A] w-full px-[clamp(1rem,4vw,1.5rem)] pt-[calc(env(safe-area-inset-top)+16px)] pb-[calc(env(safe-area-inset-bottom)+100px)]">
       <div className="w-full max-w-md mx-auto md:max-w-2xl lg:max-w-6xl">
 
-        <header className="md:rounded-2xl md:border md:border-zinc-800/60 md:bg-zinc-900/40">
+        <header className="md:rounded-2xl md:border md:border-zinc-800/60 md:bg-zinc-900/40 mb-[clamp(1rem,2.4dvh,1.5rem)] md:mb-6">
       <div className="flex justify-between items-center mb-6">
-        <button onClick={() => navigate('/dashboard')} aria-label="Back to dashboard" className="w-[44px] h-[44px] rounded-full bg-[rgba(255,255,255,0.03)] flex items-center justify-center transition-colors hover:bg-[rgba(255,255,255,0.1)]">
-          <ChevronLeft size={20} className="text-white" />
+        <button onClick={() => navigate('/dashboard')} aria-label="Back to dashboard" className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.03)] flex items-center justify-center transition-colors hover:bg-[rgba(255,255,255,0.1)]">
+          <ChevronLeft size={18} className="text-white" />
         </button>
         <div className="text-[17px] font-semibold text-white tracking-tight">Profile</div>
         <div className="w-8" />
