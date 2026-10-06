@@ -20,6 +20,8 @@ import {
 } from "@/shared/utils/streaks";
 import { useAwardStore } from "../store/awardStore";
 import { awardService } from '@/features/awards/services/awardService';
+import { NextMilestoneHero } from '../components/NextMilestoneHero';
+import { PremiumAwardCard } from '../components/PremiumAwardCard';
 import { getKolkataDateString } from "@/shared/utils/timezone";
 import { Flame, ChevronLeft, X, Trophy, AlertTriangle, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -125,9 +127,17 @@ export function AwardsPage() {
           currentStreak: progress?.current ?? 0,
           streakRequired: definition.target,
           symbolText: String(definition.target),
+          isNew: (() => {
+            const row = dbUserAwards.find((r) => r.award_id === definition.id);
+            return (
+              row?.acknowledged_at != null &&
+              Date.now() - new Date(row.acknowledged_at).getTime() <
+                7 * 24 * 60 * 60 * 1000
+            );
+          })(),
         };
       }),
-    [progressById],
+    [progressById, dbUserAwards],
   );
 
   // Acknowledge exactly the unacknowledged awards this render is showing.
@@ -305,6 +315,8 @@ export function AwardsPage() {
         </div>
       </motion.div>
 
+      <NextMilestoneHero evaluation={evaluation} />
+
       {/* Awards Grid Section — grouped by category */}
       <motion.div variants={containerVariants} initial="hidden" animate="show">
         {CATEGORY_ORDER.map((category) => {
@@ -326,71 +338,12 @@ export function AwardsPage() {
                   <motion.div
                     key={award.id}
                     variants={itemVariants}
-                    onClick={() => {
-                      if (award.earned) haptics.success();
-                      else haptics.tap();
-                      setSelectedAward(award);
-                    }}
-                    className={cn(
-                      "relative rounded-[24px] p-5 flex flex-col items-center text-center cursor-pointer transition-all duration-300",
-                      "hover:scale-[1.03] active:scale-[0.97]",
-                      award.earned
-                        ? "bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] shadow-lg"
-                        : "bg-[rgba(255,255,255,0.01)] border border-[rgba(255,255,255,0.03)] opacity-60 grayscale-[80%]"
-                    )}
-                    style={award.earned ? {
-                      boxShadow: `0 10px 30px ${award.primaryColor}15, inset 0 1px 0 rgba(255,255,255,0.05)`,
-                      border: `1px solid ${award.primaryColor}40`
-                    } : {}}
+                    className="contents"
                   >
-                    {award.earned && (() => {
-                      const row = dbUserAwards.find((r) => r.award_id === award.id);
-                      const isRecent =
-                        row?.acknowledged_at != null &&
-                        Date.now() - new Date(row.acknowledged_at).getTime() <
-                          7 * 24 * 60 * 60 * 1000;
-                      return isRecent ? (
-                        <div
-                          className="absolute top-3 right-3 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"
-                          style={{
-                            background: `${award.primaryColor}25`,
-                            color: award.primaryColor,
-                          }}
-                        >
-                          New
-                        </div>
-                      ) : null;
-                    })()}
-
-                    {award.earned && (
-                      <div
-                        className="absolute inset-0 rounded-[24px] opacity-20 blur-xl pointer-events-none"
-                        style={{ background: award.primaryColor }}
-                      />
-                    )}
-
-                    <div
-                      className="w-16 h-16 rounded-[18px] flex items-center justify-center text-[34px] mb-4 relative z-10 transition-transform duration-500"
-                      style={{
-                        background: award.earned
-                          ? `linear-gradient(135deg, ${award.primaryColor}20, ${award.primaryColor}05)`
-                          : 'rgba(255,255,255,0.05)',
-                        border: award.earned ? `1px solid ${award.primaryColor}30` : '1px solid rgba(255,255,255,0.05)',
-                        filter: award.earned ? 'none' : 'brightness(0.7)'
-                      }}
-                    >
-                      <span className="relative z-10 drop-shadow-lg">{award.symbol || award.symbolText || '🏆'}</span>
-                    </div>
-
-                    <div className="text-[14px] font-bold text-white leading-tight mb-1 tracking-tight relative z-10">{award.name}</div>
-                    <div className="text-[12px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.5)] mb-3 relative z-10">{award.streakRequired} {award.unitLabel}</div>
-
-                    {award.earned && (
-                      <div
-                        className="absolute bottom-0 left-0 right-0 h-1 rounded-b-[24px] opacity-70"
-                        style={{ background: `linear-gradient(90deg, transparent, ${award.primaryColor}, transparent)` }}
-                      />
-                    )}
+                    <PremiumAwardCard
+                      award={award}
+                      onClick={() => setSelectedAward(award)}
+                    />
                   </motion.div>
                 ))}
               </div>
