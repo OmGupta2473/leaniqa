@@ -142,9 +142,9 @@ export function ProfilePage() {
   }
 
   return (
-<div className="page-enter flex flex-col h-[100dvh] min-h-0 bg-[#0A0A0A] w-full max-w-md mx-auto">
+    <div className="page-enter min-h-[100dvh] bg-[#0A0A0A] w-full max-w-md mx-auto px-[clamp(1rem,4vw,1.5rem)] pt-[calc(env(safe-area-inset-top)+16px)] pb-[calc(env(safe-area-inset-bottom)+100px)]">
 
-    <header className="flex-shrink-0 px-[clamp(1rem,4vw,1.5rem)] pt-[calc(env(safe-area-inset-top)+16px)] pb-[clamp(0.6rem,1.6dvh,0.9rem)]">
+    <header>
       <div className="flex justify-between items-center mb-6">
         <button onClick={() => navigate('/dashboard')} aria-label="Back to dashboard" className="w-[44px] h-[44px] rounded-full bg-[rgba(255,255,255,0.03)] flex items-center justify-center transition-colors hover:bg-[rgba(255,255,255,0.1)]">
           <ChevronLeft size={20} className="text-white" />
@@ -173,8 +173,8 @@ export function ProfilePage() {
       </div>
     </header>
 
-    <main className="flex-1 min-h-0 overflow-y-auto px-[clamp(1rem,4vw,1.5rem)]">
-      <div className="space-y-[clamp(0.6rem,1.6dvh,1rem)] pb-[calc(env(safe-area-inset-bottom)+100px)]">
+    <div>
+      <div className="space-y-[clamp(0.6rem,1.6dvh,1rem)]">
 
         {/* Card 1 — Your Plan */}
         <section className="rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-[clamp(0.75rem,2dvh,1.25rem)]">
@@ -355,7 +355,7 @@ export function ProfilePage() {
         </section>
 
       </div>
-    </main>
+    </div>
 
       {typeof document !== 'undefined' && createPortal(
         <AnimatePresence>
@@ -418,6 +418,9 @@ export function ProfilePage() {
         isOpen={showNutritionModal}
         onClose={() => setShowNutritionModal(false)}
         calculatedData={calculated}
+        weightKg={profile?.weight ?? 0}
+        goalType={goal?.goal_type ?? 'cut'}
+        maintenanceKcal={Math.round(profile?.maintenance_kcal ?? 0)}
       />
     </div>
   );
