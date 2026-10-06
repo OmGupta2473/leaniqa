@@ -19,6 +19,7 @@ import {
   toUtcDay,
 } from "@/shared/utils/streaks";
 import { useAwardStore } from "../store/awardStore";
+import { awardService } from '@/features/awards/services/awardService';
 import { getKolkataDateString } from "@/shared/utils/timezone";
 import { Flame, ChevronLeft, X, Trophy, AlertTriangle, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -129,10 +130,34 @@ export function AwardsPage() {
     [progressById],
   );
 
-  // Opening Awards acknowledges any fresh unlock signal.
+  // Acknowledge exactly the unacknowledged awards this render is showing.
+  // Requires that the awards query already returned (awards are rendered)
+  // and that we have a DB row for each. Never acknowledges blind.
   useEffect(() => {
-    useAwardStore.getState().setHasUnseenAwards(false);
-  }, []);
+    const unacknowledgedIds = allAwards
+      .filter((a) => a.earned && a.earnedDate != null)
+      .filter((a) => {
+        const row = dbUserAwards.find((r) => r.award_id === a.id);
+        return row != null && row.acknowledged_at == null;
+      })
+      .map((a) => a.id);
+
+    if (unacknowledgedIds.length === 0) return;
+
+    let cancelled = false;
+    (async () => {
+      const ok = await awardService.acknowledgeAwards(unacknowledgedIds);
+      if (cancelled) return;
+      if (ok) {
+        useAwardStore.getState().setHasUnseenAwards(false);
+        useAwardStore.getState().clearPendingCelebrations();
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [allAwards, dbUserAwards]);
 
   const [selectedAward, setSelectedAward] = useState<any>(null);
 
@@ -318,6 +343,25 @@ export function AwardsPage() {
                       border: `1px solid ${award.primaryColor}40`
                     } : {}}
                   >
+                    {award.earned && (() => {
+                      const row = dbUserAwards.find((r) => r.award_id === award.id);
+                      const isRecent =
+                        row?.acknowledged_at != null &&
+                        Date.now() - new Date(row.acknowledged_at).getTime() <
+                          7 * 24 * 60 * 60 * 1000;
+                      return isRecent ? (
+                        <div
+                          className="absolute top-3 right-3 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"
+                          style={{
+                            background: `${award.primaryColor}25`,
+                            color: award.primaryColor,
+                          }}
+                        >
+                          New
+                        </div>
+                      ) : null;
+                    })()}
+
                     {award.earned && (
                       <div
                         className="absolute inset-0 rounded-[24px] opacity-20 blur-xl pointer-events-none"
