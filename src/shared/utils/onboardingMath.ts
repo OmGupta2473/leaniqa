@@ -56,13 +56,13 @@ export const GOAL_ADJUSTMENTS: Record<GoalType, number> = {
 };
 
 export const PROTEIN_G_PER_KG: Record<GoalType, number> = {
-  cut: 2.0,
+  cut: 2.2,   // mirrors paceEngine CUT_PROTEIN_G_PER_KG[22]
   recomp: 1.8,
   bulk: 1.6,
 };
 
 export const FAT_G_PER_KG: Record<GoalType, number> = {
-  cut: 0.8,
+  cut: 0.7,   // mirrors paceEngine CUT_FAT_G_PER_KG[22]
   recomp: 0.9,
   bulk: 0.9,
 };

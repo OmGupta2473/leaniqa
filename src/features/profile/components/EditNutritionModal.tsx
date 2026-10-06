@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { profileService } from '../services/profileService';
 import { computeProjection } from '@/shared/utils/projectionEngine';
 import { haptics } from '@/shared/utils/haptics';
+import { computePacePlan, CUT_PACES, type CutPace } from '@/shared/utils/paceEngine';
 
 interface EditNutritionModalProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ interface EditNutritionModalProps {
   weightKg: number;
   goalType: 'cut' | 'recomp' | 'bulk';
   maintenanceKcal: number;
+  currentCutPace: number | null;
 }
 
 const INPUT_CLASS =
@@ -29,8 +31,8 @@ export function EditNutritionModal({
   weightKg,
   goalType,
   maintenanceKcal,
+  currentCutPace,
 }: EditNutritionModalProps) {
-  // SSR guard (mirrors CustomMealModal) — no hooks run when there is no DOM.
   if (typeof document === 'undefined') return null;
 
   return createPortal(
@@ -42,6 +44,7 @@ export function EditNutritionModal({
           weightKg={weightKg}
           goalType={goalType}
           maintenanceKcal={maintenanceKcal}
+          currentCutPace={currentCutPace}
         />
       )}
     </AnimatePresence>,
@@ -55,6 +58,7 @@ function EditNutritionModalInner({
   weightKg,
   goalType,
   maintenanceKcal,
+  currentCutPace,
 }: Omit<EditNutritionModalProps, 'isOpen'>) {
   const queryClient = useQueryClient();
 
@@ -62,6 +66,21 @@ function EditNutritionModalInner({
   const [protein, setProtein] = useState(String(calculatedData?.targetMacros?.protein ?? ''));
   const [fat, setFat] = useState(String(calculatedData?.targetMacros?.fat ?? ''));
   const [carbs, setCarbs] = useState(String(calculatedData?.targetMacros?.carbs ?? ''));
+  const [pace, setPace] = useState<CutPace>(
+    currentCutPace && CUT_PACES.includes(currentCutPace as CutPace)
+      ? (currentCutPace as CutPace)
+      : 22
+  );
+
+  const pacePlan = useMemo(() => {
+    if (goalType !== 'cut') return null;
+    if (!weightKg || !maintenanceKcal) return null;
+    try {
+      return computePacePlan({ weightKg, maintenanceKcal, pace });
+    } catch {
+      return null;
+    }
+  }, [goalType, weightKg, maintenanceKcal, pace]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -79,23 +98,28 @@ function EditNutritionModalInner({
   const macroCalories = parsedProtein * 4 + parsedFat * 9 + parsedCarbs * 4;
   const macroDiff = Math.abs(macroCalories - parsedCalories);
 
-  const isValid = parsedCalories >= 500 && parsedCalories <= 10000;
-
+  const isValid =
+    goalType === 'cut'
+      ? pacePlan != null
+      : parsedCalories >= 500 && parsedCalories <= 10000;
 
   const preview = useMemo(() => {
-    if (!parsedCalories || !maintenanceKcal || !weightKg) return null;
+    if (!maintenanceKcal || !weightKg) return null;
+    const dailyCalTarget =
+      goalType === 'cut' && pacePlan ? pacePlan.targetKcal : parsedCalories;
+    if (!dailyCalTarget) return null;
     try {
       return computeProjection({
         weightKg,
         targetWeightKg: null,
         goalType,
-        dailyCalorieTarget: parsedCalories,
+        dailyCalorieTarget: dailyCalTarget,
         maintenanceKcal,
       });
     } catch {
       return null;
     }
-  }, [parsedCalories, weightKg, goalType, maintenanceKcal]);
+  }, [parsedCalories, weightKg, goalType, maintenanceKcal, pacePlan]);
 
   const previewText = useMemo(() => {
     if (!preview) return 'Adjust a value to see impact';
@@ -110,15 +134,34 @@ function EditNutritionModalInner({
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      await profileService.upsertProfile({
-        target_kcal: parsedCalories,
-        protein_target: parsedProtein,
-        fat_target: parsedFat,
-        carbs_target: parsedCarbs,
-      });
+      if (goalType === 'cut') {
+        if (!pacePlan) {
+          throw new Error('Cannot save: pace plan is not available');
+        }
+        await Promise.all([
+          profileService.upsertProfile({
+            target_kcal: pacePlan.targetKcal,
+            protein_target: pacePlan.proteinG,
+            fat_target: pacePlan.fatG,
+            carbs_target: pacePlan.carbsG,
+          }),
+          profileService.upsertGoal({
+            cut_pace: pacePlan.pace,
+            deficit_kcal: pacePlan.deficitKcal,
+          }),
+        ]);
+      } else {
+        await profileService.upsertProfile({
+          target_kcal: parsedCalories,
+          protein_target: parsedProtein,
+          fat_target: parsedFat,
+          carbs_target: parsedCarbs,
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['goal'] });
       haptics.success();
       onClose();
     },
@@ -155,43 +198,70 @@ function EditNutritionModalInner({
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto px-[clamp(1rem,4vw,1.5rem)] py-[clamp(0.75rem,2dvh,1.25rem)] space-y-[clamp(0.75rem,2dvh,1.25rem)]">
-          <section>
-            <div className={LABEL_CLASS}>Daily calories</div>
-            <input
-              value={calories}
-              onChange={(e) => setCalories(e.target.value.replace(/[^0-9]/g, ''))}
-              placeholder="1700"
-              inputMode="numeric"
-              className={INPUT_CLASS}
-            />
-          </section>
+          {goalType === 'cut' ? (
+            <>
+              <section>
+                <div className={LABEL_CLASS}>Pace</div>
+                <div className="grid grid-cols-4 gap-2">
+                  {CUT_PACES.map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setPace(p)}
+                      className={`py-2 rounded-xl text-[13px] font-medium transition-colors ${
+                        pace === p
+                          ? 'bg-[#D4FF00] text-black'
+                          : 'bg-zinc-900/60 border border-zinc-800 text-zinc-400'
+                      }`}
+                    >
+                      −{p}%
+                    </button>
+                  ))}
+                </div>
+              </section>
 
-          <section>
-            <div className={LABEL_CLASS}>Macros</div>
-            <div className="grid grid-cols-2 gap-3">
+              {pacePlan && (
+                <section>
+                  <div className={LABEL_CLASS}>Your target</div>
+                  <div className="text-[clamp(1.3rem,4dvh,1.6rem)] font-bold tabular-nums text-white">
+                    {pacePlan.targetKcal}
+                    <span className="text-[0.7em] text-zinc-500 font-medium ml-1">kcal</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 mt-3">
+                    <div className="rounded-xl bg-zinc-800/50 border border-zinc-800 px-2 py-2 text-center">
+                      <div className="text-[clamp(0.7rem,1.5dvh,0.9rem)] font-semibold tabular-nums text-white">
+                        {pacePlan.proteinG}g
+                      </div>
+                    </div>
+                    <div className="rounded-xl bg-zinc-800/50 border border-zinc-800 px-2 py-2 text-center">
+                      <div className="text-[clamp(0.7rem,1.5dvh,0.9rem)] font-semibold tabular-nums text-white">
+                        {pacePlan.fatG}g
+                      </div>
+                    </div>
+                    <div className="rounded-xl bg-zinc-800/50 border border-zinc-800 px-2 py-2 text-center">
+                      <div className="text-[clamp(0.7rem,1.5dvh,0.9rem)] font-semibold tabular-nums text-white">
+                        {pacePlan.carbsG}g
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-2 text-[clamp(0.65rem,1.65dvh,0.75rem)] text-zinc-500">
+                    Deficit: {pacePlan.deficitKcal} kcal/day
+                  </div>
+                </section>
+              )}
+            </>
+          ) : (
+            <section>
+              <div className={LABEL_CLASS}>Daily calories</div>
               <input
-                value={protein}
-                onChange={(e) => setProtein(e.target.value.replace(/[^0-9]/g, ''))}
-                placeholder="Protein (g)"
+                value={calories}
+                onChange={(e) => setCalories(e.target.value.replace(/[^0-9]/g, ''))}
+                placeholder="1700"
                 inputMode="numeric"
                 className={INPUT_CLASS}
               />
-              <input
-                value={fat}
-                onChange={(e) => setFat(e.target.value.replace(/[^0-9]/g, ''))}
-                placeholder="Fat (g)"
-                inputMode="numeric"
-                className={INPUT_CLASS}
-              />
-            </div>
-            <input
-              value={carbs}
-              onChange={(e) => setCarbs(e.target.value.replace(/[^0-9]/g, ''))}
-              placeholder="Carbs (g)"
-              inputMode="numeric"
-              className={`${INPUT_CLASS} mt-3`}
-            />
-          </section>
+            </section>
+          )}
 
           <section className="rounded-xl border border-[#D4FF00]/20 bg-[#D4FF00]/5 p-[clamp(0.6rem,1.6dvh,0.9rem)]">
             <div className="text-[clamp(0.65rem,1.65dvh,0.75rem)] uppercase tracking-wider text-[#D4FF00]/80 mb-1">
@@ -202,14 +272,16 @@ function EditNutritionModalInner({
             </div>
           </section>
 
-          <section className="text-[clamp(0.7rem,1.8dvh,0.82rem)] text-zinc-500">
-            Macros total: <span className="tabular-nums text-zinc-300">{macroCalories} kcal</span>
-            {macroDiff > 50 && (
-              <div className="mt-1 text-amber-400/80">
-                Macro calories differ from target by {macroDiff} kcal
-              </div>
-            )}
-          </section>
+          {goalType !== 'cut' && (
+            <section className="text-[clamp(0.7rem,1.8dvh,0.82rem)] text-zinc-500">
+              Macros total: <span className="tabular-nums text-zinc-300">{macroCalories} kcal</span>
+              {macroDiff > 50 && (
+                <div className="mt-1 text-amber-400/80">
+                  Macro calories differ from target by {macroDiff} kcal
+                </div>
+              )}
+            </section>
+          )}
         </div>
 
         <div className="flex-shrink-0 px-[clamp(1rem,4vw,1.5rem)] pt-[clamp(0.6rem,1.6dvh,0.9rem)] pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-zinc-900/60">
