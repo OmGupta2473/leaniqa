@@ -251,16 +251,45 @@ function EditNutritionModalInner({
               )}
             </>
           ) : (
-            <section>
-              <div className={LABEL_CLASS}>Daily calories</div>
-              <input
-                value={calories}
-                onChange={(e) => setCalories(e.target.value.replace(/[^0-9]/g, ''))}
-                placeholder="1700"
-                inputMode="numeric"
-                className={INPUT_CLASS}
-              />
-            </section>
+            <>
+              <section>
+                <div className={LABEL_CLASS}>Daily calories</div>
+                <input
+                  value={calories}
+                  onChange={(e) => setCalories(e.target.value.replace(/[^0-9]/g, ''))}
+                  placeholder="1700"
+                  inputMode="numeric"
+                  className={INPUT_CLASS}
+                />
+              </section>
+
+              <section>
+                <div className={LABEL_CLASS}>Macros</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <input
+                    value={protein}
+                    onChange={(e) => setProtein(e.target.value.replace(/[^0-9]/g, ''))}
+                    placeholder="Protein (g)"
+                    inputMode="numeric"
+                    className={INPUT_CLASS}
+                  />
+                  <input
+                    value={fat}
+                    onChange={(e) => setFat(e.target.value.replace(/[^0-9]/g, ''))}
+                    placeholder="Fat (g)"
+                    inputMode="numeric"
+                    className={INPUT_CLASS}
+                  />
+                </div>
+                <input
+                  value={carbs}
+                  onChange={(e) => setCarbs(e.target.value.replace(/[^0-9]/g, ''))}
+                  placeholder="Carbs (g)"
+                  inputMode="numeric"
+                  className={`${INPUT_CLASS} mt-3`}
+                />
+              </section>
+            </>
           )}
 
           <section className="rounded-xl border border-[#D4FF00]/20 bg-[#D4FF00]/5 p-[clamp(0.6rem,1.6dvh,0.9rem)]">
