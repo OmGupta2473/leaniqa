@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useHasCompletedOnboarding } from './useHasCompletedOnboarding';
 import { useUserStore } from '@/features/profile/store/userStore';
 import { calculateMacros, calculateGoalStats } from '../utils/profileCalculations';
+import { deriveCarbsFromKcal } from '../utils/macroReconciliation';
 
 export function useCalculatedProfile() {
   if (import.meta.env.DEV) console.time('[PERF] useCalculatedProfile');
@@ -64,6 +65,30 @@ export function useCalculatedProfile() {
         const isFatOverridden = (profile.fat_target != null) || (macroOverrides.fat_target != null);
         let finalFat = isFatOverridden ? (profile.fat_target ?? macroOverrides.fat_target) : null;
         let finalCarbs = isCarbsOverridden ? (profile.carbs_target ?? macroOverrides.carbs_target) : null;
+
+        // Non-cut goals with an explicit target_kcal: target_kcal is authoritative
+        // and carbs are derived from it plus the user's protein/fat. This silently
+        // overrides any stored carbs_target that conflicts — those rows were
+        // written by a pre-fix EditNutritionModal and are treated as stale.
+        const isNonCut = goal.goal_type !== 'cut';
+        if (
+          isNonCut &&
+          profile.target_kcal != null &&
+          profile.protein_target != null &&
+          profile.fat_target != null
+        ) {
+          const derived = deriveCarbsFromKcal(
+            profile.target_kcal,
+            profile.protein_target,
+            profile.fat_target,
+          );
+          if (derived.feasible) {
+            finalFat = profile.fat_target;
+            finalCarbs = derived.carbsG;
+          }
+          // If !feasible, fall through to the existing derivation. EditNutrition
+          // gates saving infeasible splits, so this only affects legacy rows.
+        }
 
         if (finalFat == null && finalCarbs == null) {
           finalFat = Math.round((calcG.dailyCalorieGoal * fatPercentageMid) / 9);

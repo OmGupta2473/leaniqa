@@ -7,6 +7,7 @@ import { profileService } from '../services/profileService';
 import { computeProjection } from '@/shared/utils/projectionEngine';
 import { haptics } from '@/shared/utils/haptics';
 import { computePacePlan, CUT_PACES, type CutPace } from '@/shared/utils/paceEngine';
+import { deriveCarbsFromKcal } from '@/shared/utils/macroReconciliation';
 
 interface EditNutritionModalProps {
   isOpen: boolean;
@@ -65,7 +66,6 @@ function EditNutritionModalInner({
   const [calories, setCalories] = useState(String(calculatedData?.dailyCalorieGoal ?? ''));
   const [protein, setProtein] = useState(String(calculatedData?.targetMacros?.protein ?? ''));
   const [fat, setFat] = useState(String(calculatedData?.targetMacros?.fat ?? ''));
-  const [carbs, setCarbs] = useState(String(calculatedData?.targetMacros?.carbs ?? ''));
   const [pace, setPace] = useState<CutPace>(
     currentCutPace && CUT_PACES.includes(currentCutPace as CutPace)
       ? (currentCutPace as CutPace)
@@ -93,15 +93,16 @@ function EditNutritionModalInner({
   const parsedCalories = parseInt(calories, 10) || 0;
   const parsedProtein = parseInt(protein, 10) || 0;
   const parsedFat = parseInt(fat, 10) || 0;
-  const parsedCarbs = parseInt(carbs, 10) || 0;
 
-  const macroCalories = parsedProtein * 4 + parsedFat * 9 + parsedCarbs * 4;
-  const macroDiff = Math.abs(macroCalories - parsedCalories);
+  const derived = useMemo(
+    () => deriveCarbsFromKcal(parsedCalories, parsedProtein, parsedFat),
+    [parsedCalories, parsedProtein, parsedFat],
+  );
 
   const isValid =
     goalType === 'cut'
       ? pacePlan != null
-      : parsedCalories >= 500 && parsedCalories <= 10000;
+      : parsedCalories >= 500 && parsedCalories <= 10000 && derived.feasible;
 
   const preview = useMemo(() => {
     if (!maintenanceKcal || !weightKg) return null;
@@ -151,13 +152,16 @@ function EditNutritionModalInner({
           }),
         ]);
       } else {
-        await profileService.upsertProfile({
-          target_kcal: parsedCalories,
-          protein_target: parsedProtein,
-          fat_target: parsedFat,
-          carbs_target: parsedCarbs,
-        });
+      if (!derived.feasible) {
+        throw new Error('Macro split is infeasible — protein and fat exceed the calorie target');
       }
+      await profileService.upsertProfile({
+        target_kcal: parsedCalories,
+        protein_target: parsedProtein,
+        fat_target: parsedFat,
+        carbs_target: derived.carbsG,
+      });
+    }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
@@ -281,13 +285,17 @@ function EditNutritionModalInner({
                     className={INPUT_CLASS}
                   />
                 </div>
-                <input
-                  value={carbs}
-                  onChange={(e) => setCarbs(e.target.value.replace(/[^0-9]/g, ''))}
-                  placeholder="Carbs (g)"
-                  inputMode="numeric"
-                  className={`${INPUT_CLASS} mt-3`}
-                />
+                <div className="mt-3">
+                  <div className="text-[clamp(0.65rem,1.75dvh,0.78rem)] uppercase tracking-wider text-zinc-500 mb-2">
+                    Carbs (derived from remaining calories)
+                  </div>
+                  <div className="flex items-center justify-between bg-zinc-900/30 border border-zinc-800/60 rounded-xl px-[clamp(0.75rem,2dvh,1rem)] py-[clamp(0.5rem,1.5dvh,0.75rem)]">
+                    <span className="text-[clamp(0.85rem,2.2dvh,0.95rem)] text-zinc-300 tabular-nums">
+                      {derived.carbsG}
+                    </span>
+                    <span className="text-[clamp(0.7rem,1.8dvh,0.82rem)] text-zinc-500">g</span>
+                  </div>
+                </div>
               </section>
             </>
           )}
@@ -301,14 +309,11 @@ function EditNutritionModalInner({
             </div>
           </section>
 
-          {goalType !== 'cut' && (
-            <section className="text-[clamp(0.7rem,1.8dvh,0.82rem)] text-zinc-500">
-              Macros total: <span className="tabular-nums text-zinc-300">{macroCalories} kcal</span>
-              {macroDiff > 50 && (
-                <div className="mt-1 text-amber-400/80">
-                  Macro calories differ from target by {macroDiff} kcal
-                </div>
-              )}
+          {goalType !== 'cut' && !derived.feasible && (
+            <section className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-[clamp(0.6rem,1.6dvh,0.9rem)]">
+              <div className="text-[clamp(0.75rem,2dvh,0.9rem)] text-amber-300 leading-snug">
+                Protein and fat alone exceed your calorie target. Lower one of them or raise the target.
+              </div>
             </section>
           )}
         </div>
