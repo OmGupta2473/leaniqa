@@ -42,7 +42,7 @@ export function useCalculatedProfile() {
         const calcG = calculateGoalStats(calcM.tdee, profile.weight, goal.current_bf, goal.target_bf, goal.deficit_kcal);
         data.fatToLoseKg = calcG.fatToLoseKg;
         data.targetWeightKg = goal.target_weight || calcG.targetWeightKg;
-        data.dailyCalorieGoal = calcG.dailyCalorieGoal;
+        data.dailyCalorieGoal = profile.target_kcal ?? calcG.dailyCalorieGoal;
         data.estimatedWeeks = calcG.estimatedWeeks;
         data.estimatedCompletionDate = goal.target_date 
           ? new Date(goal.target_date).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })

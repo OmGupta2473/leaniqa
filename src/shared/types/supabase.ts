@@ -11,6 +11,8 @@ export interface DbProfile {
   hip?: number;
   activity_level: 'Sedentary' | 'Light' | 'Moderate' | 'Active' | 'Very active';
   maintenance_kcal: number;
+  /** User-set daily calorie target. NULL means use calculated target from body stats + goal deficit. */
+  target_kcal?: number | null;
   protein_target: number;
   carbs_target?: number;
   fat_target?: number;
