@@ -4,20 +4,18 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createPortal } from 'react-dom';
 import { profileService } from '../services/profileService';
-import { useState } from 'react';
-import { ChevronLeft, LogOut, Trash2, AlertTriangle, User, Flame, Droplet, CheckCircle2, Crown, CreditCard as CreditCardIcon, Sparkles, ArrowRight, Zap, Loader2 } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { ChevronLeft, LogOut, AlertTriangle, TrendingDown, TrendingUp, Target } from 'lucide-react';
 import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
+import { computeProjection } from '@/shared/utils/projectionEngine';
 import { motion, AnimatePresence } from 'motion/react';
 import { authService } from '@/features/auth/services/authService';
 import { haptics } from '@/shared/utils/haptics';
 import { subscriptionService } from '@/features/pricing/services/subscriptionService';
-import { TransformationSection } from '@/features/transformation/components/TransformationSection';
 import { EditProfileModal } from '../components/EditProfileModal';
 import { EditNutritionModal } from '../components/EditNutritionModal';
-import { analytics } from '@/shared/utils/analytics';
 import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
 import { ProfileSkeleton } from '@/shared/components/Skeletons';
-import { useToast } from '@/shared/components/Toast';
 
 function displayVal(val: any) {
   if (val === undefined || val === null || val === '') return '—';
@@ -33,11 +31,9 @@ function displayVal(val: any) {
   }
   return val;
 }
-
 export function ProfilePage() {
   const navigate = useNavigate();
   const isOnline = useNetworkConnectivity();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showResetModal, setShowResetModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -47,11 +43,10 @@ export function ProfilePage() {
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
 
   const { profileData: calculated } = useCalculatedProfile();
-  const { data: subscription, isLoading: isSubLoading } = useQuery({ 
-    queryKey: ['subscription'], 
-    queryFn: () => subscriptionService.getSubscriptionStatus() 
+  const { data: subscription } = useQuery({
+    queryKey: ['subscription'],
+    queryFn: () => subscriptionService.getSubscriptionStatus()
   });
-
 
   const resetMutation = useMutation({
     mutationFn: async () => {
@@ -70,32 +65,63 @@ export function ProfilePage() {
     },
   });
 
+  const { name, gender, age, activityLevel, dailyCalorieGoal, targetMacros, proteinMid } = calculated;
 
-  const {
-    name, gender, age, activityLevel,
-    weightKg, heightCm, currentBodyFatPct, targetBodyFatPct,
-    tdee, proteinMin, proteinMax, fatMin, fatMax, carbMin, carbMax, fiberMin, fiberMax,
-    fatToLoseKg, targetWeightKg, chosenStrategyName, dailyCalorieGoal, dailyDeficit, estimatedWeeks, estimatedCompletionDate, targetMacros
-  } = calculated;
+  const targetCalories = Math.round(dailyCalorieGoal ?? 0);
+  const maintenanceKcal = Math.round(profile?.maintenance_kcal ?? 0);
+  const goalType = goal?.goal_type;
 
-  let heightStr = '—';
-  let heightSub = '';
-  if (heightCm) {
-    heightStr = String(heightCm);
-    const feet = Math.floor(heightCm / 30.48);
-    const inches = Math.round((heightCm / 2.54) % 12);
-    heightSub = `${feet}'${inches}"`;
-  }
-
-  let dateStr = '—';
-  if (estimatedCompletionDate) {
-    const d = new Date(estimatedCompletionDate);
-    if (!isNaN(d.getTime())) {
-      dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-    } else {
-      dateStr = estimatedCompletionDate as string;
+  // Projected Progress — pure math from the shared projection engine (cbd0960).
+  // Falls back to null (and a "Complete your plan" message) when the plan is
+  // incomplete or inputs are missing, so computeProjection never throws here.
+  const projection = useMemo(() => {
+    if (!profile || !goal || !goalType || !profile.weight || !maintenanceKcal || !targetCalories) {
+      return null;
     }
-  }
+    return computeProjection({
+      weightKg: profile.weight,
+      targetWeightKg: goal.target_weight ?? null,
+      goalType,
+      dailyCalorieTarget: targetCalories,
+      maintenanceKcal,
+    });
+  }, [profile, goal, goalType, maintenanceKcal, targetCalories]);
+
+  const markers = useMemo(() => {
+    if (!projection) return [];
+    const now = projection.projectionPoints[0].estimatedWeightKg;
+    const w8 = projection.projectionPoints[1].estimatedWeightKg;
+    const w12 = projection.projectionPoints[2].estimatedWeightKg;
+    const goalWeight = goal?.target_weight ?? w12; // fallback to 12-week weight
+    return [
+      { label: 'Now', value: `${now.toFixed(1)} kg` },
+      { label: '8 wks', value: `${w8.toFixed(1)} kg` },
+      { label: '12 wks', value: `${w12.toFixed(1)} kg` },
+      { label: 'Goal', value: `${goalWeight.toFixed(1)} kg` },
+    ];
+  }, [projection, goal]);
+
+  const maxWeeks = 12;
+
+  const goalLabel = goalType === 'cut' ? 'Lose Fat'
+                  : goalType === 'recomp' ? 'Recomp'
+                  : goalType === 'bulk' ? 'Build Muscle'
+                  : 'Set your goal';
+
+  const GoalIcon = goalType === 'cut' ? TrendingDown
+                 : goalType === 'recomp' ? Target
+                 : goalType === 'bulk' ? TrendingUp
+                 : Target;
+
+  const dietLabel = !profile?.dietary_preference ? '—'
+                  : profile.dietary_preference === 'veg' ? 'Vegetarian'
+                  : profile.dietary_preference === 'egg' ? 'Eggetarian'
+                  : 'Non-veg';
+
+  const planLabel = subscription?.isPremium ? 'Serious plan' : 'Free plan';
+  const planSubtitle = subscription?.isPremium
+    ? 'Unlimited AI parsing unlocked'
+    : 'Unlock unlimited AI parsing';
 
   if (isLoading) {
     if (!isOnline) {
@@ -116,9 +142,10 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="page-enter pt-[calc(env(safe-area-inset-top)+20px)] pb-[calc(100px+env(safe-area-inset-bottom))] min-h-[100dvh] bg-[#0A0A0A] px-5">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-10">
+<div className="page-enter flex flex-col h-[100dvh] min-h-0 bg-[#0A0A0A] w-full max-w-md mx-auto">
+
+    <header className="flex-shrink-0 px-[clamp(1rem,4vw,1.5rem)] pt-[calc(env(safe-area-inset-top)+16px)] pb-[clamp(0.6rem,1.6dvh,0.9rem)]">
+      <div className="flex justify-between items-center mb-6">
         <button onClick={() => navigate('/dashboard')} aria-label="Back to dashboard" className="w-[44px] h-[44px] rounded-full bg-[rgba(255,255,255,0.03)] flex items-center justify-center transition-colors hover:bg-[rgba(255,255,255,0.1)]">
           <ChevronLeft size={20} className="text-white" />
         </button>
@@ -126,8 +153,8 @@ export function ProfilePage() {
         <div className="w-8" />
       </div>
 
-      {/* Avatar & Basic Info */}
-      <div className="flex flex-col items-center mb-10">
+      {/* Avatar & basic info (greeting preserved) */}
+      <div className="flex flex-col items-center">
         <div className="w-20 h-20 rounded-full bg-[rgba(255,255,255,0.08)] text-[28px] font-semibold flex items-center justify-center text-white mb-4 border-[0.5px] border-[rgba(255,255,255,0.15)]">
           {name ? name.substring(0, 2).toUpperCase() : 'U'}
         </div>
@@ -144,281 +171,205 @@ export function ProfilePage() {
           </div>
         </div>
       </div>
+    </header>
 
-      {/* Step 1: Personal Info */}
-      <div className="mb-10">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-[10px] bg-[rgba(212,255,0,0.1)] border-[0.5px] border-[rgba(212,255,0,0.2)] flex items-center justify-center">
-              <span className="text-[#D4FF00] font-extrabold text-[16px]">1</span>
-            </div>
-            <div>
-              <div className="text-[22px] font-semibold tracking-tight text-white tracking-tight leading-tight">Personal Info</div>
-              <div className="text-[13px] text-[rgba(235,235,245,0.5)]">Body stats & activity</div>
-            </div>
-          </div>
-          <button 
-            onClick={() => setShowEditModal(true)} 
-            className="btn-ghost"
-            style={{ padding: '6px 12px', fontSize: '12px' }}
-          >
-            Edit
-          </button>
-        </div>
+    <main className="flex-1 min-h-0 overflow-y-auto px-[clamp(1rem,4vw,1.5rem)]">
+      <div className="space-y-[clamp(0.6rem,1.6dvh,1rem)] pb-[calc(env(safe-area-inset-bottom)+100px)]">
 
-        <div className="card-base p-0 overflow-hidden">
-          <div className="flex justify-between items-center py-3.5 px-4 border-b border-[rgba(255,255,255,0.06)]">
-            <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Weight</span>
-            <span className="text-[14px] font-medium text-white">{displayVal(weightKg)} kg</span>
-          </div>
-          <div className="flex justify-between items-center py-3.5 px-4 border-b border-[rgba(255,255,255,0.06)]">
-            <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Height</span>
-            <span className="text-[14px] font-medium text-white">{heightStr} cm <span className="text-[12px] text-[rgba(255,255,255,0.3)] ml-1">({heightSub})</span></span>
-          </div>
-          <div className="flex justify-between items-center py-3.5 px-4 border-b border-[rgba(255,255,255,0.06)]">
-            <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Current BF</span>
-            <span className="text-[14px] font-medium text-white">{displayVal(currentBodyFatPct)}%</span>
-          </div>
-          <div className="flex justify-between items-center py-3.5 px-4 bg-[rgba(212,255,0,0.02)]">
-            <span className="text-[14px] text-[rgba(212,255,0,0.5)]">Target BF</span>
-            <span className="text-[14px] font-bold text-[#D4FF00]">{displayVal(targetBodyFatPct)}%</span>
-          </div>
-        </div>
-      </div>
-
-      
-      {/* Maintenance Nutrition */}
-      <div className="mb-10">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-[10px] bg-[rgba(212,255,0,0.1)] border-[0.5px] border-[rgba(212,255,0,0.2)] flex items-center justify-center">
-              <span className="text-[#D4FF00] font-extrabold text-[16px]">M</span>
+        {/* Card 1 — Your Plan */}
+        <section className="rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-[clamp(0.75rem,2dvh,1.25rem)]">
+          <div className="flex items-center justify-between mb-[clamp(0.5rem,1.4dvh,0.75rem)]">
+            <div className="text-[clamp(0.65rem,1.7dvh,0.78rem)] uppercase tracking-wider text-zinc-500">
+              Your plan
             </div>
-            <div>
-              <div className="text-[22px] font-semibold tracking-tight text-white tracking-tight leading-tight">Maintenance Nutrition</div>
-              <div className="text-[13px] text-[rgba(235,235,245,0.5)]">To sustain current physique</div>
-            </div>
-          </div>
-        </div>
-        <div className="bg-[#111113] border border-[rgba(255,255,255,0.06)] rounded-2xl overflow-hidden shadow-lg">
-          <div className="flex justify-between items-center py-3.5 px-4 border-b border-[rgba(255,255,255,0.06)]">
-            <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Maintenance Calories</span>
-            <span className="text-[14px] font-bold text-[#D4FF00]">{displayVal(tdee)} kcal</span>
-          </div>
-          <div className="flex justify-between items-center py-3.5 px-4 border-b border-[rgba(255,255,255,0.06)]">
-            <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Protein</span>
-            <span className="text-[14px] font-medium text-white">{displayVal(proteinMin)}–{displayVal(proteinMax)} g</span>
-          </div>
-          <div className="flex justify-between items-center py-3.5 px-4 border-b border-[rgba(255,255,255,0.06)]">
-            <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Carbs</span>
-            <span className="text-[14px] font-medium text-white">{displayVal(carbMin)}–{displayVal(carbMax)} g</span>
-          </div>
-          <div className="flex justify-between items-center py-3.5 px-4">
-            <span className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">Fat</span>
-            <span className="text-[14px] font-medium text-white">{displayVal(fatMin)}–{displayVal(fatMax)} g</span>
-          </div>
-        </div>
-      </div>
-
-      <TransformationSection />
-
-      {/* Macros Section */}
-      <div className="mb-12">
-        <div className="flex justify-between items-center mb-3">
-          <div className="text-[22px] font-semibold tracking-tight text-white tracking-tight">Daily Nutrition Targets</div>
-          <button 
-            onClick={() => setShowNutritionModal(true)} 
-            className="btn-ghost"
-            style={{ padding: '6px 12px', fontSize: '12px' }}
-          >
-            Edit
-          </button>
-        </div>
-        <div className="grid grid-cols-2 gap-3 mb-3">
-          <div className="card-base p-4 flex flex-col items-center justify-center text-center">
-            <div className="text-[11px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Calories</div>
-            <div className="text-[20px] font-bold text-[#D4FF00]">{displayVal(dailyCalorieGoal)}<span className="text-[12px] font-medium text-[rgba(212,255,0,0.5)] ml-1">kcal</span></div>
-          </div>
-          <div className="card-base p-4 flex flex-col items-center justify-center text-center">
-            <div className="text-[11px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Protein</div>
-            <div className="text-[20px] font-bold text-[#FF4D1C]">
-              {displayVal(targetMacros?.protein || calculated.proteinMid)}
-              <span className="text-[12px] font-medium text-[rgba(255,77,28,0.5)] ml-1">g</span>
-            </div>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="card-base p-4 flex flex-col items-center justify-center text-center">
-            <div className="text-[11px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Carbs</div>
-            <div className="text-[16px] font-bold text-white">
-              {targetMacros?.carbs ? displayVal(targetMacros.carbs) : `${displayVal(carbMin)}–${displayVal(carbMax)}`}
-            </div>
-          </div>
-          <div className="card-base p-4 flex flex-col items-center justify-center text-center">
-            <div className="text-[11px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.4)] mb-1 font-semibold">Fat</div>
-            <div className="text-[16px] font-bold text-white">
-              {targetMacros?.fat ? displayVal(targetMacros.fat) : `${displayVal(fatMin)}–${displayVal(fatMax)}`}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      
-      {/* Subscription & Plans */}
-      <div className="mb-10">
-        <div className="flex items-center justify-between mb-4">
-          <div className="text-[22px] font-semibold tracking-tight text-white tracking-tight leading-tight">Plan & Billing</div>
-        </div>
-        
-        {isSubLoading ? (
-          <div className="h-40 rounded-3xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] animate-pulse" />
-        ) : subscription?.isPremium ? (
-          <motion.div 
-            whileTap={{ scale: 0.98 }}
-            className="bg-gradient-to-br from-[rgba(212,255,0,0.08)] to-[rgba(212,255,0,0.02)] border-[1.5px] border-[rgba(212,255,0,0.2)] rounded-3xl p-6 flex flex-col relative overflow-hidden backdrop-blur-xl shadow-[0_8px_32px_rgba(212,255,0,0.05)]"
-          >
-            <div className="absolute -right-4 -top-4 w-32 h-32 bg-[#D4FF00] opacity-[0.07] blur-3xl rounded-full" />
-            <div className="absolute top-4 right-4 text-[rgba(212,255,0,0.4)]">
-              <Crown size={48} strokeWidth={1} />
-            </div>
-            
-            <div className="flex items-center gap-2 mb-3 relative z-10">
-              <div className="bg-[#D4FF00] text-black px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 shadow-[0_2px_8px_rgba(212,255,0,0.4)]">
-                <Crown size={12} strokeWidth={2.5} /> PRO ACTIVE
-              </div>
-            </div>
-            
-            <div className="text-[22px] font-bold text-white tracking-tight mb-1 relative z-10">
-              LeanIQA Premium
-            </div>
-            <div className="text-[13px] text-[rgba(255,255,255,0.6)] mb-6 flex items-center gap-1.5 relative z-10">
-               <Zap size={14} className="text-[#D4FF00]" /> Yearly Billing Cycle
-            </div>
-
-            <button 
-              onClick={() => {
-                haptics.tap();
-                navigate('/pricing');
-              }}
-              className="flex items-center justify-between w-full p-4 rounded-[24px] bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.03)] hover:border-[rgba(212,255,0,0.3)] transition-all duration-300 group relative z-10 backdrop-blur-md"
+            <button
+              onClick={() => setShowNutritionModal(true)}
+              className="text-[clamp(0.68rem,1.75dvh,0.8rem)] text-[#D4FF00] hover:underline underline-offset-2"
             >
-              <div className="flex items-center gap-3.5">
-                <div className="w-10 h-10 rounded-full bg-[rgba(212,255,0,0.1)] flex items-center justify-center border border-[rgba(212,255,0,0.2)]">
-                  <CreditCardIcon size={18} className="text-[#D4FF00]" />
+              Edit ›
+            </button>
+          </div>
+
+          <div className="flex items-baseline gap-2 mb-[clamp(0.5rem,1.4dvh,0.75rem)]">
+            <GoalIcon className="w-5 h-5 text-[#D4FF00]" />
+            <div className="text-[clamp(0.9rem,2.3dvh,1.05rem)] font-semibold text-white">
+              {goalLabel}
+            </div>
+          </div>
+
+          <div className="text-[clamp(1.5rem,4.5dvh,1.85rem)] font-bold tabular-nums text-white mb-1">
+            {targetCalories || '—'} <span className="text-[clamp(0.72rem,1.9dvh,0.85rem)] text-zinc-500 font-medium">kcal</span>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 mt-[clamp(0.5rem,1.4dvh,0.75rem)]">
+            {[
+              { label: 'Protein', value: targetMacros?.protein ?? proteinMid },
+              { label: 'Fat', value: targetMacros?.fat },
+              { label: 'Carbs', value: targetMacros?.carbs },
+            ].map((macro) => (
+              <div key={macro.label} className="rounded-xl bg-zinc-800/50 border border-zinc-800 px-2 py-2 text-center">
+                <div className="text-[clamp(0.6rem,1.55dvh,0.7rem)] uppercase tracking-wider text-zinc-500 mb-0.5">
+                  {macro.label}
                 </div>
-                <div className="flex flex-col text-left">
-                  <span className="text-[18px] font-semibold tracking-tight text-white leading-tight">Manage Subscription</span>
-                  <span className="text-[13px] text-[rgba(235,235,245,0.5)] mt-0.5">View plan, billing, restore</span>
+                <div className="text-[clamp(0.78rem,2dvh,0.95rem)] font-semibold text-white tabular-nums">
+                  {displayVal(macro.value)}
+                  {macro.value != null && <span className="text-zinc-500 text-[0.75em] ml-0.5">g</span>}
                 </div>
               </div>
-              <ArrowRight size={18} className="text-[rgba(255,255,255,0.4)] group-hover:text-white group-hover:translate-x-1 transition-all" />
-            </button>
-            <button 
-              onClick={() => {
-                toast({
-                  type: 'warning',
-                  message: 'Cancel your subscription?',
-                  duration: 8000,
-                  action: {
-                    label: 'Yes, cancel',
-                    onClick: () => {
-                      subscriptionService.cancelSubscription();
-                      analytics.trackEvent('Subscription Cancelled');
-                      toast({ type: 'info', message: 'Subscription cancelled.' });
-                    }
-                  }
-                });
-              }}
-              className="mt-2 flex items-center justify-center w-full p-3 rounded-[24px] text-[14px] text-[rgba(255,255,255,0.5)] hover:text-red-400 hover:bg-[rgba(255,77,28,0.1)] transition-colors"
-            >
-              Cancel Subscription
-            </button>
-          </motion.div>
-        ) : (
-          <motion.div 
-            whileTap={{ scale: 0.98 }}
-            onClick={() => {
-              haptics.tap();
-              navigate('/pricing');
-            }}
-            className="cursor-pointer bg-gradient-to-b from-[rgba(255,255,255,0.06)] to-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.06)] hover:border-[rgba(212,255,0,0.4)] rounded-3xl p-6 flex flex-col relative overflow-hidden backdrop-blur-xl transition-all duration-300 group shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
-          >
-            <div className="absolute -right-4 -top-4 w-32 h-32 bg-white opacity-[0.03] group-hover:bg-[#D4FF00] group-hover:opacity-[0.05] transition-colors duration-500 blur-3xl rounded-full" />
-            <div className="absolute top-4 right-4 text-[rgba(255,255,255,0.1)] group-hover:text-[rgba(212,255,0,0.2)] transition-colors duration-500">
-              <Crown size={48} strokeWidth={1} />
+            ))}
+          </div>
+        </section>
+{/* Card 2 — Projected Progress (NEW) */}
+        <section className="rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-[clamp(0.75rem,2dvh,1.25rem)]">
+          <div className="flex items-center justify-between mb-[clamp(0.5rem,1.4dvh,0.75rem)]">
+            <div className="text-[clamp(0.65rem,1.7dvh,0.78rem)] uppercase tracking-wider text-zinc-500">
+              Projected progress
             </div>
-            
-            <div className="flex items-center gap-2 mb-3 relative z-10">
-              <div className="bg-[rgba(255,255,255,0.15)] text-white px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 backdrop-blur-md border border-[rgba(255,255,255,0.06)]">
-                FREE PLAN
+            <button
+              onClick={() => navigate('/science')}
+              className="text-[clamp(0.68rem,1.75dvh,0.8rem)] text-zinc-500 hover:text-[#D4FF00]"
+            >
+              How? ›
+            </button>
+          </div>
+
+          {projection ? (
+            <>
+              <div className="text-[clamp(0.75rem,2dvh,0.9rem)] text-zinc-300 mb-[clamp(0.6rem,1.6dvh,0.9rem)]">
+                {projection.summary}
+              </div>
+
+              {/* Horizontal visual timeline */}
+              <div className="relative">
+                <div className="absolute top-3 left-2 right-2 h-[2px] bg-zinc-800 rounded-full" />
+                <div
+                  className="absolute top-3 left-2 h-[2px] bg-[#D4FF00] rounded-full transition-all"
+                  style={{ width: `calc(${(100 * 12) / maxWeeks}% - 4px)` }}
+                />
+
+                <div className="relative grid grid-cols-4 gap-1">
+                  {markers.map((m, i) => (
+                    <div key={i} className="flex flex-col items-center text-center">
+                      <div className={`w-2.5 h-2.5 rounded-full ${i === 0 ? 'bg-[#D4FF00] shadow-[0_0_8px_#D4FF00]' : 'bg-zinc-600 border-2 border-zinc-900'} z-10`} />
+                      <div className="mt-2 text-[clamp(0.6rem,1.55dvh,0.72rem)] uppercase tracking-wider text-zinc-500">
+                        {m.label}
+                      </div>
+                      <div className="text-[clamp(0.72rem,1.85dvh,0.85rem)] font-semibold text-white tabular-nums">
+                        {m.value}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {projection.rateCapped && (
+                <div className="mt-[clamp(0.5rem,1.4dvh,0.75rem)] text-[clamp(0.65rem,1.65dvh,0.75rem)] text-amber-400/80 leading-snug">
+                  Your deficit was capped at {goalType === 'cut' ? '0.7%' : '0.35%'} of bodyweight per week to preserve muscle.
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-[clamp(0.75rem,2dvh,0.9rem)] text-zinc-500">
+              Complete your plan to see projections.
+            </div>
+          )}
+        </section>
+{/* Card 3 — Your Details */}
+        <section className="rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-[clamp(0.75rem,2dvh,1.25rem)]">
+          <div className="flex items-center justify-between mb-[clamp(0.5rem,1.4dvh,0.75rem)]">
+            <div className="text-[clamp(0.65rem,1.7dvh,0.78rem)] uppercase tracking-wider text-zinc-500">
+              Your details
+            </div>
+            <button
+              onClick={() => setShowEditModal(true)}
+              className="text-[clamp(0.68rem,1.75dvh,0.8rem)] text-[#D4FF00] hover:underline underline-offset-2"
+            >
+              Edit ›
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-[clamp(0.5rem,1.4dvh,0.75rem)]">
+            {[
+              { label: 'Height', value: profile?.height ? `${displayVal(profile.height)} cm` : '—' },
+              { label: 'Age', value: displayVal(profile?.age) },
+              { label: 'Activity', value: profile?.activity_level ?? '—' },
+              { label: 'Diet', value: dietLabel },
+            ].map((row) => (
+              <div key={row.label} className="flex flex-col">
+                <span className="text-[clamp(0.65rem,1.7dvh,0.75rem)] text-zinc-500">{row.label}</span>
+                <span className="text-[clamp(0.8rem,2.1dvh,0.95rem)] font-medium text-white">{row.value}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Card 4 — Subscription */}
+        <section className="rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-[clamp(0.75rem,2dvh,1.25rem)]">
+          <div className="text-[clamp(0.65rem,1.7dvh,0.78rem)] uppercase tracking-wider text-zinc-500 mb-[clamp(0.5rem,1.4dvh,0.75rem)]">
+            Subscription
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[clamp(0.9rem,2.3dvh,1.05rem)] font-semibold text-white">
+                {planLabel}
+              </div>
+              <div className="text-[clamp(0.7rem,1.8dvh,0.82rem)] text-zinc-500 mt-0.5">
+                {planSubtitle}
               </div>
             </div>
-            
-            <div className="text-[22px] font-bold text-white tracking-tight mb-2 relative z-10">
-              Upgrade to Pro
-            </div>
-            
-            <ul className="flex flex-col gap-2.5 mb-6 relative z-10">
-              <li className="flex items-start gap-2.5 text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">
-                <Sparkles size={16} className="text-[#D4FF00] shrink-0 mt-[1px]" />
-                <span>Advanced AI Weekly Reports</span>
-              </li>
-              <li className="flex items-start gap-2.5 text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed">
-                <Sparkles size={16} className="text-[#D4FF00] shrink-0 mt-[1px]" />
-                <span>Physique timeline projections</span>
-              </li>
-            </ul>
-
-            <button 
-              className="flex items-center justify-center gap-2 w-full py-4 rounded-[20px] bg-white text-black font-semibold text-[15px] group-hover:bg-[#D4FF00] transition-colors duration-300 relative z-10 shadow-[0_4px_12px_rgba(255,255,255,0.15)] group-hover:shadow-[0_4px_16px_rgba(212,255,0,0.3)]"
+            <button
+              onClick={() => navigate('/pricing')}
+              className="text-[clamp(0.75rem,2dvh,0.9rem)] font-semibold text-[#D4FF00] hover:underline underline-offset-2"
             >
-              <Crown size={18} strokeWidth={2.5} />
-              View Plans
+              See plans ›
             </button>
-          </motion.div>
-        )}
-      </div>
-
-      {/* Danger Zone */}
-      <div className="flex flex-col gap-4">
-        {import.meta.env.MODE === 'development' && (
-          <button 
-            onClick={() => { throw new Error('Test Crash from LeanIQA!'); }} 
+          </div>
+        </section>
+{/* Card 5 — Danger zone (Sign Out + dev crash preserved) */}
+        <section className="flex flex-col gap-3 pt-[clamp(0.3rem,0.8dvh,0.5rem)]">
+          {import.meta.env.MODE === 'development' && (
+            <button
+              onClick={() => { throw new Error('Test Crash from LeanIQA!'); }}
+              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.7)] font-medium text-[15px] transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+            >
+              <AlertTriangle size={18} />
+              Test Crash Report
+            </button>
+          )}
+          <button
+            onClick={() => authService.logout()}
             className="flex items-center justify-center gap-2 w-full py-3.5 rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.7)] font-medium text-[15px] transition-colors hover:bg-[rgba(255,255,255,0.06)]"
           >
-            <AlertTriangle size={18} />
-            Test Crash Report
+            <LogOut size={18} />
+            Sign Out
           </button>
-        )}
-        <button 
-          onClick={() => authService.logout()}
-          className="flex items-center justify-center gap-2 w-full py-3.5 rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.7)] font-medium text-[15px] transition-colors hover:bg-[rgba(255,255,255,0.06)]"
-        >
-          <LogOut size={18} />
-          Sign Out
-        </button>
-        <button 
-          onClick={() => setShowResetModal(true)} 
-          className="flex items-center justify-center gap-2 w-full py-3.5 rounded-[24px] bg-[rgba(255,59,48,0.1)] border border-[rgba(255,59,48,0.2)] text-[#FF3B30] font-medium text-[15px] transition-colors hover:bg-[rgba(255,59,48,0.15)]"
-        >
-          <Trash2 size={18} />
-          Reset Profile
-        </button>
+        </section>
+
+        {/* Card 6 — Reset */}
+        <section className="mt-[clamp(1rem,2.6dvh,1.4rem)]">
+          <button
+            onClick={() => setShowResetModal(true)}
+            className="w-full text-center text-[clamp(0.72rem,1.85dvh,0.85rem)] text-red-500/80 hover:text-red-400"
+          >
+            Reset profile
+          </button>
+        </section>
+
       </div>
+    </main>
 
       {typeof document !== 'undefined' && createPortal(
         <AnimatePresence>
           {showResetModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="absolute inset-0 bg-black/80 backdrop-blur-sm"
               onClick={() => !resetMutation.isPending && setShowResetModal(false)}
             />
-            
-            <motion.div 
+
+            <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 10 }}
@@ -432,17 +383,17 @@ export function ProfilePage() {
               <p className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed mb-6 leading-relaxed">
                 This will delete your body stats and goals. Your logged meals and progress will remain, but you will need to complete onboarding again.
               </p>
-              
+
               <div className="flex flex-col w-full gap-3">
-                <button 
-                  onClick={() => resetMutation.mutate()} 
+                <button
+                  onClick={() => resetMutation.mutate()}
                   disabled={resetMutation.isPending}
                   className="btn-primary-style rounded-full w-full py-3.5 bg-[#FF3B30] text-white text-[18px] font-semibold tracking-tight disabled:opacity-50 transition-opacity hover:opacity-90"
                 >
                   {resetMutation.isPending ? 'Resetting...' : 'Yes, reset profile'}
                 </button>
-                <button 
-                  onClick={() => setShowResetModal(false)} 
+                <button
+                  onClick={() => setShowResetModal(false)}
                   disabled={resetMutation.isPending}
                   className="btn-ghost w-full py-3.5 text-[15px] font-medium"
                 >
@@ -456,11 +407,11 @@ export function ProfilePage() {
         document.body
       )}
 
-      <EditProfileModal 
-        isOpen={showEditModal} 
-        onClose={() => setShowEditModal(false)} 
-        profileData={profile} 
-        goalData={goal} 
+      <EditProfileModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        profileData={profile}
+        goalData={goal}
       />
 
       <EditNutritionModal
