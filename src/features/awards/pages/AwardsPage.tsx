@@ -1,15 +1,25 @@
 import { useNavigate } from "react-router-dom";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import { reportService } from "@/features/reports/services/reportService";
-import { 
-  calculateEarnedAwards, 
-  calculateBestDailyStreak, 
-  calculateCurrentDailyStreak, 
-  isDailyGoalMet, 
-  toUtcDay 
+import { mealService } from "@/features/nutrition/services/mealService";
+import { weightService } from "@/features/progress/services/weightService";
+import { profileService } from "@/features/profile/services/profileService";
+import {
+  AWARD_CATALOG,
+  evaluateAwards,
+  type AwardCategory,
+  type AwardProgress,
+} from "@/shared/utils/awardsEngine";
+import {
+  calculateBestDailyStreak,
+  calculateCurrentDailyStreak,
+  isDailyGoalMet,
+  toUtcDay,
 } from "@/shared/utils/streaks";
+import { useAwardStore } from "../store/awardStore";
+import { getKolkataDateString } from "@/shared/utils/timezone";
 import { Flame, ChevronLeft, X, Trophy, AlertTriangle, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/shared/utils/utils";
@@ -20,6 +30,24 @@ import { AwardsSkeleton } from '@/shared/components/Skeletons';
 
 const SPRING_TRANSITION: any = { type: 'spring' as const, stiffness: 400, damping: 30 };
 const SMOOTH_TRANSITION: any = { duration: 0.4, ease: [0.16, 1, 0.3, 1] };
+
+const CATEGORY_ORDER: AwardCategory[] = [
+  'streak',
+  'logging',
+  'protein',
+  'precision',
+  'weight',
+  'milestone',
+];
+
+const CATEGORY_LABEL: Record<AwardCategory, string> = {
+  streak: 'Streaks',
+  logging: 'Logging',
+  protein: 'Protein',
+  precision: 'Precision',
+  weight: 'Weight Tracking',
+  milestone: 'Milestones',
+};
 
 export function AwardsPage() {
   const navigate = useNavigate();
@@ -40,29 +68,91 @@ export function AwardsPage() {
     queryFn: () => import('@/features/awards/services/awardService').then(m => m.awardService.getUserAwards()) 
   });
 
+  const { data: meals = [] } = useQuery({
+    queryKey: ["meals", "awards"],
+    queryFn: () => mealService.getMeals({ days: 365, limit: 2000 }),
+  });
+
+  const { data: weightLogs = [] } = useQuery({
+    queryKey: ["weightLogs"],
+    queryFn: () => weightService.getWeightLogs(),
+  });
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile"],
+    queryFn: () => profileService.getProfile(),
+  });
+
   const currentStreak = dbUserStreak?.current_streak ?? calculateCurrentDailyStreak(metrics);
   const bestStreak = dbUserStreak?.highest_streak ?? calculateBestDailyStreak(metrics);
 
   const todayMetric = metrics.find(m => toUtcDay(m.date) === toUtcDay(new Date()));
   const todayMet = todayMetric ? isDailyGoalMet(todayMetric) : false;
 
-  const earnedAwards = calculateEarnedAwards(metrics).map(award => {
-    const dbAward = dbUserAwards.find(a => a.award_id === award.id);
-    return {
-      ...award,
-      earned: !!dbAward || award.earned,
-      earnedDate: dbAward?.unlocked_at || award.earnedDate
-    };
-  });
+  const evaluation = useMemo(
+    () =>
+      evaluateAwards({
+        metrics,
+        mealLogs: meals,
+        weightLogs,
+        profileCreatedAt: profile?.created_at ?? null,
+        todayIso: getKolkataDateString(),
+        unlockedAwards: dbUserAwards,
+      }),
+    [metrics, meals, weightLogs, profile, dbUserAwards],
+  );
+
+  const progressById = useMemo(() => {
+    const map = new Map<string, AwardProgress>();
+
+    for (const progress of evaluation.progress) {
+      map.set(progress.id, progress);
+    }
+
+    return map;
+  }, [evaluation]);
+
+  const allAwards = useMemo(
+    () =>
+      AWARD_CATALOG.map((definition) => {
+        const progress = progressById.get(definition.id);
+
+        return {
+          ...definition,
+          earned: progress?.unlocked ?? false,
+          earnedDate: progress?.unlockedAt ?? null,
+          currentStreak: progress?.current ?? 0,
+          streakRequired: definition.target,
+          symbolText: String(definition.target),
+        };
+      }),
+    [progressById],
+  );
+
+  // Opening Awards acknowledges any fresh unlock signal.
+  useEffect(() => {
+    useAwardStore.getState().setHasUnseenAwards(false);
+  }, []);
 
   const [selectedAward, setSelectedAward] = useState<any>(null);
 
-  const dailyAwards = earnedAwards.filter((a) => a.category === "daily");
-  const earnedCount = dailyAwards.filter((a) => a.earned).length;
-  const totalCount = dailyAwards.length;
+  const earnedCount = allAwards.filter((award) => award.earned).length;
+  const totalCount = allAwards.length;
 
-  const nextAward = [...dailyAwards].sort((a, b) => a.streakRequired - b.streakRequired).find(a => !a.earned);
-  const nextTarget = nextAward ? nextAward.streakRequired : (bestStreak > currentStreak ? bestStreak + 1 : currentStreak + 10);
+  // Preserve the existing streak-ring hero behavior. It intentionally uses
+  // only streak-category awards for the next target.
+  const streakAwards = allAwards.filter((award) => award.category === "streak");
+
+  const nextAward = [...streakAwards]
+    .sort((a, b) => a.streakRequired - b.streakRequired)
+    .find((award) => !award.earned);
+
+  const nextTarget = nextAward
+    ? nextAward.streakRequired
+    : bestStreak > currentStreak
+      ? bestStreak + 1
+      : currentStreak + 10;
+
   const progressPercent = Math.min(100, (currentStreak / nextTarget) * 100);
   const circumference = 2 * Math.PI * 45;
   const strokeDashoffset = circumference - (progressPercent / 100) * circumference;
@@ -190,79 +280,79 @@ export function AwardsPage() {
         </div>
       </motion.div>
 
-      {/* Awards Grid Section */}
-      <div className="mb-5 flex items-center justify-between">
-        <h2 className="text-[20px] font-semibold text-white tracking-tight">Milestones</h2>
-        <div className="h-[1px] flex-1 bg-gradient-to-r from-[rgba(255,255,255,0.1)] to-transparent ml-4"></div>
-      </div>
+      {/* Awards Grid Section — grouped by category */}
+      <motion.div variants={containerVariants} initial="hidden" animate="show">
+        {CATEGORY_ORDER.map((category) => {
+          const items = allAwards.filter((award) => award.category === category);
 
-      <motion.div variants={containerVariants} initial="hidden" animate="show" className={dailyAwards.length === 0 ? "" : "grid grid-cols-2 gap-4 sm:grid-cols-3"}>
-        {dailyAwards.length === 0 ? (
-          <div className="col-span-full mt-4">
-            <EmptyState
-              icon={Trophy}
-              title="Your first badge is waiting."
-              description="Keep tracking your daily goals to start unlocking exclusive milestone badges."
-              ctaText="Start Your Journey"
-              onCtaClick={() => navigate('/dashboard')}
-              className="py-12"
-            />
-          </div>
-        ) : (
-          dailyAwards.map((award) => (
-            <motion.div 
-              key={award.id} 
-              variants={itemVariants}
-              onClick={() => {
-                if (award.earned) haptics.success();
-                else haptics.tap();
-                setSelectedAward(award);
-              }}
-              className={cn(
-                "relative rounded-[24px] p-5 flex flex-col items-center text-center cursor-pointer transition-all duration-300",
-                "hover:scale-[1.03] active:scale-[0.97]",
-                award.earned 
-                  ? "bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] shadow-lg" 
-                  : "bg-[rgba(255,255,255,0.01)] border border-[rgba(255,255,255,0.03)] opacity-60 grayscale-[80%]"
-              )}
-              style={award.earned ? {
-                boxShadow: `0 10px 30px ${award.primaryColor}15, inset 0 1px 0 rgba(255,255,255,0.05)`,
-                border: `1px solid ${award.primaryColor}40`
-              } : {}}
-            >
-              {/* Ambient background glow for earned awards */}
-              {award.earned && (
-                <div 
-                  className="absolute inset-0 rounded-[24px] opacity-20 blur-xl pointer-events-none"
-                  style={{ background: award.primaryColor }}
-                />
-              )}
-              
-              <div 
-                className="w-16 h-16 rounded-[18px] flex items-center justify-center text-[34px] mb-4 relative z-10 transition-transform duration-500"
-                style={{ 
-                  background: award.earned 
-                    ? `linear-gradient(135deg, ${award.primaryColor}20, ${award.primaryColor}05)` 
-                    : 'rgba(255,255,255,0.05)',
-                  border: award.earned ? `1px solid ${award.primaryColor}30` : '1px solid rgba(255,255,255,0.05)',
-                  filter: award.earned ? 'none' : 'brightness(0.7)' 
-                }}
-              >
-                <span className="relative z-10 drop-shadow-lg">{award.symbol || award.symbolText || '🏆'}</span>
+          if (items.length === 0) return null;
+
+          return (
+            <div key={category} className="mb-8">
+              <div className="mb-5 flex items-center justify-between">
+                <h2 className="text-[20px] font-semibold text-white tracking-tight">
+                  {CATEGORY_LABEL[category]}
+                </h2>
+                <div className="h-[1px] flex-1 bg-gradient-to-r from-[rgba(255,255,255,0.1)] to-transparent ml-4" />
               </div>
-              
-              <div className="text-[14px] font-bold text-white leading-tight mb-1 tracking-tight relative z-10">{award.name}</div>
-              <div className="text-[12px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.5)] font-medium mb-3 relative z-10">{award.streakRequired} Days</div>
-              
-              {award.earned && (
-                <div 
-                  className="absolute bottom-0 left-0 right-0 h-1 rounded-b-[24px] opacity-70"
-                  style={{ background: `linear-gradient(90deg, transparent, ${award.primaryColor}, transparent)` }}
-                />
-              )}
-            </motion.div>
-          ))
-        )}
+
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                {items.map((award) => (
+                  <motion.div
+                    key={award.id}
+                    variants={itemVariants}
+                    onClick={() => {
+                      if (award.earned) haptics.success();
+                      else haptics.tap();
+                      setSelectedAward(award);
+                    }}
+                    className={cn(
+                      "relative rounded-[24px] p-5 flex flex-col items-center text-center cursor-pointer transition-all duration-300",
+                      "hover:scale-[1.03] active:scale-[0.97]",
+                      award.earned
+                        ? "bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] shadow-lg"
+                        : "bg-[rgba(255,255,255,0.01)] border border-[rgba(255,255,255,0.03)] opacity-60 grayscale-[80%]"
+                    )}
+                    style={award.earned ? {
+                      boxShadow: `0 10px 30px ${award.primaryColor}15, inset 0 1px 0 rgba(255,255,255,0.05)`,
+                      border: `1px solid ${award.primaryColor}40`
+                    } : {}}
+                  >
+                    {award.earned && (
+                      <div
+                        className="absolute inset-0 rounded-[24px] opacity-20 blur-xl pointer-events-none"
+                        style={{ background: award.primaryColor }}
+                      />
+                    )}
+
+                    <div
+                      className="w-16 h-16 rounded-[18px] flex items-center justify-center text-[34px] mb-4 relative z-10 transition-transform duration-500"
+                      style={{
+                        background: award.earned
+                          ? `linear-gradient(135deg, ${award.primaryColor}20, ${award.primaryColor}05)`
+                          : 'rgba(255,255,255,0.05)',
+                        border: award.earned ? `1px solid ${award.primaryColor}30` : '1px solid rgba(255,255,255,0.05)',
+                        filter: award.earned ? 'none' : 'brightness(0.7)'
+                      }}
+                    >
+                      <span className="relative z-10 drop-shadow-lg">{award.symbol || award.symbolText || '🏆'}</span>
+                    </div>
+
+                    <div className="text-[14px] font-bold text-white leading-tight mb-1 tracking-tight relative z-10">{award.name}</div>
+                    <div className="text-[12px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.5)] mb-3 relative z-10">{award.streakRequired} {award.unitLabel}</div>
+
+                    {award.earned && (
+                      <div
+                        className="absolute bottom-0 left-0 right-0 h-1 rounded-b-[24px] opacity-70"
+                        style={{ background: `linear-gradient(90deg, transparent, ${award.primaryColor}, transparent)` }}
+                      />
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </motion.div>
 
       {/* Immersive Modal Overlay */}
