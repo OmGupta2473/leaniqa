@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import { profileService } from '../services/profileService';
 import { calculatePlan, type ActivityLevel } from '@/shared/utils/onboardingMath';
+import { computePacePlan, type CutPace } from '@/shared/utils/paceEngine';
 import { cn } from '@/shared/utils/utils';
 import { haptics } from '@/shared/utils/haptics';
 
@@ -127,6 +128,9 @@ function EditProfileModalInner({ onClose, profileData, goalData }: Omit<EditProf
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      const goalType = (goalData?.goal_type ?? 'cut') as 'cut' | 'recomp' | 'bulk';
+      const currentPace = (goalData?.cut_pace ?? 22) as CutPace;
+
       const plan = calculatePlan(
         {
           sex: (profileData?.gender ?? 'Male') as 'Male' | 'Female',
@@ -135,10 +139,20 @@ function EditProfileModalInner({ onClose, profileData, goalData }: Omit<EditProf
           weightKg: parsedWeight,
           activity,
         },
-        (goalData?.goal_type ?? 'cut') as 'cut' | 'recomp' | 'bulk',
+        goalType,
       );
 
-      await profileService.upsertProfile({
+      const pacePlan = goalType === 'cut'
+        ? computePacePlan({
+            weightKg: parsedWeight,
+            maintenanceKcal: plan.maintenance,
+            pace: currentPace,
+          })
+        : null;
+
+      const macroSource = pacePlan ?? plan;
+
+      const profilePayload: any = {
         name: name.trim(),
         age: parsedAge,
         gender: (profileData?.gender ?? 'Male') as 'Male' | 'Female',
@@ -146,16 +160,27 @@ function EditProfileModalInner({ onClose, profileData, goalData }: Omit<EditProf
         weight: parsedWeight,
         activity_level: (ACTIVITY_OPTIONS.find((o) => o.id === activity)?.dbLabel ?? 'Moderate') as any,
         maintenance_kcal: plan.maintenance,
-        protein_target: plan.proteinG,
-        carbs_target: plan.carbsG,
-        fat_target: plan.fatG,
+        protein_target: macroSource.proteinG,
+        carbs_target: macroSource.carbsG,
+        fat_target: macroSource.fatG,
         dietary_preference: diet,
-      } as any);
+      };
+      if (pacePlan) {
+        profilePayload.target_kcal = pacePlan.targetKcal;
+      }
 
-      await profileService.upsertGoal({
+      await profileService.upsertProfile(profilePayload);
+
+      const goalPayload: any = {
         target_weight: parsedTargetWeight,
         target_date: targetDate?.trim() ? targetDate : null,
-      } as any);
+      };
+      if (pacePlan) {
+        goalPayload.cut_pace = pacePlan.pace;
+        goalPayload.deficit_kcal = pacePlan.deficitKcal;
+      }
+
+      await profileService.upsertGoal(goalPayload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });

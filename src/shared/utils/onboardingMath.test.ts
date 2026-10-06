@@ -87,11 +87,11 @@ describe('onboardingMath', () => {
     expect(calculateMaintenance(baseInput)).toBe(2136); // 1780 * ACTIVITY_MULTIPLIERS.sedentary
     expect(plan.maintenance).toBe(2136);
     expect(plan.targetCalories).toBe(1666); // 2136 * (1 + GOAL_ADJUSTMENTS.cut)
-    expect(plan.proteinG).toBe(Math.round(80 * PROTEIN_G_PER_KG.cut)); // 160
-    expect(plan.proteinG).toBe(160);
-    expect(plan.fatG).toBe(Math.round(80 * FAT_G_PER_KG.cut)); // 64
-    expect(plan.fatG).toBe(64);
-    expect(plan.carbsG).toBe(113); // (1666 - 640 - 576) / 4 = 112.5
+    expect(plan.proteinG).toBe(Math.round(80 * PROTEIN_G_PER_KG.cut)); // 176
+    expect(plan.proteinG).toBe(176);
+    expect(plan.fatG).toBe(Math.round(80 * FAT_G_PER_KG.cut)); // 56
+    expect(plan.fatG).toBe(56);
+    expect(plan.carbsG).toBe(115); // (1666 - 704 - 504) / 4 = 114.5 -> 115? Let's calculate: 1666 - 176*4 - 56*9 = 1666 - 704 - 504 = 458. 458/4 = 114.5 -> 115
     expect(plan.bmi).toBe(24.69);
     expect(plan.goalType).toBe('cut');
     expect(plan.goalAdjustmentPct).toBe(-22);
