@@ -8,6 +8,7 @@ import { useState, useMemo } from 'react';
 import { ChevronLeft, LogOut, AlertTriangle, TrendingDown, TrendingUp, Target } from 'lucide-react';
 import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
 import { computeProjection } from '@/shared/utils/projectionEngine';
+import { computeMaintenancePlan } from '@/shared/utils/paceEngine';
 import { motion, AnimatePresence } from 'motion/react';
 import { authService } from '@/features/auth/services/authService';
 import { haptics } from '@/shared/utils/haptics';
@@ -70,6 +71,18 @@ export function ProfilePage() {
   const targetCalories = Math.round(dailyCalorieGoal ?? 0);
   const maintenanceKcal = Math.round(profile?.maintenance_kcal ?? 0);
   const goalType = goal?.goal_type;
+
+  const maintenance = useMemo(() => {
+    if (!profile?.weight || !profile?.maintenance_kcal) return null;
+    try {
+      return computeMaintenancePlan({
+        weightKg: profile.weight,
+        maintenanceKcal: profile.maintenance_kcal,
+      });
+    } catch {
+      return null;
+    }
+  }, [profile?.weight, profile?.maintenance_kcal]);
 
   // Projected Progress — pure math from the shared projection engine (cbd0960).
   // Falls back to null (and a "Complete your plan" message) when the plan is
@@ -219,8 +232,57 @@ export function ProfilePage() {
               </div>
             ))}
           </div>
-        </section>
-{/* Card 2 — Projected Progress (NEW) */}
+</section>
+        {maintenance && (
+          <section className="rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-[clamp(0.75rem,2dvh,1.25rem)]">
+            <div className="flex items-center justify-between mb-[clamp(0.5rem,1.4dvh,0.75rem)]">
+              <div className="text-[clamp(0.65rem,1.7dvh,0.78rem)] uppercase tracking-wider text-zinc-500">
+                Maintenance
+              </div>
+              <button
+                onClick={() => navigate('/science')}
+                className="text-[clamp(0.68rem,1.75dvh,0.8rem)] text-zinc-500 hover:text-[#D4FF00]"
+              >
+                How? ›
+              </button>
+            </div>
+
+            <div className="text-[clamp(1.5rem,4.5dvh,1.85rem)] font-bold tabular-nums text-white mb-1">
+              {maintenance.maintenanceKcal} <span className="text-[clamp(0.72rem,1.9dvh,0.85rem)] text-zinc-500 font-medium">kcal</span>
+            </div>
+            <div className="text-[clamp(0.7rem,1.8dvh,0.82rem)] text-zinc-500 mb-[clamp(0.5rem,1.4dvh,0.75rem)]">
+              To sustain current weight
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-xl bg-zinc-800/50 border border-zinc-800 px-2 py-2 text-center">
+                <div className="text-[clamp(0.6rem,1.55dvh,0.7rem)] uppercase tracking-wider text-zinc-500 mb-0.5">
+                  Protein
+                </div>
+                <div className="text-[clamp(0.78rem,2dvh,0.95rem)] font-semibold text-white tabular-nums">
+                  {maintenance.proteinG}<span className="text-zinc-500 text-[0.75em] ml-0.5">g</span>
+                </div>
+              </div>
+              <div className="rounded-xl bg-zinc-800/50 border border-zinc-800 px-2 py-2 text-center">
+                <div className="text-[clamp(0.6rem,1.55dvh,0.7rem)] uppercase tracking-wider text-zinc-500 mb-0.5">
+                  Fat
+                </div>
+                <div className="text-[clamp(0.78rem,2dvh,0.95rem)] font-semibold text-white tabular-nums">
+                  {maintenance.fatG}<span className="text-zinc-500 text-[0.75em] ml-0.5">g</span>
+                </div>
+              </div>
+              <div className="rounded-xl bg-zinc-800/50 border border-zinc-800 px-2 py-2 text-center">
+                <div className="text-[clamp(0.6rem,1.55dvh,0.7rem)] uppercase tracking-wider text-zinc-500 mb-0.5">
+                  Carbs
+                </div>
+                <div className="text-[clamp(0.78rem,2dvh,0.95rem)] font-semibold text-white tabular-nums">
+                  {maintenance.carbsG}<span className="text-zinc-500 text-[0.75em] ml-0.5">g</span>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+        {/* Card 2 — Projected Progress (NEW) */}
         <section className="rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-[clamp(0.75rem,2dvh,1.25rem)]">
           <div className="flex items-center justify-between mb-[clamp(0.5rem,1.4dvh,0.75rem)]">
             <div className="text-[clamp(0.65rem,1.7dvh,0.78rem)] uppercase tracking-wider text-zinc-500">
