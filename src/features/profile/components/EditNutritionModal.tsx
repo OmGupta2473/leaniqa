@@ -1,217 +1,228 @@
-import React, { useState, useEffect } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useEffect, useMemo } from 'react';
+import { X } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import { X, Loader2 } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'motion/react';
 import { profileService } from '../services/profileService';
+import { computeProjection } from '@/shared/utils/projectionEngine';
 import { haptics } from '@/shared/utils/haptics';
-import { cn } from '@/shared/utils/utils';
 
 interface EditNutritionModalProps {
   isOpen: boolean;
   onClose: () => void;
   calculatedData: any;
+  weightKg: number;
+  goalType: 'cut' | 'recomp' | 'bulk';
+  maintenanceKcal: number;
 }
 
-export function EditNutritionModal({ isOpen, onClose, calculatedData }: EditNutritionModalProps) {
-  const queryClient = useQueryClient();
-  const [calories, setCalories] = useState(String(calculatedData?.dailyCalorieGoal || ''));
-  const [protein, setProtein] = useState(String(calculatedData?.targetMacros?.protein || ''));
-  const [carbs, setCarbs] = useState(String(calculatedData?.targetMacros?.carbs || ''));
-  const [fat, setFat] = useState(String(calculatedData?.targetMacros?.fat || ''));
-  const [errorMsg, setErrorMsg] = useState('');
+const INPUT_CLASS =
+  'w-full bg-zinc-900/60 border border-zinc-800 rounded-xl px-[clamp(0.75rem,2dvh,1rem)] py-[clamp(0.5rem,1.5dvh,0.75rem)] text-[clamp(0.85rem,2.2dvh,0.95rem)] text-white placeholder:text-zinc-600 focus:border-[#D4FF00] outline-none transition-colors';
 
-  // Track if macros were manually overridden by the user
-  const [manualOverride, setManualOverride] = useState(false);
+const LABEL_CLASS =
+  'text-[clamp(0.65rem,1.75dvh,0.78rem)] uppercase tracking-wider text-zinc-500 mb-[clamp(0.4rem,1.2dvh,0.6rem)]';
+
+export function EditNutritionModal({
+  isOpen,
+  onClose,
+  calculatedData,
+  weightKg,
+  goalType,
+  maintenanceKcal,
+}: EditNutritionModalProps) {
+  // SSR guard (mirrors CustomMealModal) — no hooks run when there is no DOM.
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
+    <AnimatePresence>
+      {isOpen && (
+        <EditNutritionModalInner
+          onClose={onClose}
+          calculatedData={calculatedData}
+          weightKg={weightKg}
+          goalType={goalType}
+          maintenanceKcal={maintenanceKcal}
+        />
+      )}
+    </AnimatePresence>,
+    document.body,
+  );
+}
+
+function EditNutritionModalInner({
+  onClose,
+  calculatedData,
+  weightKg,
+  goalType,
+  maintenanceKcal,
+}: Omit<EditNutritionModalProps, 'isOpen'>) {
+  const queryClient = useQueryClient();
+
+  const [calories, setCalories] = useState(String(calculatedData?.dailyCalorieGoal ?? ''));
+  const [protein, setProtein] = useState(String(calculatedData?.targetMacros?.protein ?? ''));
+  const [fat, setFat] = useState(String(calculatedData?.targetMacros?.fat ?? ''));
+  const [carbs, setCarbs] = useState(String(calculatedData?.targetMacros?.carbs ?? ''));
 
   useEffect(() => {
-    if (isOpen) {
-      setCalories(String(calculatedData?.dailyCalorieGoal || ''));
-      setProtein(String(calculatedData?.targetMacros?.protein || calculatedData?.proteinMid || ''));
-      setCarbs(String(calculatedData?.targetMacros?.carbs || ''));
-      setFat(String(calculatedData?.targetMacros?.fat || ''));
-      setManualOverride(calculatedData?.manualOverrides?.carbs || calculatedData?.manualOverrides?.fat || false);
-      setErrorMsg('');
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const parsedCalories = parseInt(calories, 10) || 0;
+  const parsedProtein = parseInt(protein, 10) || 0;
+  const parsedFat = parseInt(fat, 10) || 0;
+  const parsedCarbs = parseInt(carbs, 10) || 0;
+
+  const macroCalories = parsedProtein * 4 + parsedFat * 9 + parsedCarbs * 4;
+  const macroDiff = Math.abs(macroCalories - parsedCalories);
+
+  const isValid = parsedCalories >= 500 && parsedCalories <= 10000;
+
+
+  const preview = useMemo(() => {
+    if (!parsedCalories || !maintenanceKcal || !weightKg) return null;
+    try {
+      return computeProjection({
+        weightKg,
+        targetWeightKg: null,
+        goalType,
+        dailyCalorieTarget: parsedCalories,
+        maintenanceKcal,
+      });
+    } catch {
+      return null;
     }
-  }, [isOpen, calculatedData]);
+  }, [parsedCalories, weightKg, goalType, maintenanceKcal]);
 
-  const handleCaloriesChange = (val: string) => {
-    setCalories(val);
-    const cals = parseFloat(val);
-    if (!isNaN(cals) && !manualOverride) {
-      // Recalculate default macros if no manual override
-      const p = parseFloat(protein) || (calculatedData?.targetMacros?.protein || 0);
-      let fatPercentageMid = 0.265;
-      const act = calculatedData?.activityLevel || 'Sedentary';
-      if (act === 'Sedentary') fatPercentageMid = 0.25;
-      else if (act === 'Moderately Active' || act === 'Moderate') fatPercentageMid = 0.275;
-      else if (act === 'Very Active' || act === 'Active') fatPercentageMid = 0.285;
-      else if (act === 'Athlete' || act === 'Very active') fatPercentageMid = 0.30;
-      
-      const newFat = Math.round((cals * fatPercentageMid) / 9);
-      const newCarbs = Math.max(0, Math.round((cals - (p * 4) - (newFat * 9)) / 4));
-      
-      setFat(String(newFat));
-      setCarbs(String(newCarbs));
+  const previewText = useMemo(() => {
+    if (!preview) return 'Adjust a value to see impact';
+    if (goalType === 'cut') {
+      return `Lose ~${Math.abs(preview.weeklyChangeKg).toFixed(2)} kg/week at this target`;
     }
-  };
-
-  const handleMacroChange = (type: 'protein' | 'carbs' | 'fat', val: string) => {
-    setManualOverride(true);
-    if (type === 'protein') setProtein(val);
-    if (type === 'carbs') setCarbs(val);
-    if (type === 'fat') setFat(val);
-
-    const p = type === 'protein' ? parseFloat(val) : parseFloat(protein);
-    const c = type === 'carbs' ? parseFloat(val) : parseFloat(carbs);
-    const f = type === 'fat' ? parseFloat(val) : parseFloat(fat);
-
-    if (!isNaN(p) && !isNaN(c) && !isNaN(f)) {
-      const newCals = Math.round((p * 4) + (c * 4) + (f * 9));
-      setCalories(String(newCals));
+    if (goalType === 'bulk') {
+      return `Gain ~${preview.weeklyChangeKg.toFixed(2)} kg/week at this target`;
     }
-  };
+    return 'Maintain weight while recomposing';
+  }, [preview, goalType]);
 
-  const mutation = useMutation({
+  const saveMutation = useMutation({
     mutationFn: async () => {
-      const targetCals = parseFloat(calories);
-      const targetPro = parseFloat(protein);
-      const targetCarbs = parseFloat(carbs);
-      const targetFat = parseFloat(fat);
-      
-      if (isNaN(targetCals) || targetCals < 500 || targetCals > 10000) {
-        throw new Error("Please enter a valid daily calorie goal (500-10000)");
-      }
-      if (isNaN(targetPro) || targetPro < 0 || targetPro > 500) {
-        throw new Error("Please enter a valid protein goal (0-500g)");
-      }
-      if (isNaN(targetCarbs) || targetCarbs < 0 || targetCarbs > 1500) {
-        throw new Error("Please enter a valid carbohydrate goal (0-1500g)");
-      }
-      if (isNaN(targetFat) || targetFat < 0 || targetFat > 500) {
-        throw new Error("Please enter a valid fat goal (0-500g)");
-      }
-
-      const profilePayload: any = {};
-      const goalPayload: any = {};
-
-      // Only update if changed
-      const originalCals = calculatedData?.dailyCalorieGoal;
-      if (originalCals !== targetCals) {
-        const tdee = calculatedData?.tdee || 0;
-        goalPayload.deficit_kcal = tdee - targetCals;
-      }
-
-      const originalPro = calculatedData?.targetMacros?.protein || calculatedData?.proteinMid;
-      if (originalPro !== targetPro) {
-        profilePayload.protein_target = targetPro;
-      }
-
-      const originalCarbs = calculatedData?.targetMacros?.carbs;
-      const originalFat = calculatedData?.targetMacros?.fat;
-      
-      // If manualOverride is active, and carbs/fat changed, save them
-      if (manualOverride && (originalCarbs !== targetCarbs || originalFat !== targetFat)) {
-        profilePayload.carbs_target = targetCarbs;
-        profilePayload.fat_target = targetFat;
-      }
-
-      if (Object.keys(profilePayload).length > 0) {
-        await profileService.upsertProfile(profilePayload);
-      }
-
-      if (Object.keys(goalPayload).length > 0) {
-        await profileService.upsertGoal(goalPayload);
-      }
+      await profileService.upsertProfile({
+        maintenance_kcal: parsedCalories,
+        protein_target: parsedProtein,
+        fat_target: parsedFat,
+        carbs_target: parsedCarbs,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
-      queryClient.invalidateQueries({ queryKey: ['goal'] });
-      queryClient.invalidateQueries(); // invalidate everything depending on macros
       haptics.success();
       onClose();
     },
-    onError: (err: Error) => {
-      setErrorMsg(err.message || "Failed to update targets.");
-    }
   });
 
-  if (!isOpen) return null;
+  const isSaving = saveMutation.isPending;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex justify-center items-end sm:items-center bg-black/60 backdrop-blur-sm sm:p-4 animate-in fade-in duration-200">
-      <div 
-        className="w-full sm:max-w-md bg-[#111113] rounded-t-2xl sm:rounded-2xl border border-[rgba(255,255,255,0.06)] shadow-2xl flex flex-col max-h-[90dvh]"
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      onClick={onClose}
+      className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm"
+    >
+      <motion.div
+        initial={{ y: 40, opacity: 0, scale: 0.98 }}
+        animate={{ y: 0, opacity: 1, scale: 1 }}
+        exit={{ y: 40, opacity: 0, scale: 0.98 }}
+        transition={{ type: 'spring', damping: 28, stiffness: 320 }}
         onClick={(e) => e.stopPropagation()}
+        className="relative flex flex-col max-h-[92dvh] w-full max-w-[460px] rounded-t-[28px] sm:rounded-[28px] border border-zinc-800/60 bg-[#0F0F10]/95 backdrop-blur-2xl shadow-[0_8px_60px_rgba(0,0,0,0.6)]"
       >
-        <div className="flex justify-between items-center p-4 border-b border-[rgba(255,255,255,0.06)] shrink-0">
-          <h2 className="text-[17px] font-semibold text-white">Edit Nutrition Targets</h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.05)] flex items-center justify-center text-[rgba(255,255,255,0.6)]">
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="p-5 overflow-y-auto shrink space-y-5">
-          {errorMsg && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-[14px]">
-              {errorMsg}
-            </div>
-          )}
-          <div className="space-y-2">
-            <label className="text-[13px] font-medium text-[rgba(255,255,255,0.6)] uppercase tracking-wider">Daily Calories (kcal)</label>
-            <input 
-              type="number" 
-              value={calories} 
-              onChange={e => handleCaloriesChange(e.target.value)}
-              className="w-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] rounded-xl px-4 py-3 text-white text-[16px] outline-none focus:border-[#D4FF00] transition-colors"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[13px] font-medium text-[rgba(255,255,255,0.6)] uppercase tracking-wider">Daily Protein (g)</label>
-            <input 
-              type="number" 
-              value={protein} 
-              onChange={e => handleMacroChange('protein', e.target.value)}
-              className="w-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] rounded-xl px-4 py-3 text-white text-[16px] outline-none focus:border-[#D4FF00] transition-colors"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[13px] font-medium text-[rgba(255,255,255,0.6)] uppercase tracking-wider">Daily Carbohydrates (g)</label>
-            <input 
-              type="number" 
-              value={carbs} 
-              onChange={e => handleMacroChange('carbs', e.target.value)}
-              className="w-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] rounded-xl px-4 py-3 text-white text-[16px] outline-none focus:border-[#D4FF00] transition-colors"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[13px] font-medium text-[rgba(255,255,255,0.6)] uppercase tracking-wider">Daily Fat (g)</label>
-            <input 
-              type="number" 
-              value={fat} 
-              onChange={e => handleMacroChange('fat', e.target.value)}
-              className="w-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] rounded-xl px-4 py-3 text-white text-[16px] outline-none focus:border-[#D4FF00] transition-colors"
-            />
-          </div>
-
-        </div>
-
-        <div className="p-4 border-t border-[rgba(255,255,255,0.06)] shrink-0">
-          <button 
-            onClick={() => mutation.mutate()}
-            disabled={mutation.isPending}
-            className={cn(
-              "w-full rounded-xl py-3.5 font-semibold text-[15px] flex items-center justify-center transition-colors",
-              mutation.isPending ? "bg-[#D4FF00]/50 text-black/50" : "bg-[#D4FF00] text-black hover:bg-[#bce600]"
-            )}
+        <div className="flex items-center justify-between px-[clamp(1rem,4vw,1.5rem)] pt-[clamp(1rem,2.6dvh,1.5rem)] pb-[clamp(0.75rem,2dvh,1.25rem)] border-b border-zinc-900/60 flex-shrink-0">
+          <h2 className="text-[clamp(1.1rem,3dvh,1.35rem)] font-semibold text-white">Edit nutrition</h2>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="w-9 h-9 rounded-full bg-zinc-900/60 hover:bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
           >
-            {mutation.isPending ? <Loader2 size={20} className="animate-spin" /> : 'Save Targets'}
+            <X className="w-4 h-4" />
           </button>
         </div>
-      </div>
-    </div>,
-    document.body
+
+        <div className="flex-1 min-h-0 overflow-y-auto px-[clamp(1rem,4vw,1.5rem)] py-[clamp(0.75rem,2dvh,1.25rem)] space-y-[clamp(0.75rem,2dvh,1.25rem)]">
+          <section>
+            <div className={LABEL_CLASS}>Daily calories</div>
+            <input
+              value={calories}
+              onChange={(e) => setCalories(e.target.value.replace(/[^0-9]/g, ''))}
+              placeholder="1700"
+              inputMode="numeric"
+              className={INPUT_CLASS}
+            />
+          </section>
+
+          <section>
+            <div className={LABEL_CLASS}>Macros</div>
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                value={protein}
+                onChange={(e) => setProtein(e.target.value.replace(/[^0-9]/g, ''))}
+                placeholder="Protein (g)"
+                inputMode="numeric"
+                className={INPUT_CLASS}
+              />
+              <input
+                value={fat}
+                onChange={(e) => setFat(e.target.value.replace(/[^0-9]/g, ''))}
+                placeholder="Fat (g)"
+                inputMode="numeric"
+                className={INPUT_CLASS}
+              />
+            </div>
+            <input
+              value={carbs}
+              onChange={(e) => setCarbs(e.target.value.replace(/[^0-9]/g, ''))}
+              placeholder="Carbs (g)"
+              inputMode="numeric"
+              className={`${INPUT_CLASS} mt-3`}
+            />
+          </section>
+
+          <section className="rounded-xl border border-[#D4FF00]/20 bg-[#D4FF00]/5 p-[clamp(0.6rem,1.6dvh,0.9rem)]">
+            <div className="text-[clamp(0.65rem,1.65dvh,0.75rem)] uppercase tracking-wider text-[#D4FF00]/80 mb-1">
+              Projected impact
+            </div>
+            <div className="text-[clamp(0.75rem,2dvh,0.9rem)] text-white leading-snug">
+              {previewText}
+            </div>
+          </section>
+
+          <section className="text-[clamp(0.7rem,1.8dvh,0.82rem)] text-zinc-500">
+            Macros total: <span className="tabular-nums text-zinc-300">{macroCalories} kcal</span>
+            {macroDiff > 50 && (
+              <div className="mt-1 text-amber-400/80">
+                Macro calories differ from target by {macroDiff} kcal
+              </div>
+            )}
+          </section>
+        </div>
+
+        <div className="flex-shrink-0 px-[clamp(1rem,4vw,1.5rem)] pt-[clamp(0.6rem,1.6dvh,0.9rem)] pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-zinc-900/60">
+          <button
+            onClick={() => saveMutation.mutate()}
+            disabled={!isValid || isSaving}
+            className="w-full py-[clamp(0.7rem,2dvh,0.95rem)] rounded-full bg-[#D4FF00] text-black font-semibold text-[clamp(0.85rem,2.2dvh,0.95rem)] disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {isSaving ? 'Saving…' : 'Save changes'}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>,
+    document.body,
   );
 }
