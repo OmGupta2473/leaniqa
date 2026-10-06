@@ -26,7 +26,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* ── Main content ── */}
       <main className="flex-1 flex flex-col min-w-0 max-w-full relative">
-        {location.pathname !== '/onboarding' && <Header />}
+        {location.pathname !== '/onboarding' && location.pathname !== '/science' && <Header />}
         {children || (
           <div 
             className="app-scroll flex-1 overflow-y-auto scroll-smooth flex flex-col relative" 
@@ -42,7 +42,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         )}
 
         {/* ── Mobile bottom nav ── */}
-        {!isKeyboardOpen && location.pathname !== '/onboarding' && (
+        {!isKeyboardOpen && location.pathname !== '/onboarding' && location.pathname !== '/science' && (
           <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50">
             <BottomNav />
           </nav>
