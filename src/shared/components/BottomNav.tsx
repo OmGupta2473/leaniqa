@@ -10,6 +10,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { useHasCompletedOnboarding } from '@/shared/hooks/useHasCompletedOnboarding';
 import { motion, AnimatePresence } from "motion/react";
 import { haptics } from "@/shared/utils/haptics";
+import { preloadRoute } from '@/router/preload';
 
 const navItems = [
   { id: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -38,6 +39,9 @@ export function BottomNav() {
             <NavLink
               key={item.id}
               to={item.id}
+              onMouseEnter={() => preloadRoute(item.id)}
+              onFocus={() => preloadRoute(item.id)}
+              onTouchStart={() => preloadRoute(item.id)}
               aria-label={item.label}
               title={item.label}
               onClick={(e) => {

@@ -20,6 +20,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useHasCompletedOnboarding } from '@/shared/hooks/useHasCompletedOnboarding';
 import { motion, AnimatePresence } from 'motion/react';
+import { preloadRoute } from '@/router/preload';
 
 const navItems = [
   { id: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -71,6 +72,9 @@ export function Sidebar({ className }: { className?: string }) {
           <NavLink
             key={item.id}
             to={item.id}
+            onMouseEnter={() => preloadRoute(item.id)}
+            onFocus={() => preloadRoute(item.id)}
+            onTouchStart={() => preloadRoute(item.id)}
             onClick={(e) => {
               if (!hasCompletedOnboarding) {
                 e.preventDefault();
@@ -128,6 +132,9 @@ export function Sidebar({ className }: { className?: string }) {
 
         <NavLink
           to="/profile"
+          onMouseEnter={() => preloadRoute('/profile')}
+          onFocus={() => preloadRoute('/profile')}
+          onTouchStart={() => preloadRoute('/profile')}
           onClick={(e) => {
             if (!hasCompletedOnboarding) {
               e.preventDefault();

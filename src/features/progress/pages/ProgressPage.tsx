@@ -21,6 +21,8 @@ function getLocalDateString(d: Date) {
   return `${year}-${month}-${day}T00:00:00.000Z`;
 }
 
+const PROGRESS_DATE_FORMATTER = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+
 export function ProgressPage() {
   const [weight, setWeight] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -167,7 +169,7 @@ export function ProgressPage() {
 
   const chartData = weightLogs.map((log) => {
     const parsedDate = new Date(log.date);
-    const name = parsedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    const name = PROGRESS_DATE_FORMATTER.format(parsedDate);
     return {
       name,
       timestamp: parsedDate.getTime(),
@@ -334,7 +336,7 @@ export function ProgressPage() {
                   type="number" 
                   scale="time" 
                   domain={['dataMin', 'dataMax']} 
-                  tickFormatter={(tick) => new Date(tick).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })} 
+                  tickFormatter={(tick) => PROGRESS_DATE_FORMATTER.format(new Date(tick))}
                   tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.32)' }} 
                   axisLine={false} 
                   tickLine={false} 
@@ -345,7 +347,7 @@ export function ProgressPage() {
                 <Tooltip 
                   labelFormatter={(val) => {
                     const d = chartData.find(c => c.timestamp === val);
-                    return d ? d.name : new Date(val).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+                    return d ? d.name : PROGRESS_DATE_FORMATTER.format(new Date(val));
                   }}
                   contentStyle={{ backgroundColor: '#1A1A1C', border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: '10px' }}
                   labelStyle={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', marginBottom: '4px' }}
