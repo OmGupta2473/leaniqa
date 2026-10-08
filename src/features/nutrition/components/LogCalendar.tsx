@@ -73,12 +73,13 @@ function isSameMonth(a: Date, b: Date): boolean {
 function getMonthGrid(monthStart: Date): Date[] {
   const firstDay = startOfMonth(monthStart);
   const lastDay = endOfMonth(monthStart);
-  const firstDayOfWeek = getDayOfWeek(firstDay); // 0 = Sun
+  // Monday-first index: Mon=0, Tue=1, ..., Sun=6
+  const firstDayOfWeek = (getDayOfWeek(firstDay) + 6) % 7;
   
   const days: Date[] = [];
   
-  // Leading days from previous month
-  for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+  // Leading days from previous month — ASCENDING order (oldest first)
+  for (let i = firstDayOfWeek; i >= 1; i--) {
     days.push(addDays(firstDay, -i));
   }
   
@@ -88,10 +89,9 @@ function getMonthGrid(monthStart: Date): Date[] {
     days.push(new Date(firstDay.getFullYear(), firstDay.getMonth(), d));
   }
   
-  // Trailing days to fill 6 rows (42 cells)
-  const remaining = 42 - days.length;
-  for (let i = 1; i <= remaining; i++) {
-    days.push(addDays(lastDay, i));
+  // Trailing days — fill to 42 cells (6 rows), forward from the last real day
+  while (days.length < 42) {
+    days.push(addDays(days[days.length - 1], 1));
   }
   
   return days;
