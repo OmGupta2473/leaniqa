@@ -170,5 +170,27 @@ export const mealService = {
       throw error;
     }
     return data || [];
+  },
+
+  async getFirstMealDate(): Promise<string | null> {
+    const userId = await authService.getUserId();
+    const { data, error } = await supabase
+      .from('meal_logs')
+      .select('meal_time')
+      .eq('user_id', userId)
+      .order('meal_time', { ascending: true })
+      .limit(1);
+      
+    if (error) {
+      logError(new Error('Error fetching first meal date'), { error, userId });
+      throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      return null;
+    }
+    
+    const { getKolkataDateString } = await import('@/shared/utils/timezone');
+    return getKolkataDateString(new Date(data[0].meal_time));
   }
 };
