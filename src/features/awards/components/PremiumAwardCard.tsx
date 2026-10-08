@@ -1,7 +1,8 @@
 import { motion } from 'motion/react';
-import { MicroRing } from '@/features/reports/components/MicroRing';
 import { cn } from '@/shared/utils/utils';
 import { haptics } from '@/shared/utils/haptics';
+import { AwardMedal } from './AwardMedal';
+import { type AwardCategory } from '../theme';
 
 interface PremiumAwardCardProps {
   award: {
@@ -93,35 +94,20 @@ export function PremiumAwardCard({ award, onClick }: PremiumAwardCardProps) {
         </motion.div>
       )}
 
-      <div className="absolute top-3 left-3 z-10">
-        <MicroRing
-          current={award.currentStreak}
-          goal={award.streakRequired}
-          size={26}
-          strokeWidth={2.5}
-          color={isUnlocked ? award.primaryColor : 'rgba(255,255,255,0.35)'}
-        />
-      </div>
-
       <div
         className={cn(
-          'relative z-10 mb-3 flex h-16 w-16 items-center justify-center rounded-[20px] text-[34px] transition-transform duration-500',
+          'relative z-10 mb-3 transition-transform duration-500',
           isUnlocked ? 'group-hover:scale-110' : 'opacity-55',
         )}
-        style={
-          isUnlocked
-            ? {
-                background: `linear-gradient(135deg, ${award.primaryColor}22, ${award.primaryColor}04)`,
-                border: `1px solid ${award.primaryColor}35`,
-                filter: `drop-shadow(0 6px 16px ${award.primaryColor}35)`,
-              }
-            : {
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.05)',
-              }
-        }
       >
-        <span className="drop-shadow-lg">{award.symbol}</span>
+        <AwardMedal
+          category={award.category as AwardCategory}
+          symbol={award.symbol}
+          current={award.currentStreak}
+          target={award.streakRequired}
+          unlocked={award.earned}
+          size={64}
+        />
       </div>
 
       <div className="relative z-10 w-full px-1">

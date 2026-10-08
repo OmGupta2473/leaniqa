@@ -26,6 +26,7 @@ const OnboardingPage = lazy(() => import('@/features/onboarding/pages/Onboarding
 const SciencePage = lazy(() => import('@/features/onboarding/pages/SciencePage').then(module => ({ default: module.SciencePage })));
 const LandingPage = lazy(() => import('@/LandingPage').then(module => ({ default: module.LandingPage })));
 const NotFoundPage = lazy(() => import('@/shared/components/NotFoundPage').then(module => ({ default: module.NotFoundPage })));
+const AwardsGallery = lazy(() => import('@/features/awards/dev/AwardsGallery').then(module => ({ default: module.AwardsGallery })));
 
 
 const PrivacyPage = lazy(() => import('@/features/legal/pages/PrivacyPage').then(module => ({ default: module.PrivacyPage })));
@@ -50,6 +51,15 @@ function RootLayout() {
     </>
   );
 }
+
+const devRoutes: RouteObject[] = import.meta.env.DEV
+  ? [
+      {
+        path: '/dev/awards-gallery',
+        element: <Suspense fallback={<ScreenSkeleton />}><AwardsGallery /></Suspense>,
+      },
+    ]
+  : [];
 
 export const routes: RouteObject[] = [
   {
@@ -114,6 +124,7 @@ export const routes: RouteObject[] = [
           { path: '/refund', element: <Suspense fallback={<ScreenSkeleton />}><RefundPage /></Suspense>, handle: { title: 'Refund Policy' } }
         ]
       },
+      ...devRoutes,
       {
         path: '/redirect',
         element: <RootRedirect />
