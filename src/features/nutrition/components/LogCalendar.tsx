@@ -136,11 +136,11 @@ export function LogCalendar({
   }, [floorDate]);
 
   const goPrevMonth = () => {
-    setViewMonth(d => addDays(startOfMonth(d), -1));
+    setViewMonth(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
   };
 
   const goNextMonth = () => {
-    setViewMonth(d => addDays(startOfMonth(d), 1));
+    setViewMonth(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
   };
 
   const canGoPrev = !isSameMonth(viewMonth, startOfMonth(parseDateKey(floorDate)));
