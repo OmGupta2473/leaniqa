@@ -3,6 +3,7 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { queryClient } from '@/app/query/queryClient';
 import { queryPersister } from '@/app/query/queryPersister';
 import { ToastProvider } from '@/shared/components/Toast';
+import { MotionConfig } from 'motion/react';
 
 export function AppProvider({ children }: { children: ReactNode }) {
   return (
@@ -21,7 +22,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }}
       >
         <ToastProvider>
-          {children}
+          <MotionConfig reducedMotion="user">
+            {children}
+          </MotionConfig>
         </ToastProvider>
       </PersistQueryClientProvider>
     </StrictMode>
