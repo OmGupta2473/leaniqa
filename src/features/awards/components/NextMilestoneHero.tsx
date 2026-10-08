@@ -47,7 +47,7 @@ export function NextMilestoneHero({ evaluation }: NextMilestoneHeroProps) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-      className="relative mb-8 overflow-hidden rounded-[28px] border border-[rgba(255,255,255,0.06)]"
+      className="relative h-full overflow-hidden rounded-[22px] border border-[rgba(255,255,255,0.06)]"
       style={{
         background: `radial-gradient(120% 100% at 50% 0%, ${definition.primaryColor}12 0%, rgba(10,10,12,0.98) 55%)`,
       }}
@@ -58,30 +58,30 @@ export function NextMilestoneHero({ evaluation }: NextMilestoneHeroProps) {
         style={{ background: definition.primaryColor, opacity: 0.14 }}
       />
 
-      <div className="relative flex flex-col items-center px-6 pt-8 pb-6 text-center">
-        <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#D4FF00] mb-6">
+      <div className="relative flex flex-col items-center px-3 md:px-4 pt-4 md:pt-5 pb-3 md:pb-4 text-center">
+        <div className="flex items-center gap-1 md:gap-2 text-[9px] md:text-[10px] font-semibold uppercase tracking-[0.18em] md:tracking-[0.22em] text-[#D4FF00] mb-2 md:mb-3">
           <Sparkles className="h-3 w-3" />
           Next milestone
         </div>
 
-        <div className="mb-4">
+        <div className="mb-2 md:mb-3">
           <AwardMedal
             category={definition.category as AwardCategory}
             symbol={definition.symbol}
             current={primary.current}
             target={primary.target}
             unlocked={false}
-            size={80}
+            size={44}
           />
         </div>
 
-        <h3 className="text-[22px] font-bold tracking-tight text-white mb-1">
+        <h3 className="text-[13px] md:text-[17px] font-bold tracking-tight text-white mb-1">
           {definition.name}
         </h3>
 
-        <div className="flex items-center gap-2 mb-5">
+        <div className="flex flex-wrap items-center justify-center gap-1 md:gap-2 mb-2 md:mb-3">
           <span
-            className="rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
+            className="rounded-full border px-2 md:px-2.5 py-0.5 text-[9px] md:text-[10px] font-semibold uppercase tracking-wider"
             style={{
               borderColor: `${definition.primaryColor}35`,
               color: definition.primaryColor,
@@ -89,13 +89,13 @@ export function NextMilestoneHero({ evaluation }: NextMilestoneHeroProps) {
           >
             {definition.category}
           </span>
-          <span className="rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] px-2.5 py-0.5 text-[10px] font-medium text-zinc-400">
+          <span className="rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] px-2 md:px-2.5 py-0.5 text-[9px] md:text-[10px] font-medium text-zinc-400">
             {definition.target} {definition.unitLabel}
           </span>
         </div>
 
-        <div className="w-full max-w-[280px]">
-          <div className="mb-2 flex justify-between text-[11px] uppercase tracking-wider text-zinc-500">
+        <div className="w-full">
+          <div className="mb-1 md:mb-2 flex justify-between text-[9px] md:text-[11px] uppercase tracking-wider text-zinc-500">
             <span>Progress</span>
             <span className="tabular-nums">
               {primary.current} / {primary.target}
@@ -115,7 +115,7 @@ export function NextMilestoneHero({ evaluation }: NextMilestoneHeroProps) {
           </div>
         </div>
 
-        <p className="mt-4 text-[14px] font-medium text-zinc-300">
+        <p className="mt-2 md:mt-3 text-[10px] md:text-[12px] font-medium text-zinc-300">
           {getAwardDistanceCopy(
             definition.category,
             primary.current,
@@ -125,11 +125,11 @@ export function NextMilestoneHero({ evaluation }: NextMilestoneHeroProps) {
       </div>
 
       {nextThree.length > 0 && (
-        <div className="border-t border-[rgba(255,255,255,0.05)] px-6 py-4">
+        <div className="border-t border-[rgba(255,255,255,0.05)] px-3 md:px-4 py-2 md:py-3">
           <div className="mb-3 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
             Coming up
           </div>
-          <div className="flex justify-center gap-4">
+          <div className="flex justify-center gap-2 md:gap-3">
             {nextThree.map((p) => {
               const d = AWARD_BY_ID[p.id];
               if (!d) return null;
@@ -140,7 +140,7 @@ export function NextMilestoneHero({ evaluation }: NextMilestoneHeroProps) {
                   title={d.name}
                 >
                   <div
-                    className="flex h-10 w-10 items-center justify-center rounded-2xl text-[18px] opacity-70"
+                    className="flex h-7 w-7 md:h-8 md:w-8 items-center justify-center rounded-xl md:rounded-2xl text-[12px] md:text-[14px] opacity-70"
                     style={{
                       background: `linear-gradient(135deg, ${d.primaryColor}18, ${d.primaryColor}04)`,
                       border: `1px solid ${d.primaryColor}25`,
@@ -148,7 +148,7 @@ export function NextMilestoneHero({ evaluation }: NextMilestoneHeroProps) {
                   >
                     {d.symbol}
                   </div>
-                  <span className="text-[9px] uppercase tracking-wider text-zinc-500 tabular-nums">
+                  <span className="text-[8px] md:text-[9px] uppercase tracking-wider text-zinc-500 tabular-nums">
                     {Math.round(p.percentage)}%
                   </span>
                 </div>
