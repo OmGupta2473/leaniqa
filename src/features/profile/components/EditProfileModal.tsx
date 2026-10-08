@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import { profileService } from '../services/profileService';
 import { calculatePlan, type ActivityLevel } from '@/shared/utils/onboardingMath';
-import { computePacePlan, type CutPace } from '@/shared/utils/paceEngine';
+import { computePacePlan, type CutPace, CUT_PACES } from '@/shared/utils/paceEngine';
 import { deriveCarbsFromKcal } from '@/shared/utils/macroReconciliation';
 import { cn } from '@/shared/utils/utils';
 import { haptics } from '@/shared/utils/haptics';
@@ -163,7 +163,14 @@ function EditProfileModalInner({ onClose, profileData, goalData }: Omit<EditProf
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const currentPace = (goalData?.cut_pace ?? 22) as CutPace;
+      // Defensive: DB constraint allows only {26,22,18,14}, but legacy rows
+      // could contain {16,20} from the prior migration. paceEngine has no
+      // macro math for those, so fall back to the previously-defaulted 22.
+      const storedPace = goalData?.cut_pace;
+      const currentPace: CutPace =
+        typeof storedPace === 'number' && (CUT_PACES as readonly number[]).includes(storedPace)
+          ? (storedPace as CutPace)
+          : 22;
 
       if (!recalculatedPlan) {
         throw new Error('Cannot save: profile values are incomplete');
