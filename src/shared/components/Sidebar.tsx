@@ -110,7 +110,7 @@ export function Sidebar({ className }: { className?: string }) {
                   }}
                 >
                   <item.icon size={20} strokeWidth={2} className="shrink-0" />
-                  <span className="text-[14px] font-medium">{item.label}</span>
+                  <span className="text-[14px] font-medium tabular-nums">{item.label}</span>
                   {item.dot && (
                     <span 
                       className="w-[6px] h-[6px] rounded-full absolute right-4"
