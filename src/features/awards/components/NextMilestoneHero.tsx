@@ -8,6 +8,8 @@ import {
   type AwardProgress,
 } from '@/shared/utils/awardsEngine';
 import { getAwardDistanceCopy } from '../utils/awardDistance';
+import { AwardMedal } from './AwardMedal';
+import { type AwardCategory } from '../theme';
 
 interface NextMilestoneHeroProps {
   evaluation: AwardEvaluation;
@@ -62,15 +64,15 @@ export function NextMilestoneHero({ evaluation }: NextMilestoneHeroProps) {
           Next milestone
         </div>
 
-        <div
-          className="mb-4 flex h-20 w-20 items-center justify-center rounded-[26px] text-[42px]"
-          style={{
-            background: `linear-gradient(135deg, ${definition.primaryColor}28, ${definition.primaryColor}06)`,
-            border: `1px solid ${definition.primaryColor}45`,
-            boxShadow: `0 0 32px ${definition.primaryColor}25`,
-          }}
-        >
-          <span className="drop-shadow-lg">{definition.symbol}</span>
+        <div className="mb-4">
+          <AwardMedal
+            category={definition.category as AwardCategory}
+            symbol={definition.symbol}
+            current={primary.current}
+            target={primary.target}
+            unlocked={false}
+            size={80}
+          />
         </div>
 
         <h3 className="text-[22px] font-bold tracking-tight text-white mb-1">
