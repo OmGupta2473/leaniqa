@@ -241,12 +241,13 @@ export function AwardsPage() {
         </div>
       </motion.div>
 
+      <div className="grid grid-cols-2 items-stretch gap-3 md:gap-4 mb-8">
       {/* Premium Hero Streak Card */}
       <motion.div 
         initial={{ opacity: 0, y: 20, scale: 0.95 }} 
         animate={{ opacity: 1, y: 0, scale: 1 }} 
         transition={{ type: 'spring', stiffness: 300, damping: 25, delay: 0.05 }}
-        className="relative rounded-[32px] p-8 flex flex-col items-center justify-center mb-10 text-center overflow-hidden border border-[rgba(255,255,255,0.05)]"
+        className="relative rounded-[32px] p-5 flex flex-col items-center justify-center text-center overflow-hidden border border-[rgba(255,255,255,0.05)] h-full"
         style={{
           background: 'linear-gradient(180deg, rgba(20,20,22,1) 0%, rgba(10,10,12,1) 100%)',
           boxShadow: '0 20px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)'
@@ -266,7 +267,7 @@ export function AwardsPage() {
         )}
 
         {/* Animated Progress Ring */}
-        <div className="relative w-36 h-36 flex items-center justify-center mb-4 mt-6">
+        <div className="relative w-20 h-20 md:w-24 md:h-24 flex items-center justify-center mb-3 mt-4 md:mb-4 md:mt-6">
           <svg className="absolute inset-0 w-full h-full -rotate-90 transform" viewBox="0 0 100 100">
             {/* Background Ring */}
             <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="6" />
@@ -292,7 +293,7 @@ export function AwardsPage() {
           
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <div className="relative">
-              <Flame size={40} color="#FF4D1C" className="relative z-10 drop-shadow-[0_0_10px_rgba(255,77,28,0.5)]" strokeWidth={1.5} />
+              <Flame size={22} color="#FF4D1C" className="relative z-10 drop-shadow-[0_0_10px_rgba(255,77,28,0.5)]" strokeWidth={1.5} />
             </div>
           </div>
         </div>
@@ -301,13 +302,13 @@ export function AwardsPage() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.3, type: 'spring' }}
-          className="text-[64px] font-bold text-white tracking-tighter leading-none mb-1 drop-shadow-[0_8px_32px_rgba(0,0,0,0.15)]"
+          className="text-[28px] md:text-[40px] font-bold text-white tracking-tighter leading-none mb-1 drop-shadow-[0_8px_32px_rgba(0,0,0,0.15)]"
         >
           {currentStreak}
         </motion.div>
-        <div className="text-[15px] text-[rgba(255,255,255,0.5)] font-medium tracking-wide uppercase">Day Streak</div>
+        <div className="text-[10px] md:text-[12px] text-[rgba(255,255,255,0.5)] font-medium tracking-wide uppercase">Day Streak</div>
         
-        <div className="mt-8 bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.06)] rounded-[24px] px-5 py-3 flex items-center gap-3">
+        <div className="mt-4 bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.06)] rounded-[20px] px-3 md:px-5 py-2 md:py-3 flex items-center gap-2 md:gap-3">
           <Trophy size={16} className="text-[#D4FF00] opacity-80" />
           <div className="text-[13px] text-[rgba(255,255,255,0.6)]">
             Personal best: <span className="text-white font-bold ml-1">{bestStreak} days</span>
@@ -316,6 +317,7 @@ export function AwardsPage() {
       </motion.div>
 
       <NextMilestoneHero evaluation={evaluation} />
+      </div>
 
       {/* Awards Grid Section — grouped by category */}
       <motion.div variants={containerVariants} initial="hidden" animate="show">
