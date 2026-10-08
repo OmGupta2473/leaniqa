@@ -35,6 +35,10 @@ import { MealLoggerSkeleton } from '@/shared/components/Skeletons';
 import { useToast } from '@/shared/components/Toast';
 import { useAiCredits } from '@/features/nutrition/hooks/useAiCredits';
 import { devLog } from '@/shared/utils/logger';
+import { LogCalendar } from '../components/LogCalendar';
+import { reportService } from '@/features/reports/services/reportService';
+import { classifyDay, type GoalType, type MetricStatus } from '@/shared/utils/dayStatus';
+import { parseDateKey } from '@/shared/utils/dateKey';
 import { getKolkataDateString, getKolkataHour, shiftKolkataDateString, kolkataDateStringToUtcMidnight, msSinceKolkataMidnight } from '@/shared/utils/timezone';
 
 const getDeterministicFallback = (text: string) => {
@@ -255,6 +259,7 @@ export function MealLoggerPage() {
   const [retryCount, setRetryCount] = useState<number>(0);
   const [editingMeal, setEditingMeal] = useState<(DbMealLog & { id: string }) | null>(null);
   const [editingPending, setEditingPending] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const refundParseCredit = useCallback(async (pm: PendingMeal | null) => {
     if (!pm || pm.source !== 'llm' || !pm.request_id) {
@@ -361,7 +366,26 @@ export function MealLoggerPage() {
   }, []);
 
   const { data: goal } = useQuery({ queryKey: ["goal"], queryFn: () => profileService.getGoal() });
-  
+
+  const { data: firstMealDate } = useQuery({
+    queryKey: ['firstMealDate'],
+    queryFn: () => mealService.getFirstMealDate(),
+  });
+
+  const { data: dailyMetrics = [] } = useQuery({
+    queryKey: ['dailyMetrics'],
+    queryFn: () => reportService.getDailyMetrics(),
+  });
+
+  const todayStr = getKolkataDateString();
+
+  const floorDate = firstMealDate
+    ?? (profile?.created_at
+      ? getKolkataDateString(new Date(profile.created_at))
+      : todayStr);
+
+  const goalType: GoalType = (goal?.goal_type ?? 'cut') as GoalType;
+
   const {
     meals,
     isMealsLoading: isLoading,
@@ -380,6 +404,18 @@ export function MealLoggerPage() {
     proPct,
     isOnline
   } = useDailyNutrition(selectedDateStr);
+
+  const isViewingToday = selectedDateStr === todayStr;
+
+  const todayStatus: MetricStatus | null =
+    isViewingToday && dailyTargetKcal > 0
+      ? classifyDay(goalType, {
+          actual_calories: eatenKcal,
+          target_calories: dailyTargetKcal,
+          actual_protein: eatenProtein,
+          target_protein: proteinTarget,
+        })
+      : null;
 
   const breakfastMeals = meals.filter(m => m.meal_slot?.toLowerCase() === "breakfast");
   const lunchMeals = meals.filter(m => m.meal_slot?.toLowerCase() === "lunch");
@@ -871,9 +907,13 @@ export function MealLoggerPage() {
           >
             <ChevronLeft size={18} className="text-white" />
           </button>
-          <span className="text-[15px] font-semibold text-white min-w-[85px] text-center tracking-tight">
+          <button 
+            onClick={() => setCalendarOpen(true)}
+            aria-label="Open calendar"
+            className="text-[15px] font-semibold text-white min-w-[85px] text-center tracking-tight hover:text-[#D4FF00] transition-colors"
+          >
             {formatDateLabel(selectedDateStr)}
-          </span>
+          </button>
           <button 
             onClick={() => {
               if (isToday(selectedDateStr)) return;
@@ -1337,6 +1377,16 @@ export function MealLoggerPage() {
           setEditingPending(false);
           haptics.tap();
         }}
+      />
+      <LogCalendar
+        isOpen={calendarOpen}
+        onClose={() => setCalendarOpen(false)}
+        floorDate={floorDate}
+        selectedDate={selectedDateStr}
+        onSelectDate={setSelectedDateStr}
+        goalType={goalType}
+        todayStatus={todayStatus}
+        metrics={dailyMetrics}
       />
     </>
   );
