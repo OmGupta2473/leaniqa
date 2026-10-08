@@ -1,0 +1,12 @@
+export const SPRING = {
+  snappy: { type: 'spring', stiffness: 400, damping: 30 },
+  gentle: { type: 'spring', stiffness: 200, damping: 25 },
+  bouncy: { type: 'spring', stiffness: 500, damping: 18 },
+  tap:    { type: 'spring', stiffness: 500, damping: 25 },
+  sheet:  { type: 'spring', stiffness: 300, damping: 30 },
+  reveal: { type: 'spring', stiffness: 250, damping: 28 },
+} as const;
+
+export const EASE_OUT = [0.16, 1, 0.3, 1] as const;
+
+export type SpringToken = keyof typeof SPRING;
