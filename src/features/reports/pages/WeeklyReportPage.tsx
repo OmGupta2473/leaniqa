@@ -25,6 +25,8 @@ function getLocalDateString(d: Date) {
   return `${year}-${month}-${day}`;
 }
 
+const WEEKDAY_FORMATTER = new Intl.DateTimeFormat('en-US', { weekday: 'short' });
+
 // -- AI Logic (Deterministic) --
 
 function generateCoachData(days: DailyActivityData[], loggedCount: number) {
@@ -486,7 +488,7 @@ export function WeeklyReportPage() {
                  {last7Days.map((day, i) => {
                    const [y, m, d] = day.date.split('-').map(Number);
                    const localDate = new Date(y, m - 1, d);
-                   const dayLabel = localDate.toLocaleDateString('en-US', { weekday: 'short' });
+                   const dayLabel = WEEKDAY_FORMATTER.format(localDate);
                    const pct = Math.min(Math.max(day.complianceScore, 0), 100);
                    const barColor = pct >= 80 ? '#D4FF00' : (pct >= 50 ? '#fbbf24' : '#FF4D1C');
                    
