@@ -183,10 +183,13 @@ export function WeeklyReportPage() {
   const calorieGoal = calculatedData?.dailyCalorieGoal || 2000;
   const proteinGoal = calculatedData?.targetMacros?.protein || 150;
   const today = new Date();
+  // End the window yesterday so today's still-logging day doesn't skew the report.
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
   
   const last7Days: DailyActivityData[] = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(today);
+      const d = new Date(yesterday);
       d.setDate(d.getDate() - (6 - i));
       const dateStr = getLocalDateString(d);
       
@@ -228,7 +231,7 @@ export function WeeklyReportPage() {
         complianceScore,
       };
     });
-  }, [meals, dailyMetrics, calorieGoal, proteinGoal, today, weightLogs]);
+  }, [meals, dailyMetrics, calorieGoal, proteinGoal, yesterday, weightLogs]);
 
   const activeDays = last7Days.filter(d => d.caloriesConsumed > 0 || d.complianceScore > 0);
   const loggedDaysCount = activeDays.length;
