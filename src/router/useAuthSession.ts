@@ -10,6 +10,21 @@ import { authService } from '@/features/auth/services/authService';
 let activeSessionUserId: string | null = null;
 let lastFlushedUserId: string | null = null;
 
+const USER_MARKER_KEY = 'leaniqa-active-user-id';
+
+const readPersistedUserId = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  try { return window.localStorage.getItem(USER_MARKER_KEY); } catch { return null; }
+};
+
+const writePersistedUserId = (userId: string | null): void => {
+  if (typeof window === 'undefined') return;
+  try {
+    if (userId) window.localStorage.setItem(USER_MARKER_KEY, userId);
+    else window.localStorage.removeItem(USER_MARKER_KEY);
+  } catch { /* ignore quota/security errors */ }
+};
+
 export function useAuthSession() {
   const { session, loading, setSession, setLoading, setInitialized } = useAuthStore();
   const hasBootstrappedRef = useRef(false);
@@ -21,11 +36,13 @@ export function useAuthSession() {
 
     const activateSession = async (localSession: Session) => {
       const userId = localSession.user.id;
-      if (activeSessionUserId && activeSessionUserId !== userId) {
+      const previousUserId = activeSessionUserId ?? readPersistedUserId();
+      if (previousUserId && previousUserId !== userId) {
         await authService.onSessionEnded();
       }
 
       activeSessionUserId = userId;
+      writePersistedUserId(userId);
       setSession(localSession);
       setCrashReportingUser({ id: userId, email: localSession.user.email });
       analytics.identifyUser(userId);
@@ -39,6 +56,7 @@ export function useAuthSession() {
     const endSession = async () => {
       activeSessionUserId = null;
       lastFlushedUserId = null;
+      writePersistedUserId(null);
       await authService.onSessionEnded();
     };
 
