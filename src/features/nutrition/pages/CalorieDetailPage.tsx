@@ -177,7 +177,7 @@ export function CalorieDetailPage() {
   return (
     <div className="page-enter pt-[calc(env(safe-area-inset-top)+20px)] pb-[calc(100px+env(safe-area-inset-bottom))] min-h-[100dvh] bg-[#0A0A0A] px-5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-10">
+      <div className="flex items-center justify-between pt-4 pb-3 mb-5">
         <button onClick={() => navigate("/dashboard")} aria-label="Back to dashboard" className="w-[44px] h-[44px] rounded-full bg-[rgba(255,255,255,0.03)] flex items-center justify-center transition-colors hover:bg-[rgba(255,255,255,0.1)]">
           <ChevronLeft size={20} className="text-white" />
         </button>
@@ -186,11 +186,11 @@ export function CalorieDetailPage() {
       </div>
 
       {/* Hero Number Section */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center justify-center text-center mb-12 mt-6">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center justify-center text-center mb-4">
         <div className="flex items-baseline gap-1.5 mb-2">
-          <span className="text-[64px] font-bold text-white tracking-tighter leading-none"><AnimatedNumber value={caloriesConsumed} /></span>
+          <span className="text-[40px] font-bold text-white tracking-tighter leading-none"><AnimatedNumber value={caloriesConsumed} /></span>
         </div>
-        <div className="text-[16px] font-medium text-[rgba(235,235,245,0.45)] mb-8 tracking-wide">of {dailyCalorieGoal} kcal</div>
+        <div className="text-[13px] text-zinc-500 font-medium mb-8 tracking-wide">of {dailyCalorieGoal} kcal</div>
         
         {/* Progress bar */}
         <div className="w-full max-w-[280px] progress-track h-2 rounded-full overflow-hidden bg-[rgba(255,255,255,0.1)] shadow-inner">
@@ -202,8 +202,8 @@ export function CalorieDetailPage() {
       </motion.div>
 
       {/* 7-Day History Chart */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] p-6 mb-10 shadow-sm backdrop-blur-xl">
-        <div className="text-[12px] font-semibold text-[rgba(235,235,245,0.5)] uppercase tracking-widest mb-6">Daily calorie history</div>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-[20px] bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] p-4 mb-5 shadow-sm backdrop-blur-xl">
+        <div className="text-[12px] font-semibold text-[rgba(235,235,245,0.5)] uppercase tracking-widest mb-2">Daily calorie history</div>
         <DailyHistoryChart 
           logs={chartData} 
           todayStr={todayStr} 
