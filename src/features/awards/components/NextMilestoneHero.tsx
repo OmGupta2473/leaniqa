@@ -58,17 +58,17 @@ export function NextMilestoneHero({ evaluation }: NextMilestoneHeroProps) {
         style={{ background: definition.primaryColor, opacity: 0.14 }}
       />
 
-      <div className="relative flex flex-col items-center px-3 md:px-4 pt-4 md:pt-5 pb-3 md:pb-4 text-center">
-        <div className="flex items-center justify-between mb-5 w-full">
+      <div className="relative flex flex-col items-center px-3 md:px-4 pt-4 pb-3 text-center">
+        <div className="flex items-center justify-between mb-3 w-full">
           <div className="flex items-center gap-2">
-            <Sparkles size={14} className="text-[#D4FF00]" />
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500">Next Milestone</span>
+            <Sparkles className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#D4FF00]" />
+            <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Next Milestone</span>
           </div>
           <ChevronRight size={18} className="text-zinc-500" />
         </div>
 
         <div className="flex justify-center mb-4 w-full">
-          <div className="relative w-32 h-32">
+          <div className="relative w-20 h-20 md:w-24 md:h-24">
             <svg viewBox="0 0 100 100" className="absolute inset-0 -rotate-90">
               {/* track */}
               <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6" />
@@ -82,19 +82,19 @@ export function NextMilestoneHero({ evaluation }: NextMilestoneHeroProps) {
                 current={primary.current}
                 target={primary.target}
                 unlocked={false}
-                size={56}
+                size={36}
               />
             </div>
           </div>
         </div>
 
-        <h3 className="text-[22px] font-bold tracking-tight text-white text-center mb-4">
+        <h3 className="text-[13px] md:text-[15px] font-bold tracking-tight text-white text-center mb-3">
           {definition.name}
         </h3>
 
-        <div className="flex items-center justify-center gap-2 mb-6">
+        <div className="flex items-center justify-center gap-1.5 mb-4">
           <span
-            className="rounded-full px-4 py-1.5 text-[12px] font-semibold uppercase tracking-wider"
+            className="rounded-full px-2 md:px-2.5 py-0.5 text-[9px] md:text-[10px] font-semibold uppercase tracking-wider"
             style={{
               border: `1px solid ${definition.primaryColor}55`,
               color: definition.primaryColor,
@@ -102,19 +102,19 @@ export function NextMilestoneHero({ evaluation }: NextMilestoneHeroProps) {
           >
             {definition.category}
           </span>
-          <span className="rounded-full px-4 py-1.5 text-[12px] font-semibold text-zinc-300 border border-[rgba(255,255,255,0.08)]">
+          <span className="rounded-full px-2 md:px-2.5 py-0.5 text-[9px] md:text-[10px] font-semibold text-zinc-300 border border-[rgba(255,255,255,0.08)]">
             {definition.target} {definition.unitLabel}
           </span>
         </div>
 
         <div className="mb-4 w-full">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-500">Progress</span>
-            <span className="text-[13px] font-semibold text-white tabular-nums">
+            <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-zinc-500">Progress</span>
+            <span className="text-[10px] md:text-[11px] font-semibold text-white tabular-nums">
               {primary.current} / {primary.target}
             </span>
           </div>
-          <div className="h-2 rounded-full bg-[rgba(255,255,255,0.06)] overflow-hidden">
+          <div className="h-1.5 rounded-full bg-[rgba(255,255,255,0.06)] overflow-hidden">
             <div
               className="h-full rounded-full"
               style={{
@@ -125,7 +125,7 @@ export function NextMilestoneHero({ evaluation }: NextMilestoneHeroProps) {
               }}
             />
           </div>
-          <p className="text-center text-[13px] text-zinc-400 mt-3">
+          <p className="text-center text-[10px] md:text-[11px] text-zinc-400 mt-2">
             {getAwardDistanceCopy(definition.category, primary.current, primary.target)}
           </p>
         </div>
@@ -133,12 +133,12 @@ export function NextMilestoneHero({ evaluation }: NextMilestoneHeroProps) {
 
       {nextThree.length > 0 && (
         <>
-          <div className="h-px bg-[rgba(255,255,255,0.06)] my-5" />
+          <div className="h-px bg-[rgba(255,255,255,0.06)] my-3 md:my-4" />
 
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-500">Coming Up</span>
-              <ChevronRight size={16} className="text-zinc-500" />
+            <div className="flex items-center justify-between mb-2 md:mb-3">
+              <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-zinc-500">Coming Up</span>
+              <ChevronRight className="w-3.5 h-3.5 md:w-4 md:h-4 text-zinc-500" />
             </div>
             <div className="flex justify-around">
               {nextThree.map((p) => {
@@ -147,11 +147,11 @@ export function NextMilestoneHero({ evaluation }: NextMilestoneHeroProps) {
                 return (
                   <div
                     key={p.id}
-                    className="flex flex-col items-center gap-2"
+                    className="flex flex-col items-center gap-1 md:gap-1.5"
                     title={d.name}
                   >
                     <div
-                      className="w-14 h-14 rounded-full flex items-center justify-center text-[26px]"
+                      className="w-9 h-9 md:w-11 md:h-11 rounded-full flex items-center justify-center text-[16px] md:text-[20px]"
                       style={{
                         background: `radial-gradient(circle at 30% 30%, ${d.primaryColor}22, ${d.primaryColor}06)`,
                         border: `1px solid ${d.primaryColor}30`,
@@ -159,7 +159,7 @@ export function NextMilestoneHero({ evaluation }: NextMilestoneHeroProps) {
                     >
                       {d.symbol}
                     </div>
-                    <span className="text-[13px] font-semibold text-zinc-400 tabular-nums">
+                    <span className="text-[10px] md:text-[11px] font-semibold text-zinc-400 tabular-nums">
                       {Math.round(p.percentage)}%
                     </span>
                   </div>

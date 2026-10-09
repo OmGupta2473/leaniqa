@@ -262,62 +262,62 @@ export function AwardsPage() {
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 items-stretch">
+      <div className="grid grid-cols-2 gap-3 md:gap-4 mb-8 items-stretch">
       {/* Premium Hero Streak Card */}
       <motion.div 
         initial={{ opacity: 0, y: 20, scale: 0.95 }} 
         animate={{ opacity: 1, y: 0, scale: 1 }} 
         transition={{ type: 'spring', stiffness: 300, damping: 25, delay: 0.05 }}
-        className="relative rounded-[28px] p-6 flex flex-col overflow-hidden border border-[rgba(255,255,255,0.05)] h-full"
+        className="relative rounded-[20px] md:rounded-[24px] p-4 md:p-5 flex flex-col overflow-hidden border border-[rgba(255,255,255,0.05)] h-full"
         style={{
           background: 'linear-gradient(180deg, rgba(20,20,22,1) 0%, rgba(10,10,12,1) 100%)',
           boxShadow: '0 20px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)'
         }}
       >
-        <div className="text-[20px] font-semibold text-white">Current Streak</div>
+        <div className="text-[12px] md:text-[13px] font-semibold text-white">Current Streak</div>
 
-        <div className="flex justify-between items-start mt-4">
+        <div className="flex justify-between items-start mt-3">
           <div>
-            <div className="text-[80px] font-bold text-white tracking-tighter leading-none">{currentStreak}</div>
-            <div className="text-[28px] text-zinc-500 font-medium mt-1">days</div>
+            <div className="text-[36px] md:text-[44px] font-bold text-white tracking-tighter leading-none">{currentStreak}</div>
+            <div className="text-[14px] md:text-[16px] text-zinc-500 font-medium mt-0.5">days</div>
           </div>
           <div
-            className="w-20 h-20 rounded-full flex items-center justify-center shrink-0"
+            className="w-11 h-11 md:w-14 md:h-14 rounded-full flex items-center justify-center shrink-0"
             style={{ background: 'rgba(255,77,28,0.08)', border: '1px solid rgba(255,77,28,0.15)', boxShadow: '0 0 32px rgba(255,77,28,0.15)' }}
           >
-            <Flame size={36} className="text-[#FF4D1C]" strokeWidth={1.8} />
+            <Flame className="text-[#FF4D1C] w-5 h-5 md:w-7 md:h-7" strokeWidth={1.8} />
           </div>
         </div>
 
-        <div className="flex justify-between mt-6">
+        <div className="flex justify-between mt-4">
           {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
             <div key={i} className="flex flex-col items-center gap-2">
-              <div className={`w-3.5 h-3.5 rounded-full ${activeDays[i] ? 'bg-[#FF4D1C] shadow-[0_0_10px_rgba(255,77,28,0.5)]' : 'bg-[rgba(255,255,255,0.12)]'}`} />
-              <span className="text-[11px] text-zinc-500 font-medium">{d}</span>
+              <div className={`w-2 md:w-2.5 h-2 md:h-2.5 rounded-full ${activeDays[i] ? 'bg-[#FF4D1C] shadow-[0_0_8px_rgba(255,77,28,0.5)]' : 'bg-[rgba(255,255,255,0.12)]'}`} />
+              <span className="text-[9px] md:text-[10px] text-zinc-500 font-medium">{d}</span>
             </div>
           ))}
         </div>
 
-        <div className="h-px bg-[rgba(255,255,255,0.06)] my-5" />
+        <div className="h-px bg-[rgba(255,255,255,0.06)] my-3 md:my-4" />
 
         <button
           onClick={() => navigate('/awards')}
-          className="w-full flex items-center gap-4 rounded-[20px] px-4 py-4 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] text-left transition-colors hover:bg-[rgba(255,255,255,0.05)]"
+          className="w-full flex items-center gap-2 md:gap-3 rounded-[16px] px-2.5 md:px-3 py-2.5 md:py-3 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] text-left transition-colors hover:bg-[rgba(255,255,255,0.05)]"
         >
           <div
-            className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
+            className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center shrink-0"
             style={{ background: 'rgba(212,255,0,0.10)' }}
           >
-            <Trophy size={22} className="text-[#D4FF00]" />
+            <Trophy className="w-4 h-4 md:w-5 md:h-5 text-[#D4FF00]" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[13px] text-zinc-500 font-medium">Personal Best</div>
-            <div className="text-[22px] font-bold text-white tracking-tight leading-tight">{bestStreak} days</div>
+            <div className="text-[10px] md:text-[11px] text-zinc-500 font-medium">Personal Best</div>
+            <div className="text-[14px] md:text-[16px] font-bold text-white tracking-tight leading-tight">{bestStreak} days</div>
           </div>
-          <ChevronRight size={20} className="text-zinc-500 shrink-0" />
+          <ChevronRight className="w-4 h-4 md:w-5 md:h-5 text-zinc-500 shrink-0" />
         </button>
 
-        <p className="text-[14px] text-center text-zinc-500 leading-relaxed mt-6">
+        <p className="text-[10px] md:text-[11px] text-center text-zinc-500 leading-snug mt-3 md:mt-4">
           Keep logging your meals to build a stronger you.
         </p>
       </motion.div>
