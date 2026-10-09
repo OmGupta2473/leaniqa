@@ -11,6 +11,7 @@ import { ScreenSkeleton } from '@/shared/components/ScreenSkeleton';
 import { RouteMetadata } from '@/shared/components/RouteMetadata';
 import { AnalyticsObserver } from '@/shared/components/AnalyticsObserver';
 import { DashboardSkeleton, MealLoggerSkeleton, ProgressSkeleton, WeeklyReportSkeleton, ProfileSkeleton, NutritionDetailSkeleton, AwardsSkeleton } from '@/shared/components/Skeletons';
+import { PageSkeleton } from '@/shared/components/PageSkeleton';
 
 const DashboardPage = lazy(() => import('@/features/dashboard/pages/DashboardPage').then(module => ({ default: module.DashboardPage })));
 const MealLoggerPage = lazy(() => import('@/features/nutrition/pages/MealLoggerPage').then(module => ({ default: module.MealLoggerPage })));
@@ -72,7 +73,7 @@ export const routes: RouteObject[] = [
         children: [
           {
             index: true,
-            element: <Suspense fallback={<ScreenSkeleton />}><LandingPage /></Suspense>,
+            element: <Suspense fallback={<PageSkeleton route="landing" />}><LandingPage /></Suspense>,
             handle: { title: 'LeanIQA' }
           }
         ]
@@ -85,7 +86,7 @@ export const routes: RouteObject[] = [
             index: true, 
             element: (
               <AuthLayout>
-                <Suspense fallback={<ScreenSkeleton />}>
+                <Suspense fallback={<PageSkeleton route="login" />}>
                   <AuthPage />
                 </Suspense>
               </AuthLayout>
@@ -100,17 +101,17 @@ export const routes: RouteObject[] = [
           {
             element: <AppLayout />,
             children: [
-              { path: '/onboarding', element: <Suspense fallback={<ScreenSkeleton />}><OnboardingPage /></Suspense>, handle: { title: 'Welcome', description: 'Get started with LeanIQA.' } },
-              { path: '/science', element: <Suspense fallback={<ScreenSkeleton />}><SciencePage /></Suspense>, handle: { title: 'Why these numbers', description: 'Research behind your plan.' } },
-              { path: '/dashboard', element: <Suspense fallback={<DashboardSkeleton />}><DashboardPage /></Suspense>, handle: { title: 'Dashboard', description: 'Your daily nutrition and progress overview.' } },
-              { path: '/meals', element: <Suspense fallback={<MealLoggerSkeleton />}><MealLoggerPage /></Suspense>, handle: { title: 'Log Meal', description: 'Log your meals and track your macros.' } },
-              { path: '/progress', element: <Suspense fallback={<ProgressSkeleton />}><ProgressPage /></Suspense>, handle: { title: 'Progress', description: 'Track your long-term body transformation.' } },
-              { path: '/reports', element: <Suspense fallback={<WeeklyReportSkeleton />}><WeeklyReportPage /></Suspense>, handle: { title: 'Reports', description: 'Weekly compliance and activity report.' } },
-              { path: '/profile', element: <Suspense fallback={<ProfileSkeleton />}><ProfilePage /></Suspense>, handle: { title: 'Profile', description: 'Manage your LeanIQA profile.' } },
-              { path: '/pricing', element: <Suspense fallback={<ScreenSkeleton />}><PricingPage /></Suspense>, handle: { title: 'Pricing', description: 'Choose a subscription plan.' } },
-              { path: '/awards', element: <Suspense fallback={<AwardsSkeleton />}><AwardsPage /></Suspense>, handle: { title: 'Awards', description: 'View your earned achievements.' } },
-              { path: '/calorie', element: <Suspense fallback={<NutritionDetailSkeleton />}><CalorieDetailPage /></Suspense>, handle: { title: 'Calorie Detail', description: 'Detailed breakdown of your calorie intake.' } },
-              { path: '/protein', element: <Suspense fallback={<NutritionDetailSkeleton />}><ProteinDetailPage /></Suspense>, handle: { title: 'Protein Detail', description: 'Detailed breakdown of your protein intake.' } }
+              { path: '/onboarding', element: <Suspense fallback={<PageSkeleton route="onboarding" />}><OnboardingPage /></Suspense>, handle: { title: 'Welcome', description: 'Get started with LeanIQA.' } },
+              { path: '/science', element: <Suspense fallback={<PageSkeleton route="science" />}><SciencePage /></Suspense>, handle: { title: 'Why these numbers', description: 'Research behind your plan.' } },
+              { path: '/dashboard', element: <Suspense fallback={<PageSkeleton route="dashboard" />}><DashboardPage /></Suspense>, handle: { title: 'Dashboard', description: 'Your daily nutrition and progress overview.' } },
+              { path: '/meals', element: <Suspense fallback={<PageSkeleton route="meals" />}><MealLoggerPage /></Suspense>, handle: { title: 'Log Meal', description: 'Log your meals and track your macros.' } },
+              { path: '/progress', element: <Suspense fallback={<PageSkeleton route="progress" />}><ProgressPage /></Suspense>, handle: { title: 'Progress', description: 'Track your long-term body transformation.' } },
+              { path: '/reports', element: <Suspense fallback={<PageSkeleton route="reports" />}><WeeklyReportPage /></Suspense>, handle: { title: 'Reports', description: 'Weekly compliance and activity report.' } },
+              { path: '/profile', element: <Suspense fallback={<PageSkeleton route="profile" />}><ProfilePage /></Suspense>, handle: { title: 'Profile', description: 'Manage your LeanIQA profile.' } },
+              { path: '/pricing', element: <Suspense fallback={<PageSkeleton route="pricing" />}><PricingPage /></Suspense>, handle: { title: 'Pricing', description: 'Choose a subscription plan.' } },
+              { path: '/awards', element: <Suspense fallback={<PageSkeleton route="awards" />}><AwardsPage /></Suspense>, handle: { title: 'Awards', description: 'View your earned achievements.' } },
+              { path: '/calorie', element: <Suspense fallback={<PageSkeleton route="calorie" />}><CalorieDetailPage /></Suspense>, handle: { title: 'Calorie Detail', description: 'Detailed breakdown of your calorie intake.' } },
+              { path: '/protein', element: <Suspense fallback={<PageSkeleton route="protein" />}><ProteinDetailPage /></Suspense>, handle: { title: 'Protein Detail', description: 'Detailed breakdown of your protein intake.' } }
             ]
           }
         ]
@@ -119,15 +120,15 @@ export const routes: RouteObject[] = [
       {
         element: <PublicLayout />,
         children: [
-          { path: '/privacy', element: <Suspense fallback={<ScreenSkeleton />}><PrivacyPage /></Suspense>, handle: { title: 'Privacy Policy' } },
-          { path: '/terms', element: <Suspense fallback={<ScreenSkeleton />}><TermsPage /></Suspense>, handle: { title: 'Terms of Service' } },
-          { path: '/refund', element: <Suspense fallback={<ScreenSkeleton />}><RefundPage /></Suspense>, handle: { title: 'Refund Policy' } }
+          { path: '/privacy', element: <Suspense fallback={<PageSkeleton route="legal" />}><PrivacyPage /></Suspense>, handle: { title: 'Privacy Policy' } },
+          { path: '/terms', element: <Suspense fallback={<PageSkeleton route="legal" />}><TermsPage /></Suspense>, handle: { title: 'Terms of Service' } },
+          { path: '/refund', element: <Suspense fallback={<PageSkeleton route="legal" />}><RefundPage /></Suspense>, handle: { title: 'Refund Policy' } }
         ]
       },
       {
         path: '/about',
         element: (
-          <Suspense fallback={<ScreenSkeleton />}>
+          <Suspense fallback={<PageSkeleton route="landing" />}>
             <LandingPage />
           </Suspense>
         ),
@@ -140,7 +141,7 @@ export const routes: RouteObject[] = [
       },
       {
         path: '*',
-        element: <Suspense fallback={<ScreenSkeleton />}><NotFoundPage /></Suspense>,
+        element: <Suspense fallback={<PageSkeleton route="notFound" />}><NotFoundPage /></Suspense>,
         handle: { title: 'Page Not Found', description: 'The page you are looking for does not exist.' }
       }
     ]
