@@ -124,6 +124,15 @@ export const routes: RouteObject[] = [
           { path: '/refund', element: <Suspense fallback={<ScreenSkeleton />}><RefundPage /></Suspense>, handle: { title: 'Refund Policy' } }
         ]
       },
+      {
+        path: '/about',
+        element: (
+          <Suspense fallback={<ScreenSkeleton />}>
+            <LandingPage />
+          </Suspense>
+        ),
+        handle: { title: 'About LeanIQA' },
+      },
       ...devRoutes,
       {
         path: '/redirect',
