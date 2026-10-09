@@ -379,8 +379,8 @@ export function WeeklyReportPage() {
                </svg>
                <div className="absolute inset-0 flex items-center justify-center text-[24px] font-bold text-white">{loggedDaysCount}/7</div>
             </div>
-            <div className="text-[18px] font-semibold text-white mb-2 tracking-tight">Complete 7 days to unlock your first report.</div>
-            <div className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed mb-6 max-w-[240px]">
+            <div className="text-[17px] font-semibold text-white mb-2 tracking-tight">Complete 7 days to unlock your first report.</div>
+            <div className="text-[14px] text-[rgba(235,235,245,0.6)] leading-relaxed mb-6 max-w-[240px]">
               Keep logging your meals daily to generate accurate, personalized insights.
             </div>
             <button 
@@ -398,17 +398,17 @@ export function WeeklyReportPage() {
               <motion.div variants={itemVariants} className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-[24px] p-6 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-2xl flex flex-col items-center justify-center relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-[#D4FF00] opacity-[0.03] blur-2xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
                 <div className="text-[12px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.5)] mb-2 font-semibold">Avg Compliance</div>
-                <div className="text-[56px] font-bold text-white tracking-[-0.04em] leading-none mb-2">{avgCompliance}%</div>
+                <div className="text-[36px] font-bold text-white tracking-[-0.04em] leading-none mb-2">{avgCompliance}%</div>
               </motion.div>
               
               <div className="flex flex-col gap-3">
                 <motion.div variants={itemVariants} className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-[24px] p-6 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-2xl flex-1 flex flex-col justify-center">
                   <div className="text-[11px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.5)] mb-1 font-semibold">Avg Calories</div>
-                  <div className="text-[24px] font-bold text-white tracking-tight">{avgCalories} <span className="text-[13px] text-[rgba(235,235,245,0.5)] font-normal">kcal</span></div>
+                  <div className="text-[20px] font-bold text-white tracking-tight">{avgCalories} <span className="text-[13px] text-[rgba(235,235,245,0.5)] font-normal">kcal</span></div>
                 </motion.div>
                 <motion.div variants={itemVariants} className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-[24px] p-6 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-2xl flex-1 flex flex-col justify-center">
                   <div className="text-[11px] uppercase tracking-[0.05em] font-medium text-[rgba(255,255,255,0.5)] mb-1 font-semibold">Avg Protein</div>
-                  <div className="text-[24px] font-bold text-white tracking-tight">{avgProtein} <span className="text-[13px] text-[rgba(235,235,245,0.5)] font-normal">g</span></div>
+                  <div className="text-[20px] font-bold text-white tracking-tight">{avgProtein} <span className="text-[13px] text-[rgba(235,235,245,0.5)] font-normal">g</span></div>
                 </motion.div>
               </div>
             </div>
@@ -421,7 +421,7 @@ export function WeeklyReportPage() {
                   <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4FF00] opacity-[0.04] blur-3xl rounded-full translate-x-1/3 -translate-y-1/3"></div>
                   
                   <div className="flex items-center justify-between mb-4 relative z-10">
-                    <h2 className="text-[13px] font-semibold text-[rgba(235,235,245,0.6)] tracking-[0.05em] uppercase flex items-center gap-2">
+                    <h2 className="text-[12px] font-semibold text-[rgba(235,235,245,0.6)] tracking-[0.05em] uppercase flex items-center gap-2">
                       AI Coach Summary
                     </h2>
                     <div className="flex items-center gap-1.5 bg-[rgba(212,255,0,0.1)] px-2.5 py-1 rounded-full">
@@ -438,7 +438,7 @@ export function WeeklyReportPage() {
                           animate={{ height: 'auto' }}
                           className="overflow-hidden"
                         >
-                          <p className="text-[15px] text-white leading-relaxed leading-relaxed mb-3">
+                          <p className="text-[14px] text-white leading-relaxed leading-relaxed mb-3">
                             {aiCoachData.summaryShort}
                           </p>
                           <AnimatePresence>
@@ -449,7 +449,7 @@ export function WeeklyReportPage() {
                                 exit={{ opacity: 0, height: 0 }}
                                 transition={{ duration: 0.3, type: "spring", bounce: 0 }}
                               >
-                                <p className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed leading-relaxed pt-2 border-t border-[rgba(255,255,255,0.06)]">
+                                <p className="text-[14px] text-[rgba(235,235,245,0.6)] leading-relaxed leading-relaxed pt-2 border-t border-[rgba(255,255,255,0.06)]">
                                   {aiCoachData.summaryLong}
                                 </p>
                               </motion.div>
@@ -481,7 +481,7 @@ export function WeeklyReportPage() {
             <motion.div variants={itemVariants} className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-[24px] p-6 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-2xl mb-10">
                <div className="flex items-center gap-2 mb-6">
                  <TrendingUp size={16} className="text-[#D4FF00]" />
-                 <h2 className="text-[18px] font-semibold tracking-tight text-white tracking-tight">Daily Breakdown</h2>
+                 <h2 className="text-[17px] font-semibold tracking-tight text-white tracking-tight">Daily Breakdown</h2>
                </div>
                
                <div className="flex flex-col gap-4">
@@ -516,7 +516,7 @@ export function WeeklyReportPage() {
               <motion.div variants={itemVariants} className="flex flex-col gap-4 mb-10">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-2 h-2 rounded-full bg-[#D4FF00] animate-pulse" />
-                  <h2 className="text-[18px] font-semibold tracking-tight text-white tracking-tight">AI Report Generated</h2>
+                  <h2 className="text-[17px] font-semibold tracking-tight text-white tracking-tight">AI Report Generated</h2>
                 </div>
                 
                 <AnimatePresence>
@@ -537,8 +537,8 @@ export function WeeklyReportPage() {
                             <Icon size={18} />
                           </div>
                           <div>
-                            <div className="text-[18px] font-semibold tracking-tight text-white tracking-tight mb-1">{insight.title}</div>
-                            <div className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed leading-relaxed font-medium">{insight.body}</div>
+                            <div className="text-[17px] font-semibold tracking-tight text-white tracking-tight mb-1">{insight.title}</div>
+                            <div className="text-[14px] text-[rgba(235,235,245,0.6)] leading-relaxed leading-relaxed font-medium">{insight.body}</div>
                           </div>
                         </div>
                       </motion.div>
@@ -572,7 +572,7 @@ export function WeeklyReportPage() {
             {aiCoachData && (
               <motion.div variants={itemVariants} className="mb-12">
                 <div className="flex items-center justify-between mb-4 px-1">
-                  <h2 className="text-[13px] font-semibold text-[rgba(235,235,245,0.6)] tracking-[0.05em] uppercase">Recommendations</h2>
+                  <h2 className="text-[12px] font-semibold text-[rgba(235,235,245,0.6)] tracking-[0.05em] uppercase">Recommendations</h2>
                   <span className="text-[13px] text-[rgba(235,235,245,0.5)]">Based on your data</span>
                 </div>
                 
@@ -607,8 +607,8 @@ export function WeeklyReportPage() {
                         </div>
                         
                         <div className="flex-1">
-                          <h3 className="text-[18px] font-semibold tracking-tight text-white tracking-tight mb-2">{rec.title}</h3>
-                          <p className="text-[15px] text-[rgba(235,235,245,0.6)] leading-relaxed leading-relaxed mb-4">
+                          <h3 className="text-[17px] font-semibold tracking-tight text-white tracking-tight mb-2">{rec.title}</h3>
+                          <p className="text-[14px] text-[rgba(235,235,245,0.6)] leading-relaxed leading-relaxed mb-4">
                             {rec.description}
                           </p>
                           <div className={cn("inline-flex items-center px-2.5 py-1 rounded-md text-[12px] font-semibold tracking-wide", impactColor, impactBg)}>
