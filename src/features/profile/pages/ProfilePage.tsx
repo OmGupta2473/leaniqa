@@ -399,6 +399,13 @@ export function ProfilePage() {
             </button>
           )}
           <button
+            onClick={() => navigate('/about')}
+            className="flex items-center justify-center gap-2 w-full py-3.5 rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.7)] font-medium text-[15px] transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+          >
+            <img src="/logo.png" alt="LeanIQA" className="h-6 w-6 rounded-md" />
+            About Us
+          </button>
+          <button
             onClick={() => authService.logout()}
             className="flex items-center justify-center gap-2 w-full py-3.5 rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.7)] font-medium text-[15px] transition-colors hover:bg-[rgba(255,255,255,0.06)]"
           >
