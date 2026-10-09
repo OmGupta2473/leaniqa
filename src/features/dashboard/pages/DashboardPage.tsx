@@ -157,7 +157,7 @@ const ringCircumference = 2 * Math.PI * 42;
         {/* Header */}
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h2 className="text-[32px] font-semibold tracking-tight text-white flex items-center gap-2 leading-tight">
+            <h2 className="text-[22px] font-semibold tracking-tight text-white flex items-center gap-2 leading-tight">
               Ready, {name.split(' ')[0]}!
             </h2>
             <div className="text-[14px] font-medium text-[rgba(235,235,245,0.5)] mt-0.5 flex items-center gap-2">
@@ -207,7 +207,7 @@ const ringCircumference = 2 * Math.PI * 42;
               </div>
               
               <div className="flex items-baseline gap-1 mb-6">
-                <span className="text-[48px] font-bold text-white tracking-tighter leading-none"><AnimatedNumber value={eatenKcal} duration={1000} /></span>
+                <span className="text-[36px] font-bold text-white tracking-tighter leading-none"><AnimatedNumber value={eatenKcal} duration={1000} /></span>
                 <span className="text-[20px] font-semibold text-[rgba(235,235,245,0.4)]">/ {dailyTargetKcal}</span>
                 <span className="text-[13px] font-medium text-[rgba(235,235,245,0.4)] ml-1 uppercase tracking-widest">kcal</span>
               </div>
@@ -230,7 +230,7 @@ const ringCircumference = 2 * Math.PI * 42;
                 
                 <div className="flex flex-col">
                   <div className="flex items-baseline gap-1 mb-1">
-                    <span className="text-[32px] font-bold text-white tracking-tight leading-none"><AnimatedNumber value={remainingKcal > 0 ? remainingKcal : 0} duration={800} /></span>
+                    <span className="text-[24px] font-bold text-white tracking-tight leading-none"><AnimatedNumber value={remainingKcal > 0 ? remainingKcal : 0} duration={800} /></span>
                     <span className="text-[14px] font-medium text-white/60">kcal</span>
                   </div>
                   <div className="text-[14px] font-medium text-white/50 mb-3">Remaining</div>
@@ -328,7 +328,7 @@ const ringCircumference = 2 * Math.PI * 42;
                 </div>
                 <div>
                   <div className="flex items-baseline gap-1 mb-1">
-                    <span className="text-[32px] font-bold tracking-tighter text-white leading-none">
+                    <span className="text-[24px] font-bold tracking-tighter text-white leading-none">
                       {weightKg > 0 ? weightKg : '--'}
                     </span>
                     <span className="text-[14px] font-semibold text-[rgba(235,235,245,0.4)]">kg</span>
@@ -376,7 +376,7 @@ const ringCircumference = 2 * Math.PI * 42;
                    <span className="text-[11px] font-bold text-[rgba(235,235,245,0.5)] tracking-widest uppercase">Daily Score</span>
                 </div>
                 <div className="flex items-baseline gap-1 mb-1.5">
-                  <span className="text-[44px] tracking-tighter font-bold text-white leading-none">
+                  <span className="text-[36px] tracking-tighter font-bold text-white leading-none">
                     <AnimatedNumber value={completionScore} duration={1000} />
                   </span>
                   <span className="text-[18px] font-semibold text-[rgba(235,235,245,0.4)]">/ 100</span>
