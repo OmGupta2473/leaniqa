@@ -68,24 +68,14 @@ export function NextMilestoneHero({ evaluation }: NextMilestoneHeroProps) {
         </div>
 
         <div className="flex justify-center mb-4 w-full">
-          <div className="relative w-20 h-20 md:w-24 md:h-24">
-            <svg viewBox="0 0 100 100" className="absolute inset-0 -rotate-90">
-              {/* track */}
-              <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6" />
-              {/* progress — reuse definition.primaryColor */}
-              <circle cx="50" cy="50" r="42" fill="none" stroke={definition.primaryColor} strokeWidth="6" strokeLinecap="round" strokeDasharray={2 * Math.PI * 42} strokeDashoffset={(2 * Math.PI * 42) * (1 - progressPct / 100)} style={{ transition: 'stroke-dashoffset 800ms ease' }} />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <AwardMedal
-                category={definition.category as AwardCategory}
-                symbol={definition.symbol}
-                current={primary.current}
-                target={primary.target}
-                unlocked={false}
-                size={36}
-              />
-            </div>
-          </div>
+          <AwardMedal
+            category={definition.category as AwardCategory}
+            symbol={definition.symbol}
+            current={primary.current}
+            target={primary.target}
+            unlocked={false}
+            size={72}
+          />
         </div>
 
         <h3 className="text-[13px] md:text-[15px] font-bold tracking-tight text-white text-center mb-3">
