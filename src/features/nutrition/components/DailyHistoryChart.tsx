@@ -11,9 +11,10 @@ interface DailyHistoryChartProps {
   startDateStr?: string;
   unit: string;
   type: "calorie" | "protein";
+  hitTolerance?: number;
 }
 
-export function DailyHistoryChart({ logs, todayStr, startDateStr, unit, type }: DailyHistoryChartProps) {
+export function DailyHistoryChart({ logs, todayStr, startDateStr, unit, type, hitTolerance }: DailyHistoryChartProps) {
   // 1. Sort logs and fill missing days
   const filledLogs = useMemo(() => {
     const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date));
@@ -130,7 +131,9 @@ export function DailyHistoryChart({ logs, todayStr, startDateStr, unit, type }: 
           const isToday = day.date === todayStr;
           
           let isSuccess = false;
-          if (type === "calorie") {
+          if (hitTolerance !== undefined) {
+             isSuccess = Math.abs(day.actual - day.target) <= hitTolerance && day.actual > 0;
+          } else if (type === "calorie") {
              isSuccess = day.actual <= day.target && day.actual > 0;
           } else {
              isSuccess = day.actual >= day.target && day.actual > 0;
