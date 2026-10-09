@@ -17,6 +17,7 @@ import { EditProfileModal } from '../components/EditProfileModal';
 import { EditNutritionModal } from '../components/EditNutritionModal';
 import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
 import { ProfileSkeleton } from '@/shared/components/Skeletons';
+import { Logo } from '@/shared/components/Logo';
 
 function displayVal(val: any) {
   if (val === undefined || val === null || val === '') return '—';
@@ -402,7 +403,7 @@ export function ProfilePage() {
             onClick={() => navigate('/about')}
             className="flex items-center justify-center gap-2 w-full py-3.5 rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.7)] font-medium text-[15px] transition-colors hover:bg-[rgba(255,255,255,0.06)]"
           >
-            <img src="/logo.png" alt="LeanIQA" className="h-8 w-8 object-contain" />
+            <Logo className="w-10 h-10" />
             About Us
           </button>
           <button
