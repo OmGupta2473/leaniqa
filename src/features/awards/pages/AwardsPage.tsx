@@ -23,7 +23,7 @@ import { awardService } from '@/features/awards/services/awardService';
 import { NextMilestoneHero } from '../components/NextMilestoneHero';
 import { PremiumAwardCard } from '../components/PremiumAwardCard';
 import { getKolkataDateString } from "@/shared/utils/timezone";
-import { Flame, ChevronLeft, X, Trophy, AlertTriangle, Loader2 } from "lucide-react";
+import { Flame, ChevronLeft, ChevronRight, X, Trophy, AlertTriangle, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/shared/utils/utils";
 import { haptics } from '@/shared/utils/haptics';
@@ -192,6 +192,27 @@ export function AwardsPage() {
   const circumference = 2 * Math.PI * 45;
   const strokeDashoffset = circumference - (progressPercent / 100) * circumference;
 
+  const activeDays = useMemo(() => {
+    const now = new Date();
+    const jsDay = now.getDay();
+    const offsetToMonday = jsDay === 0 ? -6 : 1 - jsDay;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + offsetToMonday);
+    const weekKeys: string[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      weekKeys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+    }
+    const loggedDays = new Set(
+      meals.map((m) => {
+        const d = new Date(m.meal_time);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      }),
+    );
+    return weekKeys.map((k) => loggedDays.has(k));
+  }, [meals]);
+
   const containerVariants: any = {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { staggerChildren: 0.05, delayChildren: 0.1 } }
@@ -241,79 +262,64 @@ export function AwardsPage() {
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-2 items-stretch gap-3 md:gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 items-stretch">
       {/* Premium Hero Streak Card */}
       <motion.div 
         initial={{ opacity: 0, y: 20, scale: 0.95 }} 
         animate={{ opacity: 1, y: 0, scale: 1 }} 
         transition={{ type: 'spring', stiffness: 300, damping: 25, delay: 0.05 }}
-        className="relative rounded-[32px] p-5 flex flex-col items-center justify-center text-center overflow-hidden border border-[rgba(255,255,255,0.05)] h-full"
+        className="relative rounded-[28px] p-6 flex flex-col overflow-hidden border border-[rgba(255,255,255,0.05)] h-full"
         style={{
           background: 'linear-gradient(180deg, rgba(20,20,22,1) 0%, rgba(10,10,12,1) 100%)',
           boxShadow: '0 20px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)'
         }}
       >
-        {/* Animated Background Glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[200px] h-[200px] bg-[#FF4D1C] rounded-full blur-[80px] opacity-[0.15] animate-pulse" />
-        
-        {todayMet && (
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="absolute top-5 bg-[rgba(212,255,0,0.15)] border border-[rgba(212,255,0,0.3)] px-3 py-1.5 rounded-full text-[10px] font-bold text-[#D4FF00] tracking-widest uppercase backdrop-blur-md shadow-[0_0_15px_rgba(212,255,0,0.1)]"
-          >
-            Today's Streak Secured ✓
-          </motion.div>
-        )}
+        <div className="text-[20px] font-semibold text-white">Current Streak</div>
 
-        {/* Animated Progress Ring */}
-        <div className="relative w-20 h-20 md:w-24 md:h-24 flex items-center justify-center mb-3 mt-4 md:mb-4 md:mt-6">
-          <svg className="absolute inset-0 w-full h-full -rotate-90 transform" viewBox="0 0 100 100">
-            {/* Background Ring */}
-            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="6" />
-            {/* Foreground Ring */}
-            <motion.circle 
-              cx="50" cy="50" r="45" 
-              fill="none" 
-              stroke="url(#streakGradient)" 
-              strokeWidth="6" 
-              strokeLinecap="round"
-              initial={{ strokeDashoffset: circumference }}
-              animate={{ strokeDashoffset }}
-              transition={{ duration: 1.5, ease: "easeOut", delay: 0.2 }}
-              strokeDasharray={circumference}
-            />
-            <defs>
-              <linearGradient id="streakGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#FF4D1C" />
-                <stop offset="100%" stopColor="#FF8B1C" />
-              </linearGradient>
-            </defs>
-          </svg>
-          
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className="relative">
-              <Flame size={22} color="#FF4D1C" className="relative z-10 drop-shadow-[0_0_10px_rgba(255,77,28,0.5)]" strokeWidth={1.5} />
+        <div className="flex justify-between items-start mt-4">
+          <div>
+            <div className="text-[80px] font-bold text-white tracking-tighter leading-none">{currentStreak}</div>
+            <div className="text-[28px] text-zinc-500 font-medium mt-1">days</div>
+          </div>
+          <div
+            className="w-20 h-20 rounded-full flex items-center justify-center shrink-0"
+            style={{ background: 'rgba(255,77,28,0.08)', border: '1px solid rgba(255,77,28,0.15)', boxShadow: '0 0 32px rgba(255,77,28,0.15)' }}
+          >
+            <Flame size={36} className="text-[#FF4D1C]" strokeWidth={1.8} />
+          </div>
+        </div>
+
+        <div className="flex justify-between mt-6">
+          {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+            <div key={i} className="flex flex-col items-center gap-2">
+              <div className={`w-3.5 h-3.5 rounded-full ${activeDays[i] ? 'bg-[#FF4D1C] shadow-[0_0_10px_rgba(255,77,28,0.5)]' : 'bg-[rgba(255,255,255,0.12)]'}`} />
+              <span className="text-[11px] text-zinc-500 font-medium">{d}</span>
             </div>
-          </div>
+          ))}
         </div>
-        
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.3, type: 'spring' }}
-          className="text-[28px] md:text-[40px] font-bold text-white tracking-tighter leading-none mb-1 drop-shadow-[0_8px_32px_rgba(0,0,0,0.15)]"
+
+        <div className="h-px bg-[rgba(255,255,255,0.06)] my-5" />
+
+        <button
+          onClick={() => navigate('/awards')}
+          className="w-full flex items-center gap-4 rounded-[20px] px-4 py-4 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] text-left transition-colors hover:bg-[rgba(255,255,255,0.05)]"
         >
-          {currentStreak}
-        </motion.div>
-        <div className="text-[10px] md:text-[12px] text-[rgba(255,255,255,0.5)] font-medium tracking-wide uppercase">Day Streak</div>
-        
-        <div className="mt-4 bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.06)] rounded-[20px] px-3 md:px-5 py-2 md:py-3 flex items-center gap-2 md:gap-3">
-          <Trophy size={16} className="text-[#D4FF00] opacity-80" />
-          <div className="text-[13px] text-[rgba(255,255,255,0.6)]">
-            Personal best: <span className="text-white font-bold ml-1">{bestStreak} days</span>
+          <div
+            className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
+            style={{ background: 'rgba(212,255,0,0.10)' }}
+          >
+            <Trophy size={22} className="text-[#D4FF00]" />
           </div>
-        </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[13px] text-zinc-500 font-medium">Personal Best</div>
+            <div className="text-[22px] font-bold text-white tracking-tight leading-tight">{bestStreak} days</div>
+          </div>
+          <ChevronRight size={20} className="text-zinc-500 shrink-0" />
+        </button>
+
+        <p className="text-[14px] text-center text-zinc-500 leading-relaxed mt-6">
+          Keep logging your meals to build a stronger you.
+        </p>
       </motion.div>
 
       <NextMilestoneHero evaluation={evaluation} />
