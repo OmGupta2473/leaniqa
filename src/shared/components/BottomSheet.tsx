@@ -25,21 +25,22 @@ export function BottomSheet({ isOpen, onClose, children, maxHeight = '90dvh' }: 
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.25 }}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.72)',
-            zIndex: 100,
-            display: 'flex',
-            alignItems: 'flex-end',
-          }}
-          onClick={onClose}
-        >
+<motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.55)',
+              zIndex: 100,
+              display: 'flex',
+              alignItems: 'center',
+              padding: 'env(safe-area-inset-top) 16px env(safe-area-inset-bottom) 16px',
+            }}
+            onClick={onClose}
+          >
           <motion.div
             variants={slideUpVariants}
             initial="hidden"
@@ -50,25 +51,26 @@ export function BottomSheet({ isOpen, onClose, children, maxHeight = '90dvh' }: 
               width: '100%',
               maxWidth: '480px',
               margin: '0 auto',
-              background: 'rgba(28,28,30,0.72)',
+              background: 'rgba(22,22,24,0.90)',
               backdropFilter: 'blur(48px) saturate(180%)',
               WebkitBackdropFilter: 'blur(48px) saturate(180%)',
-              borderRadius: '24px 24px 0 0',
-              borderTop: '0.5px solid rgba(255,255,255,0.1)',
-              maxHeight,
+              borderRadius: '24px',
+              border: '0.5px solid rgba(255,255,255,0.08)',
+              maxHeight: 'calc(100dvh - 120px)',
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06)',
             }}
           >
             {/* Drag Handle */}
             <div 
               style={{
-                width: '36px',
-                height: '4px',
-                background: 'rgba(255,255,255,0.2)',
+                width: '32px',
+                height: '3.5px',
+                background: 'rgba(255,255,255,0.18)',
                 borderRadius: '99px',
-                margin: '10px auto 0',
+                margin: '8px auto 0',
                 display: 'block',
                 flexShrink: 0
               }}
@@ -78,7 +80,7 @@ export function BottomSheet({ isOpen, onClose, children, maxHeight = '90dvh' }: 
               ref={sheetContentRef}
               style={{
                 overflowY: 'auto',
-                paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)',
+                paddingBottom: '16px',
               }}
             >
               {children}
