@@ -167,26 +167,26 @@ export function LogCalendar({
           <button
             onClick={goPrevMonth}
             disabled={!canGoPrev}
-            className="p-2 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-800/50 disabled:opacity-30 disabled:cursor-not-allowed"
             aria-label="Previous month"
+            className="w-11 h-11 rounded-full flex items-center justify-center bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] text-zinc-300 transition-colors hover:bg-[rgba(255,255,255,0.08)] disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <ChevronLeft size={20} />
           </button>
-          <h3 className="text-[18px] font-semibold text-white text-center flex-1">
+          <h3 className="text-[22px] font-semibold text-white tracking-tight">
             {formatMonthYear(viewMonth)}
           </h3>
           <button
             onClick={goNextMonth}
             disabled={!canGoNext}
-            className="p-2 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-800/50 disabled:opacity-30 disabled:cursor-not-allowed"
             aria-label="Next month"
+            className="w-11 h-11 rounded-full flex items-center justify-center bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] text-zinc-300 transition-colors hover:bg-[rgba(255,255,255,0.08)] disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <ChevronRight size={20} />
           </button>
         </div>
 
         {/* Weekday headers */}
-        <div className="grid grid-cols-7 gap-1 px-4 pb-2 text-center text-[11px] font-medium text-zinc-500 uppercase tracking-wider">
+        <div className="grid grid-cols-7 gap-1 px-4 pb-3 text-center text-[11px] font-medium text-zinc-500 uppercase tracking-[0.08em]">
           {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
             <div key={d}>{d}</div>
           ))}
@@ -230,42 +230,51 @@ export function LogCalendar({
                   type="button"
                   onClick={() => handleDayClick(dateStr)}
                   disabled={isDisabled}
-                  whileTap={{ scale: 0.95 }}
+                  whileTap={{ scale: 0.92 }}
                   className={cn(
-                    'relative flex flex-col items-center justify-center aspect-square min-h-[40px] rounded-[14px]',
+                    'relative flex flex-col items-center justify-center',
+                    'aspect-square min-h-[52px] rounded-[16px]',
                     'transition-colors duration-150',
                     isDisabled
-                      ? 'opacity-30 cursor-not-allowed'
-                      : 'cursor-pointer hover:bg-zinc-900/50',
-                    isSelected && 'ring-2 ring-[#D4FF00]',
-                    isTodayCell && !isSelected && 'ring-1 ring-[#D4FF00]/50',
-                    !showRing && 'opacity-50'
+                      ? 'cursor-not-allowed'
+                      : 'cursor-pointer hover:bg-zinc-900/40',
+                    !showRing && isCurrentMonth && 'opacity-90',
+                    !isCurrentMonth && 'opacity-25',
                   )}
                   style={{
                     background: isSelected
-                      ? 'rgba(212,255,0,0.1)'
+                      ? 'radial-gradient(circle at 50% 40%, rgba(212,255,0,0.18) 0%, rgba(212,255,0,0.04) 60%, transparent 100%)'
                       : isTodayCell
-                      ? 'rgba(212,255,0,0.05)'
+                      ? 'rgba(255,255,255,0.03)'
                       : 'transparent',
+                    boxShadow: isSelected
+                      ? 'inset 0 0 0 1.5px rgba(212,255,0,0.45), 0 0 24px rgba(212,255,0,0.18)'
+                      : 'none',
                   }}
                 >
-                  {showRing && (
-                    <div className="mb-1">
+                  <div className="flex items-center justify-center h-[26px]">
+                    {showRing ? (
                       <MicroRing
                         current={1}
                         goal={1}
-                        size={20}
-                        strokeWidth={2}
-                        color={color}
+                        size={26}
+                        strokeWidth={2.2}
+                        color={isSelected ? '#D4FF00' : color}
                       />
-                    </div>
-                  )}
+                    ) : (
+                      <div className="w-[26px] h-[26px] rounded-full border border-[rgba(255,255,255,0.06)]" />
+                    )}
+                  </div>
                   <span
                     className={cn(
-                      'text-[13px] font-medium',
-                      isCurrentMonth ? 'text-white' : 'text-zinc-600',
-                      isTodayCell && 'text-[#D4FF00] font-bold',
-                      isDisabled && 'opacity-40'
+                      'text-[12px] font-semibold mt-[2px] tabular-nums',
+                      isSelected
+                        ? 'text-[#D4FF00]'
+                        : isTodayCell
+                        ? 'text-white'
+                        : isCurrentMonth
+                        ? 'text-white/80'
+                        : 'text-zinc-600',
                     )}
                   >
                     {day.getDate()}
@@ -274,6 +283,26 @@ export function LogCalendar({
               );
             })}
           </div>
+        </div>
+
+        {/* Legend */}
+        <div className="grid grid-cols-4 gap-2 px-5 py-4 border-t border-[rgba(255,255,255,0.05)]">
+          {[
+            { label: 'Poor', color: '#FF4D1C' },
+            { label: 'Okay', color: '#fbbf24' },
+            { label: 'Good', color: '#D4FF00' },
+            { label: 'No data', color: 'rgba(255,255,255,0.15)' },
+          ].map((item) => (
+            <div key={item.label} className="flex flex-col items-center gap-1.5">
+              <div
+                className="w-4 h-4 rounded-full border-2"
+                style={{ borderColor: item.color }}
+              />
+              <span className="text-[10px] font-medium text-zinc-500 tracking-wide">
+                {item.label}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </BottomSheet>
