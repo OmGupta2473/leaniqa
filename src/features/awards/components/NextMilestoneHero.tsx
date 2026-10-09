@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { motion } from 'motion/react';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, ChevronRight } from 'lucide-react';
 import {
   AWARD_BY_ID,
   nextClosestAward,
@@ -59,103 +59,115 @@ export function NextMilestoneHero({ evaluation }: NextMilestoneHeroProps) {
       />
 
       <div className="relative flex flex-col items-center px-3 md:px-4 pt-4 md:pt-5 pb-3 md:pb-4 text-center">
-        <div className="flex items-center gap-1 md:gap-2 text-[9px] md:text-[10px] font-semibold uppercase tracking-[0.18em] md:tracking-[0.22em] text-[#D4FF00] mb-2 md:mb-3">
-          <Sparkles className="h-3 w-3" />
-          Next milestone
+        <div className="flex items-center justify-between mb-5 w-full">
+          <div className="flex items-center gap-2">
+            <Sparkles size={14} className="text-[#D4FF00]" />
+            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500">Next Milestone</span>
+          </div>
+          <ChevronRight size={18} className="text-zinc-500" />
         </div>
 
-        <div className="mb-2 md:mb-3">
-          <AwardMedal
-            category={definition.category as AwardCategory}
-            symbol={definition.symbol}
-            current={primary.current}
-            target={primary.target}
-            unlocked={false}
-            size={44}
-          />
+        <div className="flex justify-center mb-4 w-full">
+          <div className="relative w-32 h-32">
+            <svg viewBox="0 0 100 100" className="absolute inset-0 -rotate-90">
+              {/* track */}
+              <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6" />
+              {/* progress — reuse definition.primaryColor */}
+              <circle cx="50" cy="50" r="42" fill="none" stroke={definition.primaryColor} strokeWidth="6" strokeLinecap="round" strokeDasharray={2 * Math.PI * 42} strokeDashoffset={(2 * Math.PI * 42) * (1 - progressPct / 100)} style={{ transition: 'stroke-dashoffset 800ms ease' }} />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <AwardMedal
+                category={definition.category as AwardCategory}
+                symbol={definition.symbol}
+                current={primary.current}
+                target={primary.target}
+                unlocked={false}
+                size={56}
+              />
+            </div>
+          </div>
         </div>
 
-        <h3 className="text-[13px] md:text-[17px] font-bold tracking-tight text-white mb-1">
+        <h3 className="text-[22px] font-bold tracking-tight text-white text-center mb-4">
           {definition.name}
         </h3>
 
-        <div className="flex flex-wrap items-center justify-center gap-1 md:gap-2 mb-2 md:mb-3">
+        <div className="flex items-center justify-center gap-2 mb-6">
           <span
-            className="rounded-full border px-2 md:px-2.5 py-0.5 text-[9px] md:text-[10px] font-semibold uppercase tracking-wider"
+            className="rounded-full px-4 py-1.5 text-[12px] font-semibold uppercase tracking-wider"
             style={{
-              borderColor: `${definition.primaryColor}35`,
+              border: `1px solid ${definition.primaryColor}55`,
               color: definition.primaryColor,
             }}
           >
             {definition.category}
           </span>
-          <span className="rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] px-2 md:px-2.5 py-0.5 text-[9px] md:text-[10px] font-medium text-zinc-400">
+          <span className="rounded-full px-4 py-1.5 text-[12px] font-semibold text-zinc-300 border border-[rgba(255,255,255,0.08)]">
             {definition.target} {definition.unitLabel}
           </span>
         </div>
 
-        <div className="w-full">
-          <div className="mb-1 md:mb-2 flex justify-between text-[9px] md:text-[11px] uppercase tracking-wider text-zinc-500">
-            <span>Progress</span>
-            <span className="tabular-nums">
+        <div className="mb-4 w-full">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-500">Progress</span>
+            <span className="text-[13px] font-semibold text-white tabular-nums">
               {primary.current} / {primary.target}
             </span>
           </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-[rgba(255,255,255,0.06)]">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${progressPct}%` }}
-              transition={{ duration: 1, ease: [0.34, 1.56, 0.64, 1], delay: 0.15 }}
+          <div className="h-2 rounded-full bg-[rgba(255,255,255,0.06)] overflow-hidden">
+            <div
               className="h-full rounded-full"
               style={{
+                width: `${progressPct}%`,
                 background: `linear-gradient(90deg, ${definition.primaryColor}, ${definition.accentColor})`,
                 boxShadow: `0 0 12px ${definition.primaryColor}60`,
+                transition: 'width 800ms ease',
               }}
             />
           </div>
+          <p className="text-center text-[13px] text-zinc-400 mt-3">
+            {getAwardDistanceCopy(definition.category, primary.current, primary.target)}
+          </p>
         </div>
-
-        <p className="mt-2 md:mt-3 text-[10px] md:text-[12px] font-medium text-zinc-300">
-          {getAwardDistanceCopy(
-            definition.category,
-            primary.current,
-            primary.target,
-          )}
-        </p>
       </div>
 
       {nextThree.length > 0 && (
-        <div className="border-t border-[rgba(255,255,255,0.05)] px-3 md:px-4 py-2 md:py-3">
-          <div className="mb-3 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
-            Coming up
-          </div>
-          <div className="flex justify-center gap-2 md:gap-3">
-            {nextThree.map((p) => {
-              const d = AWARD_BY_ID[p.id];
-              if (!d) return null;
-              return (
-                <div
-                  key={p.id}
-                  className="flex flex-col items-center gap-1"
-                  title={d.name}
-                >
+        <>
+          <div className="h-px bg-[rgba(255,255,255,0.06)] my-5" />
+
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-500">Coming Up</span>
+              <ChevronRight size={16} className="text-zinc-500" />
+            </div>
+            <div className="flex justify-around">
+              {nextThree.map((p) => {
+                const d = AWARD_BY_ID[p.id];
+                if (!d) return null;
+                return (
                   <div
-                    className="flex h-7 w-7 md:h-8 md:w-8 items-center justify-center rounded-xl md:rounded-2xl text-[12px] md:text-[14px] opacity-70"
-                    style={{
-                      background: `linear-gradient(135deg, ${d.primaryColor}18, ${d.primaryColor}04)`,
-                      border: `1px solid ${d.primaryColor}25`,
-                    }}
+                    key={p.id}
+                    className="flex flex-col items-center gap-2"
+                    title={d.name}
                   >
-                    {d.symbol}
+                    <div
+                      className="w-14 h-14 rounded-full flex items-center justify-center text-[26px]"
+                      style={{
+                        background: `radial-gradient(circle at 30% 30%, ${d.primaryColor}22, ${d.primaryColor}06)`,
+                        border: `1px solid ${d.primaryColor}30`,
+                      }}
+                    >
+                      {d.symbol}
+                    </div>
+                    <span className="text-[13px] font-semibold text-zinc-400 tabular-nums">
+                      {Math.round(p.percentage)}%
+                    </span>
                   </div>
-                  <span className="text-[8px] md:text-[9px] uppercase tracking-wider text-zinc-500 tabular-nums">
-                    {Math.round(p.percentage)}%
-                  </span>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </motion.section>
   );
