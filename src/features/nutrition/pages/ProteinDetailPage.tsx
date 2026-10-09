@@ -81,6 +81,8 @@ export function ProteinDetailPage() {
     carbs: onboardingData?.targetMacros?.carbs ?? 220,
   }[macro];
 
+  const MACRO_TOLERANCE = { protein: 5, fat: 5, carbs: 20 } as const;
+
   const todayStr = getLocalDateString();
   const todayMeals = meals.filter(m => {
     const d = new Date(m.meal_time);
@@ -230,6 +232,7 @@ export function ProteinDetailPage() {
           startDateStr={goal?.created_at ? getLocalDateString(new Date(goal.created_at)) : undefined}
           unit="g" 
           type="protein" 
+          hitTolerance={MACRO_TOLERANCE[macro]}
         />
       </motion.div>
 
