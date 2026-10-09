@@ -159,11 +159,11 @@ export function LogCalendar({
     <BottomSheet
       isOpen={isOpen}
       onClose={onClose}
-      maxHeight="90dvh"
+      maxHeight="auto"
     >
       <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/50">
+        <div className="flex items-center justify-between px-5 pt-4 pb-3">
           <button
             onClick={goPrevMonth}
             disabled={!canGoPrev}
@@ -232,7 +232,7 @@ export function LogCalendar({
                   disabled={isDisabled}
                   whileTap={{ scale: 0.95 }}
                   className={cn(
-                    'relative flex flex-col items-center justify-center aspect-square min-h-[56px] rounded-[16px]',
+                    'relative flex flex-col items-center justify-center aspect-square min-h-[40px] rounded-[14px]',
                     'transition-colors duration-150',
                     isDisabled
                       ? 'opacity-30 cursor-not-allowed'
