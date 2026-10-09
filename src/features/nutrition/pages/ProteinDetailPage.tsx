@@ -225,7 +225,7 @@ export function ProteinDetailPage() {
 
       {/* 7-Day History Chart */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-[20px] bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] p-4 mb-5 shadow-sm backdrop-blur-xl">
-        <div className="text-[12px] font-semibold text-[rgba(235,235,245,0.5)] uppercase tracking-widest mb-2">Daily protein history</div>
+        <div className="text-[12px] font-semibold text-[rgba(235,235,245,0.5)] uppercase tracking-widest mb-2">Daily {macro} history</div>
         <DailyHistoryChart 
           logs={chartData} 
           todayStr={todayStr} 
@@ -233,6 +233,7 @@ export function ProteinDetailPage() {
           unit="g" 
           type="protein" 
           hitTolerance={MACRO_TOLERANCE[macro]}
+          targetOverride={target_protein}
         />
       </motion.div>
 

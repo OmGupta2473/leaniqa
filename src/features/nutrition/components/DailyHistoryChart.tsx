@@ -12,9 +12,10 @@ interface DailyHistoryChartProps {
   unit: string;
   type: "calorie" | "protein";
   hitTolerance?: number;
+  targetOverride?: number;
 }
 
-export function DailyHistoryChart({ logs, todayStr, startDateStr, unit, type, hitTolerance }: DailyHistoryChartProps) {
+export function DailyHistoryChart({ logs, todayStr, startDateStr, unit, type, hitTolerance, targetOverride }: DailyHistoryChartProps) {
   // 1. Sort logs and fill missing days
   const filledLogs = useMemo(() => {
     const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date));
@@ -81,7 +82,7 @@ export function DailyHistoryChart({ logs, todayStr, startDateStr, unit, type, hi
   const displayDays = Array.from({ length: 7 }).map((_, i) => pageData[i] || null);
 
   const validDays = displayDays.filter(d => d !== null);
-  const currentTarget = validDays.length > 0 ? validDays[validDays.length - 1].target : 0;
+  const currentTarget = targetOverride ?? (validDays.length > 0 ? validDays[validDays.length - 1].target : 0);
   
   const chartAreaHeight = 120;
   const maxVal = Math.max(...displayDays.map(d => d ? d.actual : 0), currentTarget * 1.2, 10);
@@ -132,7 +133,7 @@ export function DailyHistoryChart({ logs, todayStr, startDateStr, unit, type, hi
           
           let isSuccess = false;
           if (hitTolerance !== undefined) {
-             isSuccess = Math.abs(day.actual - day.target) <= hitTolerance && day.actual > 0;
+             isSuccess = Math.abs(day.actual - (targetOverride ?? day.target)) <= hitTolerance && day.actual > 0;
           } else if (type === "calorie") {
              isSuccess = day.actual <= day.target && day.actual > 0;
           } else {
@@ -167,11 +168,11 @@ export function DailyHistoryChart({ logs, todayStr, startDateStr, unit, type, hi
       <div className="flex flex-wrap items-center gap-[16px] mt-2">
         <div className="flex items-center gap-[6px]">
           <div className="w-[8px] h-[8px] rounded-full bg-[#D4FF00]"></div>
-          <span className="text-[10px] text-[#EBEBF599] uppercase tracking-[0.05em] font-bold">{type === "calorie" ? "Under Target" : "Target Hit"}</span>
+          <span className="text-[10px] text-[#EBEBF599] uppercase tracking-[0.05em] font-bold">{type === "calorie" ? "Under Target" : "In range"}</span>
         </div>
         <div className="flex items-center gap-[6px]">
           <div className="w-[8px] h-[8px] rounded-full bg-[#FF4D1C]"></div>
-          <span className="text-[10px] text-[#EBEBF599] uppercase tracking-[0.05em] font-bold">{type === "calorie" ? "Over Target" : "Missed Target"}</span>
+          <span className="text-[10px] text-[#EBEBF599] uppercase tracking-[0.05em] font-bold">{type === "calorie" ? "Over Target" : "Not in range"}</span>
         </div>
         <div className="flex items-center gap-[6px]">
           <div className="w-[8px] h-[8px] rounded-full bg-[#737373]"></div>
