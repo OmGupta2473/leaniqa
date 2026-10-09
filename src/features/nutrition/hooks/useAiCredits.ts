@@ -29,7 +29,7 @@ export function useAiCredits() {
       if (usageError) throw usageError;
       const rows = Array.isArray(usageData) ? usageData : usageData ? [usageData] : [];
       const used = (rows[0] as { usage_count?: number } | undefined)?.usage_count ?? 0;
-      return { used, limit: 15, remaining: Math.max(0, 15 - used) };
+      return { used, limit: 5, remaining: Math.max(0, 5 - used) };
     },
   });
 

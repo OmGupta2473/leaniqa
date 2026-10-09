@@ -7,7 +7,7 @@ import { useChatStore } from "@/app/store";
 import { useNutritionStore } from "../store/nutritionStore";
 import {
   Send, Loader2, Dumbbell, Lightbulb, Sun, Sunrise, Moon, Coffee, Plus, X, ChevronLeft, ChevronRight, ArrowRight, ChevronDown, 
- AlertTriangle, Pencil } from "lucide-react";
+ Zap, AlertTriangle, Pencil } from "lucide-react";
 import { EmptyState } from '@/shared/components/EmptyState';
 import { CustomMealModal } from '../components/CustomMealModal';
 import { PreCommitEditModal } from '../components/PreCommitEditModal';
@@ -979,7 +979,17 @@ export function MealLoggerPage() {
 
       {/* ── MEAL SLOT ROWS ── */}
       <div>
-        <div className="text-[12px] font-semibold uppercase tracking-widest text-[rgba(235,235,245,0.5)] mb-3 px-1">Meal Log</div>
+        <div className="flex items-center justify-between mb-3 px-1">
+          <div className="text-[12px] font-semibold uppercase tracking-widest text-[rgba(235,235,245,0.5)]">Meal Log</div>
+          {credits && (
+            <div className="flex items-center gap-1 rounded-full border border-[rgba(212,255,0,0.3)] bg-[rgba(212,255,0,0.08)] px-2.5 py-1">
+              <Zap size={11} className="text-[#D4FF00]" strokeWidth={2.5} />
+              <span className="text-[11px] font-semibold text-[#D4FF00] tabular-nums">
+                {credits.remaining} / {credits.limit}
+              </span>
+            </div>
+          )}
+        </div>
         
         {meals.length === 0 && (
           <EmptyState
