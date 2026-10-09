@@ -20,6 +20,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useDailyNutrition } from "@/features/nutrition/hooks/useDailyNutrition";
 import { onMealSaved } from "@/features/nutrition/utils/mealSync";
 import { mealService } from "../services/mealService";
+import { fetchTodayMessages, saveMessage } from '../services/chatService';
 import { profileService } from "@/features/profile/services/profileService";
 import { complianceService } from "@/features/reports/services/complianceService";
 import { supabase } from "@/shared/utils/supabase";
@@ -241,6 +242,21 @@ export function MealLoggerPage() {
       initializeSession(profile.id);
     }
   }, [profile?.id, initializeSession]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!profile?.id) return;
+    (async () => {
+      try {
+        const messages = await fetchTodayMessages(profile.id);
+        if (cancelled) return;
+        useChatStore.setState({ chatHistory: messages });
+      } catch (err) {
+        console.error('Failed to load chat history', err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [profile?.id]);
 
   type PendingMeal = {
     text: string;
@@ -826,6 +842,10 @@ export function MealLoggerPage() {
         analytics.trackEvent('Custom Meal Logged', { calories: data.calories } as any);
         setIsCustomMealModalOpen(false);
         addChatMessage({ role: 'ai', text: `✓ Logged Custom Meal: ${text}` });
+        if (profile?.id) {
+          void saveMessage(profile.id, { role: 'ai', text: `✓ Logged Custom Meal: ${text}` }).catch((err) =>
+            console.error('Failed to persist chat message', err));
+        }
       } else {
         const foodsDetected = Array.isArray(data?.foods_detected) && data?.foods_detected.length > 0 ? data.foods_detected.join(', ') : text;
         let responseText = `✓ Logged: ${foodsDetected}`;
@@ -833,6 +853,10 @@ export function MealLoggerPage() {
           responseText = `✓ Logged: ${foodsDetected}`;
         }
         addChatMessage({ role: 'ai', text: responseText, data });
+        if (profile?.id) {
+          void saveMessage(profile.id, { role: 'ai', text: responseText, data }).catch((err) =>
+            console.error('Failed to persist chat message', err));
+        }
       }
       
       // Removed automatic modal close to allow continuous meal logging
@@ -843,6 +867,10 @@ export function MealLoggerPage() {
     onError: (err: any, variables: any, context: any) => {
       console.error('[confirmMealMutation] onError:', err);
       addChatMessage({ role: 'ai', text: `⚠️ Failed to save meal. Please try again.` });
+      if (profile?.id) {
+        void saveMessage(profile.id, { role: 'ai', text: `⚠️ Failed to save meal. Please try again.` }).catch((err) =>
+          console.error('Failed to persist chat message', err));
+      }
       
       if (context?.dateKeyStr && context?.previousMeals) {
         queryClient.setQueryData(["meals", "date", context.dateKeyStr], context.previousMeals);
@@ -864,6 +892,10 @@ export function MealLoggerPage() {
     setFailedMealError(null);
     setRetryCount(0);
     addChatMessage({ role: "user", text });
+    if (profile?.id) {
+      void saveMessage(profile.id, { role: 'user', text }).catch((err) =>
+        console.error('Failed to persist chat message', err));
+    }
     setLoading(true);
     parseMealMutation.mutate(text);
   }, [input, loading, selectedMealSlot, addChatMessage, parseMealMutation]);
