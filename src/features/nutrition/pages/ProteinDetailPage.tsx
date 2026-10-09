@@ -74,7 +74,12 @@ export function ProteinDetailPage() {
   const { data: goal } = useQuery({ queryKey: ["goal"], queryFn: () => profileService.getGoal() });
   const { data: meals = [], isLoading } = useQuery({ queryKey: ["meals", "month"], queryFn: () => mealService.getMeals({ days: 35, limit: 2000 }) });
 
-  const target_protein = onboardingData?.targetMacros?.protein ?? 150;
+  const [macro, setMacro] = useState<'protein' | 'fat' | 'carbs'>('protein');
+  const target_protein = {
+    protein: onboardingData?.targetMacros?.protein ?? 150,
+    fat: onboardingData?.targetMacros?.fat ?? 60,
+    carbs: onboardingData?.targetMacros?.carbs ?? 220,
+  }[macro];
 
   const todayStr = getLocalDateString();
   const todayMeals = meals.filter(m => {
@@ -82,7 +87,7 @@ export function ProteinDetailPage() {
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     return dateStr === todayStr;
   });
-  const proteinConsumed = todayMeals.reduce((acc, m) => acc + m.protein, 0);
+  const proteinConsumed = todayMeals.reduce((acc, m) => acc + m[macro], 0);
   
   const chartLogs = useMemo(() => {
     const logs = [...metrics];
@@ -92,7 +97,7 @@ export function ProteinDetailPage() {
       const d = new Date(m.meal_time);
       const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       if (!acc[dateStr]) acc[dateStr] = 0;
-      acc[dateStr] += m.protein;
+      acc[dateStr] += m[macro];
       return acc;
     }, {});
 
@@ -132,7 +137,7 @@ export function ProteinDetailPage() {
       });
     }
     return logs;
-  }, [metrics, meals, todayStr, proteinConsumed, target_protein]);
+  }, [metrics, meals, todayStr, proteinConsumed, target_protein, macro]);
 
   const chartData = useMemo(() => {
     return chartLogs.map(l => ({
@@ -175,20 +180,37 @@ export function ProteinDetailPage() {
   return (
     <div className="page-enter pt-[calc(env(safe-area-inset-top)+20px)] pb-[calc(100px+env(safe-area-inset-bottom))] min-h-[100dvh] bg-[#0A0A0A] px-5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-10">
+      <div className="flex items-center justify-between pt-4 pb-3 mb-5">
         <button onClick={() => navigate("/dashboard")} aria-label="Back to dashboard" className="w-[44px] h-[44px] rounded-full bg-[rgba(255,255,255,0.03)] flex items-center justify-center transition-colors hover:bg-[rgba(255,255,255,0.1)]">
           <ChevronLeft size={20} className="text-white" />
         </button>
-        <h1 className="text-[17px] font-semibold text-white tracking-tight">Protein</h1>
+        <h1 className="text-[17px] font-semibold text-white tracking-tight">{macro.charAt(0).toUpperCase() + macro.slice(1)}</h1>
         <div className="w-8" />
       </div>
 
+      {/* Macro switcher */}
+      <div className="flex items-center gap-1 rounded-full bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] p-1 mb-5">
+        {(['protein', 'fat', 'carbs'] as const).map((m) => (
+          <button
+            key={m}
+            onClick={() => setMacro(m)}
+            className={`flex-1 py-2 rounded-full text-[13px] font-semibold capitalize transition-colors ${
+              macro === m
+                ? 'bg-[rgba(255,255,255,0.10)] text-white'
+                : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            {m}
+          </button>
+        ))}
+      </div>
+
       {/* Hero Number Section */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center justify-center text-center mb-12 mt-6">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center justify-center text-center mb-4">
         <div className="flex items-baseline gap-1.5 mb-2">
-          <span className="text-[64px] font-bold text-white tracking-tighter leading-none"><AnimatedNumber value={proteinConsumed} /></span>
+          <span className="text-[40px] font-bold text-white tracking-tighter leading-none"><AnimatedNumber value={proteinConsumed} /></span>
         </div>
-        <div className="text-[16px] font-medium text-[rgba(235,235,245,0.45)] mb-8 tracking-wide">of {target_protein} g</div>
+        <div className="text-[13px] text-zinc-500 font-medium mb-8 tracking-wide">of {target_protein} g</div>
         
         {/* Progress bar */}
         <div className="w-full max-w-[280px] progress-track h-2 rounded-full overflow-hidden bg-[rgba(255,255,255,0.1)] shadow-inner">
@@ -200,8 +222,8 @@ export function ProteinDetailPage() {
       </motion.div>
 
       {/* 7-Day History Chart */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] p-6 mb-10 shadow-sm backdrop-blur-xl">
-        <div className="text-[12px] font-semibold text-[rgba(235,235,245,0.5)] uppercase tracking-widest mb-6">Daily protein history</div>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-[20px] bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] p-4 mb-5 shadow-sm backdrop-blur-xl">
+        <div className="text-[12px] font-semibold text-[rgba(235,235,245,0.5)] uppercase tracking-widest mb-2">Daily protein history</div>
         <DailyHistoryChart 
           logs={chartData} 
           todayStr={todayStr} 
@@ -227,7 +249,7 @@ export function ProteinDetailPage() {
         ) : (
           <div>
             {slots.filter(s => s.items.length > 0).map(slot => {
-              const slotPro = slot.items.reduce((a, b) => a + b.protein, 0);
+              const slotPro = slot.items.reduce((a, b) => a + b[macro], 0);
               return (
                 <div key={slot.id} className="rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] mb-4 overflow-hidden shadow-sm backdrop-blur-xl">
                   <div className="flex items-center justify-between p-5 bg-[rgba(255,255,255,0.02)] border-b border-[rgba(255,255,255,0.06)]">
@@ -238,7 +260,7 @@ export function ProteinDetailPage() {
                     {slot.items.map((item, i) => (
                       <div key={item.id || i} className={cn("flex items-center justify-between py-3.5", i < slot.items.length - 1 && "border-b border-[rgba(255,255,255,0.06)]")}>
                         <span className="text-[15px] font-medium text-[rgba(255,255,255,0.85)] leading-relaxed capitalize pr-4">{item.meal_text}</span>
-                        <span className="text-[14px] font-bold tracking-tight text-[#378ADD] bg-[rgba(55,138,221,0.1)] px-2.5 py-1 rounded-full shrink-0">{item.protein} g</span>
+                        <span className="text-[14px] font-bold tracking-tight text-[#378ADD] bg-[rgba(55,138,221,0.1)] px-2.5 py-1 rounded-full shrink-0">{item[macro]} g</span>
                       </div>
                     ))}
                   </div>
