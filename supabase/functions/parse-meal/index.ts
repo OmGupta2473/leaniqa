@@ -9,6 +9,24 @@ function getCorsHeaders(req: Request) {
   };
 }
 
+// Decode the payload of a Supabase Auth JWT WITHOUT re-verifying the
+// signature. Safe here because the Edge Function platform already
+// verified the JWT (verify_jwt = true by default) before our handler ran.
+function readJwtClaims(authHeader: string | null): Record<string, unknown> | null {
+  if (!authHeader) return null;
+  const token = authHeader.replace(/^Bearer\s+/i, '');
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  try {
+    const normalized = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
+    const decoded = atob(padded);
+    return JSON.parse(decoded) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
 const MealSchema = z.object({
   calories: z.number(),
   protein: z.number(),
@@ -909,6 +927,22 @@ async function fetchUsageCount(
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const claims = readJwtClaims(req.headers.get('Authorization'));
+  if (claims?.is_anonymous === true) {
+    return new Response(
+      JSON.stringify({
+        error: 'AI parsing requires a permanent account. Link Google or email to continue.',
+        error_code: 'guest_ai_blocked',
+      }),
+      {
+        status: 403,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+  }
   const requestId = crypto.randomUUID();
   const startedAt = Date.now();
   let body: Record<string, unknown>;
