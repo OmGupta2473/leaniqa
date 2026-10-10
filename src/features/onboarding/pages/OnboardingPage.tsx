@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
@@ -22,7 +22,14 @@ import {
   type GoalType,
   type OnboardingInput,
 } from '@/shared/utils/onboardingMath';
-import { GAIN_PACES } from '@/shared/utils/paceEngine';
+import {
+  computeGainPlan,
+  computePacePlan,
+  CUT_PACES,
+  GAIN_PACES,
+  type CutPace,
+  type GainPace,
+} from '@/shared/utils/paceEngine';
 import { useOnboardingDraft } from '../useOnboardingDraft';
 import type { OnboardingDraft } from '../types';
 import { useViewport } from '@/shared/styles/responsive';
@@ -518,6 +525,7 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
   const [macroSheetOpen, setMacroSheetOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [gainPace, setGainPace] = useState(8);
+  const [cutPace, setCutPace] = useState(22);
 
   // The engine rejects impossible input. A draft that reached screen 3 is
   // already validated, so these fallbacks are belt-and-braces only.
@@ -530,16 +538,14 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
   };
 
   const goal: GoalType = draft.goalOverride ?? 'cut';
-  const plan = calculatePlan(input, goal, gainPace);
+  const plan = calculatePlan(input, goal, gainPace, cutPace);
   const timeline = estimateTimeline(input, goal, plan);
   const bmi = plan.bmi;
 
-  const displayProtein = draft.macroOverrides?.proteinG ?? plan.proteinG;
-  const displayFat = draft.macroOverrides?.fatG ?? plan.fatG;
-  const displayCarbs = draft.macroOverrides?.carbsG ?? plan.carbsG;
-  const displayCalories = draft.macroOverrides
-    ? displayProtein * 4 + displayFat * 9 + displayCarbs * 4
-    : plan.targetCalories;
+    const displayProtein = plan.proteinG;
+  const displayFat = plan.fatG;
+  const displayCarbs = plan.carbsG;
+  const displayCalories = plan.targetCalories;
 
   const goalMeta = GOAL_OPTIONS.find((option) => option.id === goal) ?? GOAL_OPTIONS[0];
   const GOAL_ICON = goalMeta.Icon;
@@ -548,9 +554,8 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
   // goalAdjustmentPct already comes out of the engine in percent (e.g. -22),
   // so it is rounded here rather than multiplied again.
   const adjustmentPct = Math.abs(Math.round(plan.goalAdjustmentPct));
-  const deficitLine = draft.macroOverrides
-    ? `Custom macros · base maintenance ${plan.maintenance.toLocaleString()} kcal`
-    : goal === 'recomp'
+   const deficitLine =
+    goal === 'recomp'
       ? 'at maintenance — no deficit or surplus'
       : `${goal === 'cut' ? '−' : '+'}${adjustmentPct}% ${
           goal === 'cut' ? 'from your maintenance' : 'above your maintenance'
@@ -560,10 +565,10 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
     if (saving) return;
     setSaving(true);
     try {
-      const protein = draft.macroOverrides?.proteinG ?? plan.proteinG;
-      const fat = draft.macroOverrides?.fatG ?? plan.fatG;
-      const carbs = draft.macroOverrides?.carbsG ?? plan.carbsG;
-      const calories = protein * 4 + fat * 9 + carbs * 4;
+           const protein = plan.proteinG;
+      const fat = plan.fatG;
+      const carbs = plan.carbsG;
+      const calories = plan.targetCalories;
 
       // Placeholder body-fat values: both goals columns are NOT NULL. Phase 4
       // replaces these with real optional user entry.
@@ -590,7 +595,7 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
 
       const goalRow = await profileService.upsertGoal({
         goal_type: goal,
-        cut_pace: goal === 'cut' ? 22 : null,
+        cut_pace: goal === 'cut' ? cutPace : null,
         gain_pace: goal === 'bulk' ? gainPace : null,
         current_bf: currentBf,
         target_bf: targetBf,
@@ -696,6 +701,37 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
           {GOAL_OPTIONS.find((g) => g.id === goal)?.desc}
         </div>
       </section>
+
+      {goal === 'cut' && (
+        <section className="mt-[clamp(0.65rem,1.8dvh,1rem)]">
+          <div className="text-[clamp(0.7rem,1.8dvh,0.8rem)] uppercase tracking-wider text-zinc-500 mb-[clamp(0.4rem,1.2dvh,0.6rem)]">
+            Cut pace
+          </div>
+          <div className="grid grid-cols-4 gap-[clamp(0.35rem,1dvh,0.5rem)]">
+            {CUT_PACES.map((p) => {
+              const active = cutPace === p;
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setCutPace(p)}
+                  className={`flex flex-col items-center justify-center gap-1 rounded-xl border py-[clamp(0.45rem,1.4dvh,0.7rem)] px-[clamp(0.25rem,1vw,0.5rem)] transition-colors ${
+                    active
+                      ? 'border-[#D4FF00]/60 bg-[#D4FF00]/8'
+                      : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
+                  }`}
+                >
+                  <span className={`text-[clamp(0.68rem,1.75dvh,0.82rem)] font-semibold tracking-tight ${
+                    active ? 'text-white' : 'text-zinc-300'
+                  }`}>
+                    −{p}%
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {goal === 'bulk' && (
         <section className="mt-[clamp(0.65rem,1.8dvh,1rem)]">
