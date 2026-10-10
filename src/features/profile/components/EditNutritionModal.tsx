@@ -83,7 +83,11 @@ function EditNutritionModalInner({
     String(calculatedData?.targetMacros?.fat ?? ""),
   );
   const [pace, setPace] = useState<CutPace | null>(null);
-  const [gainPace, setGainPace] = useState<GainPace | null>(null);
+  const [gainPace, setGainPace] = useState<GainPace>(
+    currentGainPace && GAIN_PACES.includes(currentGainPace as GainPace)
+      ? (currentGainPace as GainPace)
+      : 8,
+  );
 
   const pacePlan = useMemo(() => {
     if (goalType !== "cut") return null;
@@ -130,8 +134,8 @@ function EditNutritionModalInner({
       goalType === "cut" && pacePlan
         ? pacePlan.targetKcal
         : goalType === "bulk"
-        ? Math.round(maintenanceKcal * (1 + (gainPace ?? 8) / 100))
-        : parsedCalories;
+          ? Math.round(maintenanceKcal * (1 + (gainPace ?? 8) / 100))
+          : parsedCalories;
     if (!dailyCalTarget) return null;
     try {
       return computeProjection({
@@ -190,7 +194,7 @@ function EditNutritionModalInner({
           fat_target: parsedFat,
           carbs_target: derived.carbsG,
         });
-        if (goalType === 'bulk') {
+        if (goalType === "bulk") {
           await profileService.upsertGoal({ gain_pace: gainPace });
         }
       }
@@ -362,34 +366,27 @@ function EditNutritionModalInner({
             </section>
           )}
 
-           {goalType === "bulk" && currentGainPace !== null && (
-              <section className="rounded-xl border border-[#D4FF00]/20 bg-[#D4FF00]/5 p-[clamp(0.6rem,1.6dvh,0.9rem)]">
-                <div className="text-[clamp(0.65rem,1.65dvh,0.75rem)] uppercase tracking-wider text-[#D4FF00]/80 mb-1">
-                  Surplus pace
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {GAIN_PACES.map((p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => setGainPace(p)}
-                        className={`px-[clamp(0.5rem,1.4dvh,0.7rem)] py-[clamp(0.25rem,0.8dvh,0.4rem)] rounded-full text-[clamp(0.7rem,1.8dvh,0.85rem)] font-semibold transition-colors
-                         ${gainPace === p
-                           ? "bg-[#D4FF00] text-black"
-                           : "bg-zinc-900/50 text-zinc-400 border border-zinc-800 hover:bg-zinc-800/60"
-                         }`}
-                     >
-                       +{p}
-                     </button>
-                    ))}
-                  </div>
-                  <div className="mt-2 text-[clamp(0.65rem,1.65dvh,0.75rem)] text-zinc-500">
-                    {gainPace === null
-                      ? "Bulk surplus pace (8/10/12%)"
-                      : `Surplus pace: +${gainPace}%`}
-                  </div>
-                </section>
-              )}
+          {goalType === "bulk" && (
+    <section>
+      <div className={LABEL_CLASS}>Gain pace</div>
+      <div className="grid grid-cols-3 gap-2">
+        {GAIN_PACES.map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => setGainPace(p)}
+            className={`py-2 rounded-xl text-[13px] font-medium transition-colors ${
+              gainPace === p
+                ? "bg-[#D4FF00] text-black"
+                : "bg-zinc-900/60 border border-zinc-800 text-zinc-400"
+            }`}
+          >
+            +{p}%
+          </button>
+        ))}
+      </div>
+    </section>
+  )}
           {showDeviationBanner && (
             <section className="mt-3 rounded-xl border border-[#D4FF00]/20 bg-[#D4FF00]/5 p-[clamp(0.6rem,1.6dvh,0.9rem)]">
               <div className="text-[clamp(0.75rem,2dvh,0.9rem)] text-zinc-300 leading-snug">
