@@ -494,6 +494,7 @@ export function ProfilePage() {
         goalType={goal?.goal_type ?? 'cut'}
         maintenanceKcal={Math.round(profile?.maintenance_kcal ?? 0)}
         currentCutPace={goal?.cut_pace ?? null}
+        currentGainPace={goal?.gain_pace ?? null}
       />
     </div>
   );
