@@ -1356,22 +1356,35 @@ export function MealLoggerPage() {
                   )}
                 </motion.button>
                 </div>
+                                {/* OR divider */}
+                <div className="flex items-center gap-3 py-3">
+                  <div className="flex-1 h-px bg-[rgba(255,255,255,0.08)]" />
+                  <span className="text-[11px] font-medium text-[rgba(255,255,255,0.35)] tracking-[0.08em]">
+                    OR
+                  </span>
+                  <div className="flex-1 h-px bg-[rgba(255,255,255,0.08)]" />
+                </div>
+
+                {/* Custom meal row */}
                 <button
                   onClick={() => { setModalOpen(false); setTimeout(() => setIsCustomMealModalOpen(true), 300); }}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-dashed border-[#D4FF00]/40 bg-[#D4FF00]/[0.03] transition-colors hover:bg-[#D4FF00]/[0.06] text-left"
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl border border-dashed border-[#D4FF00]/40 bg-[#D4FF00]/[0.03] transition-colors hover:bg-[#D4FF00]/[0.06] text-left"
                 >
-                  <span className="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style={{ background: 'radial-gradient(circle at 30% 30%, rgba(212,255,0,0.35), rgba(212,255,0,0.10))' }}>
-                    <Plus size={20} className="text-[#D4FF00]" strokeWidth={2.5} />
+                  <span
+                    className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                    style={{ background: 'radial-gradient(circle at 30% 30%, rgba(212,255,0,0.35), rgba(212,255,0,0.10))' }}
+                  >
+                    <Plus size={16} className="text-[#D4FF00]" strokeWidth={2.5} />
                   </span>
                   <span className="flex-1 min-w-0">
-                    <span className="block text-[17px] font-semibold text-white leading-tight">
+                    <span className="block text-[14px] font-semibold text-white leading-tight">
                       Create a custom meal
                     </span>
-                    <span className="block text-[14px] text-zinc-500 leading-tight mt-0.5">
+                    <span className="block text-[12px] text-zinc-500 leading-tight mt-0.5">
                       Save your own meal and macros
                     </span>
                   </span>
-                  <ChevronRight size={20} className="text-white shrink-0" />
+                  <ChevronRight size={16} className="text-white shrink-0" />
                 </button>
               </div>
             </motion.div>
