@@ -1358,10 +1358,20 @@ export function MealLoggerPage() {
                 </div>
                 <button
                   onClick={() => { setModalOpen(false); setTimeout(() => setIsCustomMealModalOpen(true), 300); }}
-                  className="flex items-center justify-center gap-1.5 text-[rgba(255,255,255,0.5)] hover:text-white text-[13px] font-medium transition-colors w-fit mx-auto pb-1"
+                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-dashed border-[#D4FF00]/40 bg-[#D4FF00]/[0.03] transition-colors hover:bg-[#D4FF00]/[0.06] text-left"
                 >
-                  <Plus size={14} />
-                  Create Custom Meal
+                  <span className="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style={{ background: 'radial-gradient(circle at 30% 30%, rgba(212,255,0,0.35), rgba(212,255,0,0.10))' }}>
+                    <Plus size={20} className="text-[#D4FF00]" strokeWidth={2.5} />
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[17px] font-semibold text-white leading-tight">
+                      Create a custom meal
+                    </span>
+                    <span className="block text-[14px] text-zinc-500 leading-tight mt-0.5">
+                      Save your own meal and macros
+                    </span>
+                  </span>
+                  <ChevronRight size={20} className="text-white shrink-0" />
                 </button>
               </div>
             </motion.div>
