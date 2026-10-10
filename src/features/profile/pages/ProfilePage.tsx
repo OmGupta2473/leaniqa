@@ -4,7 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createPortal } from 'react-dom';
 import { profileService } from '../services/profileService';
-import { useState, useMemo } from 'react';
+import { useToast } from '@/shared/components/Toast';
+import { useAuthSession } from '@/router/useAuthSession';
+import { useState, useMemo, useEffect } from 'react';
 import { ChevronLeft, LogOut, AlertTriangle, TrendingDown, TrendingUp, Target } from 'lucide-react';
 import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
 import { computeProjection } from '@/shared/utils/projectionEngine';
@@ -18,6 +20,15 @@ import { EditNutritionModal } from '../components/EditNutritionModal';
 import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
 import { ProfileSkeleton } from '@/shared/components/Skeletons';
 import { Logo } from '@/shared/components/Logo';
+
+const GuestGoogleIcon = ({ className }: { className?: string }) => (
+  <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M22.56 12.25C22.56 11.47 22.49 10.72 22.36 10H12V14.26H17.92C17.66 15.63 16.88 16.8 15.72 17.58V20.34H19.29C21.37 18.42 22.56 15.6 22.56 12.25Z" fill="#4285F4"/>
+    <path d="M12 23C14.97 23 17.46 22.02 19.29 20.34L15.72 17.58C14.73 18.24 13.48 18.64 12 18.64C9.13 18.64 6.7 16.7 5.81 14.12H2.14V16.97C3.96 20.58 7.69 23 12 23Z" fill="#34A853"/>
+    <path d="M5.81 14.12C5.58 13.44 5.45 12.73 5.45 12C5.45 11.27 5.58 10.56 5.81 9.88V7.03H2.14C1.39 8.52 0.95 10.21 0.95 12C0.95 13.79 1.39 15.48 2.14 16.97L5.81 14.12Z" fill="#FBBC05"/>
+    <path d="M12 5.36C13.62 5.36 15.07 5.92 16.21 7.01L19.36 3.86C17.46 2.08 14.97 1 12 1C7.69 1 3.96 3.42 2.14 7.03L5.81 9.88C6.7 7.3 9.13 5.36 12 5.36Z" fill="#EA4335"/>
+  </svg>
+);
 
 function displayVal(val: any) {
   if (val === undefined || val === null || val === '') return '—';
@@ -40,6 +51,34 @@ export function ProfilePage() {
   const [showResetModal, setShowResetModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showNutritionModal, setShowNutritionModal] = useState(false);
+  const { session } = useAuthSession();
+  const isGuest = session?.user?.is_anonymous === true;
+  const { toast } = useToast();
+  const [linking, setLinking] = useState(false);
+
+  const handleLinkGoogle = async () => {
+    if (linking) return;
+    setLinking(true);
+    const redirectTo = `${window.location.origin}/login?next=/profile&linked=1`;
+    const { error } = await authService.linkGoogleIdentity(redirectTo);
+    if (error) {
+      setLinking(false);
+      toast({ type: 'error', message: `Could not link Google: ${error}` });
+    }
+    // On success the browser redirects to Google — no further action here.
+  };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('linked') === '1') {
+      toast({ type: 'success', message: 'Google linked. Your data is now backed up.' });
+      // Clean the URL param so a refresh doesn't retrigger the toast
+      const url = new URL(window.location.href);
+      url.searchParams.delete('linked');
+      window.history.replaceState({}, '', url.toString());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const { data: profile, isLoading } = useQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() });
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
@@ -187,6 +226,38 @@ export function ProfilePage() {
         </div>
       </div>
     </header>
+
+      {isGuest && (
+        <section className="rounded-2xl border border-[#D4FF00]/30 bg-[#D4FF00]/[0.04] p-[clamp(0.75rem,2dvh,1.25rem)] mb-[clamp(0.6rem,1.6dvh,1rem)]">
+          <div className="flex items-start gap-3">
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+              style={{
+                background: 'radial-gradient(circle at 30% 30%, rgba(212,255,0,0.35), rgba(212,255,0,0.10))',
+              }}
+            >
+              <GuestGoogleIcon className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[14px] font-semibold text-white leading-tight">
+                Save your progress
+              </div>
+              <div className="text-[12px] text-zinc-400 leading-snug mt-0.5">
+                You&apos;re signed in as a guest. Link Google to back up your meals,
+                goals, and streak — and use LeanIQA on any device.
+              </div>
+              <button
+                type="button"
+                onClick={handleLinkGoogle}
+                disabled={linking}
+                className="mt-3 w-full py-2.5 rounded-xl bg-[#D4FF00] text-black font-semibold text-[13px] transition-opacity disabled:opacity-50"
+              >
+                {linking ? 'Opening Google…' : 'Link Google account'}
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
 
     <div>
       <div className="grid grid-cols-1 gap-[clamp(0.6rem,1.6dvh,1rem)] md:grid-cols-2 md:gap-4">
