@@ -98,6 +98,26 @@ export const authService = {
     } finally {
       await this.onSessionEnded();
     }
-  }
+  },
+
+  /**
+   * Link a Google identity to the CURRENTLY signed-in user. Unlike
+   * signInWithOAuth, this preserves the existing user UUID — it upgrades an
+   * anonymous user into a permanent one without creating a new account.
+   * Requires: Manual Linking enabled in Supabase Auth settings.
+   */
+  async linkGoogleIdentity(redirectTo: string): Promise<{ error: string | null }> {
+    const { error } = await supabase.auth.linkIdentity({
+      provider: 'google',
+      options: {
+        redirectTo,
+        scopes: 'email profile',
+      },
+    });
+    if (error) {
+      return { error: error.message };
+    }
+    return { error: null };
+  },
 };
 
