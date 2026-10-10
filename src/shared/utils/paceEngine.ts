@@ -139,3 +139,44 @@ export function computePacePlan(input: PacePlanInput): PacePlan {
     deficitPct: input.pace,
   };
 }
+
+export const GAIN_PROTEIN_G_PER_KG = 1.6;
+export const GAIN_FAT_G_PER_KG = 0.9;
+
+export interface GainPlan {
+  targetKcal: number;
+  proteinG: number;
+  fatG: number;
+  carbsG: number;
+  surplusKcal: number;
+  gainPace: number;
+}
+
+export interface GainPlanInput {
+  weightKg: number;
+  maintenanceKcal: number;
+  gainPace: number;
+}
+
+export function computeGainPlan(input: GainPlanInput): GainPlan {
+  if (input.weightKg <= 0) throw new Error('weightKg must be positive');
+  if (input.maintenanceKcal <= 0) throw new Error('maintenanceKcal must be positive');
+  if (!GAIN_PACES.includes(input.gainPace as GainPace)) {
+    throw new Error(`gainPace must be one of ${GAIN_PACES.join(', ')}`);
+  }
+
+  const targetKcal = Math.round(input.maintenanceKcal * (1 + input.gainPace / 100));
+  const proteinG = Math.round(input.weightKg * GAIN_PROTEIN_G_PER_KG);
+  const fatG = Math.round(input.weightKg * GAIN_FAT_G_PER_KG);
+  const remainingKcal = targetKcal - proteinG * 4 - fatG * 9;
+  const carbsG = Math.max(0, Math.round(remainingKcal / 4));
+
+  return {
+    targetKcal,
+    proteinG,
+    fatG,
+    carbsG,
+    surplusKcal: targetKcal - input.maintenanceKcal,
+    gainPace: input.gainPace,
+  };
+}
