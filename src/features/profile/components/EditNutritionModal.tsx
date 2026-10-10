@@ -8,6 +8,7 @@ import { computeProjection } from "@/shared/utils/projectionEngine";
 import { haptics } from "@/shared/utils/haptics";
 import {
   computePacePlan,
+  computeGainPlan,
   CUT_PACES,
   GAIN_PACES,
   type CutPace,
@@ -82,7 +83,11 @@ function EditNutritionModalInner({
   const [fat, setFat] = useState(
     String(calculatedData?.targetMacros?.fat ?? ""),
   );
-  const [pace, setPace] = useState<CutPace | null>(null);
+  const [pace, setPace] = useState<CutPace>(
+    currentCutPace && CUT_PACES.includes(currentCutPace as CutPace)
+      ? (currentCutPace as CutPace)
+      : 22,
+  );
   const [gainPace, setGainPace] = useState<GainPace>(
     currentGainPace && GAIN_PACES.includes(currentGainPace as GainPace)
       ? (currentGainPace as GainPace)
@@ -98,6 +103,16 @@ function EditNutritionModalInner({
       return null;
     }
   }, [goalType, weightKg, maintenanceKcal, pace]);
+
+  const gainPlan = useMemo(() => {
+    if (goalType !== "bulk") return null;
+    if (!weightKg || !maintenanceKcal) return null;
+    try {
+      return computeGainPlan({ weightKg, maintenanceKcal, gainPace });
+    } catch {
+      return null;
+    }
+  }, [goalType, weightKg, maintenanceKcal, gainPace]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -119,13 +134,15 @@ function EditNutritionModalInner({
   const deviation = parsedCalories - maintenanceKcal;
   const deviationThreshold = Math.max(150, Math.round(maintenanceKcal * 0.05));
   const showDeviationBanner =
-    goalType !== "cut" &&
+    goalType === "recomp" &&
     maintenanceKcal > 0 &&
     Math.abs(deviation) >= deviationThreshold;
 
   const isValid =
     goalType === "cut"
       ? pacePlan != null
+      : goalType === "bulk"
+      ? gainPlan != null
       : parsedCalories >= 500 && parsedCalories <= 10000 && derived.feasible;
 
   const preview = useMemo(() => {
@@ -133,9 +150,9 @@ function EditNutritionModalInner({
     const dailyCalTarget =
       goalType === "cut" && pacePlan
         ? pacePlan.targetKcal
-        : goalType === "bulk"
-          ? Math.round(maintenanceKcal * (1 + (gainPace ?? 8) / 100))
-          : parsedCalories;
+        : goalType === "bulk" && gainPlan
+        ? gainPlan.targetKcal
+        : parsedCalories;
     if (!dailyCalTarget) return null;
     try {
       return computeProjection({
@@ -148,7 +165,7 @@ function EditNutritionModalInner({
     } catch {
       return null;
     }
-  }, [parsedCalories, weightKg, goalType, maintenanceKcal, pacePlan, gainPace]);
+  }, [parsedCalories, weightKg, goalType, maintenanceKcal, pacePlan, gainPlan]);
 
   const previewText = useMemo(() => {
     if (!preview) return "Adjust a value to see impact";
@@ -182,6 +199,19 @@ function EditNutritionModalInner({
             deficit_kcal: pacePlan.deficitKcal,
           }),
         ]);
+      } else if (goalType === "bulk") {
+        if (!gainPlan) {
+          throw new Error("Cannot save: gain plan is not available");
+        }
+        await Promise.all([
+          profileService.upsertProfile({
+            target_kcal: gainPlan.targetKcal,
+            protein_target: gainPlan.proteinG,
+            fat_target: gainPlan.fatG,
+            carbs_target: gainPlan.carbsG,
+          }),
+          profileService.upsertGoal({ gain_pace: gainPlan.gainPace }),
+        ]);
       } else {
         if (!derived.feasible) {
           throw new Error(
@@ -194,9 +224,6 @@ function EditNutritionModalInner({
           fat_target: parsedFat,
           carbs_target: derived.carbsG,
         });
-        if (goalType === "bulk") {
-          await profileService.upsertGoal({ gain_pace: gainPace });
-        }
       }
     },
     onSuccess: () => {
@@ -273,16 +300,25 @@ function EditNutritionModalInner({
                   </div>
                   <div className="grid grid-cols-3 gap-2 mt-3">
                     <div className="rounded-xl bg-zinc-800/50 border border-zinc-800 px-2 py-2 text-center">
+                      <div className="text-[clamp(0.6rem,1.55dvh,0.7rem)] uppercase tracking-wider text-zinc-500 mb-0.5">
+                        Protein
+                      </div>
                       <div className="text-[clamp(0.7rem,1.5dvh,0.9rem)] font-semibold tabular-nums text-white">
                         {pacePlan.proteinG}g
                       </div>
                     </div>
                     <div className="rounded-xl bg-zinc-800/50 border border-zinc-800 px-2 py-2 text-center">
+                      <div className="text-[clamp(0.6rem,1.55dvh,0.7rem)] uppercase tracking-wider text-zinc-500 mb-0.5">
+                        Fat
+                      </div>
                       <div className="text-[clamp(0.7rem,1.5dvh,0.9rem)] font-semibold tabular-nums text-white">
                         {pacePlan.fatG}g
                       </div>
                     </div>
                     <div className="rounded-xl bg-zinc-800/50 border border-zinc-800 px-2 py-2 text-center">
+                      <div className="text-[clamp(0.6rem,1.55dvh,0.7rem)] uppercase tracking-wider text-zinc-500 mb-0.5">
+                        Carbs
+                      </div>
                       <div className="text-[clamp(0.7rem,1.5dvh,0.9rem)] font-semibold tabular-nums text-white">
                         {pacePlan.carbsG}g
                       </div>
@@ -290,6 +326,69 @@ function EditNutritionModalInner({
                   </div>
                   <div className="mt-2 text-[clamp(0.65rem,1.65dvh,0.75rem)] text-zinc-500">
                     Deficit: {pacePlan.deficitKcal} kcal/day
+                  </div>
+                </section>
+              )}
+            </>
+          ) : goalType === "bulk" ? (
+            <>
+              <section>
+                <div className={LABEL_CLASS}>Gain pace</div>
+                <div className="grid grid-cols-3 gap-2">
+                  {GAIN_PACES.map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setGainPace(p)}
+                      className={`py-2 rounded-xl text-[13px] font-medium transition-colors ${
+                        gainPace === p
+                          ? "bg-[#D4FF00] text-black"
+                          : "bg-zinc-900/60 border border-zinc-800 text-zinc-400"
+                      }`}
+                    >
+                      +{p}%
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              {gainPlan && (
+                <section>
+                  <div className={LABEL_CLASS}>Your target</div>
+                  <div className="text-[clamp(1.3rem,4dvh,1.6rem)] font-bold tabular-nums text-white">
+                    {gainPlan.targetKcal}
+                    <span className="text-[0.7em] text-zinc-500 font-medium ml-1">
+                      kcal
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 mt-3">
+                    <div className="rounded-xl bg-zinc-800/50 border border-zinc-800 px-2 py-2 text-center">
+                      <div className="text-[clamp(0.6rem,1.55dvh,0.7rem)] uppercase tracking-wider text-zinc-500 mb-0.5">
+                        Protein
+                      </div>
+                      <div className="text-[clamp(0.7rem,1.5dvh,0.9rem)] font-semibold tabular-nums text-white">
+                        {gainPlan.proteinG}g
+                      </div>
+                    </div>
+                    <div className="rounded-xl bg-zinc-800/50 border border-zinc-800 px-2 py-2 text-center">
+                      <div className="text-[clamp(0.6rem,1.55dvh,0.7rem)] uppercase tracking-wider text-zinc-500 mb-0.5">
+                        Fat
+                      </div>
+                      <div className="text-[clamp(0.7rem,1.5dvh,0.9rem)] font-semibold tabular-nums text-white">
+                        {gainPlan.fatG}g
+                      </div>
+                    </div>
+                    <div className="rounded-xl bg-zinc-800/50 border border-zinc-800 px-2 py-2 text-center">
+                      <div className="text-[clamp(0.6rem,1.55dvh,0.7rem)] uppercase tracking-wider text-zinc-500 mb-0.5">
+                        Carbs
+                      </div>
+                      <div className="text-[clamp(0.7rem,1.5dvh,0.9rem)] font-semibold tabular-nums text-white">
+                        {gainPlan.carbsG}g
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-2 text-[clamp(0.65rem,1.65dvh,0.75rem)] text-zinc-500">
+                    Surplus: +{gainPlan.surplusKcal} kcal/day (+{gainPlan.gainPace}%)
                   </div>
                 </section>
               )}
@@ -331,101 +430,67 @@ function EditNutritionModalInner({
                     className={INPUT_CLASS}
                   />
                 </div>
-                <div className="mt-3">
-                  <div className="text-[clamp(0.65rem,1.75dvh,0.78rem)] uppercase tracking-wider text-zinc-500 mb-2">
-                    Carbs (derived from remaining calories)
-                  </div>
-                  <div className="flex items-center justify-between bg-zinc-900/30 border border-zinc-800/60 rounded-xl px-[clamp(0.75rem,2dvh,1rem)] py-[clamp(0.5rem,1.5dvh,0.75rem)]">
-                    <span className="text-[clamp(0.85rem,2.2dvh,0.95rem)] text-zinc-300 tabular-nums">
-                      {derived.carbsG}
-                    </span>
-                    <span className="text-[clamp(0.7rem,1.8dvh,0.82rem)] text-zinc-500">
+                <div className="mt-3 flex items-center justify-between rounded-xl bg-zinc-800/50 border border-zinc-800 px-3 py-2">
+                  <span className="text-[clamp(0.65rem,1.75dvh,0.78rem)] uppercase tracking-wider text-zinc-500">
+                    Carbs
+                  </span>
+                  <span className="text-[clamp(0.85rem,2.2dvh,0.95rem)] text-zinc-300 tabular-nums">
+                    {derived.carbsG}
+                    <span className="text-[clamp(0.7rem,1.8dvh,0.82rem)] text-zinc-500 ml-1">
                       g
                     </span>
-                  </div>
+                  </span>
                 </div>
               </section>
+
+              {!derived.feasible && (
+                <section className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-[clamp(0.6rem,1.6dvh,0.9rem)]">
+                  <div className="text-[clamp(0.75rem,2dvh,0.9rem)] text-amber-300 leading-snug">
+                    Protein and fat alone exceed your calorie target. Lower one
+                    of them or raise the target.
+                  </div>
+                </section>
+              )}
+
+              {showDeviationBanner && (
+                <section className="rounded-xl border border-[#D4FF00]/20 bg-[#D4FF00]/5 p-[clamp(0.6rem,1.6dvh,0.9rem)]">
+                  <div className="text-[clamp(0.75rem,2dvh,0.9rem)] text-zinc-300 leading-snug">
+                    {deviation < 0 ? (
+                      <>
+                        This target is{" "}
+                        <span className="text-white font-semibold tabular-nums">
+                          {Math.abs(deviation)}
+                        </span>{" "}
+                        kcal below maintenance. Your goal remains{" "}
+                        <span className="text-[#D4FF00] font-medium">
+                          Recomp
+                        </span>
+                        .
+                      </>
+                    ) : (
+                      <>
+                        This target is{" "}
+                        <span className="text-white font-semibold tabular-nums">
+                          {Math.abs(deviation)}
+                        </span>{" "}
+                        kcal above maintenance. Your goal remains{" "}
+                        <span className="text-[#D4FF00] font-medium">
+                          Recomp
+                        </span>
+                        .
+                      </>
+                    )}
+                  </div>
+                </section>
+              )}
             </>
           )}
 
-          <section className="rounded-xl border border-[#D4FF00]/20 bg-[#D4FF00]/5 p-[clamp(0.6rem,1.6dvh,0.9rem)]">
-            <div className="text-[clamp(0.65rem,1.65dvh,0.75rem)] uppercase tracking-wider text-[#D4FF00]/80 mb-1">
-              Projected impact
-            </div>
-            <div className="text-[clamp(0.75rem,2dvh,0.9rem)] text-white leading-snug">
+          <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/40 px-[clamp(0.75rem,1.8dvh,1rem)] py-[clamp(0.5rem,1.4dvh,0.75rem)]">
+            <div className="text-[clamp(0.65rem,1.65dvh,0.75rem)] text-zinc-500">
               {previewText}
             </div>
-          </section>
-
-          {goalType !== "cut" && !derived.feasible && (
-            <section className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-[clamp(0.6rem,1.6dvh,0.9rem)]">
-              <div className="text-[clamp(0.75rem,2dvh,0.9rem)] text-amber-300 leading-snug">
-                Protein and fat alone exceed your calorie target. Lower one of
-                them or raise the target.
-              </div>
-            </section>
-          )}
-
-          {goalType === "bulk" && (
-    <section>
-      <div className={LABEL_CLASS}>Gain pace</div>
-      <div className="grid grid-cols-3 gap-2">
-        {GAIN_PACES.map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => setGainPace(p)}
-            className={`py-2 rounded-xl text-[13px] font-medium transition-colors ${
-              gainPace === p
-                ? "bg-[#D4FF00] text-black"
-                : "bg-zinc-900/60 border border-zinc-800 text-zinc-400"
-            }`}
-          >
-            +{p}%
-          </button>
-        ))}
-      </div>
-    </section>
-  )}
-          {showDeviationBanner && (
-            <section className="mt-3 rounded-xl border border-[#D4FF00]/20 bg-[#D4FF00]/5 p-[clamp(0.6rem,1.6dvh,0.9rem)]">
-              <div className="text-[clamp(0.75rem,2dvh,0.9rem)] text-zinc-300 leading-snug">
-                {deviation < 0 ? (
-                  <>
-                    This target is{" "}
-                    <span className="text-white font-semibold tabular-nums">
-                      {Math.abs(deviation)}
-                    </span>{" "}
-                    kcal below maintenance. It projects to about{" "}
-                    <span className="text-white font-semibold tabular-nums">
-                      {Math.abs(preview?.weeklyChangeKg ?? 0).toFixed(2)}
-                    </span>{" "}
-                    kg/week of weight loss. Your goal remains{" "}
-                    <span className="text-[#D4FF00] font-medium">
-                      {goalType === "recomp" ? "Recomp" : "Bulk"}
-                    </span>
-                    , but this calorie target creates a deficit.
-                  </>
-                ) : (
-                  <>
-                    This target is{" "}
-                    <span className="text-white font-semibold tabular-nums">
-                      {Math.abs(deviation)}
-                    </span>{" "}
-                    kcal above maintenance. It projects to about{" "}
-                    <span className="text-white font-semibold tabular-nums">
-                      {(preview?.weeklyChangeKg ?? 0).toFixed(2)}
-                    </span>{" "}
-                    kg/week of weight gain. Your goal remains{" "}
-                    <span className="text-[#D4FF00] font-medium">
-                      {goalType === "recomp" ? "Recomp" : "Bulk"}
-                    </span>
-                    , but this calorie target creates a surplus.
-                  </>
-                )}
-              </div>
-            </section>
-          )}
+          </div>
         </div>
 
         <div className="flex-shrink-0 px-[clamp(1rem,4vw,1.5rem)] pt-[clamp(0.6rem,1.6dvh,0.9rem)] pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-zinc-900/60">
