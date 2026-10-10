@@ -11,7 +11,6 @@ import { useDailyNutrition } from "@/features/nutrition/hooks/useDailyNutrition"
 import { getKolkataDateString } from "@/shared/utils/timezone";
 import { mealService } from "@/features/nutrition/services/mealService";
 import { useNetworkConnectivity } from "@/shared/hooks/useNetworkConnectivity";
-import { EmptyState } from "@/shared/components/EmptyState";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router-dom";
 
@@ -136,8 +135,6 @@ export function DashboardPage() {
     return <DashboardSkeleton />;
   }
 
-  const isFirstTimeUser = todaysMeals.length === 0 && metrics.length === 0;
-
   const dateString = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     day: "numeric",
@@ -184,15 +181,6 @@ const ringCircumference = 2 * Math.PI * 42;
               Try Again
             </button>
           </div>
-        ) : isFirstTimeUser ? (
-          <EmptyState
-            icon={Plus}
-            title="Log your first meal"
-            description="Start tracking today's nutrition by logging your breakfast, lunch, or a snack."
-            ctaText="Log Meal"
-            onCtaClick={() => navigate('/log-meal')}
-            className="mt-4"
-          />
         ) : (
           <>
             {/* Calories Hero */}
