@@ -19,6 +19,9 @@
 export const CUT_PACES = [26, 22, 18, 14] as const;
 export type CutPace = typeof CUT_PACES[number];
 
+export const GAIN_PACES = [8, 10, 12] as const;
+export type GainPace = typeof GAIN_PACES[number];
+
 export const MAINTENANCE_PROTEIN_G_PER_KG = 1.6;
 export const MAINTENANCE_FAT_G_PER_KG = 0.9;
 

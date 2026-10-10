@@ -22,6 +22,7 @@ import {
   type GoalType,
   type OnboardingInput,
 } from '@/shared/utils/onboardingMath';
+import { GAIN_PACES } from '@/shared/utils/paceEngine';
 import { useOnboardingDraft } from '../useOnboardingDraft';
 import type { OnboardingDraft } from '../types';
 import { useViewport } from '@/shared/styles/responsive';
@@ -516,6 +517,7 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
   const navigate = useNavigate();
   const [macroSheetOpen, setMacroSheetOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [gainPace, setGainPace] = useState(8);
 
   // The engine rejects impossible input. A draft that reached screen 3 is
   // already validated, so these fallbacks are belt-and-braces only.
@@ -528,7 +530,7 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
   };
 
   const goal: GoalType = draft.goalOverride ?? 'cut';
-  const plan = calculatePlan(input, goal);
+  const plan = calculatePlan(input, goal, gainPace);
   const timeline = estimateTimeline(input, goal, plan);
   const bmi = plan.bmi;
 
@@ -589,6 +591,7 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
       const goalRow = await profileService.upsertGoal({
         goal_type: goal,
         cut_pace: goal === 'cut' ? 22 : null,
+        gain_pace: goal === 'bulk' ? gainPace : null,
         current_bf: currentBf,
         target_bf: targetBf,
         strategy: goal,
@@ -693,6 +696,36 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
           {GOAL_OPTIONS.find((g) => g.id === goal)?.desc}
         </div>
       </section>
+
+      {goal === 'bulk' && (
+        <section className="mt-[clamp(0.65rem,1.8dvh,1rem)]">
+          <div className="text-[clamp(0.7rem,1.8dvh,0.8rem)] uppercase tracking-wider text-zinc-500 mb-[clamp(0.4rem,1.2dvh,0.6rem)]">
+            Surplus pace
+          </div>
+          <div className="grid grid-cols-3 gap-[clamp(0.35rem,1dvh,0.5rem)]">
+            {GAIN_PACES.map((p) => {
+              const active = gainPace === p;
+              return (
+                <button
+                  key={p}
+                  onClick={() => setGainPace(p)}
+                  className={`flex flex-col items-center justify-center gap-1 rounded-xl border py-[clamp(0.45rem,1.4dvh,0.7rem)] px-[clamp(0.25rem,1vw,0.5rem)] transition-colors ${
+                    active
+                      ? 'border-[#D4FF00]/60 bg-[#D4FF00]/8'
+                      : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
+                  }`}
+                >
+                  <span className={`text-[clamp(0.68rem,1.75dvh,0.82rem)] font-semibold tracking-tight ${
+                    active ? 'text-white' : 'text-zinc-300'
+                  }`}>
+                    +{p}%
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <section className="mt-[clamp(0.65rem,1.8dvh,1rem)]">
         <div className="text-[clamp(0.7rem,1.8dvh,0.8rem)] uppercase tracking-wider text-zinc-500 mb-[clamp(0.4rem,1.2dvh,0.6rem)]">

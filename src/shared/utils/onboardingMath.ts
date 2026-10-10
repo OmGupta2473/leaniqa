@@ -141,11 +141,14 @@ export function suggestGoal(bmi: number): GoalType {
 }
 
 /** Full calorie + macro plan for a given goal. */
-export function calculatePlan(input: OnboardingInput, goal: GoalType): OnboardingPlan {
+export function calculatePlan(input: OnboardingInput, goal: GoalType, gainPacePct: number = 8): OnboardingPlan {
   const bmr = calculateBMR(input);
   const maintenance = Math.round(bmr * ACTIVITY_MULTIPLIERS[input.activity]);
 
-  const targetCalories = Math.round(maintenance * (1 + GOAL_ADJUSTMENTS[goal]));
+  // Bulk surplus is user-selectable (gain_pace: 8/10/12%); cut and recomp use
+  // the fixed GOAL_ADJUSTMENTS values. gainPacePct defaults to the legacy 8%.
+  const adj = goal === 'bulk' ? gainPacePct / 100 : GOAL_ADJUSTMENTS[goal];
+  const targetCalories = Math.round(maintenance * (1 + adj));
   const proteinG = Math.round(input.weightKg * PROTEIN_G_PER_KG[goal]);
   const fatG = Math.round(input.weightKg * FAT_G_PER_KG[goal]);
   const carbsG = Math.max(0, Math.round((targetCalories - proteinG * 4 - fatG * 9) / 4));
@@ -159,7 +162,7 @@ export function calculatePlan(input: OnboardingInput, goal: GoalType): Onboardin
     carbsG,
     bmi: calculateBMI(input.heightCm, input.weightKg),
     goalType: goal,
-    goalAdjustmentPct: Math.round(GOAL_ADJUSTMENTS[goal] * 100),
+    goalAdjustmentPct: Math.round(adj * 100),
   };
 }
 

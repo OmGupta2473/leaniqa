@@ -33,6 +33,7 @@ export interface DbGoal {
   goal_type: 'cut' | 'recomp' | 'bulk';
   /** Onboarding v2: the user's chosen cut pace (16/18/20/22). NULL for non-cut goals. */
   cut_pace?: number | null;
+  gain_pace?: number | null;
   deficit_kcal: number;
   target_date?: string;
   target_weight?: number;
