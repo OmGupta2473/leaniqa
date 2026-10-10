@@ -12,6 +12,7 @@ import { Logo } from "@/shared/components/Logo";
 import { useState, FormEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/shared/utils/supabase';
+import { Turnstile } from '@marsidev/react-turnstile';
 import { Mail, Apple } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { pageVariants, hover, tap } from '@/features/reports/components/motion';
@@ -36,6 +37,9 @@ export function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [showEmailSuggestion, setShowEmailSuggestion] = useState(false);
   const [isOtpSent, setIsOtpSent] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [guestLoading, setGuestLoading] = useState(false);
+  const [guestError, setGuestError] = useState<string | null>(null);
 
   const getRedirectUrl = () => {
     let nextPath = '';
@@ -111,6 +115,28 @@ export function AuthPage() {
         setShowEmailSuggestion(true);
       }
       setLoading(false);
+    }
+  };
+
+  const handleGuestSignIn = async () => {
+    if (!turnstileToken || guestLoading) return;
+    setGuestError(null);
+    setGuestLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInAnonymously({
+        options: { captchaToken: turnstileToken },
+      });
+      if (error) {
+        setGuestError(error.message || 'Could not start a guest session.');
+        setGuestLoading(false);
+        return;
+      }
+      if (data.user) {
+        navigate('/onboarding');
+      }
+    } catch (err) {
+      setGuestError('Something went wrong. Please try again.');
+      setGuestLoading(false);
     }
   };
 
@@ -233,6 +259,47 @@ export function AuthPage() {
                   </motion.div>
                 )}
               </form>
+
+              {/* Turnstile — interaction-only, invisible until Cloudflare decides a
+                  challenge is needed. The site key is public (safe to ship). */}
+              <div className="flex justify-center pt-4">
+                <Turnstile
+                  siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+                  options={{ appearance: 'interaction-only', theme: 'dark' }}
+                  onSuccess={(token) => setTurnstileToken(token)}
+                  onError={() => setTurnstileToken(null)}
+                  onExpire={() => setTurnstileToken(null)}
+                />
+              </div>
+
+              {/* OR divider */}
+              <div className="flex items-center gap-3 py-3">
+                <div className="flex-1 h-px bg-[rgba(255,255,255,0.08)]" />
+                <span className="text-[11px] font-medium text-[rgba(255,255,255,0.35)] tracking-[0.08em]">
+                  OR
+                </span>
+                <div className="flex-1 h-px bg-[rgba(255,255,255,0.08)]" />
+              </div>
+
+              {/* Continue as guest */}
+              <button
+                type="button"
+                onClick={handleGuestSignIn}
+                disabled={!turnstileToken || guestLoading}
+                className="w-full py-3 rounded-2xl bg-[rgba(212,255,0,0.10)] border border-[rgba(212,255,0,0.30)] text-[#D4FF00] font-semibold text-[15px] transition-colors hover:bg-[rgba(212,255,0,0.15)] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {guestLoading ? 'Starting guest session…' : 'Continue as guest'}
+              </button>
+
+              <p className="text-center text-[12px] text-[rgba(255,255,255,0.5)] leading-snug">
+                No account needed. Your progress will stay on this device.
+                <br />
+                Link Google or email anytime to back up your data.
+              </p>
+
+              {guestError && (
+                <p className="text-center text-[12px] text-red-400">{guestError}</p>
+              )}
             </div>
           {/* Footer */}
           <div className="flex justify-center gap-6 text-[12px] font-medium text-[rgba(255,255,255,0.3)] mt-8">

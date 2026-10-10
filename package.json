@@ -13,6 +13,7 @@
     "start": "node dist/server.cjs"
   },
   "dependencies": {
+    "@marsidev/react-turnstile": "^1.6.1",
     "@sentry/react": "^10.67.0",
     "@supabase/supabase-js": "^2.108.2",
     "@tailwindcss/vite": "^4.1.14",
