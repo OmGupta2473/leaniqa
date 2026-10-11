@@ -1,8 +1,97 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { profileService } from '@/features/profile/services/profileService';
 
 export function SciencePage() {
   const navigate = useNavigate();
+    const { data: profile } = useQuery({
+    queryKey: ['profile'],
+    queryFn: () => profileService.getProfile(),
+  });
+  const { data: goal } = useQuery({
+    queryKey: ['goal'],
+    queryFn: () => profileService.getGoal(),
+  });
+
+  const hasPlan =
+    !!profile?.target_kcal &&
+    !!profile?.protein_target &&
+    !!profile?.fat_target &&
+    !!profile?.carbs_target &&
+    !!goal?.goal_type;
+
+  const goalType = goal?.goal_type;
+  const cutPace = goal?.cut_pace ?? null;
+  const gainPace = goal?.gain_pace ?? null;
+  const weight = profile?.weight ?? 0;
+  const maintenance = Math.round(profile?.maintenance_kcal ?? 0);
+  const targetKcal = profile?.target_kcal ?? 0;
+  const proteinTarget = profile?.protein_target ?? 0;
+  const fatTarget = profile?.fat_target ?? 0;
+  const carbsTarget = profile?.carbs_target ?? 0;
+
+  const goalLabel =
+    goalType === 'cut' && cutPace
+      ? `Lose fat at a ${cutPace}% deficit`
+      : goalType === 'bulk' && gainPace
+      ? `Build muscle at a ${gainPace}% surplus`
+      : goalType === 'recomp'
+      ? 'Recomposition (eat at maintenance)'
+      : '';
+
+  const goalMathLine =
+    goalType === 'cut' && cutPace
+      ? `${maintenance} kcal * (1 - ${(cutPace / 100).toFixed(2)}) = ${targetKcal} kcal`
+      : goalType === 'bulk' && gainPace
+      ? `${maintenance} kcal * (1 + ${(gainPace / 100).toFixed(2)}) = ${targetKcal} kcal`
+      : goalType === 'recomp'
+      ? `${maintenance} kcal * 1.00 = ${targetKcal} kcal`
+      : '';
+
+  const proteinFactor =
+    goalType === 'cut'
+      ? cutPace === 22 || cutPace === 26
+        ? 1.8
+        : 1.6
+      : goalType === 'bulk'
+      ? gainPace === 10
+        ? 1.7
+        : gainPace === 12
+        ? 1.8
+        : 1.6
+      : goalType === 'recomp'
+      ? 1.8
+      : 1.4;
+
+  const proteinLine =
+    `${proteinFactor} g per kg * ${weight} kg. ` +
+    (goalType === 'cut' && (cutPace === 22 || cutPace === 26)
+      ? 'At aggressive deficits we use 1.8 g/kg to protect muscle.'
+      : goalType === 'cut'
+      ? 'At moderate deficits we use 1.6 g/kg.'
+      : goalType === 'bulk'
+      ? 'Higher surpluses get slightly more protein to support training.'
+      : goalType === 'recomp'
+      ? 'Recomp uses 1.8 g/kg to build muscle while staying lean.'
+      : 'Maintenance uses 1.4 g/kg.');
+
+  const fatFactor =
+    goalType === 'cut'
+      ? 0.7
+      : goalType === 'recomp'
+      ? 0.85
+      : goalType === 'bulk'
+      ? 0.9
+      : 0.8;
+
+  const weightFat = Math.round(weight * fatFactor);
+  const calorieFat = Math.round((targetKcal * 0.25) / 9);
+
+  const fatLine =
+    `max(${weight} * ${fatFactor} = ${weightFat} g, ` +
+    `${targetKcal} * 0.25 / 9 = ${calorieFat} g) = ${fatTarget} g. ` +
+    'Fats below this floor can affect hormone health.';
 
   return (
     <div className="flex flex-col h-[100dvh] min-h-0 bg-[#0A0A0B] text-zinc-50 font-sans">
@@ -37,6 +126,54 @@ export function SciencePage() {
             research. Each section below explains the "why" in plain English and
             links to the actual study.
           </div>
+                    {hasPlan && (
+            <section className="rounded-2xl border border-[#D4FF00]/25 bg-[#D4FF00]/[0.04] p-4">
+              <div className="text-[11px] uppercase tracking-wider text-[#D4FF00] mb-3 font-semibold">
+                Your plan, step by step
+              </div>
+              <div className="space-y-4 text-[13px] leading-relaxed">
+                <div>
+                  <div className="text-white font-medium mb-1">
+                    1. Your maintenance: {maintenance} kcal
+                  </div>
+                  <div className="text-[rgba(255,255,255,0.6)]">
+                    From Mifflin-St Jeor using your age, sex, height, weight, and
+                    activity level.
+                  </div>
+                </div>
+                <div>
+                  <div className="text-white font-medium mb-1">
+                    2. Your goal: {goalLabel}
+                  </div>
+                  <div className="text-[rgba(255,255,255,0.6)]">{goalMathLine}</div>
+                </div>
+                <div>
+                  <div className="text-white font-medium mb-1">
+                    3. Your protein: {proteinTarget} g
+                  </div>
+                  <div className="text-[rgba(255,255,255,0.6)]">{proteinLine}</div>
+                </div>
+                <div>
+                  <div className="text-white font-medium mb-1">
+                    4. Your fat: {fatTarget} g
+                  </div>
+                  <div className="text-[rgba(255,255,255,0.6)]">{fatLine}</div>
+                </div>
+                <div>
+                  <div className="text-white font-medium mb-1">
+                    5. Your carbs: {carbsTarget} g
+                  </div>
+                  <div className="text-[rgba(255,255,255,0.6)]">
+                    Carbs fill the rest after protein and fat. ({targetKcal} -{" "}
+                    {proteinTarget}*4 - {fatTarget}*9) / 4 = {carbsTarget} g.
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-[rgba(255,255,255,0.08)] text-[rgba(255,255,255,0.55)] text-[12px]">
+                  Every macro reconciles to your calorie target within a few kcal.
+                </div>
+              </div>
+            </section>
+          )}
 
           <ScienceSection
             title="How we calculate your daily calories"
