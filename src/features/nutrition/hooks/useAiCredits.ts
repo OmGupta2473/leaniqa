@@ -29,7 +29,16 @@ export function useAiCredits() {
       if (usageError) throw usageError;
       const rows = Array.isArray(usageData) ? usageData : usageData ? [usageData] : [];
       const used = (rows[0] as { usage_count?: number } | undefined)?.usage_count ?? 0;
-      return { used, limit: 5, remaining: Math.max(0, 5 - used) };
+
+      const { data: profileRow } = await supabase
+        .from('profiles')
+        .select('daily_ai_limit')
+        .eq('id', userId)
+        .single();
+
+      const limit = (profileRow?.daily_ai_limit as number | undefined) ?? 5;
+
+      return { used, limit, remaining: Math.max(0, limit - used) };
     },
   });
 
