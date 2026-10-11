@@ -59,22 +59,69 @@ export function ProfilePage() {
   const handleLinkGoogle = async () => {
     if (linking) return;
     setLinking(true);
-    const redirectTo = `${window.location.origin}/login?next=/profile&linked=1`;
-    const { error } = await authService.linkGoogleIdentity(redirectTo);
+
+    // Redirect directly to /profile so the error params land on a page the
+    // guest can actually see — /login is a GuestRoute and would bounce us.
+    const redirectTo = `${window.location.origin}/profile`;
+
+    const { url, error } = await authService.linkGoogleIdentity(redirectTo);
+
     if (error) {
       setLinking(false);
       toast({ type: 'error', message: `Could not link Google: ${error}` });
+      return;
     }
-    // On success the browser redirects to Google — no further action here.
+
+    if (url) {
+      // The SDK returns the OAuth URL; the caller must navigate.
+      window.location.href = url;
+      return;
+    }
+
+    setLinking(false);
+    toast({ type: 'error', message: 'Could not start Google linking.' });
   };
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+
+    // Success case (from the OAuth redirect after a successful link)
     if (params.get('linked') === '1') {
       toast({ type: 'success', message: 'Google linked. Your data is now backed up.' });
-      // Clean the URL param so a refresh doesn't retrigger the toast
+    }
+
+    // Error case — Supabase appends these params on failure
+    const errorCode = params.get('error_code');
+    const errorDescription = params.get('error_description');
+
+    if (errorCode || errorDescription) {
+      if (errorCode === 'identity_already_exists') {
+        toast({
+          type: 'error',
+          message:
+            'This Google account is already used by an existing LeanIQA account. Sign out and sign in with Google to access it — your guest data stays on this device.',
+        });
+      } else if (errorCode === 'email_exists') {
+        toast({
+          type: 'error',
+          message: 'That email is already registered. Sign in with that email instead.',
+        });
+      } else if (errorDescription) {
+        toast({
+          type: 'error',
+          message: decodeURIComponent(errorDescription.replace(/\+/g, ' ')),
+        });
+      } else {
+        toast({ type: 'error', message: 'Google linking failed. Please try again.' });
+      }
+    }
+
+    // Strip the params so a refresh doesn't re-trigger the toast
+    if (params.has('linked') || errorCode || errorDescription) {
       const url = new URL(window.location.href);
-      url.searchParams.delete('linked');
+      ['linked', 'error', 'error_code', 'error_description'].forEach((k) =>
+        url.searchParams.delete(k),
+      );
       window.history.replaceState({}, '', url.toString());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

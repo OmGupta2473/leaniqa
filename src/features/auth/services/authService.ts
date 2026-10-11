@@ -106,8 +106,10 @@ export const authService = {
    * anonymous user into a permanent one without creating a new account.
    * Requires: Manual Linking enabled in Supabase Auth settings.
    */
-  async linkGoogleIdentity(redirectTo: string): Promise<{ error: string | null }> {
-    const { error } = await supabase.auth.linkIdentity({
+  async linkGoogleIdentity(
+    redirectTo: string,
+  ): Promise<{ url: string | null; error: string | null }> {
+    const { data, error } = await supabase.auth.linkIdentity({
       provider: 'google',
       options: {
         redirectTo,
@@ -115,9 +117,9 @@ export const authService = {
       },
     });
     if (error) {
-      return { error: error.message };
+      return { url: null, error: error.message };
     }
-    return { error: null };
+    return { url: data?.url ?? null, error: null };
   },
 };
 
