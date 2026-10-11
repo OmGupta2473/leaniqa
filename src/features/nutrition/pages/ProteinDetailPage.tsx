@@ -68,11 +68,15 @@ function getLocalDateString(d: Date = new Date()) {
 export function ProteinDetailPage() {
   const navigate = useNavigate();
   const isOnline = useNetworkConnectivity();
-  const { profileData: onboardingData } = useCalculatedProfile();
-  const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
+  const { profileData: onboardingData, isLoading: isProfileLoading } = useCalculatedProfile();
+  const { data: metrics = [], isLoading: isMetricsLoading } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
   const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => profileService.getProfile() });
   const { data: goal } = useQuery({ queryKey: ["goal"], queryFn: () => profileService.getGoal() });
-  const { data: meals = [], isLoading } = useQuery({ queryKey: ["meals", "month"], queryFn: () => mealService.getMeals({ days: 35, limit: 2000 }) });
+  const { data: meals = [], isLoading: isMealsLoading } = useQuery({ queryKey: ["meals", "month"], queryFn: () => mealService.getMeals({ days: 35, limit: 2000 }) });
+
+  // Same gate as CalorieDetailPage. useCalculatedProfile internally awaits the
+  // same ['profile'] and ['goal'] cache keys this page queries.
+  const isLoading = isProfileLoading || isMetricsLoading || isMealsLoading;
 
   const [macro, setMacro] = useState<'protein' | 'fat' | 'carbs'>('protein');
   const target_protein = {

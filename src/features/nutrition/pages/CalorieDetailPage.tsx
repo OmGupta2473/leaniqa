@@ -68,11 +68,16 @@ function getLocalDateString(d: Date = new Date()) {
 export function CalorieDetailPage() {
   const navigate = useNavigate();
   const isOnline = useNetworkConnectivity();
-  const { profileData: onboardingData } = useCalculatedProfile();
-  const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
+  const { profileData: onboardingData, isLoading: isProfileLoading } = useCalculatedProfile();
+  const { data: metrics = [], isLoading: isMetricsLoading } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
   const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => profileService.getProfile() });
   const { data: goal } = useQuery({ queryKey: ["goal"], queryFn: () => profileService.getGoal() });
-  const { data: meals = [], isLoading } = useQuery({ queryKey: ["meals", "month"], queryFn: () => mealService.getMeals({ days: 35, limit: 2000 }) });
+  const { data: meals = [], isLoading: isMealsLoading } = useQuery({ queryKey: ["meals", "month"], queryFn: () => mealService.getMeals({ days: 35, limit: 2000 }) });
+
+  // Gate the skeleton on every query the page renders from. useCalculatedProfile
+  // internally awaits the same ['profile'] and ['goal'] cache keys this page
+  // queries, so isProfileLoading already covers both.
+  const isLoading = isProfileLoading || isMetricsLoading || isMealsLoading;
 
   const dailyCalorieGoal = onboardingData?.dailyCalorieGoal ?? 2000;
 

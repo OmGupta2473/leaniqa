@@ -6,3 +6,5 @@ coverage/
 !.env.example
 dist/
 supabase/.temp/
+.kilo/
+project-export.md
