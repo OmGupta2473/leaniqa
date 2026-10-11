@@ -16,6 +16,8 @@ export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'ath
 
 export type GoalType = 'cut' | 'recomp' | 'bulk';
 
+import { proteinFactorFor, fatFactorFor } from './paceEngine';
+
 export interface OnboardingInput {
   sex: Sex;
   age: number; // years
@@ -53,18 +55,6 @@ export const GOAL_ADJUSTMENTS: Record<GoalType, number> = {
   cut: -0.22,
   recomp: 0,
   bulk: 0.08,
-};
-
-export const PROTEIN_G_PER_KG: Record<GoalType, number> = {
-  cut: 2.2,   // mirrors paceEngine CUT_PROTEIN_G_PER_KG[22]
-  recomp: 1.8,
-  bulk: 1.6,
-};
-
-export const FAT_G_PER_KG: Record<GoalType, number> = {
-  cut: 0.7,   // mirrors paceEngine CUT_FAT_G_PER_KG[22]
-  recomp: 0.9,
-  bulk: 0.9,
 };
 
 /** Weekly weight-change assumption used by the simplified timeline estimate. */
@@ -153,9 +143,23 @@ export function calculatePlan(input: OnboardingInput, goal: GoalType, gainPacePc
     goal === 'cut'  ? -cutPacePct / 100 :
     GOAL_ADJUSTMENTS[goal];
   const targetCalories = Math.round(maintenance * (1 + adj));
-  const proteinG = Math.round(input.weightKg * PROTEIN_G_PER_KG[goal]);
-  const fatG = Math.round(input.weightKg * FAT_G_PER_KG[goal]);
-  const carbsG = Math.max(0, Math.round((targetCalories - proteinG * 4 - fatG * 9) / 4));
+
+  const factorPace = goal === 'cut' ? cutPacePct : goal === 'bulk' ? gainPacePct : null;
+  const proteinG = Math.min(
+    Math.round(input.weightKg * proteinFactorFor(goal, factorPace)),
+    Math.round(input.weightKg * 2.2),
+  );
+  const fatG = Math.round(Math.max(
+    input.weightKg * fatFactorFor(goal),
+    (targetCalories * 0.25) / 9,
+  ));
+  let carbsG = Math.max(0, Math.round(
+    (targetCalories - proteinG * 4 - fatG * 9) / 4
+  ));
+  const roundCheck = targetCalories - (proteinG * 4 + fatG * 9 + carbsG * 4);
+  if (Math.abs(roundCheck) > 5) {
+    carbsG = Math.max(0, carbsG + Math.round(roundCheck / 4));
+  }
 
   return {
     bmr,

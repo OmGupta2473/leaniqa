@@ -26,31 +26,37 @@ export const MAINTENANCE_PROTEIN_G_PER_KG = 1.6;
 export const MAINTENANCE_FAT_G_PER_KG = 0.9;
 
 /**
- * Protein g/kg bodyweight scales UP with steeper cut (muscle protection).
- * Reference values from Helms 2014 (2.0 g/kg mid-range) and Longland 2016
- * (2.4 g/kg aggressive) — tempered for non-athletes at the low end.
- * At 26% deficit: 2.4 g/kg (Longland 2016 used 2.4 at 40% deficit, so 2.4
- * at 26% is conservative). At 14% deficit: 1.8 g/kg (matches recomp baseline).
+ * Protein factor (g/kg) based on goal and pace.
+ * For cut/bulk, pace-specific factor takes precedence.
+ * For maintain/recomp, fixed factor applies.
  */
-export const CUT_PROTEIN_G_PER_KG: Record<CutPace, number> = {
-  26: 2.4,
-  22: 2.2,
-  18: 2.0,
-  14: 1.8,
-};
+export function proteinFactorFor(
+  goal: 'cut' | 'recomp' | 'bulk' | 'maintain',
+  paceValue: number | null,
+): number {
+  if (goal === 'maintain') return 1.4;
+  if (goal === 'recomp') return 1.8;
+  if (goal === 'bulk') {
+    if (paceValue === 10) return 1.7;
+    if (paceValue === 12) return 1.8;
+    return 1.6; // +8% and default
+  }
+  // cut
+  if (paceValue === 22 || paceValue === 26) return 1.8;
+  return 1.6; // -14%, -18%, and default
+}
 
 /**
- * Fat g/kg bodyweight scales DOWN with steeper cut (floor ~0.5 g/kg for
- * hormone health per Iraki 2019). Kept comfortably above the floor.
- * At 26% deficit: 0.6 g/kg (Iraki 2019 floor is ~0.5 g/kg, so 0.6 is safe).
- * At 14% deficit: 0.9 g/kg (matches recomp baseline).
+ * Fat factor (g/kg) by goal.
  */
-export const CUT_FAT_G_PER_KG: Record<CutPace, number> = {
-  26: 0.6,
-  22: 0.7,
-  18: 0.8,
-  14: 0.9,
-};
+export function fatFactorFor(
+  goal: 'cut' | 'recomp' | 'bulk' | 'maintain',
+): number {
+  if (goal === 'cut') return 0.7;
+  if (goal === 'recomp') return 0.85;
+  if (goal === 'bulk') return 0.9;
+  return 0.8; // maintain
+}
 
 export interface MaintenancePlan {
   maintenanceKcal: number;
@@ -124,10 +130,21 @@ export function computePacePlan(input: PacePlanInput): PacePlan {
   const targetKcal = Math.round(
     input.maintenanceKcal * (1 - input.pace / 100),
   );
-  const proteinG = Math.round(input.weightKg * CUT_PROTEIN_G_PER_KG[input.pace]);
-  const fatG = Math.round(input.weightKg * CUT_FAT_G_PER_KG[input.pace]);
-  const remainingKcal = targetKcal - proteinG * 4 - fatG * 9;
-  const carbsG = Math.max(0, Math.round(remainingKcal / 4));
+  const proteinG = Math.min(
+    Math.round(input.weightKg * proteinFactorFor('cut', input.pace)),
+    Math.round(input.weightKg * 2.2),
+  );
+  const fatG = Math.round(Math.max(
+    input.weightKg * fatFactorFor('cut'),
+    (targetKcal * 0.25) / 9,
+  ));
+  let carbsG = Math.max(0, Math.round(
+    (targetKcal - proteinG * 4 - fatG * 9) / 4
+  ));
+  const roundCheck = targetKcal - (proteinG * 4 + fatG * 9 + carbsG * 4);
+  if (Math.abs(roundCheck) > 5) {
+    carbsG = Math.max(0, carbsG + Math.round(roundCheck / 4));
+  }
 
   return {
     pace: input.pace,
@@ -139,10 +156,6 @@ export function computePacePlan(input: PacePlanInput): PacePlan {
     deficitPct: input.pace,
   };
 }
-
-export const GAIN_PROTEIN_G_PER_KG = 1.6;
-export const GAIN_FAT_G_PER_KG = 0.9;
-
 export interface GainPlan {
   targetKcal: number;
   proteinG: number;
@@ -166,10 +179,21 @@ export function computeGainPlan(input: GainPlanInput): GainPlan {
   }
 
   const targetKcal = Math.round(input.maintenanceKcal * (1 + input.gainPace / 100));
-  const proteinG = Math.round(input.weightKg * GAIN_PROTEIN_G_PER_KG);
-  const fatG = Math.round(input.weightKg * GAIN_FAT_G_PER_KG);
-  const remainingKcal = targetKcal - proteinG * 4 - fatG * 9;
-  const carbsG = Math.max(0, Math.round(remainingKcal / 4));
+  const proteinG = Math.min(
+    Math.round(input.weightKg * proteinFactorFor('bulk', input.gainPace)),
+    Math.round(input.weightKg * 2.2),
+  );
+  const fatG = Math.round(Math.max(
+    input.weightKg * fatFactorFor('bulk'),
+    (targetKcal * 0.25) / 9,
+  ));
+  let carbsG = Math.max(0, Math.round(
+    (targetKcal - proteinG * 4 - fatG * 9) / 4
+  ));
+  const roundCheck = targetKcal - (proteinG * 4 + fatG * 9 + carbsG * 4);
+  if (Math.abs(roundCheck) > 5) {
+    carbsG = Math.max(0, carbsG + Math.round(roundCheck / 4));
+  }
 
   return {
     targetKcal,
