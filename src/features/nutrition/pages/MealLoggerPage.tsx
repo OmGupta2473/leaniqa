@@ -40,6 +40,8 @@ import { LogCalendar } from '../components/LogCalendar';
 import { reportService } from '@/features/reports/services/reportService';
 import { classifyDay, type GoalType, type MetricStatus } from '@/shared/utils/dayStatus';
 import { parseDateKey } from '@/shared/utils/dateKey';
+import { ProtectProgressSheet, shouldShowProtectProgress, PROTECT_PROGRESS_MEAL_THRESHOLD } from '@/features/auth/components/ProtectProgressSheet';
+import { useAuthSession } from '@/router/useAuthSession';
 import { getKolkataDateString, getKolkataHour, shiftKolkataDateString, kolkataDateStringToUtcMidnight, msSinceKolkataMidnight } from '@/shared/utils/timezone';
 
 const getDeterministicFallback = (text: string) => {
@@ -276,6 +278,10 @@ export function MealLoggerPage() {
   const [editingMeal, setEditingMeal] = useState<(DbMealLog & { id: string }) | null>(null);
   const [editingPending, setEditingPending] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [protectOpen, setProtectOpen] = useState(false);
+
+  const { session } = useAuthSession();
+  const isGuest = session?.user?.is_anonymous === true;
 
   const refundParseCredit = useCallback(async (pm: PendingMeal | null) => {
     if (!pm || pm.source !== 'llm' || !pm.request_id) {
@@ -857,12 +863,23 @@ export function MealLoggerPage() {
           void saveMessage(profile.id, { role: 'ai', text: responseText, data }).catch((err) =>
             console.error('Failed to persist chat message', err));
         }
-      }
       
       // Removed automatic modal close to allow continuous meal logging
       // setTimeout(() => {
       //   setModalOpen(false);
       // }, 800);
+
+      // Show protect progress sheet for guest users after 3 meals in a day
+      if (isGuest && shouldShowProtectProgress()) {
+        const todayKey = new Date().toDateString();
+        const todayCount = meals.filter(
+          (m) => new Date(m.meal_time).toDateString() === todayKey,
+        ).length;
+if (todayCount >= PROTECT_PROGRESS_MEAL_THRESHOLD) {
+          window.setTimeout(() => setProtectOpen(true), 800);
+        }
+      }
+    }
     },
     onError: (err: any, variables: any, context: any) => {
       console.error('[confirmMealMutation] onError:', err);
@@ -1452,6 +1469,10 @@ export function MealLoggerPage() {
         goalType={goalType}
         todayStatus={todayStatus}
         metrics={dailyMetrics}
+      />
+      <ProtectProgressSheet
+        isOpen={protectOpen}
+        onClose={() => setProtectOpen(false)}
       />
     </>
   );
