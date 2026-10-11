@@ -9,15 +9,32 @@ import { Logo } from "@/shared/components/Logo";
 //    Redirect URLs: http://localhost:3000/** (note the /** wildcard)
 // 5. If OAuth consent screen is in "Testing" mode, add your email as a test user.
 
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/shared/utils/supabase';
 import { Turnstile } from '@marsidev/react-turnstile';
-import { Mail, Apple } from 'lucide-react';
+import { Mail, Apple, AlertTriangle, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { pageVariants, hover, tap } from '@/features/reports/components/motion';
 import { haptics } from '@/shared/utils/haptics';
 import { useToast } from '@/shared/components/Toast';
+
+const AUTH_CALLBACK_ERRORS: Record<string, string> = {
+  identity_already_exists:
+    'This Google account is already used by an existing LeanIQA account. Sign in with Google instead, or use a different Google account.',
+  email_exists:
+    'That email is already registered. Sign in instead, or use a different email.',
+  user_already_exists:
+    'An account already exists with that email. Sign in instead.',
+  invalid_request:
+    'Sign-in could not be completed. Please try again.',
+  access_denied:
+    'Sign-in was cancelled.',
+  provider_disabled:
+    'That sign-in method is not available right now.',
+  otp_expired:
+    'That link has expired. Please request a new one.',
+};
 
 // SVG Icons
 const GoogleIcon = ({ className }: { className?: string }) => (
@@ -40,6 +57,36 @@ export function AuthPage() {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [guestLoading, setGuestLoading] = useState(false);
   const [guestError, setGuestError] = useState<string | null>(null);
+  const [callbackError, setCallbackError] = useState<string | null>(null);
+  const [callbackErrorCode, setCallbackErrorCode] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+
+    const code = params.get('error_code');
+    const description = params.get('error_description');
+
+    if (!code && !description) return;
+
+    // Prefer our human-readable map. Fall back to the raw description
+    // (URL-decoded; Supabase uses '+' for spaces).
+    const friendly =
+      (code && AUTH_CALLBACK_ERRORS[code]) ||
+      (description ? decodeURIComponent(description.replace(/\+/g, ' ')) : null);
+
+    if (friendly) {
+      setCallbackError(friendly);
+      setCallbackErrorCode(code);
+    }
+
+    // Strip the error params so a refresh doesn't re-show the message.
+    const url = new URL(window.location.href);
+    ['error', 'error_code', 'error_description'].forEach((k) =>
+      url.searchParams.delete(k),
+    );
+    window.history.replaceState({}, '', url.toString());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const getRedirectUrl = () => {
     let nextPath = '';
@@ -183,6 +230,56 @@ export function AuthPage() {
                     <Apple className="w-5 h-5 shrink-0" fill="currentColor" strokeWidth={0} /> Continue with Apple
                 </motion.button>
               </div>
+
+              {/* Auth error banner */}
+              {callbackError && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="mb-5 rounded-2xl border border-[rgba(255,77,28,0.3)] bg-[rgba(255,77,28,0.08)] p-4 text-left"
+                  role="alert"
+                >
+                  <div className="flex gap-3">
+                    <AlertTriangle className="w-5 h-5 text-[#FF4D1C] shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[14px] font-semibold text-white leading-snug mb-2">
+                        {callbackErrorCode === 'identity_already_exists'
+                          ? 'Google account already linked'
+                          : callbackErrorCode === 'email_exists'
+                          ? 'Email already registered'
+                          : 'Sign-in error'}
+                      </div>
+                      <p className="text-[13px] text-[rgba(255,255,255,0.7)] leading-relaxed">
+                        {callbackError}
+                      </p>
+                      {callbackErrorCode === 'identity_already_exists' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCallbackError(null);
+                            setCallbackErrorCode(null);
+                            handleOAuthLogin('google');
+                          }}
+                          className="mt-3 px-4 py-2 rounded-full bg-[#D4FF00] text-black text-[13px] font-semibold transition-opacity hover:opacity-90"
+                        >
+                          Sign in with Google
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCallbackError(null);
+                        setCallbackErrorCode(null);
+                      }}
+                      aria-label="Dismiss"
+                      className="w-6 h-6 rounded-full flex items-center justify-center text-[rgba(255,255,255,0.5)] hover:text-white shrink-0"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                </motion.div>
+              )}
 
               {showEmailSuggestion && (
                 <motion.div 
