@@ -220,15 +220,19 @@ export function AuthPage() {
                     <GoogleIcon className="w-5 h-5 shrink-0" /> Continue with Google
                 </motion.button>
                 
-                <motion.button 
-                    whileHover={hover.subtle}
-                    whileTap={tap.scale}
-                    onClick={() => toast({ type: 'info', message: 'This feature is currently unavailable.' })}
-                    disabled={loading}
-                    className="btn-ghost w-full opacity-50 cursor-not-allowed"
+                <button
+                    type="button"
+                    disabled
+                    aria-disabled="true"
+                    tabIndex={-1}
+                    className="btn-ghost w-full opacity-50 cursor-not-allowed flex items-center justify-center gap-2 relative"
                 >
-                    <Apple className="w-5 h-5 shrink-0" fill="currentColor" strokeWidth={0} /> Continue with Apple
-                </motion.button>
+                    <Apple className="w-5 h-5 shrink-0" fill="currentColor" strokeWidth={0} />
+                    Continue with Apple
+                    <span className="absolute right-3 text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.4)]">
+                      Coming soon
+                    </span>
+                </button>
               </div>
 
               {/* Auth error banner */}
