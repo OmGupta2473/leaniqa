@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
@@ -32,6 +32,7 @@ import {
 } from '@/shared/utils/paceEngine';
 import { useOnboardingDraft } from '../useOnboardingDraft';
 import type { OnboardingDraft } from '../types';
+import { ConsentScreen } from './ConsentScreen';
 import { useViewport } from '@/shared/styles/responsive';
 
 type DraftProps = {
@@ -69,12 +70,12 @@ function ftInToCm(ft: number, inch: number): number {
 
 /** Engine activity level -> the exact string the profiles table stores. */
 const ACTIVITY_TO_DB_LABEL = {
-    sedentary: 'Sedentary',
-    light: 'Light',
-    moderate: 'Moderate',
-    active: 'Active',
-    athlete: 'Very active',
-  } as const;
+  sedentary: 'Sedentary',
+  light: 'Light',
+  moderate: 'Moderate',
+  active: 'Active',
+  athlete: 'Very active',
+} as const;
 
 function mapActivity(activity: ActivityLevel): DbProfile['activity_level'] {
   return ACTIVITY_TO_DB_LABEL[activity];
@@ -94,10 +95,10 @@ function AnimatedValue({ value, className = '' }: { value: number; className?: s
   );
 }
 
-function ProgressDots({ step }: { step: 1 | 2 | 3 }) {
+function ProgressDots({ step }: { step: 1 | 2 | 3 | 4 }) {
   return (
     <div className="pt-4 pb-2 flex justify-center gap-2">
-      {[1, 2, 3].map((i) => (
+      {[1, 2, 3, 4].map((i) => (
         <div
           key={i}
           className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
@@ -146,7 +147,6 @@ function BasicsScreen({ draft, setDraft }: DraftProps) {
     draft.heightCm !== null && draft.heightCm > 0 &&
     draft.weightKg !== null && draft.weightKg > 0;
 
-  /** Convert the current value when switching modes so the equivalent shows at once. */
   const switchHeightMode = (next: 'cm' | 'ftin') => {
     if (next === heightMode) return;
     if (next === 'ftin') {
@@ -184,93 +184,93 @@ function BasicsScreen({ draft, setDraft }: DraftProps) {
       </header>
 
       <main className="flex-1 min-h-0 overflow-y-auto px-6">
-      <div className="mt-10 space-y-4">
-        <input
-          value={draft.name}
-          onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
-          placeholder="Your name"
-          className={INPUT_CLASS}
-        />
-
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-1 flex gap-1">
-            {(['Male', 'Female'] as const).map((option) => (
-              <button
-                key={option}
-                onClick={() => setDraft((d) => ({ ...d, sex: option }))}
-                className={`flex-1 py-2 rounded-lg text-[14px] font-medium transition-colors ${
-                  draft.sex === option
-                    ? 'bg-[#D4FF00] text-black'
-                    : 'text-zinc-400 hover:text-white'
-                }`}
-              >
-                {option}
-              </button>
-            ))}
-          </div>
-
-          <UnitInput
-            value={draft.age}
-            onChange={(v) => setDraft((d) => ({ ...d, age: v }))}
-            placeholder="Age"
-            unit="years"
+        <div className="mt-10 space-y-4">
+          <input
+            value={draft.name}
+            onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
+            placeholder="Your name"
+            className={INPUT_CLASS}
           />
-        </div>
 
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">Height</span>
-          <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-0.5 flex gap-0.5">
-            {(['cm', 'ftin'] as const).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => switchHeightMode(mode)}
-                className={`px-3 py-1 rounded-md text-[11px] font-medium transition-colors ${
-                  heightMode === mode ? 'bg-[#D4FF00] text-black' : 'text-zinc-400 hover:text-white'
-                }`}
-              >
-                {mode === 'cm' ? 'cm' : 'ft/in'}
-              </button>
-            ))}
-          </div>
-        </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-1 flex gap-1">
+              {(['Male', 'Female'] as const).map((option) => (
+                <button
+                  key={option}
+                  onClick={() => setDraft((d) => ({ ...d, sex: option }))}
+                  className={`flex-1 py-2 rounded-lg text-[14px] font-medium transition-colors ${
+                    draft.sex === option
+                      ? 'bg-[#D4FF00] text-black'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          {heightMode === 'cm' ? (
             <UnitInput
-              value={draft.heightCm}
-              onChange={(v) => setDraft((d) => ({ ...d, heightCm: v }))}
-              placeholder="Height"
-              unit="cm"
+              value={draft.age}
+              onChange={(v) => setDraft((d) => ({ ...d, age: v }))}
+              placeholder="Age"
+              unit="years"
             />
-          ) : (
-            <>
-              <UnitInput value={ft} onChange={updateFt} placeholder="ft" unit="ft" />
-              <UnitInput value={inch} onChange={updateInch} placeholder="in" unit="in" />
-            </>
-          )}
-          <UnitInput
-            value={draft.weightKg}
-            onChange={(v) => setDraft((d) => ({ ...d, weightKg: v }))}
-            placeholder="Weight"
-            unit="kg"
-          />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">Height</span>
+            <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-0.5 flex gap-0.5">
+              {(['cm', 'ftin'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => switchHeightMode(mode)}
+                  className={`px-3 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                    heightMode === mode ? 'bg-[#D4FF00] text-black' : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  {mode === 'cm' ? 'cm' : 'ft/in'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {heightMode === 'cm' ? (
+              <UnitInput
+                value={draft.heightCm}
+                onChange={(v) => setDraft((d) => ({ ...d, heightCm: v }))}
+                placeholder="Height"
+                unit="cm"
+              />
+            ) : (
+              <>
+                <UnitInput value={ft} onChange={updateFt} placeholder="ft" unit="ft" />
+                <UnitInput value={inch} onChange={updateInch} placeholder="in" unit="in" />
+              </>
+            )}
+            <UnitInput
+              value={draft.weightKg}
+              onChange={(v) => setDraft((d) => ({ ...d, weightKg: v }))}
+              placeholder="Weight"
+              unit="kg"
+            />
+          </div>
         </div>
-      </div>
       </main>
 
       <footer className="flex-shrink-0 px-6 pb-8">
-      <button
-        disabled={!isValid}
-        onClick={() => setDraft((d) => ({ ...d, step: 2 }))}
-        className={`mt-8 w-full py-4 rounded-full font-semibold text-[15px] transition-all ${
-          isValid
-            ? 'bg-[#D4FF00] text-black hover:brightness-110'
-            : 'bg-zinc-900 text-zinc-600 cursor-not-allowed'
-        }`}
-      >
-        Continue
-      </button>
+        <button
+          disabled={!isValid}
+          onClick={() => setDraft((d) => ({ ...d, step: 2 }))}
+          className={`mt-8 w-full py-4 rounded-full font-semibold text-[15px] transition-all ${
+            isValid
+              ? 'bg-[#D4FF00] text-black hover:brightness-110'
+              : 'bg-zinc-900 text-zinc-600 cursor-not-allowed'
+          }`}
+        >
+          Continue
+        </button>
       </footer>
     </div>
   );
@@ -287,7 +287,6 @@ const ACTIVITY_OPTIONS: { id: ActivityLevel; label: string; desc: string; Icon: 
 function ActivityScreen({ draft, setDraft }: DraftProps) {
   return (
     <div className="flex flex-col h-full min-h-0 w-full max-w-md mx-auto">
-      {/* Fixed header */}
       <header className="flex-shrink-0 px-[clamp(1rem,4vw,1.5rem)] pt-2 pb-[clamp(0.75rem,2dvh,1.25rem)]">
         <ProgressDots step={draft.step} />
         <h1 className="text-[clamp(1.5rem,4.5dvh,2rem)] font-semibold tracking-tight text-white mt-4 mb-2">
@@ -298,7 +297,6 @@ function ActivityScreen({ draft, setDraft }: DraftProps) {
         </p>
       </header>
 
-      {/* Flexible middle - 5 cards */}
       <main className="flex-1 min-h-0 overflow-y-auto px-[clamp(1rem,4vw,1.5rem)]">
         <div className="flex flex-col gap-[clamp(0.3rem,1dvh,0.75rem)]">
           {ACTIVITY_OPTIONS.map((opt) => {
@@ -339,7 +337,6 @@ function ActivityScreen({ draft, setDraft }: DraftProps) {
         </div>
       </main>
 
-      {/* Fixed footer */}
       <footer className="flex-shrink-0 px-[clamp(1rem,4vw,1.5rem)] pt-[clamp(0.6rem,1.8dvh,1rem)] pb-[max(0.75rem,env(safe-area-inset-bottom))] flex gap-3">
         <button
           onClick={() => setDraft((d) => ({ ...d, step: 1 }))}
@@ -366,13 +363,13 @@ function ActivityScreen({ draft, setDraft }: DraftProps) {
     </div>
   );
 }
+
 const GOAL_OPTIONS: { id: GoalType; label: string; desc: string; Icon: typeof Target }[] = [
   { id: 'cut', label: 'Lose Fat', desc: 'Reduce body fat · 22% deficit', Icon: TrendingDown },
   { id: 'recomp', label: 'Recomp', desc: 'Lose fat and build muscle · maintenance', Icon: Target },
   { id: 'bulk', label: 'Build Muscle', desc: 'Gain muscle · 8% surplus', Icon: TrendingUp },
 ];
 
-/** Shared bottom-sheet chrome: portal, backdrop, spring entrance, Escape to close. */
 function Sheet({ open, onClose, title, children }: {
   open: boolean;
   onClose: () => void;
@@ -456,7 +453,6 @@ function MacrosSheet({ open, onClose, draft, setDraft, recommended }: {
   const [fat, setFat] = useState<number | null>(null);
   const [carbs, setCarbs] = useState<number | null>(null);
 
-  // Re-seed from the draft every time the sheet opens.
   useEffect(() => {
     if (!open) return;
     setProtein(draft.macroOverrides?.proteinG ?? recommended.proteinG);
@@ -514,10 +510,8 @@ const DIET_OPTIONS: { id: 'veg' | 'egg' | 'nonveg'; label: string }[] = [
   { id: 'nonveg', label: 'Non-veg' },
 ];
 
-function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
-  /** Accepted for call-site symmetry; profileService resolves the user itself. */
-  userId: string;
-  onCommit: () => void;
+function PlanScreen({ draft, setDraft, onConsent }: DraftProps & {
+  onConsent: (commitFn: () => Promise<void>) => void;
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -527,8 +521,6 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
   const [gainPace, setGainPace] = useState(8);
   const [cutPace, setCutPace] = useState(22);
 
-  // The engine rejects impossible input. A draft that reached screen 3 is
-  // already validated, so these fallbacks are belt-and-braces only.
   const input: OnboardingInput = {
     sex: draft.sex ?? 'Male',
     age: draft.age && draft.age > 0 ? draft.age : 30,
@@ -542,7 +534,7 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
   const timeline = estimateTimeline(input, goal, plan);
   const bmi = plan.bmi;
 
-    const displayProtein = plan.proteinG;
+  const displayProtein = plan.proteinG;
   const displayFat = plan.fatG;
   const displayCarbs = plan.carbsG;
   const displayCalories = plan.targetCalories;
@@ -551,10 +543,8 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
   const GOAL_ICON = goalMeta.Icon;
   const GOAL_LABEL = goalMeta.label;
 
-  // goalAdjustmentPct already comes out of the engine in percent (e.g. -22),
-  // so it is rounded here rather than multiplied again.
   const adjustmentPct = Math.abs(Math.round(plan.goalAdjustmentPct));
-   const deficitLine =
+  const deficitLine =
     goal === 'recomp'
       ? 'at maintenance — no deficit or surplus'
       : `${goal === 'cut' ? '−' : '+'}${adjustmentPct}% ${
@@ -565,13 +555,11 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
     if (saving) return;
     setSaving(true);
     try {
-           const protein = plan.proteinG;
+      const protein = plan.proteinG;
       const fat = plan.fatG;
       const carbs = plan.carbsG;
       const calories = plan.targetCalories;
 
-      // Placeholder body-fat values: both goals columns are NOT NULL. Phase 4
-      // replaces these with real optional user entry.
       const currentBf = bmi < 20 ? 15 : bmi < 25 ? 20 : bmi < 30 ? 25 : 30;
       const targetBf =
         goal === 'cut' ? Math.max(10, currentBf - 5)
@@ -603,9 +591,6 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
         deficit_kcal: Math.round(plan.maintenance - calories),
       });
 
-      // The router gate reads profile + goal through react-query with a 5 min
-      // staleTime, so seed and refresh both caches before redirecting -
-      // otherwise ProtectedRoute bounces the user straight back here.
       if (profileRow) queryClient.setQueryData(['profile'], profileRow);
       if (goalRow) queryClient.setQueryData(['goal'], goalRow);
       await queryClient.invalidateQueries({ queryKey: ['profile'] });
@@ -617,13 +602,11 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
         tdee: plan.maintenance,
         calories,
       });
-
-      onCommit();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       toast({ type: 'error', message: `Could not save your plan: ${message}` });
-    } finally {
       setSaving(false);
+      throw error;
     }
   };
 
@@ -631,251 +614,243 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
     <div className="flex flex-col h-full min-h-0 w-full max-w-md mx-auto">
       <header className="flex-shrink-0 px-6 pt-2 pb-2">
         <ProgressDots step={draft.step} />
-      <div className="flex items-center gap-3">
-        <button
-          onClick={() => setDraft((d) => ({ ...d, step: 2 }))}
-          aria-label="Back to activity"
-          className="p-2 -ml-2 bg-zinc-900/60 hover:bg-zinc-800 rounded-full text-zinc-400 hover:text-white transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white">Your plan</h1>
-          <p className="text-zinc-400 text-sm mt-1">Based on your stats.</p>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setDraft((d) => ({ ...d, step: 2 }))}
+            aria-label="Back to activity"
+            className="p-2 -ml-2 bg-zinc-900/60 hover:bg-zinc-800 rounded-full text-zinc-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white">Your plan</h1>
+            <p className="text-zinc-400 text-sm mt-1">Based on your stats.</p>
+          </div>
         </div>
-      </div>
       </header>
 
       <main className="flex-1 min-h-0 overflow-y-auto px-6">
-{bmi < 18.5 && (
-        <div className="mt-5 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 flex items-start gap-2">
-          <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
-          <div className="text-[13px] text-amber-200/90 leading-relaxed">
-            Your BMI is {bmi}. Cutting further may not be ideal — consider Build Muscle instead.
-            <button
-              onClick={() => setDraft((d) => ({ ...d, goalOverride: 'bulk' }))}
-              className="underline ml-1 hover:text-amber-100 transition-colors"
-            >
-              Switch to Build Muscle
-            </button>
-          </div>
-        </div>
-      )}
-
-      <section className="mt-[clamp(0.75rem,2dvh,1.25rem)]">
-        <div className="text-[clamp(0.7rem,1.8dvh,0.8rem)] uppercase tracking-wider text-zinc-500 mb-[clamp(0.4rem,1.2dvh,0.6rem)]">
-          Your goal
-        </div>
-
-        {/* Horizontal pill row — 3 equal-width pills */}
-        <div className="grid grid-cols-3 gap-[clamp(0.35rem,1dvh,0.5rem)]">
-          {GOAL_OPTIONS.map((opt) => {
-            const active = goal === opt.id;
-            return (
+        {bmi < 18.5 && (
+          <div className="mt-5 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
+            <div className="text-[13px] text-amber-200/90 leading-relaxed">
+              Your BMI is {bmi}. Cutting further may not be ideal — consider Build Muscle instead.
               <button
-                key={opt.id}
-                onClick={() => setDraft((d) => ({ ...d, goalOverride: opt.id }))}
-                className={`flex flex-col items-center justify-center gap-1 rounded-xl border py-[clamp(0.45rem,1.4dvh,0.7rem)] px-[clamp(0.25rem,1vw,0.5rem)] transition-colors ${
-                  active
-                    ? 'border-[#D4FF00]/60 bg-[#D4FF00]/8'
-                    : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
-                }`}
+                onClick={() => setDraft((d) => ({ ...d, goalOverride: 'bulk' }))}
+                className="underline ml-1 hover:text-amber-100 transition-colors"
               >
-                <opt.Icon
-                  className={`w-[clamp(0.9rem,2.2dvh,1.1rem)] h-[clamp(0.9rem,2.2dvh,1.1rem)] ${
-                    active ? 'text-[#D4FF00]' : 'text-zinc-400'
-                  }`}
-                />
-                <span className={`text-[clamp(0.68rem,1.75dvh,0.82rem)] font-semibold tracking-tight ${
-                  active ? 'text-white' : 'text-zinc-300'
-                }`}>
-                  {opt.label}
-                </span>
+                Switch to Build Muscle
               </button>
-            );
-          })}
-        </div>
-
-        {/* Description of the currently selected goal */}
-        <div className="mt-[clamp(0.4rem,1.2dvh,0.6rem)] text-[clamp(0.65rem,1.6dvh,0.78rem)] text-zinc-500 leading-snug text-center">
-          {GOAL_OPTIONS.find((g) => g.id === goal)?.desc}
-        </div>
-      </section>
-
-      {goal === 'cut' && (
-        <section className="mt-[clamp(0.65rem,1.8dvh,1rem)]">
-          <div className="text-[clamp(0.7rem,1.8dvh,0.8rem)] uppercase tracking-wider text-zinc-500 mb-[clamp(0.4rem,1.2dvh,0.6rem)]">
-            Cut pace
+            </div>
           </div>
-          <div className="grid grid-cols-4 gap-[clamp(0.35rem,1dvh,0.5rem)]">
-            {CUT_PACES.map((p) => {
-              const active = cutPace === p;
+        )}
+
+        <section className="mt-[clamp(0.75rem,2dvh,1.25rem)]">
+          <div className="text-[clamp(0.7rem,1.8dvh,0.8rem)] uppercase tracking-wider text-zinc-500 mb-[clamp(0.4rem,1.2dvh,0.6rem)]">
+            Your goal
+          </div>
+
+          <div className="grid grid-cols-3 gap-[clamp(0.35rem,1dvh,0.5rem)]">
+            {GOAL_OPTIONS.map((opt) => {
+              const active = goal === opt.id;
               return (
                 <button
-                  key={p}
-                  type="button"
-                  onClick={() => setCutPace(p)}
+                  key={opt.id}
+                  onClick={() => setDraft((d) => ({ ...d, goalOverride: opt.id }))}
                   className={`flex flex-col items-center justify-center gap-1 rounded-xl border py-[clamp(0.45rem,1.4dvh,0.7rem)] px-[clamp(0.25rem,1vw,0.5rem)] transition-colors ${
                     active
                       ? 'border-[#D4FF00]/60 bg-[#D4FF00]/8'
                       : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
                   }`}
                 >
+                  <opt.Icon
+                    className={`w-[clamp(0.9rem,2.2dvh,1.1rem)] h-[clamp(0.9rem,2.2dvh,1.1rem)] ${
+                      active ? 'text-[#D4FF00]' : 'text-zinc-400'
+                    }`}
+                  />
                   <span className={`text-[clamp(0.68rem,1.75dvh,0.82rem)] font-semibold tracking-tight ${
                     active ? 'text-white' : 'text-zinc-300'
                   }`}>
-                    −{p}%
+                    {opt.label}
                   </span>
                 </button>
               );
             })}
           </div>
-        </section>
-      )}
 
-      {goal === 'bulk' && (
+          <div className="mt-[clamp(0.4rem,1.2dvh,0.6rem)] text-[clamp(0.65rem,1.6dvh,0.78rem)] text-zinc-500 leading-snug text-center">
+            {GOAL_OPTIONS.find((g) => g.id === goal)?.desc}
+          </div>
+        </section>
+
+        {goal === 'cut' && (
+          <section className="mt-[clamp(0.65rem,1.8dvh,1rem)]">
+            <div className="text-[clamp(0.7rem,1.8dvh,0.8rem)] uppercase tracking-wider text-zinc-500 mb-[clamp(0.4rem,1.2dvh,0.6rem)]">
+              Cut pace
+            </div>
+            <div className="grid grid-cols-4 gap-[clamp(0.35rem,1dvh,0.5rem)]">
+              {CUT_PACES.map((p) => {
+                const active = cutPace === p;
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setCutPace(p)}
+                    className={`flex flex-col items-center justify-center gap-1 rounded-xl border py-[clamp(0.45rem,1.4dvh,0.7rem)] px-[clamp(0.25rem,1vw,0.5rem)] transition-colors ${
+                      active
+                        ? 'border-[#D4FF00]/60 bg-[#D4FF00]/8'
+                        : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
+                    }`}
+                  >
+                    <span className={`text-[clamp(0.68rem,1.75dvh,0.82rem)] font-semibold tracking-tight ${
+                      active ? 'text-white' : 'text-zinc-300'
+                    }`}>
+                      −{p}%
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {goal === 'bulk' && (
+          <section className="mt-[clamp(0.65rem,1.8dvh,1rem)]">
+            <div className="text-[clamp(0.7rem,1.8dvh,0.8rem)] uppercase tracking-wider text-zinc-500 mb-[clamp(0.4rem,1.2dvh,0.6rem)]">
+              Surplus pace
+            </div>
+            <div className="grid grid-cols-3 gap-[clamp(0.35rem,1dvh,0.5rem)]">
+              {GAIN_PACES.map((p) => {
+                const active = gainPace === p;
+                return (
+                  <button
+                    key={p}
+                    onClick={() => setGainPace(p)}
+                    className={`flex flex-col items-center justify-center gap-1 rounded-xl border py-[clamp(0.45rem,1.4dvh,0.7rem)] px-[clamp(0.25rem,1vw,0.5rem)] transition-colors ${
+                      active
+                        ? 'border-[#D4FF00]/60 bg-[#D4FF00]/8'
+                        : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
+                    }`}
+                  >
+                    <span className={`text-[clamp(0.68rem,1.75dvh,0.82rem)] font-semibold tracking-tight ${
+                      active ? 'text-white' : 'text-zinc-300'
+                    }`}>
+                      +{p}%
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         <section className="mt-[clamp(0.65rem,1.8dvh,1rem)]">
           <div className="text-[clamp(0.7rem,1.8dvh,0.8rem)] uppercase tracking-wider text-zinc-500 mb-[clamp(0.4rem,1.2dvh,0.6rem)]">
-            Surplus pace
+            How do you eat?
           </div>
           <div className="grid grid-cols-3 gap-[clamp(0.35rem,1dvh,0.5rem)]">
-            {GAIN_PACES.map((p) => {
-              const active = gainPace === p;
+            {DIET_OPTIONS.map((opt) => {
+              const active = draft.dietaryPreference === opt.id;
               return (
                 <button
-                  key={p}
-                  onClick={() => setGainPace(p)}
-                  className={`flex flex-col items-center justify-center gap-1 rounded-xl border py-[clamp(0.45rem,1.4dvh,0.7rem)] px-[clamp(0.25rem,1vw,0.5rem)] transition-colors ${
+                  key={opt.id}
+                  onClick={() => setDraft((d) => ({ ...d, dietaryPreference: opt.id }))}
+                  className={`rounded-full border py-[clamp(0.4rem,1.2dvh,0.6rem)] text-[clamp(0.7rem,1.85dvh,0.85rem)] font-medium tracking-tight transition-colors ${
                     active
-                      ? 'border-[#D4FF00]/60 bg-[#D4FF00]/8'
-                      : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
+                      ? 'border-[#D4FF00] bg-[#D4FF00] text-black'
+                      : 'border-zinc-800 bg-zinc-900/40 text-zinc-400 hover:border-zinc-700'
                   }`}
                 >
-                  <span className={`text-[clamp(0.68rem,1.75dvh,0.82rem)] font-semibold tracking-tight ${
-                    active ? 'text-white' : 'text-zinc-300'
-                  }`}>
-                    +{p}%
-                  </span>
+                  {opt.label}
                 </button>
               );
             })}
           </div>
         </section>
-      )}
 
-      <section className="mt-[clamp(0.65rem,1.8dvh,1rem)]">
-        <div className="text-[clamp(0.7rem,1.8dvh,0.8rem)] uppercase tracking-wider text-zinc-500 mb-[clamp(0.4rem,1.2dvh,0.6rem)]">
-          How do you eat?
-        </div>
-        <div className="grid grid-cols-3 gap-[clamp(0.35rem,1dvh,0.5rem)]">
-          {DIET_OPTIONS.map((opt) => {
-            const active = draft.dietaryPreference === opt.id;
-            return (
-              <button
-                key={opt.id}
-                onClick={() => setDraft((d) => ({ ...d, dietaryPreference: opt.id }))}
-                className={`rounded-full border py-[clamp(0.4rem,1.2dvh,0.6rem)] text-[clamp(0.7rem,1.85dvh,0.85rem)] font-medium tracking-tight transition-colors ${
-                  active
-                    ? 'border-[#D4FF00] bg-[#D4FF00] text-black'
-                    : 'border-zinc-800 bg-zinc-900/40 text-zinc-400 hover:border-zinc-700'
-                }`}
-              >
-                {opt.label}
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      <div className="mt-[clamp(0.75rem,2dvh,1.25rem)] rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-[clamp(0.5rem,1.4dvh,1rem)] relative">
-        {/* Header row: label + Adjust link */}
-        <div className="flex items-center justify-between mb-[clamp(0.4rem,1.2dvh,0.6rem)]">
-          <div className="text-[clamp(0.65rem,1.7dvh,0.78rem)] uppercase tracking-wider text-[#D4FF00]/80 font-semibold">
-            Your daily targets
-          </div>
-          <button
-            onClick={() => setMacroSheetOpen(true)}
-            className="text-[clamp(0.65rem,1.65dvh,0.78rem)] text-zinc-500 hover:text-white transition-colors"
-          >
-            Adjust ›
-          </button>
-        </div>
-
-        {/* Big calorie number */}
-        <div className="flex items-baseline gap-1.5">
-          <AnimatedValue
-            value={displayCalories}
-            className="text-[clamp(2rem,7dvh,2.75rem)] font-semibold tabular-nums tracking-tight text-white leading-none"
-          />
-          <span className="text-[clamp(0.8rem,2.2dvh,1rem)] text-zinc-500 font-medium">kcal</span>
-        </div>
-
-        {/* Deficit line */}
-        <div className="mt-0.5 text-[clamp(0.68rem,1.75dvh,0.8rem)] text-zinc-500 tabular-nums">
-          {deficitLine}
-        </div>
-
-        {/* 3 macro tiles */}
-        <div className="grid grid-cols-3 gap-[clamp(0.4rem,1.2dvh,0.6rem)] mt-[clamp(0.4rem,1.1dvh,0.75rem)]">
-          {[
-            { label: 'Protein', value: displayProtein },
-            { label: 'Fat', value: displayFat },
-            { label: 'Carbs', value: displayCarbs },
-          ].map((m) => (
-            <div
-              key={m.label}
-              className="rounded-xl border border-zinc-800 bg-black/20 py-[clamp(0.4rem,1.2dvh,0.6rem)] text-center"
-            >
-              <div className="text-[clamp(0.95rem,2.6dvh,1.15rem)] font-semibold tabular-nums text-white leading-none">
-                <AnimatedValue value={m.value} />g
-              </div>
-              <div className="mt-1 text-[clamp(0.58rem,1.5dvh,0.68rem)] uppercase tracking-wider text-zinc-500">
-                {m.label}
-              </div>
+        <div className="mt-[clamp(0.75rem,2dvh,1.25rem)] rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-[clamp(0.5rem,1.4dvh,1rem)] relative">
+          <div className="flex items-center justify-between mb-[clamp(0.4rem,1.2dvh,0.6rem)]">
+            <div className="text-[clamp(0.65rem,1.7dvh,0.78rem)] uppercase tracking-wider text-[#D4FF00]/80 font-semibold">
+              Your daily targets
             </div>
-          ))}
+            <button
+              onClick={() => setMacroSheetOpen(true)}
+              className="text-[clamp(0.65rem,1.65dvh,0.78rem)] text-zinc-500 hover:text-white transition-colors"
+            >
+              Adjust ›
+            </button>
+          </div>
+
+          <div className="flex items-baseline gap-1.5">
+            <AnimatedValue
+              value={displayCalories}
+              className="text-[clamp(2rem,7dvh,2.75rem)] font-semibold tabular-nums tracking-tight text-white leading-none"
+            />
+            <span className="text-[clamp(0.8rem,2.2dvh,1rem)] text-zinc-500 font-medium">kcal</span>
+          </div>
+
+          <div className="mt-0.5 text-[clamp(0.68rem,1.75dvh,0.8rem)] text-zinc-500 tabular-nums">
+            {deficitLine}
+          </div>
+
+          <div className="grid grid-cols-3 gap-[clamp(0.4rem,1.2dvh,0.6rem)] mt-[clamp(0.4rem,1.1dvh,0.75rem)]">
+            {[
+              { label: 'Protein', value: displayProtein },
+              { label: 'Fat', value: displayFat },
+              { label: 'Carbs', value: displayCarbs },
+            ].map((m) => (
+              <div
+                key={m.label}
+                className="rounded-xl border border-zinc-800 bg-black/20 py-[clamp(0.4rem,1.2dvh,0.6rem)] text-center"
+              >
+                <div className="text-[clamp(0.95rem,2.6dvh,1.15rem)] font-semibold tabular-nums text-white leading-none">
+                  <AnimatedValue value={m.value} />g
+                </div>
+                <div className="mt-1 text-[clamp(0.58rem,1.5dvh,0.68rem)] uppercase tracking-wider text-zinc-500">
+                  {m.label}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-[clamp(0.4rem,1.1dvh,0.75rem)] pt-[clamp(0.35rem,1dvh,0.6rem)] border-t border-zinc-800/60 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5 text-[clamp(0.7rem,1.8dvh,0.82rem)] text-zinc-300 font-medium">
+              <GOAL_ICON className="w-[clamp(0.8rem,2dvh,0.95rem)] h-[clamp(0.8rem,2dvh,0.95rem)] text-[#D4FF00]" />
+              {GOAL_LABEL}
+            </div>
+            <div className="flex items-center gap-1.5 text-[clamp(0.65rem,1.65dvh,0.78rem)] text-zinc-500 tabular-nums">
+              <Calendar className="w-[clamp(0.7rem,1.8dvh,0.85rem)] h-[clamp(0.7rem,1.8dvh,0.85rem)] shrink-0" />
+              <span>
+                {timeline.weeksToGoal !== null && timeline.estimatedGoalDate
+                  ? `In ~${timeline.weeksToGoal} weeks · Goal by ${formatIsoDate(timeline.estimatedGoalDate)}`
+                  : 'Maintain weight · Recomp mode'}
+              </span>
+            </div>
+          </div>
         </div>
 
-        {/* Goal + timeline row */}
-        <div className="mt-[clamp(0.4rem,1.1dvh,0.75rem)] pt-[clamp(0.35rem,1dvh,0.6rem)] border-t border-zinc-800/60 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5 text-[clamp(0.7rem,1.8dvh,0.82rem)] text-zinc-300 font-medium">
-            <GOAL_ICON className="w-[clamp(0.8rem,2dvh,0.95rem)] h-[clamp(0.8rem,2dvh,0.95rem)] text-[#D4FF00]" />
-            {GOAL_LABEL}
-          </div>
-          <div className="flex items-center gap-1.5 text-[clamp(0.65rem,1.65dvh,0.78rem)] text-zinc-500 tabular-nums">
-            <Calendar className="w-[clamp(0.7rem,1.8dvh,0.85rem)] h-[clamp(0.7rem,1.8dvh,0.85rem)] shrink-0" />
-            <span>
-              {timeline.weeksToGoal !== null && timeline.estimatedGoalDate
-                ? `In ~${timeline.weeksToGoal} weeks · Goal by ${formatIsoDate(timeline.estimatedGoalDate)}`
-                : 'Maintain weight · Recomp mode'}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <button
-        onClick={() => navigate('/science')}
-        className="mt-[clamp(0.5rem,1.4dvh,0.75rem)] w-full flex items-center justify-center gap-1.5 py-[clamp(0.45rem,1.3dvh,0.65rem)] rounded-xl border border-[#D4FF00]/25 bg-[#D4FF00]/5 text-[clamp(0.72rem,1.85dvh,0.85rem)] font-semibold text-[#D4FF00] hover:bg-[#D4FF00]/10 transition-colors"
-      >
-        <ShieldCheck className="w-[1em] h-[1em]" />
-        Check the facts
-        <span className="opacity-60">›</span>
-      </button>
-
+        <button
+          onClick={() => navigate('/science')}
+          className="mt-[clamp(0.5rem,1.4dvh,0.75rem)] w-full flex items-center justify-center gap-1.5 py-[clamp(0.45rem,1.3dvh,0.65rem)] rounded-xl border border-[#D4FF00]/25 bg-[#D4FF00]/5 text-[clamp(0.72rem,1.85dvh,0.85rem)] font-semibold text-[#D4FF00] hover:bg-[#D4FF00]/10 transition-colors"
+        >
+          <ShieldCheck className="w-[1em] h-[1em]" />
+          Check the facts
+          <span className="opacity-60">›</span>
+        </button>
       </main>
 
       <footer className="flex-shrink-0 px-6 pb-8">
-      <button
-        disabled={!draft.dietaryPreference || saving}
-        onClick={commit}
-        className={`mt-3 w-full py-4 rounded-full font-semibold text-[15px] transition-all ${
-          draft.dietaryPreference && !saving
-            ? 'bg-[#D4FF00] text-black hover:brightness-110'
-            : 'bg-zinc-900 text-zinc-600 cursor-not-allowed'
-        }`}
-      >
-        {saving ? 'Saving…' : 'Start tracking →'}
-      </button>
+        <button
+          disabled={!draft.dietaryPreference || saving}
+          onClick={() => onConsent(commit)}
+          className={`mt-3 w-full py-4 rounded-full font-semibold text-[15px] transition-all ${
+            draft.dietaryPreference && !saving
+              ? 'bg-[#D4FF00] text-black hover:brightness-110'
+              : 'bg-zinc-900 text-zinc-600 cursor-not-allowed'
+          }`}
+        >
+          {saving ? 'Saving…' : 'Start tracking →'}
+        </button>
       </footer>
 
       <MacrosSheet
@@ -885,15 +860,19 @@ function PlanScreen({ draft, setDraft, onCommit }: DraftProps & {
         setDraft={setDraft}
         recommended={{ proteinG: plan.proteinG, fatG: plan.fatG, carbsG: plan.carbsG }}
       />
-
     </div>
   );
 }
+
 export function OnboardingPage() {
   const { session } = useAuthSession();
   const navigate = useNavigate();
   const userId = session?.user.id ?? '';
   const { draft, setDraft, clearDraft, isLoading } = useOnboardingDraft(userId);
+
+  // Holds the commit function from PlanScreen so the ConsentScreen's
+  // "Continue" button can invoke it after consent is granted.
+  const commitRef = useRef<(() => Promise<void>) | null>(null);
 
   if (isLoading || !draft || !userId) return <ScreenSkeleton />;
 
@@ -906,8 +885,20 @@ export function OnboardingPage() {
           <PlanScreen
             draft={draft}
             setDraft={setDraft}
-            userId={userId}
-            onCommit={() => {
+            onConsent={(commitFn) => {
+              commitRef.current = commitFn;
+              setDraft((d) => ({ ...d, step: 4 }));
+            }}
+          />
+        )}
+        {draft.step === 4 && (
+          <ConsentScreen
+            draft={draft}
+            setDraft={setDraft}
+            onFinish={async () => {
+              if (commitRef.current) {
+                await commitRef.current();
+              }
               clearDraft();
               navigate('/dashboard', { replace: true });
             }}

@@ -5,7 +5,7 @@ import type { Sex, ActivityLevel, GoalType } from '@/shared/utils/onboardingMath
  * Persisted to localStorage per user so a refresh resumes at the same step.
  */
 export interface OnboardingDraft {
-  step: 1 | 2 | 3;
+  step: 1 | 2 | 3 | 4;
   name: string;
   sex: Sex | null;
   age: number | null;
@@ -15,10 +15,20 @@ export interface OnboardingDraft {
   dietaryPreference: 'veg' | 'egg' | 'nonveg' | null;
   goalOverride: GoalType | null;
   macroOverrides: { proteinG?: number; fatG?: number; carbsG?: number } | null;
+  
+  // New consent fields
+  termsAccepted: boolean;
+  privacyAccepted: boolean;
+  aiConsentAccepted: boolean;
+  marketingAccepted: boolean;
 }
 
 export const EMPTY_DRAFT: OnboardingDraft = {
   step: 1,
   name: '', sex: null, age: null, heightCm: null, weightKg: null,
   activity: null, dietaryPreference: null, goalOverride: null, macroOverrides: null,
+  termsAccepted: false,
+  privacyAccepted: false,
+  aiConsentAccepted: false,
+  marketingAccepted: false,
 };
