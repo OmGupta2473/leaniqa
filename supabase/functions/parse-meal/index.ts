@@ -975,8 +975,18 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) throw new Error("Unauthorized: Invalid token");
 
+    // Per-user daily limit. Falls back to 5 if the profile row is missing.
+    let limit = 5;
+    const { data: profileRow } = await supabase
+      .from("profiles")
+      .select("daily_ai_limit")
+      .eq("id", user.id)
+      .single();
+    if (profileRow?.daily_ai_limit) {
+      limit = profileRow.daily_ai_limit;
+    }
+
     const endpoint = "parse-meal";
-    const limit = Number.parseInt(Deno.env.get("DAILY_AI_LIMIT") || "15", 10);
     const istDate = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
     const today = istDate.toISOString().split("T")[0];
 
