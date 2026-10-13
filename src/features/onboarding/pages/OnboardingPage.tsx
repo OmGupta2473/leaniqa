@@ -34,6 +34,7 @@ import { useOnboardingDraft } from '../useOnboardingDraft';
 import type { OnboardingDraft } from '../types';
 import { ConsentScreen } from './ConsentScreen';
 import { useViewport } from '@/shared/styles/responsive';
+import { syncCurrentWeekReport } from "@/features/reports/utils/syncCurrentWeek";
 
 type DraftProps = {
   draft: OnboardingDraft;
@@ -595,6 +596,7 @@ function PlanScreen({ draft, setDraft, onConsent }: DraftProps & {
       if (goalRow) queryClient.setQueryData(['goal'], goalRow);
       await queryClient.invalidateQueries({ queryKey: ['profile'] });
       await queryClient.invalidateQueries({ queryKey: ['goal'] });
+      syncCurrentWeekReport();
 
       analytics.trackEvent('Onboarding Completed', {
         goal_type: goal,

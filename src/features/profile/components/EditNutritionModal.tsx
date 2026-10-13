@@ -15,6 +15,7 @@ import {
   type GainPace,
 } from "@/shared/utils/paceEngine";
 import { deriveCarbsFromKcal } from "@/shared/utils/macroReconciliation";
+import { syncCurrentWeekReport } from "@/features/reports/utils/syncCurrentWeek";
 
 interface EditNutritionModalProps {
   isOpen: boolean;
@@ -229,6 +230,7 @@ function EditNutritionModalInner({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       queryClient.invalidateQueries({ queryKey: ["goal"] });
+      syncCurrentWeekReport();
       haptics.success();
       onClose();
     },
