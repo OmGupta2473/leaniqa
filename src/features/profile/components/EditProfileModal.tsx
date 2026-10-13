@@ -9,6 +9,7 @@ import { computePacePlan, type CutPace, CUT_PACES } from '@/shared/utils/paceEng
 import { deriveCarbsFromKcal } from '@/shared/utils/macroReconciliation';
 import { cn } from '@/shared/utils/utils';
 import { haptics } from '@/shared/utils/haptics';
+import { syncCurrentWeekReport } from "@/features/reports/utils/syncCurrentWeek";
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -227,6 +228,7 @@ function EditProfileModalInner({ onClose, profileData, goalData }: Omit<EditProf
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       queryClient.invalidateQueries({ queryKey: ['goal'] });
+      syncCurrentWeekReport();
       haptics.success();
       onClose();
     },

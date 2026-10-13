@@ -16,6 +16,7 @@ export type EventName =
   | 'Meal Parse Analytics'
   | 'Custom Meal Logged'
   | 'Weekly Report Viewed'
+  | 'Weekly Report Week Changed'
   | 'Subscription Started'
   | 'Subscription Purchased'
   | 'Subscription Cancelled'

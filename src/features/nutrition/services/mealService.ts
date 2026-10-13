@@ -6,6 +6,21 @@ import { devLog, devWarn } from '@/shared/utils/logger';
 import { getKolkataStartOfDay, kolkataDateStringToUtcMidnight } from '@/shared/utils/timezone';
 
 export const mealService = {
+    async getMealsInRange(fromIso: string, toIsoExclusive: string): Promise<DbMealLog[]> {
+    const userId = await authService.getUserId();
+    const { data, error } = await supabase
+      .from('meal_logs')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('meal_time', fromIso)
+      .lt('meal_time', toIsoExclusive)
+      .order('meal_time', { ascending: true });
+    if (error) {
+      logError(new Error('Error fetching meals in range'), { error, userId, fromIso, toIsoExclusive });
+      throw error;
+    }
+    return data || [];
+  },
   async getMeals(options?: { days?: number, limit?: number }): Promise<DbMealLog[]> {
     const userId = await authService.getUserId();
     const days = options?.days ?? 30;
