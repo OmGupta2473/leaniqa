@@ -92,7 +92,11 @@ export function PreCommitEditModal({ isOpen, onClose, onSave, initial }: PreComm
     setCarbs(String(initial.carbs ?? ''));
     setFiber(initial.fiber === undefined || initial.fiber === null ? '' : String(initial.fiber));
     return undefined;
-  }, [isOpen, initial]);
+  // Reset from `initial` only when the sheet opens. Parent re-renders pass a
+  // fresh `initial` object reference, which would otherwise clobber the
+  // user's in-progress edits.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   // Autofocus the meal name once the sheet is mounted.
   useEffect(() => {
@@ -109,7 +113,8 @@ export function PreCommitEditModal({ isOpen, onClose, onSave, initial }: PreComm
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [isOpen, onClose]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   // Lock body scroll while open.
   useEffect(() => {

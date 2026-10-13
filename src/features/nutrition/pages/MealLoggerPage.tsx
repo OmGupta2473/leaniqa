@@ -1441,7 +1441,7 @@ if (todayCount >= PROTECT_PROGRESS_MEAL_THRESHOLD) {
         } : null}
         onSave={(updates) => {
           if (!pendingMeal) return;
-          setPendingMeal({
+          const edited = {
             text: updates.meal_text,
             request_id: pendingMeal.request_id,
             source: pendingMeal.source,
@@ -1455,9 +1455,15 @@ if (todayCount >= PROTECT_PROGRESS_MEAL_THRESHOLD) {
               fiber: updates.fiber,
               _userEdited: true,
             },
-          });
+          };
+          setPendingMeal(edited);
           setEditingPending(false);
           haptics.tap();
+          confirmMealMutation.mutate({
+            ...edited,
+            source: 'ai',
+            client_token: crypto.randomUUID(),
+          });
         }}
       />
       <LogCalendar
