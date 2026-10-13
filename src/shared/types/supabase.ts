@@ -74,11 +74,48 @@ export interface DbDailyMetric {
   score: number;
 }
 
+export interface WeeklyDaySummary {
+  date: string;
+  dayOfWeek: number;
+  logged: boolean;
+  isToday: boolean;
+  calories: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+  status: 'not_logged' | 'on_target' | 'under' | 'over' | 'protein_low' | 'in_progress';
+  score: number;
+}
+
 export interface DbWeeklyReport {
   id?: string;
   user_id: string;
-  week_start: string;
-  report: string;
+  week_start: string;        // YYYY-MM-DD (Sunday)
+  week_end: string;          // YYYY-MM-DD (Saturday)
+  status: 'live' | 'final';
+  days_with_meals: number;
+  days_with_weight: number;
+  total_calories: number;
+  avg_calories: number;
+  target_calories: number;
+  total_protein_g: number;
+  avg_protein_g: number;
+  target_protein_g: number;
+  total_carbs_g: number;
+  avg_carbs_g: number;
+  target_carbs_g: number;
+  total_fat_g: number;
+  avg_fat_g: number;
+  target_fat_g: number;
+  weekly_score: number;
+  confidence: 'empty' | 'insufficient' | 'low' | 'medium' | 'high';
+  day_summaries: WeeklyDaySummary[];
+  computed_at: string;
+  finalized_at: string | null;
+  created_at: string;
+  updated_at: string;
+  /** Legacy column, still present in the DB but no longer written. */
+  report?: string;
 }
 
 export interface DbSubscription {
