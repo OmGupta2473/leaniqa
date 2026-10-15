@@ -1,5 +1,38 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+    import { checkPaymentRateLimit, clientIpFrom } from "../_shared/rateLimit.ts";
+    // ... at the top of the file.
+
+    // ... after user is authenticated:
+
+    const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const clientIp = clientIpFrom(req);
+    const rl = await checkPaymentRateLimit(
+      admin,
+      user.id,
+      clientIp,
+      "create-payment",
+      5,   // 5 per user per minute
+      20,  // 20 per IP per minute
+      60,
+    );
+
+    if (!rl.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: "Too many attempts. Please wait a moment and try again.",
+          error_code: "rate_limited",
+        }),
+        {
+          status: 429,
+          headers: {
+            ...CORS_HEADERS,
+            "Content-Type": "application/json",
+            "Retry-After": String(rl.retryAfterSeconds),
+          },
+        },
+      );
+    }
 
 const RAZORPAY_API = "https://api.razorpay.com/v1";
 

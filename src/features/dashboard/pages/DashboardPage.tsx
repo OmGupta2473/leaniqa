@@ -190,8 +190,15 @@ const ringCircumference = 2 * Math.PI * 42;
         <SubscriptionExpiryBanner
           userId={session?.user?.id}
           currentPeriodEnd={subscription?.currentPeriodEnd ?? null}
-          isOneTime={subscription?.accessType === 'one_time'}
-          isCancelledSub={subscription?.status === 'cancelled'}
+          isEndingSoon={
+            subscription?.hasAccess === true &&
+            (subscription?.accessType === 'one_time' ||
+              subscription?.status === 'cancelled')
+          }
+          hasJustEnded={
+            subscription?.hasAccess === false &&
+            subscription?.status === 'expired'
+          }
         />
 
         {isMealsError && isOnline ? (

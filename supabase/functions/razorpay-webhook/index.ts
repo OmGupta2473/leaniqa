@@ -10,7 +10,49 @@ function json(body: unknown, status = 200): Response {
     headers: { "Content-Type": "application/json" },
   });
 }
+async function verifyPaymentWithRazorpay(
+  paymentId: string,
+  expectedOrderId: string,
+  expectedAmountPaise: number,
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const keyId = Deno.env.get("RAZORPAY_KEY_ID");
+  const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+  if (!keyId || !keySecret) return { ok: false, reason: "missing_credentials" };
 
+  const basicAuth = btoa(`${keyId}:${keySecret}`);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5_000);
+
+  try {
+    const res = await fetch(`https://api.razorpay.com/v1/payments/${paymentId}`, {
+      headers: { Authorization: `Basic ${basicAuth}` },
+      signal: controller.signal,
+    });
+    if (!res.ok) return { ok: false, reason: `http_${res.status}` };
+
+    const p = await res.json() as {
+      status: string;
+      order_id: string;
+      amount: number;
+      captured: boolean;
+    };
+    if (p.status !== "captured" || !p.captured) {
+      return { ok: false, reason: `status_${p.status}` };
+    }
+    if (p.order_id !== expectedOrderId) {
+      return { ok: false, reason: "order_mismatch" };
+    }
+    if (p.amount !== expectedAmountPaise) {
+      return { ok: false, reason: "amount_mismatch" };
+    }
+    return { ok: true };
+  } catch (err) {
+    const aborted = err instanceof DOMException && err.name === "AbortError";
+    return { ok: false, reason: aborted ? "timeout" : "network" };
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 async function verifySignature(
   rawBody: string,
   signature: string,
@@ -198,6 +240,34 @@ serve(async (req) => {
       return json({ ok: true, ignored: true });
     }
 
+    // Server-side verification: confirm with Razorpay that this payment was
+    // actually captured and matches the expected order and amount. The
+    // webhook signature proves authenticity; this proves integrity.
+    const expectedAmount = paymentPlan === "premium" ? 29900 : 14900;
+    const verification = await verifyPaymentWithRazorpay(
+      payment.id,
+      payment.order_id ?? "",
+      expectedAmount,
+    );
+
+    if (!verification.ok) {
+      console.error("payment_verification_failed", {
+        eventId,
+        paymentId: payment.id,
+        orderId: payment.order_id,
+        userId: paymentUserId,
+        plan: paymentPlan,
+        reason: verification.reason,
+      });
+      // Do NOT grant access. Return 200 so Razorpay stops retrying —
+      // a verification failure will fail the same way on retry.
+      return json({
+        ok: true,
+        verified: false,
+        reason: verification.reason,
+      });
+    }
+
     // Extend from the later of now() and any existing one-time period_end.
     // The 1-day grace is baked into the stored value (UI shows 30 days).
     const { data: existingRow } = await admin
@@ -291,82 +361,7 @@ serve(async (req) => {
   // Handle each event type.
   try {
     switch (eventType) {
-    //           case "payment.captured": {
-    //     const payment = payload.payload?.payment?.entity;
-    //     if (!payment) {
-    //       console.log("payment.captured without payment entity", { eventId });
-    //       break;
-    //     }
-
-    //     const paymentNotes = payment.notes ?? {};
-    //     const paymentUserId = paymentNotes.lean_iqa_user_id;
-    //     const accessType = paymentNotes.lean_iqa_access_type;
-    //     const paymentPlan = paymentNotes.lean_iqa_plan;
-
-    //     // Only handle one-time purchases here. Subscription payments fire
-    //     // subscription.charged separately and are handled below.
-    //     if (accessType !== "one_time") {
-    //       console.log("Ignoring subscription payment on payment.captured", {
-    //         eventId,
-    //         accessType,
-    //       });
-    //       break;
-    //     }
-
-    //     if (!paymentUserId) {
-    //       console.error("payment.captured missing lean_iqa_user_id", {
-    //         eventId,
-    //         paymentId: payment.id,
-    //       });
-    //       break;
-    //     }
-
-    //     if (paymentPlan !== "discipline" && paymentPlan !== "premium") {
-    //       console.error("payment.captured unknown plan", {
-    //         eventId,
-    //         plan: paymentPlan,
-    //       });
-    //       break;
-    //     }
-
-    //     // 1-day grace baked into the stored value (UI shows 30 days).
-    //     const periodEndIso = new Date(Date.now() + 31 * 24 * 60 * 60 * 1000)
-    //       .toISOString();
-
-    //     const { error: updateErr } = await admin
-    //       .from("subscriptions")
-    //       .update({
-    //         plan: paymentPlan,
-    //         status: "active",
-    //         access_type: "one_time",
-    //         current_period_end: periodEndIso,
-    //         billing_cycle: "monthly",
-    //         razorpay_subscription_id: null,
-    //         razorpay_plan_id: null,
-    //         beta_expires_at: null,
-    //       })
-    //       .eq("user_id", paymentUserId);
-
-    //     if (updateErr) {
-    //       console.error("Failed to grant one-time access", {
-    //         eventId,
-    //         userId: paymentUserId,
-    //         code: updateErr.code,
-    //         message: updateErr.message,
-    //       });
-    //       return json({ error: "db_update_failed" }, 500);
-    //     }
-
-    //     console.log("One-time access granted", {
-    //       eventId,
-    //       userId: paymentUserId,
-    //       plan: paymentPlan,
-    //       paymentId: payment.id,
-    //       periodEnd: periodEndIso,
-    //     });
-    //     break;
-    //   }
-
+ 
       case "subscription.activated":
       case "subscription.charged": {
         if (requestedPlan !== "discipline" && requestedPlan !== "premium") {

@@ -1,49 +1,65 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Clock, X } from 'lucide-react';
+import { Clock, X, AlertCircle } from 'lucide-react';
 import { getKolkataDateString } from '@/shared/utils/timezone';
 
 interface SubscriptionExpiryBannerProps {
   userId: string | undefined;
   currentPeriodEnd: string | null;
-  /** 'one_time' shows renewal copy; 'subscription' with status cancelled also shows. */
-  isOneTime: boolean;
-  isCancelledSub: boolean;
+  /** User has access right now, but it ends within 7 days. */
+  isEndingSoon: boolean;
+  /** User has no access now, but had it recently (status = expired). */
+  hasJustEnded: boolean;
 }
 
 const DAYS_THRESHOLD = 7;
+const JUST_ENDED_WINDOW_DAYS = 7;
 
-function daysUntil(iso: string): number {
+function daysBetween(iso: string): number {
   const now = Date.now();
   const target = new Date(iso).getTime();
   return Math.ceil((target - now) / (24 * 60 * 60 * 1000));
 }
 
 /**
- * Dashboard banner that appears when paid access is ending soon.
- * Two triggers:
- *   - one_time access expiring within 7 days
- *   - cancelled subscription whose current_period_end is within 7 days
+ * Dashboard banner for subscription transitions.
+ * Two modes:
+ *   ending_soon → hasAccess true, period_end within 7 days
+ *   just_ended  → hasAccess false, previously expired within last 7 days
  *
  * Dismissible per calendar day (IST).
  */
 export function SubscriptionExpiryBanner({
   userId,
   currentPeriodEnd,
-  isOneTime,
-  isCancelledSub,
+  isEndingSoon,
+  hasJustEnded,
 }: SubscriptionExpiryBannerProps) {
   const navigate = useNavigate();
   const [visible, setVisible] = useState(false);
+  const [mode, setMode] = useState<'ending_soon' | 'just_ended' | null>(null);
   const [days, setDays] = useState(0);
 
   useEffect(() => {
     if (!userId || !currentPeriodEnd) return;
-    if (!isOneTime && !isCancelledSub) return;
+    if (!isEndingSoon && !hasJustEnded) return;
 
-    const d = daysUntil(currentPeriodEnd);
-    if (d < 0 || d > DAYS_THRESHOLD) return;
+    const d = daysBetween(currentPeriodEnd);
+
+    let nextMode: 'ending_soon' | 'just_ended' | null = null;
+
+    if (isEndingSoon && d >= 0 && d <= DAYS_THRESHOLD) {
+      nextMode = 'ending_soon';
+    } else if (
+      hasJustEnded &&
+      d < 0 &&
+      Math.abs(d) <= JUST_ENDED_WINDOW_DAYS
+    ) {
+      nextMode = 'just_ended';
+    }
+
+    if (!nextMode) return;
 
     const key = `leaniqa-expiry-banner-dismissed:${userId}:${getKolkataDateString()}`;
     try {
@@ -52,10 +68,11 @@ export function SubscriptionExpiryBanner({
       return;
     }
 
+    setMode(nextMode);
     setDays(d);
     const t = setTimeout(() => setVisible(true), 900);
     return () => clearTimeout(t);
-  }, [userId, currentPeriodEnd, isOneTime, isCancelledSub]);
+  }, [userId, currentPeriodEnd, isEndingSoon, hasJustEnded]);
 
   const dismiss = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -70,16 +87,24 @@ export function SubscriptionExpiryBanner({
     }
   };
 
-  const headline =
-    days <= 0
-      ? 'Your access ends today'
-      : days === 1
-      ? 'Your access ends tomorrow'
-      : `Your access ends in ${days} days`;
+  if (!mode) return null;
 
-  const body = isOneTime
-    ? 'Renew for the same plan, or switch to autopay and never lose access.'
-    : 'Your subscription is cancelled. Renew to keep your plan active.';
+  const isEnded = mode === 'just_ended';
+
+  const headline = isEnded
+    ? 'Your access has ended'
+    : days <= 0
+    ? 'Your access ends today'
+    : days === 1
+    ? 'Your access ends tomorrow'
+    : `Your access ends in ${days} days`;
+
+  const body = isEnded
+    ? 'Renew to restore your history, weekly reports, and AI parses.'
+    : 'Renew for the same plan, or switch to autopay and never lose access.';
+
+  const accent = isEnded ? '#FF4D1C' : '#FFB347';
+  const Icon = isEnded ? AlertCircle : Clock;
 
   return (
     <AnimatePresence>
@@ -91,11 +116,18 @@ export function SubscriptionExpiryBanner({
           exit={{ opacity: 0, y: -12 }}
           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
           onClick={() => navigate('/pricing')}
-          className="w-full flex items-start gap-3 rounded-2xl border border-[#FFB347]/30 bg-[#FFB347]/[0.06] p-4 text-left active:scale-[0.99] transition-transform"
+          className="w-full flex items-start gap-3 rounded-2xl border p-4 text-left active:scale-[0.99] transition-transform"
+          style={{
+            borderColor: `${accent}4D`,
+            backgroundColor: `${accent}0F`,
+          }}
           aria-label="Renew your subscription"
         >
-          <div className="w-9 h-9 rounded-full bg-[#FFB347]/15 flex items-center justify-center shrink-0">
-            <Clock size={18} className="text-[#FFB347]" strokeWidth={2.2} />
+          <div
+            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+            style={{ backgroundColor: `${accent}26` }}
+          >
+            <Icon size={18} style={{ color: accent }} strokeWidth={2.2} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-[14px] font-semibold text-white leading-tight">
