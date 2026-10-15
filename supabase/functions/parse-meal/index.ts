@@ -981,44 +981,32 @@ serve(async (req) => {
     // free = 5, discipline = 25, premium = 100.
     // beta_pro is the legacy name for discipline; it keeps 25/day until
     // beta_expires_at passes, at which point it falls back to free.
-    const { data: subRow } = await supabase
-      .from("subscriptions")
-      .select("plan, status, beta_expires_at, current_period_end, access_type")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    // Single source of truth for access. Same logic the client uses.
+    const { data: accessRows, error: accessError } = await supabase.rpc(
+      "resolve_user_access",
+      { p_user_id: user.id },
+    );
 
-    const rawPlan = (subRow?.plan as string | undefined) ?? "free";
-    const subStatus = (subRow?.status as string | undefined) ?? "active";
-    const accessType = (subRow?.access_type as string | undefined) ?? "subscription";
-    const periodEnd = subRow?.current_period_end
-      ? new Date(subRow.current_period_end as string)
-      : null;
+    if (accessError) {
+      console.error(JSON.stringify({
+        level: "error",
+        stage: "PlanResolution",
+        event: "resolve_failed",
+        request_id: requestId,
+        message: accessError.message,
+      }));
+      // Fail closed: if we can't determine access, don't hand out paid limits.
+    }
 
-    const betaExpired =
-      rawPlan === "beta_pro" &&
-      subRow?.beta_expires_at != null &&
-      new Date(subRow.beta_expires_at as string) <= new Date();
+    const accessRow = Array.isArray(accessRows)
+      ? accessRows[0]
+      : accessRows;
 
-    // Cancelled subs still grant access until period_end. One-time access
-    // also stops at period_end.
-    const hasActiveAccess =
-      subStatus === "active" &&
-      (accessType !== "one_time" || (periodEnd != null && periodEnd > new Date()))
-        ? true
-        : subStatus === "cancelled" && periodEnd != null && periodEnd > new Date();
-
-    const resolvedPlan =
-      !hasActiveAccess || betaExpired
-        ? "free"
-        : rawPlan === "premium"
-        ? "premium"
-        : rawPlan === "discipline" || rawPlan === "beta_pro"
-        ? "discipline"
-        : "free";
+    const hasAccess = accessRow?.has_access === true;
+    const tier = typeof accessRow?.tier === "string" ? accessRow.tier : "free";
 
     const limit =
-      resolvedPlan === "premium" ? 100 : resolvedPlan === "discipline" ? 25 : 5;
-
+      !hasAccess ? 5 : tier === "premium" ? 100 : tier === "discipline" ? 25 : 5;
     const istDate = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
     const today = istDate.toISOString().split("T")[0];
     const context: ParseContext = {

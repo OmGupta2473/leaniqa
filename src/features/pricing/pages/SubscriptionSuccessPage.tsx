@@ -69,7 +69,7 @@ export function SubscriptionSuccessPage() {
       const status = await subscriptionService.getSubscriptionStatus();
       if (cancelled) return;
 
-      if (status.plan === targetPlan) {
+      if (status.hasAccess && status.plan === targetPlan) {
         confirmedRef.current = true;
         setConfirmed(true);
         setCurrentPeriodEnd(status.currentPeriodEnd);
@@ -156,11 +156,12 @@ export function SubscriptionSuccessPage() {
               <RefreshCw size={32} className="text-[#D4FF00]" strokeWidth={2.2} />
             </div>
             <h1 className="text-[22px] font-semibold tracking-tight mb-3">
-              Payment received
+              We&apos;ve received your payment
             </h1>
             <p className="text-[14px] text-zinc-400 leading-relaxed mb-8">
-              Your {planLabel} plan is activating — this may take a moment.
-              We&apos;ll update your account as soon as it&apos;s confirmed.
+              Confirming with Razorpay — this usually takes under a minute.
+              Your {planLabel} plan will activate automatically. If it
+              doesn&apos;t, refresh or contact support.
             </p>
             <button
               type="button"

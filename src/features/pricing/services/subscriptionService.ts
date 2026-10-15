@@ -10,12 +10,25 @@ export interface SubscriptionStatus {
   billingCycle: 'monthly' | 'annual' | null;
   razorpaySubscriptionId: string | null;
   accessType: 'subscription' | 'one_time';
+  hasAccess: boolean;
+  accessReason: string;
 }
+
 export interface CheckoutResult {
   subscriptionId: string | null;
   keyId: string | null;
   shortUrl: string | null;
   error: string | null;
+  /** HTTP status from the edge function, or 0 for network/unknown errors. */
+  status: number;
+}
+
+export interface OneTimeCheckoutResult {
+  orderId: string | null;
+  amount: number | null;
+  keyId: string | null;
+  error: string | null;
+  status: number;
 }
 
 export interface CancelResult {
@@ -25,50 +38,104 @@ export interface CancelResult {
   error: string | null;
 }
 
+interface ResolveAccessRow {
+  has_access: boolean;
+  tier: string;
+  reason: string;
+}
+
+const EMPTY_STATUS: SubscriptionStatus = {
+  isPremium: false,
+  plan: 'free',
+  status: 'error',
+  currentPeriodEnd: null,
+  billingCycle: null,
+  razorpaySubscriptionId: null,
+  accessType: 'subscription',
+  hasAccess: false,
+  accessReason: 'error',
+};
+
+/**
+ * Pulls status + body from a Supabase FunctionsHttpError. Falls back
+ * gracefully when the error came from the network or from JSON parsing.
+ */
+async function extractFunctionError(
+  error: unknown,
+): Promise<{ status: number; message: string }> {
+  const err = error as {
+    name?: string;
+    message?: string;
+    context?: Response;
+  };
+
+  if (err?.name === 'FunctionsHttpError' && err.context) {
+    const status = err.context.status ?? 0;
+    try {
+      const cloned = err.context.clone();
+      const body = (await cloned.json()) as { error?: string };
+      return { status, message: body?.error || err.message || 'Request failed' };
+    } catch {
+      return { status, message: err.message || 'Request failed' };
+    }
+  }
+
+  const message = err?.message ?? 'Unknown error';
+  if (/network|fetch/i.test(message)) {
+    return { status: 0, message: 'No internet connection' };
+  }
+  return { status: 0, message };
+}
+
 export const subscriptionService = {
   async getSubscriptionStatus(): Promise<SubscriptionStatus> {
     try {
       const userId = await authService.getUserId();
-      const { data, error } = await supabase.rpc('get_or_create_subscription', {
-        p_user_id: userId,
-      });
 
-      if (error) throw error;
+      const [rowRes, accessRes] = await Promise.all([
+        supabase.rpc('get_or_create_subscription', { p_user_id: userId }),
+        supabase.rpc('resolve_user_access', { p_user_id: userId }),
+      ]);
 
-      const rawPlan = (data?.plan as string | undefined) ?? 'free';
-      const status = (data?.status as string | undefined) ?? 'active';
+      if (rowRes.error) throw rowRes.error;
+      if (accessRes.error) throw accessRes.error;
 
-      const betaExpired =
-        rawPlan === 'beta_pro' &&
-        data?.beta_expires_at != null &&
-        new Date(data.beta_expires_at as string) <= new Date();
+      const raw = rowRes.data as Record<string, unknown> | null;
+      const accessRows = Array.isArray(accessRes.data)
+        ? accessRes.data
+        : accessRes.data
+        ? [accessRes.data]
+        : [];
+      const access = (accessRows[0] as ResolveAccessRow | undefined) ?? {
+        has_access: false,
+        tier: 'free',
+        reason: 'no_access_row',
+      };
+
+      const plan: PlanId = access.has_access
+        ? normalizePlan(access.tier)
+        : 'free';
 
       const currentPeriodEnd =
-        typeof data?.current_period_end === 'string'
-          ? data.current_period_end
+        typeof raw?.current_period_end === 'string'
+          ? (raw.current_period_end as string)
           : null;
 
-      const hasActiveAccess =
-        status === 'active' ||
-        (status === 'cancelled' &&
-          currentPeriodEnd != null &&
-          new Date(currentPeriodEnd) > new Date());
-
-      const plan: PlanId =
-        !hasActiveAccess || betaExpired ? 'free' : normalizePlan(rawPlan);
-
       const billingCycle: 'monthly' | 'annual' | null =
-        data?.billing_cycle === 'monthly' || data?.billing_cycle === 'annual'
-          ? (data.billing_cycle as 'monthly' | 'annual')
+        raw?.billing_cycle === 'monthly' || raw?.billing_cycle === 'annual'
+          ? (raw.billing_cycle as 'monthly' | 'annual')
           : null;
 
       const razorpaySubscriptionId =
-        typeof data?.razorpay_subscription_id === 'string'
-          ? data.razorpay_subscription_id
+        typeof raw?.razorpay_subscription_id === 'string'
+          ? (raw.razorpay_subscription_id as string)
           : null;
 
       const accessType: 'subscription' | 'one_time' =
-        data?.access_type === 'one_time' ? 'one_time' : 'subscription';
+        raw?.access_type === 'one_time' ? 'one_time' : 'subscription';
+
+      const status =
+        typeof raw?.status === 'string' ? (raw.status as string) : 'active';
 
       return {
         isPremium: plan !== 'free',
@@ -78,18 +145,12 @@ export const subscriptionService = {
         billingCycle,
         razorpaySubscriptionId,
         accessType,
+        hasAccess: access.has_access,
+        accessReason: access.reason,
       };
     } catch (error) {
       console.error('Error fetching subscription status:', error);
-      return {
-        isPremium: false,
-        plan: 'free',
-        status: 'error',
-        currentPeriodEnd: null,
-        billingCycle: null,
-        razorpaySubscriptionId: null,
-        accessType: 'subscription',
-      };
+      return EMPTY_STATUS;
     }
   },
 
@@ -102,14 +163,9 @@ export const subscriptionService = {
         'create-razorpay-subscription',
         { body: { plan, billingCycle } },
       );
-
       if (error) {
-        return {
-          subscriptionId: null,
-          keyId: null,
-          shortUrl: null,
-          error: error.message || 'Checkout failed',
-        };
+        const { status, message } = await extractFunctionError(error);
+        return { subscriptionId: null, keyId: null, shortUrl: null, error: message, status };
       }
       if (!data || typeof data.subscription_id !== 'string') {
         return {
@@ -117,22 +173,47 @@ export const subscriptionService = {
           keyId: null,
           shortUrl: null,
           error: 'No subscription returned',
+          status: 0,
         };
       }
-
       return {
         subscriptionId: data.subscription_id,
         keyId: typeof data.razorpay_key_id === 'string' ? data.razorpay_key_id : null,
         shortUrl: typeof data.short_url === 'string' ? data.short_url : null,
         error: null,
+        status: 200,
       };
     } catch (err) {
+      const { status, message } = await extractFunctionError(err);
+      return { subscriptionId: null, keyId: null, shortUrl: null, error: message, status };
+    }
+  },
+
+  async startOneTimeCheckout(
+    plan: 'discipline' | 'premium',
+  ): Promise<OneTimeCheckoutResult> {
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        'create-razorpay-order',
+        { body: { plan } },
+      );
+      if (error) {
+        const { status, message } = await extractFunctionError(error);
+        return { orderId: null, amount: null, keyId: null, error: message, status };
+      }
+      if (!data || typeof data.order_id !== 'string') {
+        return { orderId: null, amount: null, keyId: null, error: 'No order returned', status: 0 };
+      }
       return {
-        subscriptionId: null,
-        keyId: null,
-        shortUrl: null,
-        error: err instanceof Error ? err.message : 'Unknown error',
+        orderId: data.order_id,
+        amount: typeof data.amount === 'number' ? data.amount : null,
+        keyId: typeof data.razorpay_key_id === 'string' ? data.razorpay_key_id : null,
+        error: null,
+        status: 200,
       };
+    } catch (err) {
+      const { status, message } = await extractFunctionError(err);
+      return { orderId: null, amount: null, keyId: null, error: message, status };
     }
   },
 
@@ -143,12 +224,8 @@ export const subscriptionService = {
         { body: {} },
       );
       if (error) {
-        return {
-          ok: false,
-          alreadyCancelled: false,
-          currentPeriodEnd: null,
-          error: error.message || 'Cancellation failed',
-        };
+        const { message } = await extractFunctionError(error);
+        return { ok: false, alreadyCancelled: false, currentPeriodEnd: null, error: message };
       }
       return {
         ok: true,
@@ -160,59 +237,8 @@ export const subscriptionService = {
         error: null,
       };
     } catch (err) {
-      return {
-        ok: false,
-        alreadyCancelled: false,
-        currentPeriodEnd: null,
-        error: err instanceof Error ? err.message : 'Unknown error',
-      };
-    }
-  },
-
-  async startOneTimeCheckout(
-    plan: 'discipline' | 'premium',
-  ): Promise<{
-    orderId: string | null;
-    amount: number | null;
-    keyId: string | null;
-    error: string | null;
-  }> {
-    try {
-      const { data, error } = await supabase.functions.invoke(
-        'create-razorpay-order',
-        { body: { plan } },
-      );
-
-      if (error) {
-        return {
-          orderId: null,
-          amount: null,
-          keyId: null,
-          error: error.message || 'Checkout failed',
-        };
-      }
-      if (!data || typeof data.order_id !== 'string') {
-        return {
-          orderId: null,
-          amount: null,
-          keyId: null,
-          error: 'No order returned',
-        };
-      }
-
-      return {
-        orderId: data.order_id,
-        amount: typeof data.amount === 'number' ? data.amount : null,
-        keyId: typeof data.razorpay_key_id === 'string' ? data.razorpay_key_id : null,
-        error: null,
-      };
-    } catch (err) {
-      return {
-        orderId: null,
-        amount: null,
-        keyId: null,
-        error: err instanceof Error ? err.message : 'Unknown error',
-      };
+      const { message } = await extractFunctionError(err);
+      return { ok: false, alreadyCancelled: false, currentPeriodEnd: null, error: message };
     }
   },
 };

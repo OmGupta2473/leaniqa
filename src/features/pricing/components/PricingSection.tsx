@@ -14,6 +14,24 @@ interface PricingSectionProps {
   title?: string;
   subtitle?: string;
 }
+/**
+ * Maps an HTTP status and raw error message to user-facing copy.
+ * Every checkout error path in this component goes through this.
+ */
+function checkoutErrorMessage(status: number, raw: string | null): string {
+  if (status === 401) return 'Your session expired. Please sign in again.';
+  if (status === 403) return 'Link Google or email to subscribe. Guests can’t purchase.';
+  if (status === 409) return 'You already have an active subscription.';
+  if (status === 429) return 'Too many attempts. Please wait a minute and try again.';
+  if (status === 502 || status === 503 || status === 504) {
+    return 'Payment service is temporarily unavailable. Try again in a minute.';
+  }
+  if (status === 0 && /network|fetch/i.test(raw ?? '')) {
+    return 'No internet connection. Check your network and try again.';
+  }
+  if (raw) return raw;
+  return 'Something went wrong. Please try again.';
+}
 
 let razorpayLoader: Promise<void> | null = null;
 function loadRazorpayScript(): Promise<void> {
@@ -69,17 +87,17 @@ export function PricingSection({ variant, title, subtitle }: PricingSectionProps
     if (loadingPlan) return;
     setLoadingPlan(plan.id);
 
-    const { subscriptionId, keyId, error } = await subscriptionService.startCheckout(
-      plan.id,
-      billing,
-    );
+    const { subscriptionId, keyId, error, status } =
+      await subscriptionService.startCheckout(plan.id, billing);
 
     if (error || !subscriptionId || !keyId) {
       setLoadingPlan(null);
-      toast({
-        type: 'error',
-        message: error || 'Could not start checkout. Please try again.',
-      });
+      toast({ type: 'error', message: checkoutErrorMessage(status, error) });
+      if (status === 401) {
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 2000);
+      }
       return;
     }
 
@@ -123,15 +141,17 @@ export function PricingSection({ variant, title, subtitle }: PricingSectionProps
 
     setLoadingOneTime(plan.id);
 
-    const { orderId, amount, keyId, error } =
+    const { orderId, amount, keyId, error, status } =
       await subscriptionService.startOneTimeCheckout(plan.id);
 
     if (error || !orderId || !keyId || amount == null) {
       setLoadingOneTime(null);
-      toast({
-        type: 'error',
-        message: error || 'Could not start checkout. Please try again.',
-      });
+      toast({ type: 'error', message: checkoutErrorMessage(status, error) });
+      if (status === 401) {
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 2000);
+      }
       return;
     }
 
