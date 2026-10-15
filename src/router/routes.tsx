@@ -18,6 +18,7 @@ const MealLoggerPage = lazy(() => import('@/features/nutrition/pages/MealLoggerP
 const ProgressPage = lazy(() => import('@/features/progress/pages/ProgressPage').then(module => ({ default: module.ProgressPage })));
 const WeeklyReportPage = lazy(() => import('@/features/reports/pages/WeeklyReportPage').then(module => ({ default: module.WeeklyReportPage })));
 const PricingPage = lazy(() => import('@/features/pricing/pages/PricingPage').then(module => ({ default: module.PricingPage })));
+const SubscriptionSuccessPage = lazy(() => import('@/features/pricing/pages/SubscriptionSuccessPage').then(module => ({ default: module.SubscriptionSuccessPage })));
 const ProfilePage = lazy(() => import('@/features/profile/pages/ProfilePage').then(module => ({ default: module.ProfilePage })));
 const CalorieDetailPage = lazy(() => import('@/features/nutrition/pages/CalorieDetailPage').then(module => ({ default: module.CalorieDetailPage })));
 const ProteinDetailPage = lazy(() => import('@/features/nutrition/pages/ProteinDetailPage').then(module => ({ default: module.ProteinDetailPage })));
@@ -109,6 +110,7 @@ export const routes: RouteObject[] = [
               { path: '/reports', element: <Suspense fallback={<PageSkeleton route="reports" />}><WeeklyReportPage /></Suspense>, handle: { title: 'Reports', description: 'Weekly compliance and activity report.' } },
               { path: '/profile', element: <Suspense fallback={<PageSkeleton route="profile" />}><ProfilePage /></Suspense>, handle: { title: 'Profile', description: 'Manage your LeanIQA profile.' } },
               { path: '/pricing', element: <Suspense fallback={<PageSkeleton route="pricing" />}><PricingPage /></Suspense>, handle: { title: 'Pricing', description: 'Choose a subscription plan.' } },
+              { path: '/subscription/success', element: <Suspense fallback={<PageSkeleton route="pricing" />}><SubscriptionSuccessPage /></Suspense>, handle: { title: 'Subscription Confirmed', description: 'Confirming your plan.' } },
               { path: '/awards', element: <Suspense fallback={<PageSkeleton route="awards" />}><AwardsPage /></Suspense>, handle: { title: 'Awards', description: 'View your earned achievements.' } },
               { path: '/calorie', element: <Suspense fallback={<PageSkeleton route="calorie" />}><CalorieDetailPage /></Suspense>, handle: { title: 'Calorie Detail', description: 'Detailed breakdown of your calorie intake.' } },
               { path: '/protein', element: <Suspense fallback={<PageSkeleton route="protein" />}><ProteinDetailPage /></Suspense>, handle: { title: 'Protein Detail', description: 'Detailed breakdown of your protein intake.' } }

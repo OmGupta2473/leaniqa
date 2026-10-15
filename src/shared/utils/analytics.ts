@@ -17,6 +17,7 @@ export type EventName =
   | 'Custom Meal Logged'
   | 'Weekly Report Viewed'
   | 'Weekly Report Week Changed'
+  | 'Pricing Viewed'
   | 'Subscription Started'
   | 'Subscription Purchased'
   | 'Subscription Cancelled'

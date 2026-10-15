@@ -300,3 +300,92 @@ export function deriveMacroBalance(report: DbWeeklyReport): MacroBalance {
     biggestGapKey,
   };
 }
+
+// ── Best day ──────────────────────────────────────────────────────────────
+
+export interface BestDayResult {
+  date: string;
+  dayName: string;
+  calories: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+  targetCalories: number;
+  targetProteinG: number;
+  headline: string;
+  whatWorked: string;
+  repeatIt: string;
+}
+
+const DAY_NAMES = [
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+] as const;
+
+/**
+ * Names the day with the highest adherence and produces two short lines:
+ * one about what worked, one about what to repeat. Returns null when no
+ * completed days exist, so the card can render nothing for a fresh week.
+ */
+export function deriveBestDay(report: DbWeeklyReport): BestDayResult | null {
+  const completed = report.day_summaries.filter((d) => d.logged && !d.isToday);
+  if (completed.length === 0) return null;
+
+  const proteinTarget = report.target_protein_g;
+
+  const sorted = [...completed].sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    const aRatio = proteinTarget > 0 ? a.proteinG / proteinTarget : 0;
+    const bRatio = proteinTarget > 0 ? b.proteinG / proteinTarget : 0;
+    return bRatio - aRatio;
+  });
+
+  const best = sorted[0];
+  const dayName = DAY_NAMES[best.dayOfWeek] ?? 'Best day';
+
+  const proteinMet = proteinTarget > 0 && best.proteinG >= proteinTarget * 0.95;
+  const caloriesInRange =
+    best.calories >= report.target_calories * 0.9 &&
+    best.calories <= report.target_calories * 1.1;
+
+  let whatWorked: string;
+  if (proteinMet && caloriesInRange) {
+    whatWorked = `You hit ${Math.round(best.proteinG)}g protein and landed at ${best.calories} kcal — both targets on the same day.`;
+  } else if (proteinMet) {
+    whatWorked = `You hit ${Math.round(best.proteinG)}g protein — your strongest protein day this week.`;
+  } else if (caloriesInRange) {
+    whatWorked = `You landed at ${best.calories} kcal, right inside your target window.`;
+  } else {
+    whatWorked = `You logged every meal — that consistency is what moves the needle.`;
+  }
+
+  let repeatIt: string;
+  if (proteinMet && caloriesInRange) {
+    repeatIt = `Match ${dayName} — same portion sizes, same protein sources.`;
+  } else if (proteinMet) {
+    repeatIt = `Keep protein above ${Math.round(proteinTarget * 0.95)}g on weekdays.`;
+  } else if (caloriesInRange) {
+    repeatIt = `Match ${dayName}'s portion sizes at dinner.`;
+  } else {
+    repeatIt = `Log every meal again next week — the numbers tune themselves.`;
+  }
+
+  return {
+    date: best.date,
+    dayName,
+    calories: best.calories,
+    proteinG: best.proteinG,
+    carbsG: best.carbsG,
+    fatG: best.fatG,
+    targetCalories: report.target_calories,
+    targetProteinG: report.target_protein_g,
+    headline: `${dayName} was your best day.`,
+    whatWorked,
+    repeatIt,
+  };
+}

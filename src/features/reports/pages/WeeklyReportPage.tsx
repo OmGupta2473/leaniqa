@@ -10,10 +10,11 @@ import { WeekSelector } from '../components/WeekSelector';
 import { HeroCard } from '../components/HeroCard';
 import { ComparisonStrip } from '../components/ComparisonStrip';
 import { CoachSummaryCard } from '../components/CoachSummaryCard';
+import { BestDayCard } from '../components/BestDayCard';
+import { PlanValueFooter } from '../components/PlanValueFooter';
 import { DayTimeline } from '../components/DayTimeline';
 import { DayDetailPanel } from '../components/DayDetailPanel';
 import { InsightsSection } from '../components/InsightsSection';
-import { FocusNextWeek } from '../components/FocusNextWeek';
 import { MacroBalance } from '../components/MacroBalance';
 import { getWeekSelectorState, shouldShowGraceHint } from '../utils/weekNavigation';
 import { getWeekStart, getWeekEnd, computeWeekStatus } from '@/shared/utils/weekKey';
@@ -160,9 +161,10 @@ export function WeeklyReportPage() {
               </AnimatePresence>
               <ComparisonStrip current={report} previous={previousWeek} />
               <CoachSummaryCard report={report} />
+              <BestDayCard report={report} />
               <InsightsSection report={report} />
-              <FocusNextWeek report={report} />
               <MacroBalance report={report} />
+              <PlanValueFooter />
             </motion.div>
           ) : (
             <motion.div

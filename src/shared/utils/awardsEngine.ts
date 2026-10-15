@@ -38,6 +38,12 @@ export interface AwardProgress {
 export interface AwardEvaluationInput {
   metrics: DbDailyMetric[];
   mealLogs: DbMealLog[];
+  /**
+   * Optional override for the meal count. When provided (e.g. from the
+   * count_user_meals RPC), this is used instead of mealLogs.length so the
+   * meal-count awards stay accurate even when RLS limits the fetched rows.
+   */
+  mealLogCount?: number;
   weightLogs: DbWeightLog[];
   profileCreatedAt: string | null;
   todayIso: string;
@@ -142,7 +148,7 @@ function computeRawCurrent(def: AwardDefinition, input: AwardEvaluationInput): n
     case 'log_first':
     case 'log_25':
     case 'log_100':
-      return input.mealLogs.length;
+      return input.mealLogCount ?? input.mealLogs.length;
 
     case 'protein_first':
     case 'protein_30_total':

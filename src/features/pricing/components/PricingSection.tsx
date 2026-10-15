@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, RotateCcw, XCircle, ChevronDown } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { ShieldCheck, XCircle, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/shared/utils/utils';
-import { PRICING_PLANS, ANNUAL_SAVING_PERCENT } from '../plans';
-import { PricingCard } from './PricingCard';
+import { PRICING_PLANS, ANNUAL_SAVING_PERCENT, type PricingPlan } from '../plans';
+import { PricingCard, type CardState } from './PricingCard';
+import { subscriptionService } from '../services/subscriptionService';
+import { useToast } from '@/shared/components/Toast';
 
 interface PricingSectionProps {
   variant: 'landing' | 'full';
@@ -12,14 +15,168 @@ interface PricingSectionProps {
   subtitle?: string;
 }
 
+let razorpayLoader: Promise<void> | null = null;
+function loadRazorpayScript(): Promise<void> {
+  if (razorpayLoader) return razorpayLoader;
+  razorpayLoader = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => {
+      razorpayLoader = null;
+      reject(new Error('razorpay_script_load_failed'));
+    };
+    document.head.appendChild(script);
+  });
+  return razorpayLoader;
+}
+
 export function PricingSection({ variant, title, subtitle }: PricingSectionProps) {
   const [billing, setBilling] = useState<'monthly' | 'annual'>('annual');
+  const [loadingPlan, setLoadingPlan] = useState<'discipline' | 'premium' | null>(
+    null,
+  );
+  const [loadingOneTime, setLoadingOneTime] = useState<'discipline' | 'premium' | null>(
+    null,
+  );
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const { data: subscription } = useQuery({
+    queryKey: ['subscription'],
+    queryFn: () => subscriptionService.getSubscriptionStatus(),
+  });
+  const currentPlan = subscription?.plan ?? 'free';
+    // Card state drives the CTA copy. Priority:
+  //   free         -> no paid access
+  //   one_time     -> paid via a one-time order, not a subscription
+  //   sub_cancelled -> subscription set to end, still has access until period_end
+  //   sub_active   -> active subscription
+  const cardState: CardState = (() => {
+    if (!subscription || subscription.plan === 'free') return 'free';
+    if (subscription.accessType === 'one_time') return 'one_time';
+    if (subscription.status === 'cancelled') return 'sub_cancelled';
+    return 'sub_active';
+  })();
+
+  const handlePlanSelect = async (plan: PricingPlan) => {
+    if (plan.id === 'free') {
+      navigate('/login');
+      return;
+    }
+
+    if (loadingPlan) return;
+    setLoadingPlan(plan.id);
+
+    const { subscriptionId, keyId, error } = await subscriptionService.startCheckout(
+      plan.id,
+      billing,
+    );
+
+    if (error || !subscriptionId || !keyId) {
+      setLoadingPlan(null);
+      toast({
+        type: 'error',
+        message: error || 'Could not start checkout. Please try again.',
+      });
+      return;
+    }
+
+    try {
+      await loadRazorpayScript();
+    } catch {
+      setLoadingPlan(null);
+      toast({
+        type: 'error',
+        message: 'Could not load payment SDK. Check your connection.',
+      });
+      return;
+    }
+
+    const RzpCtor = (window as unknown as {
+      Razorpay: new (options: unknown) => { open: () => void };
+    }).Razorpay;
+
+    const rzp = new RzpCtor({
+      key: keyId,
+      subscription_id: subscriptionId,
+      name: 'LeanIQA',
+      description:
+        plan.id === 'premium' ? 'Premium subscription' : 'Discipline subscription',
+      theme: { color: '#D4FF00' },
+      handler: () => {
+        window.location.href = `/subscription/success?plan=${plan.id}`;
+      },
+      modal: {
+        ondismiss: () => {
+          setLoadingPlan(null);
+        },
+      },
+    });
+
+    rzp.open();
+  };
+    const handleOneTimeSelect = async (plan: PricingPlan) => {
+    if (plan.id !== 'discipline' && plan.id !== 'premium') return;
+    if (loadingOneTime) return;
+
+    setLoadingOneTime(plan.id);
+
+    const { orderId, amount, keyId, error } =
+      await subscriptionService.startOneTimeCheckout(plan.id);
+
+    if (error || !orderId || !keyId || amount == null) {
+      setLoadingOneTime(null);
+      toast({
+        type: 'error',
+        message: error || 'Could not start checkout. Please try again.',
+      });
+      return;
+    }
+
+    try {
+      await loadRazorpayScript();
+    } catch {
+      setLoadingOneTime(null);
+      toast({
+        type: 'error',
+        message: 'Could not load payment SDK. Check your connection.',
+      });
+      return;
+    }
+
+    const RzpCtor = (window as unknown as {
+      Razorpay: new (options: unknown) => { open: () => void };
+    }).Razorpay;
+
+    const rzp = new RzpCtor({
+      key: keyId,
+      order_id: orderId,
+      amount,
+      currency: 'INR',
+      name: 'LeanIQA',
+      description:
+        plan.id === 'premium'
+          ? 'Premium — 1 month'
+          : 'Discipline — 1 month',
+      theme: { color: '#D4FF00' },
+      handler: () => {
+        window.location.href = `/subscription/success?plan=${plan.id}`;
+      },
+      modal: {
+        ondismiss: () => {
+          setLoadingOneTime(null);
+        },
+      },
+    });
+
+    rzp.open();
+  };
 
   return (
     <section className="py-[clamp(3rem,8dvh,5rem)] px-[clamp(1rem,4vw,1.5rem)]">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
         <div className="text-center mb-[clamp(2rem,5dvh,3rem)]">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
@@ -39,14 +196,15 @@ export function PricingSection({ variant, title, subtitle }: PricingSectionProps
           </motion.div>
         </div>
 
-        {/* Billing toggle (annual defaulted) */}
         <div className="flex justify-center mb-[clamp(1.5rem,4dvh,2.5rem)]">
           <div className="bg-zinc-900/60 border border-zinc-800 rounded-full p-1 flex gap-1">
             <button
               onClick={() => setBilling('monthly')}
               className={cn(
                 'px-[clamp(1rem,3vw,1.5rem)] py-2 rounded-full text-sm font-medium transition-colors',
-                billing === 'monthly' ? 'bg-white text-black' : 'text-zinc-400 hover:text-white',
+                billing === 'monthly'
+                  ? 'bg-white text-black'
+                  : 'text-zinc-400 hover:text-white',
               )}
             >
               Monthly
@@ -55,41 +213,47 @@ export function PricingSection({ variant, title, subtitle }: PricingSectionProps
               onClick={() => setBilling('annual')}
               className={cn(
                 'px-[clamp(1rem,3vw,1.5rem)] py-2 rounded-full text-sm font-medium transition-colors flex items-center',
-                billing === 'annual' ? 'bg-white text-black' : 'text-zinc-400 hover:text-white',
+                billing === 'annual'
+                  ? 'bg-white text-black'
+                  : 'text-zinc-400 hover:text-white',
               )}
             >
               Annual
-              <span className={cn(
-                'ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full',
-                billing === 'annual' ? 'bg-[#D4FF00] text-black' : 'bg-zinc-800 text-zinc-400',
-              )}>
+              <span
+                className={cn(
+                  'ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full',
+                  billing === 'annual'
+                    ? 'bg-[#D4FF00] text-black'
+                    : 'bg-zinc-800 text-zinc-400',
+                )}
+              >
                 −{ANNUAL_SAVING_PERCENT}%
               </span>
             </button>
           </div>
         </div>
 
-        {/* Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 items-stretch">
           {PRICING_PLANS.map((plan) => (
             <PricingCard
               key={plan.id}
               plan={plan}
               billing={billing}
-              onSelect={() => navigate(plan.ctaHref)}
+              onSelect={() => handlePlanSelect(plan)}
+              onOneTime={() => handleOneTimeSelect(plan)}
+              loading={loadingPlan === plan.id}
+              oneTimeLoading={loadingOneTime === plan.id}
+              currentPlan={currentPlan}
+              currentBillingCycle={subscription?.billingCycle ?? null}
+              cardState={cardState}
             />
           ))}
         </div>
 
-        {/* Trust row */}
         <div className="mt-[clamp(1.5rem,4dvh,2.5rem)] flex flex-wrap justify-center gap-x-6 gap-y-2 text-[clamp(0.72rem,1.85dvh,0.85rem)] text-zinc-500">
           <span className="flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-[#D4FF00]" />
             No credit card for free plan
-          </span>
-          <span className="flex items-center gap-1.5">
-            <RotateCcw className="w-3.5 h-3.5 text-[#D4FF00]" />
-            7-day money-back guarantee
           </span>
           <span className="flex items-center gap-1.5">
             <XCircle className="w-3.5 h-3.5 text-[#D4FF00]" />
@@ -97,7 +261,6 @@ export function PricingSection({ variant, title, subtitle }: PricingSectionProps
           </span>
         </div>
 
-        {/* FAQ mini (only in 'full' variant) */}
         {variant === 'full' && <PricingFAQ />}
       </div>
     </section>
@@ -106,24 +269,16 @@ export function PricingSection({ variant, title, subtitle }: PricingSectionProps
 
 const FAQ_ITEMS = [
   {
-    q: 'What happens after the free trial?',
-    a: 'You keep the Explorer plan free forever. No charge unless you explicitly upgrade.',
+    q: 'What happens after the free plan?',
+    a: 'You keep the Free plan forever. Upgrade only when you want more AI parses and full history.',
   },
   {
     q: 'Can I cancel anytime?',
     a: 'Yes. Cancel from your profile. Your access continues until the end of the billing period.',
   },
   {
-    q: 'Do you offer refunds?',
-    a: 'Yes — 7-day money-back guarantee on any paid plan, no questions asked.',
-  },
-  {
-    q: 'Which payment methods do you accept?',
-    a: 'All UPI apps, cards, and netbanking via Razorpay. Recurring payments supported.',
-  },
-  {
     q: 'Is the annual plan really cheaper?',
-    a: `Yes — ${ANNUAL_SAVING_PERCENT}% off compared to paying monthly. That's about ${Math.round(12 / (1 - ANNUAL_SAVING_PERCENT / 100) - 12)} months free.`,
+    a: `Yes — about ${ANNUAL_SAVING_PERCENT}% off compared to paying monthly.`,
   },
 ];
 
@@ -147,7 +302,9 @@ export function PricingFAQ() {
                 onClick={() => setOpenIndex(isOpen ? null : i)}
                 className="w-full flex items-center justify-between gap-4 px-5 sm:px-6 py-4 sm:py-5 text-left"
               >
-                <span className="text-sm sm:text-base font-medium text-zinc-100">{faq.q}</span>
+                <span className="text-sm sm:text-base font-medium text-zinc-100">
+                  {faq.q}
+                </span>
                 <motion.span
                   animate={{ rotate: isOpen ? 180 : 0 }}
                   transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}

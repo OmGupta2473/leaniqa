@@ -3,13 +3,15 @@ import { PerfProfiler } from '@/shared/utils/perfDebug';
 import {  useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
 import { createPortal } from "react-dom";
 import { useAppStore } from "@/app/store";
+import { useNavigate } from "react-router-dom";
 import { useChatStore } from "@/app/store";
 import { useNutritionStore } from "../store/nutritionStore";
 import {
   Send, Loader2, Dumbbell, Lightbulb, Sun, Sunrise, Moon, Coffee, Plus, X, ChevronLeft, ChevronRight, ArrowRight, ChevronDown, 
- Zap, AlertTriangle, Pencil } from "lucide-react";
+ Zap, AlertTriangle, Pencil, Lock } from "lucide-react";
 import { EmptyState } from '@/shared/components/EmptyState';
 import { CustomMealModal } from '../components/CustomMealModal';
+import { AiLimitNudge } from '../components/AiLimitNudge';
 import { PreCommitEditModal } from '../components/PreCommitEditModal';
 import { EditMealModal } from '../components/EditMealModal';
 import { DbMealLog } from '@/shared/types/supabase';
@@ -43,6 +45,7 @@ import { parseDateKey } from '@/shared/utils/dateKey';
 import { ProtectProgressSheet, shouldShowProtectProgress, PROTECT_PROGRESS_MEAL_THRESHOLD } from '@/features/auth/components/ProtectProgressSheet';
 import { useAuthSession } from '@/router/useAuthSession';
 import { getKolkataDateString, getKolkataHour, shiftKolkataDateString, kolkataDateStringToUtcMidnight, msSinceKolkataMidnight } from '@/shared/utils/timezone';
+import { useEntitlements } from '@/features/pricing/hooks/useEntitlements';
 
 const getDeterministicFallback = (text: string) => {
   const normalizedText = text.toLowerCase();
@@ -176,7 +179,57 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete, onEdit }: 
   );
 }
 
-// ── MAIN SCREEN ────────────────────────────────────────────────────────────
+// ── LOCKED DAY VIEW ────────────────────────────────────────────────────────
+function LockedHistoryView({ plan }: { plan: 'free' | 'discipline' | 'premium' }) {
+  const navigate = useNavigate();
+  const targetPlan = plan === 'discipline' ? 'Premium' : 'Discipline';
+  const limitText = plan === 'discipline' ? '180' : '14';
+
+  return (
+    <div className="relative mt-2">
+      {/* Ghost content behind the lock — blurred mock of what would be here */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 blur-[10px] opacity-25 pointer-events-none select-none px-5 space-y-4"
+      >
+        <div className="rounded-[24px] bg-[rgba(255,255,255,0.06)] h-[220px]" />
+        <div className="rounded-[24px] bg-[rgba(255,255,255,0.05)] h-[96px]" />
+        <div className="rounded-[24px] bg-[rgba(255,255,255,0.05)] h-[96px]" />
+        <div className="rounded-[24px] bg-[rgba(255,255,255,0.05)] h-[96px]" />
+      </div>
+
+      {/* Lock overlay */}
+      <div className="relative z-10 flex flex-col items-center justify-center text-center px-6 pt-16 pb-24">
+        <div
+          className="w-20 h-20 rounded-full flex items-center justify-center mb-6"
+          style={{
+            background: 'radial-gradient(circle at 30% 30%, rgba(212,255,0,0.18), rgba(212,255,0,0.04))',
+            border: '1px solid rgba(212,255,0,0.30)',
+            boxShadow: '0 0 48px rgba(212,255,0,0.15)',
+          }}
+        >
+          <Lock size={32} className="text-[#D4FF00]" strokeWidth={2.2} />
+        </div>
+
+        <h3 className="text-[22px] font-semibold text-white tracking-tight mb-3">
+          This day is locked
+        </h3>
+
+        <p className="text-[14px] text-zinc-400 leading-relaxed max-w-[280px] mb-8">
+          Your detailed history beyond {limitText} days is available with {targetPlan}.
+        </p>
+
+        <button
+          type="button"
+          onClick={() => navigate('/pricing')}
+          className="bg-[#D4FF00] text-black px-8 py-3.5 rounded-full font-semibold text-[15px] active:scale-95 transition-transform min-h-[48px] shadow-[0_0_30px_rgba(212,255,0,0.25)]"
+        >
+          Get {targetPlan}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 const LOADING_MESSAGES = [
   "Analyzing meal…",
@@ -341,11 +394,10 @@ export function MealLoggerPage() {
   const isToday = (dateStr: string) => dateStr === getKolkataDateString();
   const isYesterday = (dateStr: string) =>
     dateStr === shiftKolkataDateString(getKolkataDateString(), -1);
-  const isAtOrBeforeCreatedAt = (dateStr: string) => {
-    if (!profile?.created_at) return false;
-    const createdStr = getKolkataDateString(new Date(profile.created_at));
-    return dateStr <= createdStr;
-  };
+  // The previous-day arrow is disabled once we reach the lock floor.
+  // For premium (lockFloorDate === null) it falls back to the data floor.
+  const isAtOrBeforeFloor = (dateStr: string) =>
+    lockFloorDate != null ? dateStr <= lockFloorDate : dateStr <= floorDate;
 
 
   const formatDateLabel = (dateStr: string) => {
@@ -401,10 +453,38 @@ export function MealLoggerPage() {
 
   const todayStr = getKolkataDateString();
 
-  const floorDate = firstMealDate
+  const { entitlements, plan } = useEntitlements();
+
+  const baseFloorDate = firstMealDate
     ?? (profile?.created_at
       ? getKolkataDateString(new Date(profile.created_at))
       : todayStr);
+
+  // The earliest day with full detail allowed for this plan.
+  // null for premium (unlimited).
+  const entitlementFloorDate =
+    entitlements.historyDays == null
+      ? null
+      : shiftKolkataDateString(todayStr, -(entitlements.historyDays - 1));
+
+  // The earliest day the user can navigate to. It is one day BEFORE the
+  // entitlement floor, so they can land on the first locked day and see
+  // the lock overlay — but not go any further back.
+  const lockFloorDate = entitlementFloorDate
+    ? shiftKolkataDateString(entitlementFloorDate, -1)
+    : null;
+
+  // Effective floor for the calendar: the later of the two.
+  const floorDate =
+    entitlementFloorDate && entitlementFloorDate > baseFloorDate
+      ? entitlementFloorDate
+      : baseFloorDate;
+
+  // True when the currently selected day is past the plan's full-detail window.
+  const isLockedDay =
+    entitlementFloorDate != null &&
+    selectedDateStr < entitlementFloorDate &&
+    selectedDateStr >= (lockFloorDate ?? entitlementFloorDate);
 
   const goalType: GoalType = (goal?.goal_type ?? 'cut') as GoalType;
 
@@ -944,15 +1024,15 @@ if (todayCount >= PROTECT_PROGRESS_MEAL_THRESHOLD) {
         <div className="flex items-center gap-3">
           <button 
             onClick={() => {
-              if (isAtOrBeforeCreatedAt(selectedDateStr)) return;
+              if (isAtOrBeforeFloor(selectedDateStr)) return;
               setSelectedDateStr(shiftKolkataDateString(selectedDateStr, -1));
             }}
-            disabled={isAtOrBeforeCreatedAt(selectedDateStr)}
+            disabled={isAtOrBeforeFloor(selectedDateStr)}
             className={cn(
               "min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full transition-all duration-200",
-              isAtOrBeforeCreatedAt(selectedDateStr) ? "opacity-30 cursor-not-allowed" : "bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] cursor-pointer active:scale-95"
+              isAtOrBeforeFloor(selectedDateStr) ? "opacity-30 cursor-not-allowed" : "bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] cursor-pointer active:scale-95"
             )}
-            aria-label="Previous Day" title={isAtOrBeforeCreatedAt(selectedDateStr) ? "This is your first day on LeanIQA. No meal history exists before this date." : "Previous Day"}
+            aria-label="Previous Day" title={isAtOrBeforeFloor(selectedDateStr) ? "You've reached the start of your plan's history window. Upgrade for more." : "Previous Day"}
           >
             <ChevronLeft size={18} className="text-white" />
           </button>
@@ -979,8 +1059,11 @@ if (todayCount >= PROTECT_PROGRESS_MEAL_THRESHOLD) {
         </div>
       </div>
 
+      {/* ── LOCKED DAY OVERLAY ── */}
+      {isLockedDay && <LockedHistoryView plan={plan} />}
+
       {/* ── CALORIE RING SUMMARY ── */}
-      <div className="mb-6 rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] p-5 shadow-sm backdrop-blur-xl relative overflow-hidden">
+      {!isLockedDay && <div className="mb-6 rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] p-5 shadow-sm backdrop-blur-xl relative overflow-hidden">
         <div className="flex justify-between items-center mb-5">
           <div className="text-[12px] font-semibold uppercase tracking-widest text-[rgba(235,235,245,0.5)]">Daily Summary</div>
           <div className="text-[13px] font-bold px-2.5 py-1 rounded-full bg-[rgba(255,255,255,0.05)]" style={{ color: eatenKcal > dailyTargetKcal ? '#FF4D1C' : '#D4FF00' }}>
@@ -1026,8 +1109,10 @@ if (todayCount >= PROTECT_PROGRESS_MEAL_THRESHOLD) {
         </div>
       </div>
 
+      }
+
       {/* ── MEAL SLOT ROWS ── */}
-      <div>
+      {!isLockedDay && <div>
         <div className="flex items-center justify-between mb-3 px-1">
           <div className="text-[12px] font-semibold uppercase tracking-widest text-[rgba(235,235,245,0.5)]">Meal Log</div>
           {credits && (
@@ -1039,6 +1124,10 @@ if (todayCount >= PROTECT_PROGRESS_MEAL_THRESHOLD) {
             </div>
           )}
         </div>
+
+        {plan === 'free' && credits && (
+          <AiLimitNudge remaining={credits.remaining} nextTierLimit={25} />
+        )}
         
         {meals.length === 0 && (
           <EmptyState
@@ -1054,13 +1143,15 @@ if (todayCount >= PROTECT_PROGRESS_MEAL_THRESHOLD) {
         <MealSlotRow slot="dinner" icon={<Moon size={20} />} label="Dinner" timeRange="6 pm – 10 pm" meals={dinnerMeals} onDelete={handleDeleteMeal} onEdit={(meal) => setEditingMeal(meal)} />
         <MealSlotRow slot="snack" icon={<Coffee size={20} />} label="Snack" timeRange="Anytime" meals={snackMeals} onDelete={handleDeleteMeal} onEdit={(meal) => setEditingMeal(meal)} />
       </div>
+      }
+
       {/* ── SPACER TO PREVENT FAB OVERLAP ── */}
       <div style={{ height: '120px', flexShrink: 0 }} aria-hidden="true" />
 
 
       </div>
       {/* ── FLOATING ADD BUTTON ── */}
-      <div className="meal-fab-positioner screen-enter">
+      {!isLockedDay && <div className="meal-fab-positioner screen-enter">
         <div className="meal-fab-container">
         <button
           onClick={() => setModalOpen(true)}
@@ -1087,7 +1178,7 @@ if (todayCount >= PROTECT_PROGRESS_MEAL_THRESHOLD) {
           <Plus size={24} color="#0A0A0A" strokeWidth={2.5} />
         </button>
         </div>
-      </div>
+      </div>}
 
       {/* ── LOG MEAL MODAL ── */}
       {createPortal(

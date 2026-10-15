@@ -975,21 +975,52 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) throw new Error("Unauthorized: Invalid token");
 
-    // Per-user daily limit. Falls back to 5 if the profile row is missing.
-    let limit = 5;
-    const { data: profileRow } = await supabase
-      .from("profiles")
-      .select("daily_ai_limit")
-      .eq("id", user.id)
-      .single();
-    if (profileRow?.daily_ai_limit) {
-      limit = profileRow.daily_ai_limit;
-    }
-
     const endpoint = "parse-meal";
+
+    // Phase 1: resolve daily AI limit from the subscription plan.
+    // free = 5, discipline = 25, premium = 100.
+    // beta_pro is the legacy name for discipline; it keeps 25/day until
+    // beta_expires_at passes, at which point it falls back to free.
+    const { data: subRow } = await supabase
+      .from("subscriptions")
+      .select("plan, status, beta_expires_at, current_period_end, access_type")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const rawPlan = (subRow?.plan as string | undefined) ?? "free";
+    const subStatus = (subRow?.status as string | undefined) ?? "active";
+    const accessType = (subRow?.access_type as string | undefined) ?? "subscription";
+    const periodEnd = subRow?.current_period_end
+      ? new Date(subRow.current_period_end as string)
+      : null;
+
+    const betaExpired =
+      rawPlan === "beta_pro" &&
+      subRow?.beta_expires_at != null &&
+      new Date(subRow.beta_expires_at as string) <= new Date();
+
+    // Cancelled subs still grant access until period_end. One-time access
+    // also stops at period_end.
+    const hasActiveAccess =
+      subStatus === "active" &&
+      (accessType !== "one_time" || (periodEnd != null && periodEnd > new Date()))
+        ? true
+        : subStatus === "cancelled" && periodEnd != null && periodEnd > new Date();
+
+    const resolvedPlan =
+      !hasActiveAccess || betaExpired
+        ? "free"
+        : rawPlan === "premium"
+        ? "premium"
+        : rawPlan === "discipline" || rawPlan === "beta_pro"
+        ? "discipline"
+        : "free";
+
+    const limit =
+      resolvedPlan === "premium" ? 100 : resolvedPlan === "discipline" ? 25 : 5;
+
     const istDate = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
     const today = istDate.toISOString().split("T")[0];
-
     const context: ParseContext = {
       originalText: text,
       normalizedText: normalizeInput(text),
