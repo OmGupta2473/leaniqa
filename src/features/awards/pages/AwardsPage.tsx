@@ -3,7 +3,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import { reportService } from "@/features/reports/services/reportService";
-import { mealService } from "@/features/nutrition/services/mealService";
 import { weightService } from "@/features/progress/services/weightService";
 import { profileService } from "@/features/profile/services/profileService";
 import {
@@ -30,6 +29,8 @@ import { haptics } from '@/shared/utils/haptics';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
 import { AwardsSkeleton } from '@/shared/components/Skeletons';
+import { supabase } from '@/shared/utils/supabase';
+import { authService } from '@/features/auth/services/authService';
 
 const SPRING_TRANSITION: any = { type: 'spring' as const, stiffness: 400, damping: 30 };
 const SMOOTH_TRANSITION: any = { duration: 0.4, ease: [0.16, 1, 0.3, 1] };
@@ -71,9 +72,16 @@ export function AwardsPage() {
     queryFn: () => import('@/features/awards/services/awardService').then(m => m.awardService.getUserAwards()) 
   });
 
-  const { data: meals = [] } = useQuery({
-    queryKey: ["meals", "awards"],
-    queryFn: () => mealService.getMeals({ days: 365, limit: 2000 }),
+  const { data: mealCount = 0 } = useQuery({
+    queryKey: ["mealCount"],
+    queryFn: async () => {
+      const userId = await authService.getUserId();
+      const { data, error } = await supabase.rpc('count_user_meals', {
+        p_user_id: userId,
+      });
+      if (error) return 0;
+      return typeof data === 'number' ? data : 0;
+    },
   });
 
   const { data: weightLogs = [] } = useQuery({
@@ -96,13 +104,14 @@ export function AwardsPage() {
     () =>
       evaluateAwards({
         metrics,
-        mealLogs: meals,
+        mealLogs: [],
+        mealLogCount: mealCount,
         weightLogs,
         profileCreatedAt: profile?.created_at ?? null,
         todayIso: getKolkataDateString(),
         unlockedAwards: dbUserAwards,
       }),
-    [metrics, meals, weightLogs, profile, dbUserAwards],
+    [metrics, mealCount, weightLogs, profile, dbUserAwards],
   );
 
   const progressById = useMemo(() => {
@@ -204,14 +213,13 @@ export function AwardsPage() {
       d.setDate(monday.getDate() + i);
       weekKeys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
     }
+    // daily_metrics is not RLS-restricted, so the week strip can be derived
+    // from metrics for every plan without touching meal_logs.
     const loggedDays = new Set(
-      meals.map((m) => {
-        const d = new Date(m.meal_time);
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      }),
+      metrics.filter((m) => m.actual_calories > 0).map((m) => m.date),
     );
     return weekKeys.map((k) => loggedDays.has(k));
-  }, [meals]);
+  }, [metrics]);
 
   const containerVariants: any = {
     hidden: { opacity: 0 },

@@ -17,9 +17,11 @@ import { haptics } from '@/shared/utils/haptics';
 import { subscriptionService } from '@/features/pricing/services/subscriptionService';
 import { EditProfileModal } from '../components/EditProfileModal';
 import { EditNutritionModal } from '../components/EditNutritionModal';
+import { CancelRenewalSheet } from '@/features/pricing/components/CancelRenewalSheet';
 import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
 import { ProfileSkeleton } from '@/shared/components/Skeletons';
 import { Logo } from '@/shared/components/Logo';
+
 
 const GuestGoogleIcon = ({ className }: { className?: string }) => (
   <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -51,6 +53,7 @@ export function ProfilePage() {
   const [showResetModal, setShowResetModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showNutritionModal, setShowNutritionModal] = useState(false);
+  const [showCancelSheet, setShowCancelSheet] = useState(false);
   const { session } = useAuthSession();
   const isGuest = session?.user?.is_anonymous === true;
   const { toast } = useToast();
@@ -218,10 +221,32 @@ export function ProfilePage() {
                   : profile.dietary_preference === 'egg' ? 'Eggetarian'
                   : 'Non-veg';
 
-  const planLabel = subscription?.isPremium ? 'Serious plan' : 'Free plan';
-  const planSubtitle = subscription?.isPremium
-    ? 'Unlimited AI parsing unlocked'
-    : 'Unlock unlimited AI parsing';
+  const planLabel =
+    subscription?.plan === 'premium'
+      ? 'Premium'
+      : subscription?.plan === 'discipline'
+      ? 'Discipline'
+      : 'Free plan';
+  const planSubtitle =
+    subscription?.plan === 'premium'
+      ? '100 AI parses per day · unlimited history'
+      : subscription?.plan === 'discipline'
+      ? '25 AI parses per day · 180-day history'
+      : '5 AI parses per day · 14-day history';
+  //     console.log('[Profile-diag]', {
+  //   plan: subscription?.plan,
+  //   status: subscription?.status,
+  //   razorpayId: subscription?.razorpaySubscriptionId,
+  //   periodEnd: subscription?.currentPeriodEnd,
+  // });
+  
+  const formattedPeriodEnd = subscription?.currentPeriodEnd
+    ? new Date(subscription.currentPeriodEnd).toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })
+    : null;
 
   if (isLoading) {
     if (!isOnline) {
@@ -489,22 +514,72 @@ export function ProfilePage() {
           <div className="text-[clamp(0.65rem,1.7dvh,0.78rem)] uppercase tracking-wider text-zinc-500 mb-[clamp(0.5rem,1.4dvh,0.75rem)]">
             Subscription
           </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-[clamp(0.9rem,2.3dvh,1.05rem)] font-semibold text-white">
-                {planLabel}
+          {subscription && subscription.plan !== 'free' ? (
+            <>
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div className="min-w-0">
+                  <div className="text-[clamp(0.9rem,2.3dvh,1.05rem)] font-semibold text-white">
+                    {planLabel} Member
+                  </div>
+                  {formattedPeriodEnd && (
+                    <div className="text-[clamp(0.7rem,1.8dvh,0.82rem)] text-zinc-400 mt-1">
+                      Active until{' '}
+                      <span className="text-zinc-200">{formattedPeriodEnd}</span>
+                    </div>
+                  )}
+                  <div className="text-[clamp(0.7rem,1.8dvh,0.82rem)] text-zinc-500 mt-1.5">
+                    {planSubtitle}
+                  </div>
+                  {subscription.status === 'cancelled' && (
+                    <div className="text-[clamp(0.68rem,1.7dvh,0.78rem)] text-[#FFB347] mt-2">
+                      Auto-renewal cancelled — access ends {formattedPeriodEnd}
+                    </div>
+                  )}
+                </div>
+                <span
+                  className={
+                    subscription.status === 'cancelled'
+                      ? 'shrink-0 rounded-full bg-[#FFB347]/15 text-[#FFB347] border border-[#FFB347]/30 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1'
+                      : 'shrink-0 rounded-full bg-[#D4FF00]/15 text-[#D4FF00] border border-[#D4FF00]/30 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1'
+                  }
+                >
+                  {subscription.status === 'cancelled' ? 'Cancelling' : 'Active'}
+                </span>
               </div>
-              <div className="text-[clamp(0.7rem,1.8dvh,0.82rem)] text-zinc-500 mt-0.5">
-                {planSubtitle}
+              <button
+                onClick={() => navigate('/pricing')}
+                className="w-full py-2.5 rounded-full bg-zinc-900/80 border border-zinc-800 text-white text-[clamp(0.75rem,2dvh,0.9rem)] font-semibold hover:bg-zinc-800 transition-colors min-h-[44px] mb-2"
+              >
+                Manage subscription
+              </button>
+              {subscription.status === 'active' &&
+                subscription.razorpaySubscriptionId && (
+                  <button
+                    onClick={() => setShowCancelSheet(true)}
+                    className="w-full py-2.5 rounded-full bg-transparent border border-zinc-800 text-[rgba(255,255,255,0.55)] text-[clamp(0.72rem,1.9dvh,0.85rem)] font-medium hover:text-[#FFB347] hover:border-[#FFB347]/30 transition-colors min-h-[44px]"
+                  >
+                    Cancel auto-renewal
+                  </button>
+                )}
+            </>
+          ) : (
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-[clamp(0.9rem,2.3dvh,1.05rem)] font-semibold text-white">
+                  Free plan
+                </div>
+                <div className="text-[clamp(0.7rem,1.8dvh,0.82rem)] text-zinc-500 mt-0.5">
+                  5 AI parses per day · 14-day history
+                </div>
               </div>
+              <button
+                onClick={() => navigate('/pricing')}
+                className="text-[clamp(0.75rem,2dvh,0.9rem)] font-semibold text-[#D4FF00] hover:underline underline-offset-2"
+              >
+                See plans ›
+              </button>
             </div>
-            <button
-              onClick={() => navigate('/pricing')}
-              className="text-[clamp(0.75rem,2dvh,0.9rem)] font-semibold text-[#D4FF00] hover:underline underline-offset-2"
-            >
-              See plans ›
-            </button>
-          </div>
+          )}
         </section>
 {/* Card 5 — Danger zone (Sign Out + dev crash preserved) */}
         <section className="flex flex-col gap-3 pt-[clamp(0.3rem,0.8dvh,0.5rem)] md:col-span-2">
@@ -613,6 +688,27 @@ export function ProfilePage() {
         maintenanceKcal={Math.round(profile?.maintenance_kcal ?? 0)}
         currentCutPace={goal?.cut_pace ?? null}
         currentGainPace={goal?.gain_pace ?? null}
+      />
+        <CancelRenewalSheet
+        isOpen={showCancelSheet}
+        onClose={() => setShowCancelSheet(false)}
+        currentPeriodEnd={subscription?.currentPeriodEnd ?? null}
+        onConfirm={async () => {
+          const result = await subscriptionService.cancelAutoRenewal();
+          if (result.ok) {
+            await queryClient.invalidateQueries({ queryKey: ['subscription'] });
+            setShowCancelSheet(false);
+            toast({
+              type: 'success',
+              message: 'Auto-renewal cancelled. You keep access until your period ends.',
+            });
+          } else {
+            toast({
+              type: 'error',
+              message: result.error || 'Could not cancel. Please try again.',
+            });
+          }
+        }}
       />
     </div>
   );

@@ -2,6 +2,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/shared/utils/supabase';
 import { authService } from '@/features/auth/services/authService';
 import { getKolkataDateString } from '@/shared/utils/timezone';
+import { subscriptionService } from '@/features/pricing/services/subscriptionService';
+import { ENTITLEMENTS } from '@/features/pricing/entitlements';
 
 const ENDPOINT = 'parse-meal';
 
@@ -15,37 +17,37 @@ export function useAiCredits() {
   const queryClient = useQueryClient();
   const query = useQuery<AiCredits>({
     queryKey: ['aiCredits'],
-    staleTime: 10_000,          // keep in sync with refetchOnMount: 'always'
-    refetchOnMount: 'always',   // re-read the DB whenever the meal logger mounts
-    refetchOnWindowFocus: true, // correct the counter when the user returns to the tab
+    staleTime: 10_000,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const userId = await authService.getUserId();
       const today = getKolkataDateString();
-      const { data: usageData, error: usageError } = await supabase.rpc('get_api_usage', {
-        p_user_id: userId,
-        p_endpoint: ENDPOINT,
-        p_date: today,
-      });
-      if (usageError) throw usageError;
-      const rows = Array.isArray(usageData) ? usageData : usageData ? [usageData] : [];
-      const used = (rows[0] as { usage_count?: number } | undefined)?.usage_count ?? 0;
 
-      const { data: profileRow } = await supabase
-        .from('profiles')
-        .select('daily_ai_limit')
-        .eq('id', userId)
-        .single();
+      const [usageResult, subscription] = await Promise.all([
+        supabase.rpc('get_api_usage', {
+          p_user_id: userId,
+          p_endpoint: ENDPOINT,
+          p_date: today,
+        }),
+        subscriptionService.getSubscriptionStatus(),
+      ]);
 
-      const limit = (profileRow?.daily_ai_limit as number | undefined) ?? 5;
+      if (usageResult.error) throw usageResult.error;
+
+      const rows = Array.isArray(usageResult.data)
+        ? usageResult.data
+        : usageResult.data
+        ? [usageResult.data]
+        : [];
+      const used =
+        (rows[0] as { usage_count?: number } | undefined)?.usage_count ?? 0;
+      const limit = ENTITLEMENTS[subscription.plan].aiParsesPerDay;
 
       return { used, limit, remaining: Math.max(0, limit - used) };
     },
   });
 
-  // Invalidate first: that drops the cached (possibly still-"fresh") snapshot and
-  // bypasses React Query's dedup guard which was swallowing the update. Then
-  // force a fetch that cancels any in-flight request, so the value we resolve
-  // with is always the post-refund one.
   const refetch = async () => {
     await queryClient.invalidateQueries({ queryKey: ['aiCredits'], exact: true });
     return query.refetch({ cancelRefetch: true });

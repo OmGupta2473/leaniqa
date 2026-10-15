@@ -7,6 +7,11 @@ import { Footprints, Flame, Sparkles, ChevronRight, Activity, TrendingDown, Tren
 import { useQuery } from "@tanstack/react-query";
 import { useCalculatedProfile } from "@/shared/hooks/useCalculatedProfile";
 import { WelcomeMessage } from "@/features/dashboard/components/WelcomeMessage";
+import { StreakAtRiskBanner } from "@/features/dashboard/components/StreakAtRiskBanner";
+import { SubscriptionExpiryBanner } from "@/features/dashboard/components/SubscriptionExpiryBanner";
+import { subscriptionService } from "@/features/pricing/services/subscriptionService";
+import { PlanChip } from "@/features/dashboard/components/PlanChip";
+import { useAuthSession } from "@/router/useAuthSession";
 import { useDailyNutrition } from "@/features/nutrition/hooks/useDailyNutrition";
 import { getKolkataDateString } from "@/shared/utils/timezone";
 import { mealService } from "@/features/nutrition/services/mealService";
@@ -77,11 +82,17 @@ const AnimatedNumber = memo(function AnimatedNumber({
   return <span ref={elementRef}>{displayValue}</span>;
 });
 
+
 export function DashboardPage() {
+  const { session } = useAuthSession();
   const { data: metrics = [] } = useQuery({ queryKey: ["dailyMetrics"], queryFn: () => reportService.getDailyMetrics() });
   const currentStreak = calculateCurrentDailyStreak(metrics);
   
   const navigate = useNavigate();
+  const { data: subscription } = useQuery({
+    queryKey: ['subscription'],
+    queryFn: () => subscriptionService.getSubscriptionStatus(),
+  });
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -166,13 +177,22 @@ const ringCircumference = 2 * Math.PI * 42;
               )}
             </div>
           </div>
-          <div className="flex items-center gap-1.5 mt-2 bg-[rgba(255,255,255,0.05)] px-3 py-1.5 rounded-full border border-[rgba(255,255,255,0.05)] shadow-sm">
-            <Flame size={16} className={currentStreak > 0 ? "text-[#FF4D1C]" : "text-[rgba(235,235,245,0.3)]"} strokeWidth={2.5} />
-            <span className="text-[15px] font-bold text-white">{currentStreak}</span>
+          <div className="flex items-center gap-2 mt-2">
+            <PlanChip />
+            <div className="flex items-center gap-1.5 bg-[rgba(255,255,255,0.05)] px-3 py-1.5 rounded-full border border-[rgba(255,255,255,0.05)] shadow-sm">
+              <Flame size={16} className={currentStreak > 0 ? "text-[#FF4D1C]" : "text-[rgba(235,235,245,0.3)]"} strokeWidth={2.5} />
+              <span className="text-[15px] font-bold text-white">{currentStreak}</span>
+            </div>
           </div>
         </div>
 
         <WelcomeMessage />
+        <SubscriptionExpiryBanner
+          userId={session?.user?.id}
+          currentPeriodEnd={subscription?.currentPeriodEnd ?? null}
+          isOneTime={subscription?.accessType === 'one_time'}
+          isCancelledSub={subscription?.status === 'cancelled'}
+        />
 
         {isMealsError && isOnline ? (
           <div className="rounded-[24px] border border-red-500/30 bg-red-500/10 p-5 flex flex-col items-center justify-center text-center backdrop-blur-xl">

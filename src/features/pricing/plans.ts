@@ -1,69 +1,75 @@
+import type { PlanId } from './entitlements';
+
 export interface PricingPlan {
-  id: 'explorer' | 'discipline' | 'coach';
+  id: PlanId;
   name: string;
   tagline: string;
-  monthlyINR: number; // 0 for free
-  annualINR: number; // 0 for free
-  features: string[]; // outcome-focused, 5-6 items
-  badge?: string; // "Recommended" for middle
-  highlight: boolean; // true for the recommended tier
-  ctaLabel: string; // "Start free" / "Start 7-day trial" / "Start 7-day trial"
-  ctaHref: string; // route or action
+  monthlyINR: number;
+  annualINR: number;
+  features: string[];
+  badge?: string;
+  highlight: boolean;
+  ctaLabel: string;
+  ctaHref: string;
+  available: boolean;
 }
 
 export const PRICING_PLANS: PricingPlan[] = [
   {
-    id: 'explorer',
-    name: 'Explorer',
+    id: 'free',
+    name: 'Free',
     tagline: 'For getting started',
     monthlyINR: 0,
     annualINR: 0,
     features: [
       'Manual meal logging',
-      'Basic calorie & macro tracking',
-      'Daily dashboard & streaks',
-      'Standard food database',
+      '5 AI meal parses per day',
+      'Last 14 days in full detail',
+      'Daily calorie and protein totals',
+      'Basic weekly summary and streaks',
     ],
     highlight: false,
     ctaLabel: 'Start free',
     ctaHref: '/login',
+    available: true,
   },
   {
     id: 'discipline',
     name: 'Discipline',
-    tagline: 'For serious lifters',
-    monthlyINR: 399,
-    annualINR: 3499,
+    tagline: 'For consistent trackers',
+    monthlyINR: 149,
+    annualINR: 1199,
     features: [
-      'Everything in Explorer, plus:',
-      'Unlimited AI meal parsing (type & forget)',
-      'Adaptive calorie & macro targets',
-      'Diet-aware coaching for Indian meals',
-      'Projected progress timeline',
-      'Priority support',
+      'Everything in Free, plus:',
+      '25 AI meal parses per day',
+      'Full detail for 180 days',
+      'Full weekly reports',
+      'Macro balance and weekly trends',
+      'Coach-style weekly summary',
     ],
     badge: 'Recommended',
     highlight: true,
-    ctaLabel: 'Start 7-day trial',
-    ctaHref: '/login?next=/pricing',
+    ctaLabel: 'Upgrade to Discipline',
+    ctaHref: '/pricing',
+    available: true,
   },
   {
-    id: 'coach',
-    name: 'Coach',
-    tagline: 'For the disciplined',
-    monthlyINR: 799,
-    annualINR: 6999,
+    id: 'premium',
+    name: 'Premium',
+    tagline: 'For serious users',
+    monthlyINR: 299,
+    annualINR: 2399,
     features: [
       'Everything in Discipline, plus:',
-      'Weekly AI report & recommendations',
-      'Advanced progress analytics',
-      'Priority Gemini chain (fastest parses)',
-      'Early access to new features',
+      '100 AI meal parses per day',
+      'Unlimited detailed history',
+      'Advanced progress projections',
     ],
     highlight: false,
-    ctaLabel: 'Start 7-day trial',
-    ctaHref: '/login?next=/pricing',
+    ctaLabel: 'Upgrade to Premium',
+    ctaHref: '/pricing',
+    available: true,
   },
 ];
 
-export const ANNUAL_SAVING_PERCENT = 27;
+export const ANNUAL_SAVING_PERCENT = 33;

@@ -41,21 +41,30 @@ export const awardService = {
     }
 
     // Fetch every input needed by the 22-award engine.
-    const [mealLogs, weightLogs, profile, existingAwards] = await Promise.all([
-      mealService.getMeals({ days: 365, limit: 2000 }).catch(() => []),
-      weightService.getWeightLogs().catch(() => []),
-      profileService.getProfile().catch(() => null),
-      supabase
-        .from('user_awards')
-        .select('*')
-        .eq('user_id', userId)
-        .then((result) => result.data ?? []),
-    ]);
+    // Meal logs are only fetched for a short window; the true lifetime count
+    // for the meal-count awards comes from a SECURITY DEFINER RPC so
+    // RLS-limited history doesn't silently miscount.
+    const [mealLogs, mealCountResult, weightLogs, profile, existingAwards] =
+      await Promise.all([
+        mealService.getMeals({ days: 30, limit: 500 }).catch(() => []),
+        supabase.rpc('count_user_meals', { p_user_id: userId }),
+        weightService.getWeightLogs().catch(() => []),
+        profileService.getProfile().catch(() => null),
+        supabase
+          .from('user_awards')
+          .select('*')
+          .eq('user_id', userId)
+          .then((result) => result.data ?? []),
+      ]);
+
+    const mealLogCount =
+      typeof mealCountResult.data === 'number' ? mealCountResult.data : mealLogs.length;
 
     // newlyEligible means: rule satisfied but no user_awards row exists.
     const evaluation = evaluateAwards({
       metrics,
       mealLogs,
+      mealLogCount,
       weightLogs,
       profileCreatedAt: profile?.created_at ?? null,
       todayIso: getKolkataDateString(),
