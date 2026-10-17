@@ -8,3 +8,5 @@ dist/
 supabase/.temp/
 .kilo/
 project-export.md
+
+supabase/.temp/
