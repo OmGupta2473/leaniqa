@@ -1,0 +1,654 @@
+[
+  {
+    "id": "m01",
+    "text": "2 roti and 1 katori dal",
+    "expected_kcal": 412,
+    "actual_kcal": 412,
+    "kcal_err_pct": 0,
+    "expected_protein": 19.6,
+    "actual_protein": 19.6,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "exact|ambiguous",
+    "overall_confidence": 0.73,
+    "needs_confirmation": true,
+    "resolution_ms": 1,
+    "requires_confirmation_any": true,
+    "resolution_types": [
+      "matched",
+      "default_guess"
+    ]
+  },
+  {
+    "id": "m02",
+    "text": "1 bowl poha",
+    "expected_kcal": 195,
+    "actual_kcal": 195,
+    "kcal_err_pct": 0,
+    "expected_protein": 4.5,
+    "actual_protein": 4.5,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "alias",
+    "overall_confidence": 0.9,
+    "needs_confirmation": false,
+    "resolution_ms": 0,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m03",
+    "text": "2 idli with sambar",
+    "expected_kcal": 234,
+    "actual_kcal": 234,
+    "kcal_err_pct": 0,
+    "expected_protein": 9.4,
+    "actual_protein": 9.4,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "exact",
+    "overall_confidence": 0.95,
+    "needs_confirmation": false,
+    "resolution_ms": 0,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m04",
+    "text": "1 katori chawal and chicken curry",
+    "expected_kcal": 405,
+    "actual_kcal": 405,
+    "kcal_err_pct": 0,
+    "expected_protein": 25.1,
+    "actual_protein": 25.1,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "alias|exact",
+    "overall_confidence": 0.93,
+    "needs_confirmation": false,
+    "resolution_ms": 0,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m05",
+    "text": "aloo gobi sabzi",
+    "expected_kcal": 182,
+    "actual_kcal": 182,
+    "kcal_err_pct": 0,
+    "expected_protein": 3.3,
+    "actual_protein": 3.3,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "fuzzy",
+    "overall_confidence": 0.65,
+    "needs_confirmation": false,
+    "resolution_ms": 1,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m06",
+    "text": "paneer bhurji with 2 chapati",
+    "expected_kcal": 502,
+    "actual_kcal": 502,
+    "kcal_err_pct": 0,
+    "expected_protein": 23.2,
+    "actual_protein": 23.2,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "exact|alias",
+    "overall_confidence": 0.93,
+    "needs_confirmation": false,
+    "resolution_ms": 0,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m07",
+    "text": "250g cooked soya chunks with 2-3 tbsp oil",
+    "expected_kcal": 759,
+    "actual_kcal": 759,
+    "kcal_err_pct": 0,
+    "expected_protein": 55,
+    "actual_protein": 55,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "fuzzy|exact",
+    "overall_confidence": 0.76,
+    "needs_confirmation": false,
+    "resolution_ms": 1,
+    "note": "Range 2-3 → midpoint 2.5 × 14 = 35g. Marked medium confidence.",
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m08",
+    "text": "1 banana",
+    "expected_kcal": 107,
+    "actual_kcal": 107,
+    "kcal_err_pct": 0,
+    "expected_protein": 1.3,
+    "actual_protein": 1.3,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "exact",
+    "overall_confidence": 0.95,
+    "needs_confirmation": false,
+    "resolution_ms": 0,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m09",
+    "text": "1 glass milk",
+    "expected_kcal": 156,
+    "actual_kcal": 156,
+    "kcal_err_pct": 0,
+    "expected_protein": 7.7,
+    "actual_protein": 7.7,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "alias",
+    "overall_confidence": 0.9,
+    "needs_confirmation": false,
+    "resolution_ms": 0,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m10",
+    "text": "2 eggs and toast",
+    "expected_kcal": 235,
+    "actual_kcal": 235,
+    "kcal_err_pct": 0,
+    "expected_protein": 15.6,
+    "actual_protein": 15.6,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "alias|fuzzy",
+    "overall_confidence": 0.78,
+    "needs_confirmation": false,
+    "resolution_ms": 0,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m11",
+    "text": "3 roti with paneer sabzi",
+    "expected_kcal": 671,
+    "actual_kcal": 671,
+    "kcal_err_pct": 0,
+    "expected_protein": 31.2,
+    "actual_protein": 31.2,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "exact",
+    "overall_confidence": 0.95,
+    "needs_confirmation": false,
+    "resolution_ms": 0,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m12",
+    "text": "1 katori rajma chawal",
+    "expected_kcal": 384,
+    "actual_kcal": 384,
+    "kcal_err_pct": 0,
+    "expected_protein": 17.1,
+    "actual_protein": 17.1,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "alias",
+    "overall_confidence": 0.9,
+    "needs_confirmation": false,
+    "resolution_ms": 0,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m13",
+    "text": "masala dosa",
+    "expected_kcal": 285,
+    "actual_kcal": 285,
+    "kcal_err_pct": 0,
+    "expected_protein": 5.3,
+    "actual_protein": 5.3,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "exact",
+    "overall_confidence": 0.95,
+    "needs_confirmation": false,
+    "resolution_ms": 0,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m14",
+    "text": "1 bowl khichdi",
+    "expected_kcal": 230,
+    "actual_kcal": 230,
+    "kcal_err_pct": 0,
+    "expected_protein": 11,
+    "actual_protein": 11,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "alias",
+    "overall_confidence": 0.9,
+    "needs_confirmation": false,
+    "resolution_ms": 0,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m15",
+    "text": "150g grilled chicken breast",
+    "expected_kcal": 248,
+    "actual_kcal": 248,
+    "kcal_err_pct": 0,
+    "expected_protein": 46.5,
+    "actual_protein": 46.5,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "fuzzy",
+    "overall_confidence": 0.65,
+    "needs_confirmation": false,
+    "resolution_ms": 1,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m16",
+    "text": "2 slices bread with butter",
+    "expected_kcal": 195,
+    "actual_kcal": 195,
+    "kcal_err_pct": 0,
+    "expected_protein": 5.1,
+    "actual_protein": 5.1,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "exact",
+    "overall_confidence": 0.95,
+    "needs_confirmation": false,
+    "resolution_ms": 0,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m17",
+    "text": "bowl curd",
+    "expected_kcal": 120,
+    "actual_kcal": 120,
+    "kcal_err_pct": 0,
+    "expected_protein": 7,
+    "actual_protein": 7,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "alias",
+    "overall_confidence": 0.9,
+    "needs_confirmation": false,
+    "resolution_ms": 0,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m18",
+    "text": "2 paratha",
+    "expected_kcal": 396,
+    "actual_kcal": 396,
+    "kcal_err_pct": 0,
+    "expected_protein": 7.7,
+    "actual_protein": 7.7,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "exact",
+    "overall_confidence": 0.95,
+    "needs_confirmation": false,
+    "resolution_ms": 0,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m19",
+    "text": "1 plate chicken biryani",
+    "expected_kcal": 326,
+    "actual_kcal": 326,
+    "kcal_err_pct": 0,
+    "expected_protein": 18.4,
+    "actual_protein": 18.4,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "fuzzy",
+    "overall_confidence": 0.65,
+    "needs_confirmation": false,
+    "resolution_ms": 1,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m20",
+    "text": "dal makhani with naan",
+    "expected_kcal": 489,
+    "actual_kcal": 489,
+    "kcal_err_pct": 0,
+    "expected_protein": 18.2,
+    "actual_protein": 18.2,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "exact",
+    "overall_confidence": 0.95,
+    "needs_confirmation": false,
+    "resolution_ms": 0,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m21",
+    "text": "1 cup tea",
+    "expected_kcal": 150,
+    "actual_kcal": 150,
+    "kcal_err_pct": 0,
+    "expected_protein": 3,
+    "actual_protein": 3,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "fuzzy",
+    "overall_confidence": 0.65,
+    "needs_confirmation": false,
+    "resolution_ms": 0,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m22",
+    "text": "mixed vegetable sabzi",
+    "expected_kcal": 155,
+    "actual_kcal": 155,
+    "kcal_err_pct": 0,
+    "expected_protein": 2,
+    "actual_protein": 2,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "fuzzy",
+    "overall_confidence": 0.65,
+    "needs_confirmation": false,
+    "resolution_ms": 1,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m23",
+    "text": "100g paneer tikka",
+    "expected_kcal": 220,
+    "actual_kcal": 220,
+    "kcal_err_pct": 0,
+    "expected_protein": 12,
+    "actual_protein": 12,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "exact",
+    "overall_confidence": 0.95,
+    "needs_confirmation": false,
+    "resolution_ms": 0,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m24",
+    "text": "1 glass lassi",
+    "expected_kcal": 168,
+    "actual_kcal": 168,
+    "kcal_err_pct": 0,
+    "expected_protein": 6,
+    "actual_protein": 6,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "exact",
+    "overall_confidence": 0.95,
+    "needs_confirmation": false,
+    "resolution_ms": 0,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m25",
+    "text": "chole with bhature",
+    "expected_kcal": 550,
+    "actual_kcal": 550,
+    "kcal_err_pct": 0,
+    "expected_protein": 19,
+    "actual_protein": 19,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "exact|fuzzy",
+    "overall_confidence": 0.8,
+    "needs_confirmation": false,
+    "resolution_ms": 0,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m26",
+    "text": "2 samosa",
+    "expected_kcal": 370,
+    "actual_kcal": 370,
+    "kcal_err_pct": 0,
+    "expected_protein": 5.4,
+    "actual_protein": 5.4,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "exact",
+    "overall_confidence": 0.95,
+    "needs_confirmation": false,
+    "resolution_ms": 0,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m27",
+    "text": "1 plate upma",
+    "expected_kcal": 260,
+    "actual_kcal": 260,
+    "kcal_err_pct": 0,
+    "expected_protein": 6.6,
+    "actual_protein": 6.6,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "alias",
+    "overall_confidence": 0.9,
+    "needs_confirmation": false,
+    "resolution_ms": 0,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m28",
+    "text": "palak paneer with 2 roti",
+    "expected_kcal": 508,
+    "actual_kcal": 508,
+    "kcal_err_pct": 0,
+    "expected_protein": 22.3,
+    "actual_protein": 22.3,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "exact",
+    "overall_confidence": 0.95,
+    "needs_confirmation": false,
+    "resolution_ms": 0,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m29",
+    "text": "1 katori egg bhurji",
+    "expected_kcal": 180,
+    "actual_kcal": 180,
+    "kcal_err_pct": 0,
+    "expected_protein": 12,
+    "actual_protein": 12,
+    "protein_err_g": 0,
+    "food_match": true,
+    "layers_used": "fuzzy",
+    "overall_confidence": 0.65,
+    "needs_confirmation": false,
+    "resolution_ms": 0,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "m30",
+    "text": "1 katori sambar",
+    "expected_kcal": 130,
+    "actual_kcal": 122,
+    "kcal_err_pct": 6.2,
+    "expected_protein": 6.4,
+    "actual_protein": 6,
+    "protein_err_g": 0.4,
+    "food_match": true,
+    "layers_used": "exact",
+    "overall_confidence": 0.95,
+    "needs_confirmation": false,
+    "resolution_ms": 0,
+    "requires_confirmation_any": false,
+    "resolution_types": [
+      "matched"
+    ]
+  },
+  {
+    "id": "a01",
+    "text": "dal",
+    "expected_kcal": 0,
+    "actual_kcal": 174,
+    "kcal_err_pct": 0,
+    "expected_protein": 0,
+    "actual_protein": 10.8,
+    "protein_err_g": 10.8,
+    "food_match": true,
+    "layers_used": "ambiguous",
+    "overall_confidence": 0.4,
+    "needs_confirmation": true,
+    "resolution_ms": 0,
+    "note": "Ambiguous — must return candidates, low confidence.",
+    "requires_confirmation_any": true,
+    "resolution_types": [
+      "default_guess"
+    ]
+  },
+  {
+    "id": "a02",
+    "text": "sabzi",
+    "expected_kcal": 0,
+    "actual_kcal": 155,
+    "kcal_err_pct": 0,
+    "expected_protein": 0,
+    "actual_protein": 2,
+    "protein_err_g": 2,
+    "food_match": true,
+    "layers_used": "ambiguous",
+    "overall_confidence": 0.4,
+    "needs_confirmation": true,
+    "resolution_ms": 0,
+    "note": "Ambiguous — must return candidates, low confidence.",
+    "requires_confirmation_any": true,
+    "resolution_types": [
+      "default_guess"
+    ]
+  },
+  {
+    "id": "a03",
+    "text": "curry",
+    "expected_kcal": 0,
+    "actual_kcal": 155,
+    "kcal_err_pct": 0,
+    "expected_protein": 0,
+    "actual_protein": 2,
+    "protein_err_g": 2,
+    "food_match": true,
+    "layers_used": "ambiguous",
+    "overall_confidence": 0.4,
+    "needs_confirmation": true,
+    "resolution_ms": 0,
+    "note": "Ambiguous — must return candidates, low confidence.",
+    "requires_confirmation_any": true,
+    "resolution_types": [
+      "default_guess"
+    ]
+  },
+  {
+    "id": "a04",
+    "text": "1 bowl dal",
+    "expected_kcal": 0,
+    "actual_kcal": 174,
+    "kcal_err_pct": 0,
+    "expected_protein": 0,
+    "actual_protein": 10.8,
+    "protein_err_g": 10.8,
+    "food_match": true,
+    "layers_used": "ambiguous",
+    "overall_confidence": 0.5,
+    "needs_confirmation": true,
+    "resolution_ms": 0,
+    "note": "Ambiguous food + portion known. Should flag dal as ambiguous.",
+    "requires_confirmation_any": true,
+    "resolution_types": [
+      "default_guess"
+    ]
+  }
+]
