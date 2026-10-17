@@ -1,0 +1,848 @@
+[
+  {
+    "id": "m01",
+    "text": "2 roti and 1 katori dal",
+    "expected_kcal": 412,
+    "expected_protein": 19.6,
+    "ai_kcal": 357,
+    "ai_protein": 16.8,
+    "ai_carbs": 66.4,
+    "ai_fat": 3.2,
+    "ai_confidence": 99,
+    "ai_foods_detected": [
+      "2 piece roti",
+      "1 bowl dal"
+    ],
+    "ai_canonical_ids": [
+      "roti",
+      "dal_cooked"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 13.3,
+    "protein_err_g": 2.8,
+    "latency_ms": 1126,
+    "source": "kb",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "m02",
+    "text": "1 bowl poha",
+    "expected_kcal": 195,
+    "expected_protein": 4.5,
+    "ai_kcal": 180,
+    "ai_protein": 4.1,
+    "ai_carbs": 30,
+    "ai_fat": 4.9,
+    "ai_confidence": 99,
+    "ai_foods_detected": [
+      "1 bowl poha"
+    ],
+    "ai_canonical_ids": [
+      "poha"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 7.7,
+    "protein_err_g": 0.4,
+    "latency_ms": 895,
+    "source": "kb",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "m03",
+    "text": "2 idli with sambar",
+    "expected_kcal": 234,
+    "expected_protein": 9.4,
+    "ai_kcal": 234,
+    "ai_protein": 9.4,
+    "ai_carbs": 38.4,
+    "ai_fat": 4,
+    "ai_confidence": 99,
+    "ai_foods_detected": [
+      "2 piece idli",
+      "1 bowl sambar"
+    ],
+    "ai_canonical_ids": [
+      "idli",
+      "sambar"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 0,
+    "protein_err_g": 0,
+    "latency_ms": 973,
+    "source": "kb",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "m04",
+    "text": "1 katori chawal and chicken curry",
+    "expected_kcal": 405,
+    "expected_protein": 25.1,
+    "ai_kcal": 405,
+    "ai_protein": 25.1,
+    "ai_carbs": 46.5,
+    "ai_fat": 12.5,
+    "ai_confidence": 99,
+    "ai_foods_detected": [
+      "1 bowl rice",
+      "1 bowl chicken curry"
+    ],
+    "ai_canonical_ids": [
+      "rice_cooked",
+      "chicken_curry"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 0,
+    "protein_err_g": 0,
+    "latency_ms": 1045,
+    "source": "kb",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "m05",
+    "text": "aloo gobi sabzi",
+    "expected_kcal": 182,
+    "expected_protein": 3.3,
+    "ai_kcal": 120,
+    "ai_protein": 3,
+    "ai_carbs": 15,
+    "ai_fat": 6,
+    "ai_confidence": 70,
+    "ai_foods_detected": [
+      "potato",
+      "cauliflower",
+      "oil",
+      "spices"
+    ],
+    "ai_canonical_ids": [
+      "aloo_gobi",
+      "aloo_gobi",
+      "oil",
+      "bread_slice"
+    ],
+    "food_match": false,
+    "kcal_err_pct": 34.1,
+    "protein_err_g": 0.3,
+    "latency_ms": 4504,
+    "source": "db_cache",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "m06",
+    "text": "paneer bhurji with 2 chapati",
+    "expected_kcal": 502,
+    "expected_protein": 23.2,
+    "ai_kcal": 400,
+    "ai_protein": 18,
+    "ai_carbs": 45,
+    "ai_fat": 16,
+    "ai_confidence": 90,
+    "ai_foods_detected": [
+      "paneer bhurji",
+      "chapati"
+    ],
+    "ai_canonical_ids": [
+      "paneer_bhurji",
+      "roti"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 20.3,
+    "protein_err_g": 5.2,
+    "latency_ms": 947,
+    "source": "db_cache",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "m07",
+    "text": "250g cooked soya chunks with 2-3 tbsp oil",
+    "expected_kcal": 759,
+    "expected_protein": 55,
+    "ai_kcal": 515,
+    "ai_protein": 41.25,
+    "ai_carbs": 27.5,
+    "ai_fat": 28.75,
+    "ai_confidence": 90,
+    "ai_foods_detected": [
+      "cooked soya chunks",
+      "oil"
+    ],
+    "ai_canonical_ids": [
+      "soya_curry",
+      "oil"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 32.1,
+    "protein_err_g": 13.8,
+    "latency_ms": 772,
+    "source": "db_cache",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "m08",
+    "text": "1 banana",
+    "expected_kcal": 107,
+    "expected_protein": 1.3,
+    "ai_kcal": 107,
+    "ai_protein": 1.3,
+    "ai_carbs": 27.6,
+    "ai_fat": 0.4,
+    "ai_confidence": 99,
+    "ai_foods_detected": [
+      "1 piece banana"
+    ],
+    "ai_canonical_ids": [
+      "banana"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 0,
+    "protein_err_g": 0,
+    "latency_ms": 617,
+    "source": "kb",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "m09",
+    "text": "1 glass milk",
+    "expected_kcal": 156,
+    "expected_protein": 7.7,
+    "ai_kcal": 170,
+    "ai_protein": 8,
+    "ai_carbs": 30,
+    "ai_fat": 0,
+    "ai_confidence": 95,
+    "ai_foods_detected": [
+      "milk"
+    ],
+    "ai_canonical_ids": [
+      "milk"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 9,
+    "protein_err_g": 0.3,
+    "latency_ms": 717,
+    "source": "db_cache",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "m10",
+    "text": "2 eggs and toast",
+    "expected_kcal": 235,
+    "expected_protein": 15.6,
+    "ai_kcal": 224,
+    "ai_protein": 15.3,
+    "ai_carbs": 15.8,
+    "ai_fat": 10.6,
+    "ai_confidence": 85,
+    "ai_foods_detected": [
+      "eggs",
+      "toast"
+    ],
+    "ai_canonical_ids": [
+      "egg_whole",
+      "bread_slice"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 4.7,
+    "protein_err_g": 0.3,
+    "latency_ms": 960,
+    "source": "db_cache",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "m11",
+    "text": "3 roti with paneer sabzi",
+    "expected_kcal": 671,
+    "expected_protein": 31.2,
+    "ai_kcal": 510,
+    "ai_protein": 17,
+    "ai_carbs": 71,
+    "ai_fat": 13,
+    "ai_confidence": 85,
+    "ai_foods_detected": [
+      "roti",
+      "paneer sabzi"
+    ],
+    "ai_canonical_ids": [
+      "roti",
+      "paneer_sabzi"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 24,
+    "protein_err_g": 14.2,
+    "latency_ms": 714,
+    "source": "db_cache",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "m12",
+    "text": "1 katori rajma chawal",
+    "expected_kcal": 384,
+    "expected_protein": 17.1,
+    "ai_kcal": 300,
+    "ai_protein": 12,
+    "ai_carbs": 55,
+    "ai_fat": 1,
+    "ai_confidence": 70,
+    "ai_foods_detected": [
+      "rajma",
+      "chawal"
+    ],
+    "ai_canonical_ids": [
+      "rajma_cooked",
+      "rice_cooked"
+    ],
+    "food_match": false,
+    "kcal_err_pct": 21.9,
+    "protein_err_g": 5.1,
+    "latency_ms": 718,
+    "source": "db_cache",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "m13",
+    "text": "masala dosa",
+    "expected_kcal": 285,
+    "expected_protein": 5.3,
+    "ai_kcal": 285,
+    "ai_protein": 5.3,
+    "ai_carbs": 37.5,
+    "ai_fat": 12,
+    "ai_confidence": 99,
+    "ai_foods_detected": [
+      "1 piece masala dosa"
+    ],
+    "ai_canonical_ids": [
+      "masala_dosa"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 0,
+    "protein_err_g": 0,
+    "latency_ms": 842,
+    "source": "kb",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "m14",
+    "text": "1 bowl khichdi",
+    "expected_kcal": 230,
+    "expected_protein": 11,
+    "ai_kcal": 230,
+    "ai_protein": 11,
+    "ai_carbs": 41,
+    "ai_fat": 5,
+    "ai_confidence": 99,
+    "ai_foods_detected": [
+      "1 bowl khichdi"
+    ],
+    "ai_canonical_ids": [
+      "khichdi"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 0,
+    "protein_err_g": 0,
+    "latency_ms": 623,
+    "source": "kb",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "m15",
+    "text": "150g grilled chicken breast",
+    "expected_kcal": 248,
+    "expected_protein": 46.5,
+    "ai_kcal": 247.5,
+    "ai_protein": 46.5,
+    "ai_carbs": 0,
+    "ai_fat": 5.4,
+    "ai_confidence": 98,
+    "ai_foods_detected": [
+      "grilled chicken breast"
+    ],
+    "ai_canonical_ids": [
+      "chicken_breast_grilled"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 0.2,
+    "protein_err_g": 0,
+    "latency_ms": 1137,
+    "source": "db_cache",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "m16",
+    "text": "2 slices bread with butter",
+    "expected_kcal": 195,
+    "expected_protein": 5.1,
+    "ai_kcal": 196,
+    "ai_protein": 5.4,
+    "ai_carbs": 30,
+    "ai_fat": 6,
+    "ai_confidence": 70,
+    "ai_foods_detected": [
+      "bread (2 slices)",
+      "butter (≈5 g)"
+    ],
+    "ai_canonical_ids": [
+      "bread_slice",
+      "butter"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 0.5,
+    "protein_err_g": 0.3,
+    "latency_ms": 985,
+    "source": "db_cache",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "m17",
+    "text": "bowl curd",
+    "expected_kcal": 120,
+    "expected_protein": 7,
+    "ai_kcal": 122,
+    "ai_protein": 7,
+    "ai_carbs": 9.4,
+    "ai_fat": 6.6,
+    "ai_confidence": 70,
+    "ai_foods_detected": [
+      "curd"
+    ],
+    "ai_canonical_ids": [
+      "curd"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 1.7,
+    "protein_err_g": 0,
+    "latency_ms": 791,
+    "source": "db_cache",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "m18",
+    "text": "2 paratha",
+    "expected_kcal": 396,
+    "expected_protein": 7.7,
+    "ai_kcal": 396,
+    "ai_protein": 7.7,
+    "ai_carbs": 54.5,
+    "ai_fat": 15.6,
+    "ai_confidence": 99,
+    "ai_foods_detected": [
+      "2 piece paratha"
+    ],
+    "ai_canonical_ids": [
+      "paratha"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 0,
+    "protein_err_g": 0,
+    "latency_ms": 719,
+    "source": "kb",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "m19",
+    "text": "1 plate chicken biryani",
+    "expected_kcal": 326,
+    "expected_protein": 18.4,
+    "ai_kcal": 440,
+    "ai_protein": 22,
+    "ai_carbs": 53,
+    "ai_fat": 14,
+    "ai_confidence": 70,
+    "ai_foods_detected": [
+      "chicken biryani"
+    ],
+    "ai_canonical_ids": [
+      "chicken_biryani"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 35,
+    "protein_err_g": 3.6,
+    "latency_ms": 637,
+    "source": "db_cache",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "m20",
+    "text": "dal makhani with naan",
+    "expected_kcal": 489,
+    "expected_protein": 18.2,
+    "ai_kcal": 489,
+    "ai_protein": 18.2,
+    "ai_carbs": 72,
+    "ai_fat": 15.6,
+    "ai_confidence": 99,
+    "ai_foods_detected": [
+      "1 bowl dal makhani",
+      "1 piece naan"
+    ],
+    "ai_canonical_ids": [
+      "dal_makhani",
+      "naan"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 0,
+    "protein_err_g": 0,
+    "latency_ms": 629,
+    "source": "kb",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "m21",
+    "text": "1 cup tea",
+    "expected_kcal": 150,
+    "expected_protein": 3,
+    "ai_kcal": 2,
+    "ai_protein": 0,
+    "ai_carbs": 0.5,
+    "ai_fat": 0,
+    "ai_confidence": 85,
+    "ai_foods_detected": [
+      "tea"
+    ],
+    "ai_canonical_ids": [
+      "chai"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 98.7,
+    "protein_err_g": 3,
+    "latency_ms": 2845,
+    "source": "llm",
+    "cost_usd": 0.0001,
+    "error": null
+  },
+  {
+    "id": "m22",
+    "text": "mixed vegetable sabzi",
+    "expected_kcal": 155,
+    "expected_protein": 2,
+    "ai_kcal": 120,
+    "ai_protein": 3,
+    "ai_carbs": 12,
+    "ai_fat": 6,
+    "ai_confidence": 70,
+    "ai_foods_detected": [
+      "mixed vegetables"
+    ],
+    "ai_canonical_ids": [
+      "mixed_veg"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 22.6,
+    "protein_err_g": 1,
+    "latency_ms": 2772,
+    "source": "llm",
+    "cost_usd": 0.0001,
+    "error": null
+  },
+  {
+    "id": "m23",
+    "text": "100g paneer tikka",
+    "expected_kcal": 220,
+    "expected_protein": 12,
+    "ai_kcal": 200,
+    "ai_protein": 12,
+    "ai_carbs": 4,
+    "ai_fat": 15,
+    "ai_confidence": 99,
+    "ai_foods_detected": [
+      "100 g paneer tikka"
+    ],
+    "ai_canonical_ids": [
+      "paneer_tikka"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 9.1,
+    "protein_err_g": 0,
+    "latency_ms": 536,
+    "source": "kb",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "m24",
+    "text": "1 glass lassi",
+    "expected_kcal": 168,
+    "expected_protein": 6,
+    "ai_kcal": 150,
+    "ai_protein": 5,
+    "ai_carbs": 20,
+    "ai_fat": 4,
+    "ai_confidence": 98,
+    "ai_foods_detected": [
+      "lassi"
+    ],
+    "ai_canonical_ids": [
+      "lassi"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 10.7,
+    "protein_err_g": 1,
+    "latency_ms": 3018,
+    "source": "llm",
+    "cost_usd": 0.0001,
+    "error": null
+  },
+  {
+    "id": "m25",
+    "text": "chole with bhature",
+    "expected_kcal": 550,
+    "expected_protein": 19,
+    "ai_kcal": 550,
+    "ai_protein": 19,
+    "ai_carbs": 82.7,
+    "ai_fat": 15.9,
+    "ai_confidence": 99,
+    "ai_foods_detected": [
+      "1 bowl chole",
+      "1 piece bhatura"
+    ],
+    "ai_canonical_ids": [
+      "chole_cooked",
+      "bhatura"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 0,
+    "protein_err_g": 0,
+    "latency_ms": 633,
+    "source": "kb",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "m26",
+    "text": "2 samosa",
+    "expected_kcal": 370,
+    "expected_protein": 5.4,
+    "ai_kcal": 370,
+    "ai_protein": 5.4,
+    "ai_carbs": 38.4,
+    "ai_fat": 20.4,
+    "ai_confidence": 99,
+    "ai_foods_detected": [
+      "2 piece samosa"
+    ],
+    "ai_canonical_ids": [
+      "samosa"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 0,
+    "protein_err_g": 0,
+    "latency_ms": 663,
+    "source": "kb",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "m27",
+    "text": "1 plate upma",
+    "expected_kcal": 260,
+    "expected_protein": 6.6,
+    "ai_kcal": 325,
+    "ai_protein": 8.8,
+    "ai_carbs": 50,
+    "ai_fat": 10,
+    "ai_confidence": 70,
+    "ai_foods_detected": [
+      "upma"
+    ],
+    "ai_canonical_ids": [
+      "upma"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 25,
+    "protein_err_g": 2.2,
+    "latency_ms": 2755,
+    "source": "llm",
+    "cost_usd": 0.0001,
+    "error": null
+  },
+  {
+    "id": "m28",
+    "text": "palak paneer with 2 roti",
+    "expected_kcal": 508,
+    "expected_protein": 22.3,
+    "ai_kcal": 456,
+    "ai_protein": 19.5,
+    "ai_carbs": 47,
+    "ai_fat": 20.5,
+    "ai_confidence": 99,
+    "ai_foods_detected": [
+      "1 bowl palak paneer",
+      "2 piece roti"
+    ],
+    "ai_canonical_ids": [
+      "palak_paneer",
+      "roti"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 10.2,
+    "protein_err_g": 2.8,
+    "latency_ms": 614,
+    "source": "kb",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "m29",
+    "text": "1 katori egg bhurji",
+    "expected_kcal": 180,
+    "expected_protein": 12,
+    "ai_kcal": 225,
+    "ai_protein": 18,
+    "ai_carbs": 3,
+    "ai_fat": 15,
+    "ai_confidence": 85,
+    "ai_foods_detected": [
+      "egg bhurji"
+    ],
+    "ai_canonical_ids": [
+      "egg_curry"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 25,
+    "protein_err_g": 6,
+    "latency_ms": 2615,
+    "source": "llm",
+    "cost_usd": 0.0001,
+    "error": null
+  },
+  {
+    "id": "m30",
+    "text": "1 katori sambar",
+    "expected_kcal": 130,
+    "expected_protein": 6.4,
+    "ai_kcal": 130,
+    "ai_protein": 6.4,
+    "ai_carbs": 19.2,
+    "ai_fat": 3.4,
+    "ai_confidence": 99,
+    "ai_foods_detected": [
+      "1 bowl sambar"
+    ],
+    "ai_canonical_ids": [
+      "sambar"
+    ],
+    "food_match": true,
+    "kcal_err_pct": 0,
+    "protein_err_g": 0,
+    "latency_ms": 585,
+    "source": "kb",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "a01",
+    "text": "dal",
+    "expected_kcal": 0,
+    "expected_protein": 0,
+    "ai_kcal": 171,
+    "ai_protein": 10.8,
+    "ai_carbs": 31.4,
+    "ai_fat": 0.8,
+    "ai_confidence": 99,
+    "ai_foods_detected": [
+      "1 bowl dal"
+    ],
+    "ai_canonical_ids": [
+      "dal_cooked"
+    ],
+    "food_match": null,
+    "kcal_err_pct": null,
+    "protein_err_g": null,
+    "latency_ms": 626,
+    "source": "kb",
+    "cost_usd": 0,
+    "error": null
+  },
+  {
+    "id": "a02",
+    "text": "sabzi",
+    "expected_kcal": 0,
+    "expected_protein": 0,
+    "ai_kcal": 120,
+    "ai_protein": 3,
+    "ai_carbs": 12,
+    "ai_fat": 6,
+    "ai_confidence": 70,
+    "ai_foods_detected": [
+      "sabzi"
+    ],
+    "ai_canonical_ids": [
+      "mixed_veg"
+    ],
+    "food_match": null,
+    "kcal_err_pct": null,
+    "protein_err_g": null,
+    "latency_ms": 2372,
+    "source": "llm",
+    "cost_usd": 0.0001,
+    "error": null
+  },
+  {
+    "id": "a03",
+    "text": "curry",
+    "expected_kcal": 0,
+    "expected_protein": 0,
+    "ai_kcal": 120,
+    "ai_protein": 3,
+    "ai_carbs": 15,
+    "ai_fat": 5,
+    "ai_confidence": 65,
+    "ai_foods_detected": [
+      "curry"
+    ],
+    "ai_canonical_ids": [
+      "mixed_veg"
+    ],
+    "food_match": null,
+    "kcal_err_pct": null,
+    "protein_err_g": null,
+    "latency_ms": 2512,
+    "source": "llm",
+    "cost_usd": 0.0001,
+    "error": null
+  },
+  {
+    "id": "a04",
+    "text": "1 bowl dal",
+    "expected_kcal": 0,
+    "expected_protein": 0,
+    "ai_kcal": 171,
+    "ai_protein": 10.8,
+    "ai_carbs": 31.4,
+    "ai_fat": 0.8,
+    "ai_confidence": 99,
+    "ai_foods_detected": [
+      "1 bowl dal"
+    ],
+    "ai_canonical_ids": [
+      "dal_cooked"
+    ],
+    "food_match": null,
+    "kcal_err_pct": null,
+    "protein_err_g": null,
+    "latency_ms": 655,
+    "source": "kb",
+    "cost_usd": 0,
+    "error": null
+  }
+]
