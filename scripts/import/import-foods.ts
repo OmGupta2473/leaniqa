@@ -33,7 +33,7 @@ import { readFileSync, existsSync } from 'fs';
 import { resolve, join } from 'path';
 import { createClient } from '@supabase/supabase-js';
 import { CURATED_INDIAN_DISHES, type CuratedDish } from './data/curated-indian-dishes';
-import { assertStagingTarget } from './_validate-target';
+import { assertStagingTarget, assertProductionTarget } from './_validate-target';
 
 loadEnv({ path: '.env' });
 loadEnv({ path: '.env.local', override: true });
@@ -447,9 +447,31 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  // Phase 6.7 R2.9 — dispatch by TARGET_ENV. Default 'staging' preserves
+  // existing behavior for any caller that hasn't set TARGET_ENV.
+  // Production requires BOTH TARGET_ENV=production AND --confirm-target=production.
+  const targetEnv = (process.env.TARGET_ENV ?? 'staging').toLowerCase();
+  if (targetEnv !== 'staging' && targetEnv !== 'production') {
+    console.error(`TARGET_ENV must be 'staging' or 'production'; got '${targetEnv}'`);
+    process.exit(1);
+  }
+  if (targetEnv === 'production' && process.env.CONFIRM_TARGET !== 'production') {
+    console.error(
+      'TARGET_ENV=production requires CONFIRM_TARGET=production env var.\n' +
+      'This is a safety guard. Refusing to write.',
+    );
+    process.exit(1);
+  }
+
+  const targetUrl = targetEnv === 'staging'
+    ? process.env.STAGING_SUPABASE_URL
+    : process.env.PROD_SUPABASE_URL;
+
   let target;
   try {
-    target = assertStagingTarget(process.env.STAGING_SUPABASE_URL);
+    target = targetEnv === 'staging'
+      ? assertStagingTarget(targetUrl)
+      : assertProductionTarget(targetUrl);
   } catch (err) {
     console.error(`Target check failed:\n  ${err instanceof Error ? err.message : err}`);
     process.exit(1);
@@ -507,9 +529,16 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
+  const supabaseUrl = targetEnv === 'staging'
+    ? process.env.STAGING_SUPABASE_URL!
+    : process.env.PROD_SUPABASE_URL!;
+  const supabaseKey = targetEnv === 'staging'
+    ? process.env.STAGING_SUPABASE_SERVICE_ROLE_KEY!
+    : process.env.PROD_SUPABASE_SERVICE_ROLE_KEY!;
+
   const supabase = createClient(
-    process.env.STAGING_SUPABASE_URL!,
-    process.env.STAGING_SUPABASE_SERVICE_ROLE_KEY!,
+    supabaseUrl,
+    supabaseKey,
     { auth: { persistSession: false, autoRefreshToken: false } },
   );
 

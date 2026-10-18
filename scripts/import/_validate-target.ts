@@ -1,14 +1,20 @@
 /**
- * Shared target validation for all Phase 6.2 import/seed scripts.
+ * Shared target validation for all Phase 6.2+ import/seed scripts.
  *
- * Prevents three failure modes:
+ * Prevents four failure modes:
  *   1. Running against production by accident.
- *   2. Using prod credentials in staging env vars.
- *   3. Running against the wrong staging project.
+ *   2. Using prod credentials in staging env vars (or vice versa).
+ *   3. Running against the wrong project for the declared env.
+ *   4. Same ref configured in both EXPECTED_STAGING_REF and EXPECTED_PROD_REF.
  *
- * The check is: the URL's project ref MUST equal EXPECTED_STAGING_REF, AND
- * if .supabase/.temp/project-ref exists, it MUST also equal it. This gives
- * us two independent confirmations before any write happens.
+ * Callers:
+ *   - assertStagingTarget(url)     — same behavior as before, unchanged signature
+ *   - assertProductionTarget(url)  — new, requires EXPECTED_PROD_REF
+ *
+ * Both enforce:
+ *   - URL ref MUST equal the EXPECTED_*_REF for the declared env
+ *   - .supabase/.temp/project-ref, if present, MUST match the same ref
+ *   - Cross-guard: same ref MUST NOT be configured for both environments
  */
 
 import { existsSync, readFileSync } from 'fs';
@@ -34,20 +40,26 @@ export interface TargetCheckResult {
   ref: string;
   expected: string;
   linked: string | null;
+  env: 'staging' | 'production';
 }
 
-export function assertStagingTarget(url: string | undefined): TargetCheckResult {
+function assertTargetByEnv(
+  url: string | undefined,
+  env: 'staging' | 'production',
+): TargetCheckResult {
+  const envUpper = env.toUpperCase();
+  const expectedKey = env === 'staging' ? 'EXPECTED_STAGING_REF' : 'EXPECTED_PROD_REF';
+  const urlKey = env === 'staging' ? 'STAGING_SUPABASE_URL' : 'PROD_SUPABASE_URL';
+
   if (!url) {
-    throw new Error(
-      'STAGING_SUPABASE_URL is not set. Add it to .env.local. Refusing to run.',
-    );
+    throw new Error(`${urlKey} is not set. Refusing to run.`);
   }
 
-  const expected = process.env.EXPECTED_STAGING_REF?.toLowerCase();
+  const expected = process.env[expectedKey]?.toLowerCase();
   if (!expected) {
     throw new Error(
-      'EXPECTED_STAGING_REF is not set. Set it to the staging project ref ' +
-      '(the subdomain of your staging URL). Refusing to run.',
+      `${expectedKey} is not set. Set it to the ${env} project ref ` +
+      `(the subdomain of your ${env} URL). Refusing to run.`,
     );
   }
 
@@ -58,20 +70,38 @@ export function assertStagingTarget(url: string | undefined): TargetCheckResult 
 
   if (ref !== expected) {
     throw new Error(
-      `URL project ref "${ref}" does not match EXPECTED_STAGING_REF "${expected}".\n` +
-      `Refusing to write. If you intended to target staging, update EXPECTED_STAGING_REF. ` +
-      `If you intended to target production, you are in the wrong script — these are staging-only.`,
+      `URL project ref "${ref}" does not match ${expectedKey} "${expected}".\n` +
+      `Refusing to write. If you intended to target ${env}, update ${expectedKey}. ` +
+      `If you intended a different environment, use the appropriate entry point.`,
+    );
+  }
+
+  // Cross-guard: refuse if the same ref is configured as the OTHER env.
+  const otherKey = env === 'staging' ? 'EXPECTED_PROD_REF' : 'EXPECTED_STAGING_REF';
+  const otherRef = process.env[otherKey]?.toLowerCase();
+  if (otherRef && ref === otherRef) {
+    throw new Error(
+      `Refusing to proceed: URL ref "${ref}" matches BOTH ${expectedKey} and ${otherKey}.\n` +
+      `This means the env vars are misconfigured. One of them must be wrong.`,
     );
   }
 
   const linked = readLinkedRef();
   if (linked && linked !== expected) {
     throw new Error(
-      `Linked project ref "${linked}" does not match EXPECTED_STAGING_REF "${expected}".\n` +
+      `Linked project ref "${linked}" does not match ${expectedKey} "${expected}".\n` +
       `Refusing to write. Your .supabase/.temp/project-ref points somewhere else. ` +
       `Run: npx supabase link --project-ref ${expected}`,
     );
   }
 
-  return { url, ref, expected, linked };
+  return { url, ref, expected, linked, env };
+}
+
+export function assertStagingTarget(url: string | undefined): TargetCheckResult {
+  return assertTargetByEnv(url, 'staging');
+}
+
+export function assertProductionTarget(url: string | undefined): TargetCheckResult {
+  return assertTargetByEnv(url, 'production');
 }

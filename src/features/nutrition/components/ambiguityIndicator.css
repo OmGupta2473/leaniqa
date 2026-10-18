@@ -1,0 +1,41 @@
+/*
+ * Phase 6.7 R2.8 — AmbiguityIndicator styles.
+ *
+ * Tokens per docs/frontend-standards/LEANIQA-FRONTEND-STANDARDS.md §2:
+ *   - Warn colour #FFB020, background at 13% alpha (§2.1 tint rule)
+ *   - Border at 25% alpha, matching the existing lowConfidence precedent
+ *   - Radius from --radius-md (§2.4)
+ *   - Spacing 8/12 from §2.3
+ *   - Caption type role: 12.5 / 500 / 1.4, secondary colour (§2.2)
+ */
+
+.ai-block {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--radius-md, 14px);
+  background: rgba(255, 176, 32, 0.13);
+  border: 0.5px solid rgba(255, 176, 32, 0.25);
+  margin-bottom: 12px;
+}
+
+.ai-icon {
+  color: #FFB020;
+  flex-shrink: 0;
+}
+
+.ai-caption {
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.55);
+  word-break: break-word;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-block {
+    animation: none;
+    transition: none;
+  }
+}
