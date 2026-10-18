@@ -24,7 +24,7 @@
 import 'dotenv/config';
 import { config as loadEnv } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
-import { assertStagingTarget } from './_validate-target';
+import { assertStagingTarget, assertProductionTarget } from './_validate-target';
 import { CURATED_INDIAN_DISHES } from './data/curated-indian-dishes';
 
 loadEnv({ path: '.env' });
@@ -406,9 +406,29 @@ async function main() {
   const dryRun = args.includes('--dry-run');
 
   // 1. Verify target.
+  // Phase 6.7 R2.9 — same dispatch pattern as import-foods.ts.
+  const targetEnv = (process.env.TARGET_ENV ?? 'staging').toLowerCase();
+  if (targetEnv !== 'staging' && targetEnv !== 'production') {
+    console.error(`TARGET_ENV must be 'staging' or 'production'; got '${targetEnv}'`);
+    process.exit(1);
+  }
+  if (targetEnv === 'production' && process.env.CONFIRM_TARGET !== 'production') {
+    console.error(
+      'TARGET_ENV=production requires CONFIRM_TARGET=production env var.\n' +
+      'This is a safety guard. Refusing to write.',
+    );
+    process.exit(1);
+  }
+
+  const targetUrl = targetEnv === 'staging'
+    ? process.env.STAGING_SUPABASE_URL
+    : process.env.PROD_SUPABASE_URL;
+
   let target;
   try {
-    target = assertStagingTarget(process.env.STAGING_SUPABASE_URL);
+    target = targetEnv === 'staging'
+      ? assertStagingTarget(targetUrl)
+      : assertProductionTarget(targetUrl);
   } catch (err) {
     console.error(`Target check failed:\n  ${err instanceof Error ? err.message : err}`);
     process.exit(1);
@@ -442,9 +462,22 @@ async function main() {
   // 4. Live: verify references against the DB (superset check).
   console.log('');
   console.log('Verifying references against staging...');
+  const supabaseUrl = targetEnv === 'staging'
+    ? process.env.STAGING_SUPABASE_URL!
+    : process.env.PROD_SUPABASE_URL!;
+  const supabaseKey = targetEnv === 'staging'
+    ? process.env.STAGING_SUPABASE_SERVICE_ROLE_KEY!
+    : process.env.PROD_SUPABASE_SERVICE_ROLE_KEY!;
+  if (targetEnv === 'production' && process.env.CONFIRM_TARGET !== 'production') {
+    console.error(
+      'TARGET_ENV=production requires CONFIRM_TARGET=production env var.\n' +
+      'This is a safety guard. Refusing to write.',
+    );
+    process.exit(1);
+  }
   const supabase = createClient(
-    process.env.STAGING_SUPABASE_URL!,
-    process.env.STAGING_SUPABASE_SERVICE_ROLE_KEY!,
+    supabaseUrl,
+    supabaseKey,
     { auth: { persistSession: false, autoRefreshToken: false } },
   );
 

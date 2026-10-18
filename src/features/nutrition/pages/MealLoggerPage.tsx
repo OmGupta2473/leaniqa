@@ -2,6 +2,8 @@ import React from 'react';
 import { PerfProfiler } from '@/shared/utils/perfDebug';
 import {  useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
 import { createPortal } from "react-dom";
+import { AmbiguityIndicator } from '../components/AmbiguityIndicator';
+import '../components/ambiguityIndicator.css';
 import { useAppStore } from "@/app/store";
 import { useNavigate } from "react-router-dom";
 import { useChatStore } from "@/app/store";
@@ -27,7 +29,7 @@ import { profileService } from "@/features/profile/services/profileService";
 import { complianceService } from "@/features/reports/services/complianceService";
 import { supabase } from "@/shared/utils/supabase";
 import { authService } from "@/features/auth/services/authService";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, MotionConfig } from 'motion/react';
 import { useVisualViewport, useKeyboardOpen } from "@/shared/hooks/useVisualViewport";
 import { lookupCachedMeal } from '../constants/data';
 import { haptics } from '@/shared/utils/haptics';
@@ -323,7 +325,56 @@ export function MealLoggerPage() {
   };
 
   const [selectedDateStr, setSelectedDateStr] = useState<string>(() => getKolkataDateString());
-  const [pendingMeal, setPendingMeal] = useState<PendingMeal | null>(null);
+  // Phase 6.7 R2.8 — resolve-meal-v2 endpoint gate.
+  // Vite bakes VITE_* env vars at build time, so this is a compile-time
+  // constant. Default false: parse-meal remains the default path unless
+  // the environment explicitly opts in.
+  const USE_V2_RESOLVER = import.meta.env.VITE_RESOLVE_V2_ENABLED === 'true';
+  const RESOLVE_MEAL_ENDPOINT = 'resolve-meal-v2';
+
+  type ResolverV2Result = {
+    items: Array<{
+      food_id: number | null;
+      canonical_name: string;
+      grams: number;
+      kcal: number;
+      protein: number;
+      fat: number;
+      carbs: number;
+      fiber: number;
+      unit: string | null;
+      quantity: number;
+    }>;
+    unresolved_items: Array<{
+      input_term: string;
+      quantity: number;
+      unit: string | null;
+    }>;
+    totals: { kcal: number; protein: number; fat: number; carbs: number; fiber: number };
+    meal_confidence: number;
+    needs_confirmation: boolean;
+    layers_used: string[];
+    source?: string;
+    request_id?: string;
+    was_ambiguous?: boolean;
+    kb_confidence?: number;
+    ai_used?: boolean;
+  };
+
+  function resolvedV2ToPendingData(data: ResolverV2Result): Record<string, unknown> {
+    return {
+      calories: Math.round(data.totals.kcal),
+      protein: Math.round(data.totals.protein * 10) / 10,
+      fat: Math.round(data.totals.fat * 10) / 10,
+      carbs: Math.round(data.totals.carbs * 10) / 10,
+      fiber: data.totals.fiber,
+      _resolverSource: data.source ?? 'v2_kb_primary',
+    };
+  }
+
+  const [pendingMeal, setPendingMeal] = useState<
+    (PendingMeal & { was_ambiguous?: boolean }) | null
+  >(null);
   const [failedMealText, setFailedMealText] = useState<string | null>(null);
   const [failedMealError, setFailedMealError] = useState<string | null>(null);
   const [isCustomMealModalOpen, setIsCustomMealModalOpen] = useState(false);
@@ -859,6 +910,71 @@ export function MealLoggerPage() {
     }
   });
 
+  // Phase 6.7 R2.8 — resolve-meal-v2 mutation.
+  // Calls the KB-primary backend first when USE_V2_RESOLVER is on.
+  // Fall-through to parseMealMutation on (a) partial resolution, or
+  // (b) transport/auth error. Terminal path (full resolution) sets
+  // pendingMeal directly and does not consume credits.
+  const resolveMealV2Mutation = useMutation({
+    mutationFn: async (text: string): Promise<ResolverV2Result> => {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      let currentSession = session;
+      if (sessionError || !session?.access_token) {
+        const { data: refreshData } = await supabase.auth.refreshSession();
+        currentSession = refreshData.session;
+      }
+      if (!currentSession?.access_token) throw new Error('Authentication failure');
+
+      const { data, error } = await supabase.functions.invoke(RESOLVE_MEAL_ENDPOINT, {
+        body: { text, mealType: selectedMealSlot ?? 'unspecified' },
+      });
+
+      if (error) {
+        let msg = error.message || 'Resolver error';
+        const ctx = (error as { context?: Response }).context;
+        if (ctx && typeof ctx.json === 'function') {
+          try {
+            const errorBody = await ctx.json();
+            if (errorBody?.error) msg = errorBody.error;
+          } catch { /* ignore */ }
+        }
+        throw new Error(msg);
+      }
+
+      if (!data || typeof data !== 'object' || !Array.isArray((data as { items?: unknown }).items)) {
+        throw new Error('Invalid resolver response');
+      }
+
+      return data as ResolverV2Result;
+    },
+    onSuccess: (data, text) => {
+      // Partial resolution → transparent fall-through to parse-meal.
+      // Loading and submitting-ref stay true — parseMealMutation's own
+      // handlers clear them when the AI path settles.
+      if (data.unresolved_items.length > 0) {
+        parseMealMutation.mutate(text);
+        return;
+      }
+      // Terminal path — v2 resolved fully.
+      isSubmittingRef.current = false;
+      setLoading(false);
+      setPendingMeal({
+        text,
+        data: resolvedV2ToPendingData(data) as PendingMeal['data'],
+        request_id: data.request_id,
+        source: 'ai',
+        creditsConsumed: false,
+        lowConfidence: data.meal_confidence < 0.8,
+        was_ambiguous: data.was_ambiguous === true,
+      });
+    },
+    onError: (_err, text) => {
+      // Transport/auth error → transparent fall-through to parse-meal.
+      // Loading and submitting-ref stay true — parseMealMutation handles them.
+      parseMealMutation.mutate(text);
+    },
+  });
+
   const confirmMealMutation = useMutation({
     mutationFn: async ({ text, data, source, client_token }: { text: string, data: any, source?: 'manual' | 'ai', client_token: string }) => {
       let finalSlot = data.meal_slot || selectedMealSlot || undefined;
@@ -994,8 +1110,12 @@ if (todayCount >= PROTECT_PROGRESS_MEAL_THRESHOLD) {
         console.error('Failed to persist chat message', err));
     }
     setLoading(true);
-    parseMealMutation.mutate(text);
-  }, [input, loading, selectedMealSlot, addChatMessage, parseMealMutation]);
+    if (USE_V2_RESOLVER) {
+      resolveMealV2Mutation.mutate(text);
+    } else {
+      parseMealMutation.mutate(text);
+    }
+  }, [input, loading, selectedMealSlot, addChatMessage, parseMealMutation, resolveMealV2Mutation]);
 
   if (isLoading) {
     if (!isOnline) {
@@ -1013,6 +1133,7 @@ if (todayCount >= PROTECT_PROGRESS_MEAL_THRESHOLD) {
   }
 
   return (
+    <MotionConfig reducedMotion="user">
     <>
       <div className="screen-container screen-enter" style={{ display: 'flex', flexDirection: 'column' }}>
       {/* ── PAGE HEADER ── */}
@@ -1319,12 +1440,21 @@ if (todayCount >= PROTECT_PROGRESS_MEAL_THRESHOLD) {
                       className="bg-[rgba(255,255,255,0.02)] border-[0.5px] border-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.85)] rounded-[24px] rounded-tl-sm max-w-[90%] self-start p-[12px_16px] text-[14px] leading-relaxed"
                     >
                       <div className="font-semibold text-white mb-2">Here is the estimated nutrition. Would you like to log this?</div>
-                      {pendingMeal.lowConfidence && (
-                        <div className="mb-3 flex items-start gap-2 rounded-xl border border-[rgba(255,179,71,0.25)] bg-[rgba(255,179,71,0.08)] p-2.5 text-[12px] leading-relaxed text-[#FFB347]">
-                          <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-                          <span>Low confidence — please review the values before logging.</span>
-                        </div>
-                      )}
+                        {pendingMeal.lowConfidence && !pendingMeal.was_ambiguous && (
+                          <div className="mb-3 flex items-start gap-2 rounded-xl border border-[rgba(255,179,71,0.25)] bg-[rgba(255,179,71,0.08)] p-2.5 text-[12px] leading-relaxed text-[#FFB347]">
+                            <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+                            <span>Low confidence — please review the values before logging.</span>
+                          </div>
+                        )}
+                        {pendingMeal.was_ambiguous && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                          >
+                            <AmbiguityIndicator wasAmbiguous={true} />
+                          </motion.div>
+                        )}
                       <div className="flex gap-[6px] flex-wrap mb-[12px]">
                         <span className="text-[10px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">~{pendingMeal.data.calories} kcal</span>
                         <span className="text-[10px] badge-lime px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{pendingMeal.data.protein}g pro</span>
@@ -1572,6 +1702,6 @@ if (todayCount >= PROTECT_PROGRESS_MEAL_THRESHOLD) {
         onClose={() => setProtectOpen(false)}
       />
     </>
+    </MotionConfig>
   );
-
 }
