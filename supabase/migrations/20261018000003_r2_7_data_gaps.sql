@@ -46,10 +46,14 @@ on conflict (food_id, unit) do nothing;
 --
 -- All three oil foods get both tsp=5 and tbsp=14. Existing rows preserved.
 
-insert into food_portions (food_id, unit, grams, is_default, source) values
-  (95, 'tbsp', 14, false, 'r2_7_oil_units'),  -- ghee: add tbsp (tsp already exists)
-  (96, 'tbsp', 14, false, 'r2_7_oil_units'),  -- butter: add tbsp (tsp already exists)
-  (97, 'tsp',   5, false, 'r2_7_oil_units')  -- oil: add tsp (tbsp already exists)
+insert into food_portions (food_id, unit, grams, is_default, source)
+select f.id, v.unit, v.grams, false, 'r2_7_oil_units'
+from foods f
+join (values
+  ('ghee'::text,   'tbsp'::text, 14::numeric),
+  ('butter'::text, 'tbsp'::text, 14::numeric),
+  ('oil'::text,    'tsp'::text,   5::numeric)
+) as v(canonical_name, unit, grams) on f.canonical_name = v.canonical_name
 on conflict (food_id, unit) do nothing;
 
 -- =============================================================================
@@ -63,10 +67,15 @@ on conflict (food_id, unit) do nothing;
 -- food_portions lookup fails for any reason, the alias portion provides a
 -- fallback.
 
-insert into food_aliases (alias, food_id, portion_grams, portion_unit, confidence, source) values
-  ('masala chai', 132, 150, 'cup', 1.0, 'r2_7_alias'),
-  ('chai masala', 132, 150, 'cup', 1.0, 'r2_7_alias'),
-  ('masala tea',  132, 150, 'cup', 1.0, 'r2_7_alias')
+insert into food_aliases (alias, food_id, portion_grams, portion_unit, confidence, source)
+select v.alias, f.id, 150, 'cup', 1.0, 'r2_7_alias'
+from foods f
+cross join (values
+  ('masala chai'::text),
+  ('chai masala'::text),
+  ('masala tea'::text)
+) as v(alias)
+where f.canonical_name = 'chai'
 on conflict (alias, food_id) do nothing;
 
 -- =============================================================================
