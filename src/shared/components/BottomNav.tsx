@@ -33,7 +33,7 @@ export function BottomNav() {
       >
         <div className="flex items-center justify-between w-full max-w-[400px] pointer-events-auto">
           <div
-            className="flex flex-1 items-center gap-1 rounded-full p-1.5"
+            className="flex flex-1 items-center gap-1 rounded-full p-1"
             style={{
               background: 'rgba(30, 30, 32, 0.6)',
               backdropFilter: 'blur(24px) saturate(180%) brightness(110%)',
@@ -59,7 +59,7 @@ export function BottomNav() {
                     haptics.tap();
                   }
                 }}
-                className="relative flex h-14 flex-1 flex-col items-center justify-center gap-1 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[#D4FF00]"
+                className="relative flex h-12 flex-1 flex-col items-center justify-center gap-1 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[#D4FF00]"
                 style={{ textDecoration: 'none', WebkitTapHighlightColor: 'transparent' }}
               >
                 {({ isActive }) => (
@@ -104,7 +104,7 @@ export function BottomNav() {
                   haptics.tap();
                 }
               }}
-              className="flex h-14 w-14 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-white ml-2"
+              className="flex h-12 w-12 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-white ml-2"
               style={{
                 textDecoration: 'none',
                 WebkitTapHighlightColor: 'transparent',
