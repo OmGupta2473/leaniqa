@@ -108,9 +108,11 @@ function getMealNutritionValues(data: {
 }
 
 function sentenceCaseAssumption(assumption: string): string {
-  const normalized = assumption.trim().toLowerCase();
-  return normalized.replace(/^([^a-z]*)([a-z])/, (_match, prefix: string, letter: string) =>
-    prefix + letter.toUpperCase());
+  const firstLetter = assumption.search(/[a-z]/i);
+  if (firstLetter === -1) return assumption;
+  return assumption.slice(0, firstLetter) +
+    assumption[firstLetter].toUpperCase() +
+    assumption.slice(firstLetter + 1);
 }
 
 // ── SLOT ROW — used in the persistent summary ─────────────────────────────
