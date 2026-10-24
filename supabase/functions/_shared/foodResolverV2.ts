@@ -438,6 +438,48 @@ function computeOilStatus(
     };
 }
 
+const OIL_RELEVANT_CATEGORIES = new Set([
+  'bread',
+  'dal',
+  'grain',
+  'legume',
+  'meat',
+  'nonveg',
+  'paneer',
+  'rice',
+  'snack',
+  'vegetable',
+]);
+
+const PLAIN_FOODS_WITHOUT_ADDED_OIL = new Set([
+  'bread',
+  'brown rice',
+  'chicken breast',
+  'dosa',
+  'grilled chicken breast',
+  'idli',
+  'oats',
+  'paneer',
+  'plain dosa',
+  'raw chicken breast',
+  'rice',
+  'roti',
+  'chapati',
+]);
+
+function shouldKeepOilAssumption(
+  assumption: string,
+  category: string | null | undefined,
+  canonicalName: string,
+  oilContext: OilContext,
+): boolean {
+  if (!assumption.startsWith('Oil content not specified for ')) return true;
+  if (oilContext.userExcluded || oilContext.userIncluded || !category) return false;
+
+  return OIL_RELEVANT_CATEGORIES.has(category.toLowerCase().trim()) &&
+    !PLAIN_FOODS_WITHOUT_ADDED_OIL.has(canonicalName.toLowerCase().trim());
+}
+
 const NON_FOOD_CONTEXT_PATTERNS = [
   /\b(?:weighed\s+after\s+(?:air[- ]?frying|cooking)|cooked\s+weight|weight\s+after\s+(?:air[-]?frying|cooking)|as\s+served|on\s+the\s+plate)\b/gi,
   /\b(?:no\s+(?:added\s+)?oil|without\s+(?:added\s+)?oil|no\s+ghee|without\s+ghee|oil[- ]?free)\b/gi,
@@ -1071,7 +1113,15 @@ function applyOilContext(
   const updatedItems = items.map((item) => {
     const result = computeOilStatus(oilContext, item.oil_included, item.input_term);
     if (legacyOilTerms.has(item.input_term) && item.fat !== 0) {
-      assumptions.push(`Oil content not specified for ${item.input_term}.`);
+      const legacyAssumption = `Oil content not specified for ${item.input_term}.`;
+      if (shouldKeepOilAssumption(
+        legacyAssumption,
+        item.category,
+        item.canonical_name,
+        oilContext,
+      )) {
+        assumptions.push(legacyAssumption);
+      }
       if (!oilContext.userExcluded && !oilContext.userIncluded) {
         return {
           ...item,
@@ -1080,7 +1130,17 @@ function applyOilContext(
         };
       }
     }
-    if (result.assumption) assumptions.push(result.assumption);
+    if (
+      result.assumption &&
+      shouldKeepOilAssumption(
+        result.assumption,
+        item.category,
+        item.canonical_name,
+        oilContext,
+      )
+    ) {
+      assumptions.push(result.assumption);
+    }
     return {
       ...item,
       oil_status: result.status,
@@ -1202,7 +1262,17 @@ async function resolveItems(
         resolved.oil_included,
         resolved.input_term,
       );
-      if (assumption) oilAssumptions.push(assumption);
+      if (
+        assumption &&
+        shouldKeepOilAssumption(
+          assumption,
+          resolved.category,
+          resolved.canonical_name,
+          oilContext,
+        )
+      ) {
+        oilAssumptions.push(assumption);
+      }
     } else {
       unresolved.push({
         raw_text: p.raw_text,

@@ -82,9 +82,9 @@ describe('resolve-meal-v2 response contract', () => {
       oil_review_needed: false,
       quantity_source: 'user_provided',
     });
-    expect(result.assumptions).toEqual(expect.arrayContaining([
-      'Assumed cooked weight for rice.',
+    expect(result.assumptions).toContain('Assumed cooked weight for rice.');
+    expect(result.assumptions).not.toContain(
       'Oil content not specified for rice; verify if important.',
-    ]));
+    );
   });
 });

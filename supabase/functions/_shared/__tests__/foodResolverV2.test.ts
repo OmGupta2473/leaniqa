@@ -399,6 +399,7 @@ describe('foodResolverV2 ? non-food modifier clauses', () => {
     db.foods.set(101, makeFood({
       id: 101,
       canonical_name: 'rice',
+      category: 'rice',
       oil_included: true,
       kcal_per_100g: 130,
       protein_per_100g: 2.7,
@@ -411,6 +412,7 @@ describe('foodResolverV2 ? non-food modifier clauses', () => {
     db.foods.set(102, makeFood({
       id: 102,
       canonical_name: 'chicken breast',
+      category: 'nonveg',
       oil_included: true,
       kcal_per_100g: 165,
       protein_per_100g: 31,
@@ -423,6 +425,7 @@ describe('foodResolverV2 ? non-food modifier clauses', () => {
     db.foods.set(103, makeFood({
       id: 103,
       canonical_name: 'raw chicken breast',
+      category: 'nonveg',
       oil_included: true,
       display_name: 'Chicken breast (raw)',
       kcal_per_100g: 120,
@@ -457,6 +460,38 @@ describe('foodResolverV2 ? non-food modifier clauses', () => {
       portion_unit: null,
       confidence: 0.95,
     });
+    return db;
+  }
+
+  function setupOilAssumptionDb(): FakeDb {
+    const db = setupModifierDb();
+    db.aliases.set('rotis', {
+      alias: 'rotis',
+      food_id: 5,
+      portion_grams: null,
+      portion_unit: null,
+      confidence: 0.95,
+    });
+
+    const chickenBreast = db.foods.get(102)!;
+    db.foods.set(102, {
+      ...chickenBreast,
+      oil_included: false,
+    });
+    db.foods.set(104, makeFood({
+      id: 104,
+      canonical_name: 'banana',
+      category: 'fruit',
+      default_portion_grams: 120,
+      default_portion_label: '1 medium',
+    }));
+    db.foods.set(105, makeFood({
+      id: 105,
+      canonical_name: 'chicken curry',
+      category: 'nonveg',
+      default_portion_grams: 150,
+      default_portion_label: '1 bowl',
+    }));
     return db;
   }
 
@@ -855,7 +890,7 @@ describe('foodResolverV2 ? non-food modifier clauses', () => {
     ))).toBe(true);
   });
 
-  it('reports unspecified oil content for rice', async () => {
+  it('suppresses unspecified oil content for plain rice', async () => {
     const db = setupModifierDb();
     const rice = db.foods.get(101)!;
     db.foods.set(101, { ...rice, oil_included: false });
@@ -866,7 +901,56 @@ describe('foodResolverV2 ? non-food modifier clauses', () => {
     );
 
     expect(r.items[0].oil_status).toBe('unknown');
-    expect(r.assumptions?.some((text) => text.includes('Oil content not specified'))).toBe(true);
+    expect(r.assumptions?.some((text) => text.includes('Oil content not specified')) ?? false)
+      .toBe(false);
+  });
+
+  it('suppresses unspecified oil assumptions for banana, roti, and plain chicken breast', async () => {
+    const db = setupOilAssumptionDb();
+    const results = await Promise.all([
+      resolve(
+        { userId: TEST_USER, rawText: '1 banana', mealType: 'lunch' },
+        db,
+        TEST_CONFIG,
+      ),
+      resolve(
+        { userId: TEST_USER, rawText: '2 rotis', mealType: 'lunch' },
+        db,
+        TEST_CONFIG,
+      ),
+      resolve(
+        { userId: TEST_USER, rawText: '150g chicken breast', mealType: 'lunch' },
+        db,
+        TEST_CONFIG,
+      ),
+    ]);
+
+    for (const result of results) {
+      expect(result.assumptions?.some((text) => text.includes(
+        'Oil content not specified',
+      )) ?? false).toBe(false);
+    }
+  });
+
+  it('retains unspecified oil assumptions for dal and chicken curry', async () => {
+    const results = await Promise.all([
+      resolve(
+        { userId: TEST_USER, rawText: '1 bowl dal', mealType: 'lunch' },
+        setupDb(),
+        TEST_CONFIG,
+      ),
+      resolve(
+        { userId: TEST_USER, rawText: 'chicken curry', mealType: 'lunch' },
+        setupOilAssumptionDb(),
+        TEST_CONFIG,
+      ),
+    ]);
+
+    for (const result of results) {
+      expect(result.assumptions?.some((text) => text.includes(
+        'Oil content not specified',
+      ))).toBe(true);
+    }
   });
 
   it('preserves the oil instruction alongside cooking-method stripping', async () => {
