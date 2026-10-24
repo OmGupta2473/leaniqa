@@ -9,6 +9,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   resolve,
+  normalizeInput,
   DEFAULT_RESOLVER_CONFIG,
   type ResolverDb,
   type ResolverConfig,
@@ -191,6 +192,16 @@ describe('foodResolverV2 — katori via food_portions', () => {
     );
     expect(r.items[0].grams).toBe(300);
   });
+
+  it('resolves "1 bowl dal" to 150g', async () => {
+    const db = setupDb();
+    const r = await resolve(
+      { userId: TEST_USER, rawText: '1 bowl dal', mealType: 'lunch' },
+      db,
+      TEST_CONFIG,
+    );
+    expect(r.items[0].grams).toBe(150);
+  });
 });
 
 describe('foodResolverV2 — prep-strip integration', () => {
@@ -223,6 +234,8 @@ describe('foodResolverV2 — memory re-flagging (a04 fix)', () => {
       quantity: 1,
       unit: 'bowl',
       grams: 150,
+      weight_basis: 'unknown',
+      quantity_source: 'portion_reference',
       kcal: 210,
       protein: 9,
       fat: 10.5,
@@ -233,6 +246,7 @@ describe('foodResolverV2 — memory re-flagging (a04 fix)', () => {
       resolution_type: 'matched',
       requires_confirmation: false,
       oil_included: false,
+      oil_status: 'unknown',
       oil_review_needed: false,
       was_ambiguous: false,
       kb_confidence: 1,
@@ -275,6 +289,8 @@ describe('foodResolverV2 — memory re-flagging (a04 fix)', () => {
       quantity: 2,
       unit: null,
       grams: 80,
+      weight_basis: 'unknown',
+      quantity_source: 'portion_reference',
       kcal: 238,
       protein: 8.8,
       fat: 4,
@@ -285,6 +301,7 @@ describe('foodResolverV2 — memory re-flagging (a04 fix)', () => {
       resolution_type: 'matched',
       requires_confirmation: false,
       oil_included: false,
+      oil_status: 'unknown',
       oil_review_needed: false,
       was_ambiguous: false,
       kb_confidence: 1,
@@ -360,5 +377,440 @@ describe('foodResolverV2 — response shape', () => {
     // exact match confidence 0.95 → kb_confidence 0.95
     expect(r.kb_confidence).toBeGreaterThanOrEqual(0.9);
     expect(r.kb_confidence).toBeLessThanOrEqual(1.0);
+  });
+});
+
+describe('foodResolverV2 ? non-food modifier clauses', () => {
+  function setupModifierDb(): FakeDb {
+    const db = setupDb();
+    db.foods.set(101, makeFood({
+      id: 101,
+      canonical_name: 'rice',
+      oil_included: true,
+      kcal_per_100g: 130,
+      protein_per_100g: 2.7,
+      fat_per_100g: 0.3,
+      carbs_per_100g: 28,
+      fiber_per_100g: 0.4,
+      default_portion_grams: 100,
+      default_portion_label: '100g',
+    }));
+    db.foods.set(102, makeFood({
+      id: 102,
+      canonical_name: 'chicken breast',
+      oil_included: true,
+      kcal_per_100g: 165,
+      protein_per_100g: 31,
+      fat_per_100g: 3.6,
+      carbs_per_100g: 0,
+      fiber_per_100g: 0,
+      default_portion_grams: 100,
+      default_portion_label: '100g',
+    }));
+    db.foods.set(103, makeFood({
+      id: 103,
+      canonical_name: 'raw chicken breast',
+      oil_included: true,
+      display_name: 'Chicken breast (raw)',
+      kcal_per_100g: 120,
+      protein_per_100g: 22.5,
+      fat_per_100g: 2.6,
+      carbs_per_100g: 0,
+      fiber_per_100g: 0,
+      default_portion_grams: 100,
+      default_portion_label: '100g',
+    }));
+    db.foods.set(76, makeFood({
+      id: 76,
+      canonical_name: 'grilled chicken breast',
+      category: 'meat',
+      kcal_per_100g: 165,
+      protein_per_100g: 31,
+      fat_per_100g: 3.6,
+      carbs_per_100g: 0,
+      fiber_per_100g: 0,
+      default_portion_grams: 100,
+      default_portion_label: '100g',
+    }));
+    return db;
+  }
+
+  it('re-resolves a stale cached item missing new fields', async () => {
+    const db = setupModifierDb();
+    const staleItem = {
+      raw_text: '150g raw chicken breast',
+      input_term: 'chicken breast',
+      food_id: 76,
+      canonical_name: 'grilled chicken breast',
+      category: 'meat',
+      quantity: 150,
+      unit: 'g',
+      grams: 150,
+      weight_basis: undefined,
+      quantity_source: undefined,
+      kcal: 248,
+      protein: 46.5,
+      fat: 5.4,
+      carbs: 0,
+      fiber: 0,
+      confidence: 0.95,
+      layer: 'memory',
+      resolution_type: 'matched',
+      requires_confirmation: false,
+      oil_included: false,
+      oil_status: undefined,
+      oil_review_needed: false,
+      was_ambiguous: false,
+      kb_confidence: 0.95,
+    } as ResolvedItem;
+    db.memory.set(`${TEST_USER}:150g raw chicken breast`, {
+      user_id: TEST_USER,
+      normalized_text: '150g raw chicken breast',
+      items: [staleItem],
+      total_kcal: 248,
+      total_protein: 46.5,
+      total_fat: 5.4,
+      total_carbs: 0,
+      uses: 1,
+      last_used_at: new Date().toISOString(),
+    });
+
+    const result = await resolve(
+      {
+        userId: TEST_USER,
+        rawText: '150g raw chicken breast',
+        mealType: 'lunch',
+      },
+      db,
+      { ...TEST_CONFIG, memoryReadEnabled: true },
+    );
+
+    expect(result.metadata.memory_hit).toBe(true);
+    expect(result.items[0].food_id).toBe(103);
+    expect(result.items[0].weight_basis).toBe('raw');
+    expect(result.items[0].quantity_source).toBe('user_provided');
+  });
+
+  it('marks explicit grams as user provided', async () => {
+    const r = await resolve(
+      { userId: TEST_USER, rawText: '150g raw chicken breast', mealType: 'lunch' },
+      setupModifierDb(),
+      TEST_CONFIG,
+    );
+
+    expect(r.items[0].quantity_source).toBe('user_provided');
+  });
+
+  it('marks katori portions as a portion reference', async () => {
+    const r = await resolve(
+      { userId: TEST_USER, rawText: '1 katori dal', mealType: 'lunch' },
+      setupDb(),
+      TEST_CONFIG,
+    );
+
+    expect(r.items[0].quantity_source).toBe('portion_reference');
+    expect(r.items[0].grams).toBe(100);
+  });
+
+  it('marks bowl portions as a portion reference', async () => {
+    const r = await resolve(
+      { userId: TEST_USER, rawText: '1 bowl dal', mealType: 'lunch' },
+      setupDb(),
+      TEST_CONFIG,
+    );
+
+    expect(r.items[0].quantity_source).toBe('portion_reference');
+    expect(r.items[0].grams).toBe(150);
+  });
+
+  it('marks legacy default portions as assumptions', async () => {
+    const db = setupDb();
+    db.portions.delete(34);
+
+    const r = await resolve(
+      { userId: TEST_USER, rawText: 'dal', mealType: 'lunch' },
+      db,
+      TEST_CONFIG,
+    );
+
+    expect(r.items[0].quantity_source).toBe('default_assumption');
+    expect(r.assumptions?.some((text) => text.includes(
+      'Used a default portion size for dal',
+    ))).toBe(true);
+  });
+
+  it('combines quantity source with weight basis and oil status', async () => {
+    const r = await resolve(
+      {
+        userId: TEST_USER,
+        rawText: '150g raw chicken breast, no oil',
+        mealType: 'lunch',
+      },
+      setupModifierDb(),
+      TEST_CONFIG,
+    );
+
+    expect(r.items[0].quantity_source).toBe('user_provided');
+    expect(r.items[0].weight_basis).toBe('raw');
+    expect(r.items[0].oil_status).toBe('excluded');
+  });
+
+  it('records no oil as excluded when the KB dish profile includes oil', async () => {
+    const db = setupDb();
+    const dal = db.foods.get(34)!;
+    db.foods.set(34, { ...dal, oil_included: true });
+
+    const r = await resolve(
+      { userId: TEST_USER, rawText: '1 bowl dal, no oil', mealType: 'lunch' },
+      db,
+      TEST_CONFIG,
+    );
+
+    expect(r.items[0].oil_status).toBe('excluded');
+    expect(r.items[0].oil_review_needed).toBe(true);
+    expect(r.items[0].oil_included).toBe(true);
+    expect(r.assumptions?.some((text) => text.includes(
+      'Dish profile includes oil; you specified no oil',
+    ))).toBe(true);
+  });
+
+  it('records no oil as excluded without a review when the KB has no oil', async () => {
+    const r = await resolve(
+      { userId: TEST_USER, rawText: '1 bowl dal, no oil', mealType: 'lunch' },
+      setupDb(),
+      TEST_CONFIG,
+    );
+
+    expect(r.items[0].oil_status).toBe('excluded');
+    expect(r.items[0].oil_review_needed).toBe(false);
+    expect(r.assumptions?.some((text) => text.includes('oil'))).toBe(false);
+  });
+
+  it('records requested oil as included and flags a KB conflict', async () => {
+    const db = setupModifierDb();
+    const chicken = db.foods.get(102)!;
+    db.foods.set(102, { ...chicken, oil_included: false });
+    const r = await resolve(
+      {
+        userId: TEST_USER,
+        rawText: '150g chicken breast with oil',
+        mealType: 'lunch',
+      },
+      db,
+      TEST_CONFIG,
+    );
+
+    expect(r.items[0].oil_status).toBe('included');
+    expect(r.items[0].oil_review_needed).toBe(true);
+    expect(r.items[0].oil_included).toBe(false);
+    expect(r.assumptions?.some((text) => text.includes(
+      'KB shows no oil but you requested oil',
+    ))).toBe(true);
+  });
+
+  it('reports unspecified oil content for rice', async () => {
+    const db = setupModifierDb();
+    const rice = db.foods.get(101)!;
+    db.foods.set(101, { ...rice, oil_included: false });
+    const r = await resolve(
+      { userId: TEST_USER, rawText: '200g cooked rice', mealType: 'lunch' },
+      db,
+      TEST_CONFIG,
+    );
+
+    expect(r.items[0].oil_status).toBe('unknown');
+    expect(r.assumptions?.some((text) => text.includes('Oil content not specified'))).toBe(true);
+  });
+
+  it('preserves the oil instruction alongside cooking-method stripping', async () => {
+    const r = await resolve(
+      {
+        userId: TEST_USER,
+        rawText: '150g chicken breast weighed after air frying, no oil',
+        mealType: 'lunch',
+      },
+      setupModifierDb(),
+      TEST_CONFIG,
+    );
+
+    expect(r.items[0].oil_status).toBe('excluded');
+    expect(r.items[0].weight_basis).toBe('finished');
+    expect(r.assumptions?.some((text) => /air frying/i.test(text)) ?? false).toBe(false);
+  });
+
+  it('gives no-oil precedence and requires review for contradictory instructions', async () => {
+    const r = await resolve(
+      {
+        userId: TEST_USER,
+        rawText: '150g chicken breast with oil, no oil',
+        mealType: 'lunch',
+      },
+      setupModifierDb(),
+      TEST_CONFIG,
+    );
+
+    expect(r.items[0].oil_status).toBe('excluded');
+    expect(r.items[0].oil_review_needed).toBe(true);
+    expect(r.assumptions?.some((text) => text.includes('Conflicting oil instructions'))).toBe(true);
+  });
+
+  it('reapplies current oil context to a cached meal', async () => {
+    const db = setupModifierDb();
+    const chicken = db.foods.get(102)!;
+    db.foods.set(102, { ...chicken, oil_included: true });
+    const first = await resolve(
+      { userId: TEST_USER, rawText: '150g chicken breast', mealType: 'lunch' },
+      db,
+      TEST_CONFIG,
+    );
+    db.memory.set(`${TEST_USER}:150g chicken breast`, {
+      user_id: TEST_USER,
+      normalized_text: '150g chicken breast',
+      items: first.items,
+      total_kcal: first.totals.kcal,
+      total_protein: first.totals.protein,
+      total_fat: first.totals.fat,
+      total_carbs: first.totals.carbs,
+      uses: 1,
+      last_used_at: new Date().toISOString(),
+    });
+
+    const cached = await resolve(
+      {
+        userId: TEST_USER,
+        rawText: '150g chicken breast, no oil',
+        mealType: 'lunch',
+      },
+      db,
+      { ...TEST_CONFIG, memoryReadEnabled: true },
+    );
+
+    expect(cached.metadata.memory_hit).toBe(true);
+    expect(cached.items[0].oil_status).toBe('excluded');
+    expect(cached.items[0].oil_review_needed).toBe(true);
+    expect(cached.assumptions?.some((text) => text.includes(
+      'Dish profile includes oil; you specified no oil',
+    ))).toBe(true);
+  });
+
+  it('marks raw chicken without an assumption', async () => {
+    const r = await resolve(
+      { userId: TEST_USER, rawText: '150g raw chicken breast', mealType: 'lunch' },
+      setupModifierDb(),
+      TEST_CONFIG,
+    );
+    expect(r.items[0].weight_basis).toBe('raw');
+    expect(r.assumptions).toBeUndefined();
+  });
+
+  it('marks cooked rice without an assumption', async () => {
+    const r = await resolve(
+      { userId: TEST_USER, rawText: '200g cooked rice', mealType: 'lunch' },
+      setupModifierDb(),
+      TEST_CONFIG,
+    );
+    expect(r.items[0].weight_basis).toBe('cooked');
+    expect(r.assumptions).toBeUndefined();
+  });
+
+  it('adds an assumption for unqualified rice', async () => {
+    const r = await resolve(
+      { userId: TEST_USER, rawText: '200g rice', mealType: 'lunch' },
+      setupModifierDb(),
+      TEST_CONFIG,
+    );
+    expect(r.items[0].weight_basis).toBe('unknown');
+    expect(r.assumptions).toContain('Assumed cooked weight for rice.');
+  });
+
+  it('uses pre-strip context for a detached air-frying modifier', async () => {
+    const db = setupModifierDb();
+    const chicken = db.foods.get(102)!;
+    db.foods.set(102, { ...chicken, oil_included: false });
+    const r = await resolve(
+      {
+        userId: TEST_USER,
+        rawText: '150g chicken breast weighed after air frying, no oil',
+        mealType: 'lunch',
+      },
+      db,
+      TEST_CONFIG,
+    );
+    expect(r.items[0].weight_basis).toBe('finished');
+    expect(r.assumptions).toBeUndefined();
+  });
+
+  it('keeps mixed food weight bases independent', async () => {
+    const r = await resolve(
+      {
+        userId: TEST_USER,
+        rawText: '200g rice and 150g raw chicken breast',
+        mealType: 'lunch',
+      },
+      setupModifierDb(),
+      TEST_CONFIG,
+    );
+    expect(r.items.map((item) => item.weight_basis)).toEqual(['unknown', 'raw']);
+    expect(r.assumptions).toEqual(['Assumed cooked weight for rice.']);
+  });
+
+  it('prefers the exact raw chicken variant before the stripped name', async () => {
+    const db = setupModifierDb();
+    const r = await resolve(
+      { userId: TEST_USER, rawText: '150g raw chicken breast', mealType: 'lunch' },
+      db,
+      TEST_CONFIG,
+    );
+
+    expect(r.items).toHaveLength(1);
+    expect(r.items[0].canonical_name).toBe('raw chicken breast');
+    expect(r.items[0].kcal).toBe(180);
+  });
+
+  it('keeps unqualified chicken breast on the existing grilled variant', async () => {
+    const db = setupModifierDb();
+    const r = await resolve(
+      { userId: TEST_USER, rawText: '150g chicken breast', mealType: 'lunch' },
+      db,
+      TEST_CONFIG,
+    );
+
+    expect(r.items).toHaveLength(1);
+    expect(r.items[0].canonical_name).toBe('chicken breast');
+    expect(r.items[0].kcal).toBe(248);
+  });
+
+  it('strips explicit cooking and oil context from the normalization input', () => {
+    expect(normalizeInput('200g cooked rice and 150g chicken breast, weighed after air frying, no oil'))
+      .toBe('200g cooked rice and 150g chicken breast');
+  });
+
+  it('keeps the exact reproduction input from becoming unresolved food clauses', async () => {
+    const db = setupModifierDb();
+    const r = await resolve(
+      {
+        userId: TEST_USER,
+        rawText: '200g cooked rice and 150g chicken breast, weighed after air frying, no oil',
+        mealType: 'lunch',
+      },
+      db,
+      TEST_CONFIG,
+    );
+
+    expect(r.items.map((item) => item.canonical_name)).toEqual(['rice', 'chicken breast']);
+    expect(r.unresolved_items).toHaveLength(0);
+    expect(r.totals.kcal).toBeGreaterThan(0);
+  });
+
+  it('preserves genuinely unknown foods as unresolved items after stripping modifier clauses', async () => {
+    const db = setupModifierDb();
+    const r = await resolve(
+      { userId: TEST_USER, rawText: '200g mystery grain, no oil', mealType: 'lunch' },
+      db,
+      TEST_CONFIG,
+    );
+
+    expect(r.items).toHaveLength(0);
+    expect(r.unresolved_items.some((item) => item.input_term === 'mystery grain')).toBe(true);
   });
 });
