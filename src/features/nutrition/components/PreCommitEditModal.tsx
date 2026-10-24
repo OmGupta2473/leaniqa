@@ -27,10 +27,8 @@ interface PreCommitEditModalProps {
 
 const isValidMacro = (v: string) => v !== '' && !Number.isNaN(Number(v)) && Number(v) >= 0;
 
-function sanitizeDecimal(raw: string): string {
-  const v = raw.replace(/[^0-9.]/g, '');
-  const parts = v.split('.');
-  return parts.length > 1 ? parts[0] + '.' + parts.slice(1).join('') : v;
+function sanitizeWholeNumber(raw: string): string {
+  return raw.replace(/\D/g, '');
 }
 
 const SectionLabel = ({ children }: { children: React.ReactNode }) => (
@@ -56,9 +54,9 @@ const NumField = ({
     <div className="flex items-baseline justify-between">
       <input
         type="text"
-        inputMode="decimal"
+        inputMode="numeric"
         value={value}
-        onChange={(e) => onChange(sanitizeDecimal(e.target.value))}
+        onChange={(e) => onChange(sanitizeWholeNumber(e.target.value))}
         placeholder={placeholder}
         className="w-full bg-transparent text-[16px] font-semibold text-white placeholder:text-[rgba(255,255,255,0.25)] outline-none tabular-nums sm:text-[17px]"
       />
@@ -86,11 +84,11 @@ export function PreCommitEditModal({ isOpen, onClose, onSave, initial }: PreComm
   useEffect(() => {
     if (!isOpen || !initial) return undefined;
     setName(initial.meal_text ?? '');
-    setCalories(String(initial.calories ?? ''));
-    setProtein(String(initial.protein ?? ''));
-    setFat(String(initial.fat ?? ''));
-    setCarbs(String(initial.carbs ?? ''));
-    setFiber(initial.fiber === undefined || initial.fiber === null ? '' : String(initial.fiber));
+    setCalories(String(Math.round(initial.calories ?? 0)));
+    setProtein(String(Math.round(initial.protein ?? 0)));
+    setFat(String(Math.round(initial.fat ?? 0)));
+    setCarbs(String(Math.round(initial.carbs ?? 0)));
+    setFiber(initial.fiber === undefined || initial.fiber === null ? '' : String(Math.round(initial.fiber)));
     return undefined;
   // Reset from `initial` only when the sheet opens. Parent re-renders pass a
   // fresh `initial` object reference, which would otherwise clobber the
@@ -178,7 +176,7 @@ export function PreCommitEditModal({ isOpen, onClose, onSave, initial }: PreComm
                     Edit Estimate
                   </h2>
                   <p className="mt-1 text-[13px] font-medium text-[rgba(255,255,255,0.5)]">
-                    Adjust before logging.
+                    Adjust whole-number values before logging.
                   </p>
                 </div>
                 <button
