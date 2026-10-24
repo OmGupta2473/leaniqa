@@ -143,6 +143,13 @@ export type MatchLayer =
   | 'ambiguous';
 
 export type ResolutionType = 'matched' | 'default_guess' | 'unknown';
+export type WeightBasis = 'raw' | 'cooked' | 'finished' | 'unknown';
+export type OilStatus = 'included' | 'excluded' | 'unknown';
+export type QuantitySource =
+  | 'user_provided'
+  | 'portion_reference'
+  | 'default_assumption'
+  | 'ai_estimated';
 
 export interface ResolvedItem {
   raw_text: string;
@@ -158,12 +165,15 @@ export interface ResolvedItem {
   fat: number;
   carbs: number;
   fiber: number;
+  weight_basis: WeightBasis;
+  quantity_source: QuantitySource;
   confidence: number;
   layer: MatchLayer;
   resolution_type: ResolutionType;
   requires_confirmation: boolean;
   candidates?: ClarificationCandidate[];
   oil_included: boolean;
+  oil_status: OilStatus;
   oil_review_needed: boolean;
   /** Phase 6.7 — true when this item was flagged ambiguous by any signal
    *  (layer, candidates, or input_term in food_ambiguous_terms). */
@@ -186,6 +196,8 @@ export interface ParsedItem {
   quantity: number;
   unit: string | null;
   food_name: string;
+  raw_food_name?: string;
+  weight_basis_hint?: WeightBasis;
   range?: [number, number];
 }
 
@@ -201,6 +213,7 @@ export interface ResolverInput {
 export interface ResolverResult {
   items: ResolvedItem[];
   unresolved_items: UnresolvedItem[];
+  assumptions?: string[];
   totals: {
     kcal: number;
     protein: number;
@@ -274,6 +287,175 @@ const NUMBER_WORDS: Record<string, number> = {
 
 const UNIT_ALT = '(glass|tbsp|tsp|scoop|piece|slice|bowl|katori|cup|ml|g)\\b';
 
+interface ModifierContext {
+  clause: string;
+  basis: WeightBasis | null;
+  isDetached: boolean;
+}
+
+const WEIGHT_BASIS_MODIFIERS: Array<{ pattern: RegExp; basis: WeightBasis }> = [
+  { pattern: /\braw\b/i, basis: 'raw' },
+  {
+    pattern: /\b(?:cooked|boiled|steamed|grilled|baked|roasted|pressure[- ]?cooked)\b/i,
+    basis: 'cooked',
+  },
+  {
+    pattern: /\b(?:fried|air[- ]?fr(?:y|ying|ied)|pan[- ]?fried|deep[- ]?fried|as[- ]?served|finished|weighed\s+after)\b/i,
+    basis: 'finished',
+  },
+];
+
+function extractModifierContext(originalText: string | undefined): ModifierContext[] {
+  if (!originalText?.trim()) return [];
+
+  return originalText
+    .split(/[,;]|\band\b/gi)
+    .filter((clause) => clause.trim().length > 0)
+    .map((clause) => {
+      const basis =
+        WEIGHT_BASIS_MODIFIERS.find(({ pattern }) => pattern.test(clause))?.basis ?? null;
+      const remainder = clause
+        .replace(/\bweighed\s+after\b.*$/i, ' ')
+        .replace(
+          /\b(?:pressure[- ]?cooked|air[- ]?fr(?:y|ying|ied)|pan[- ]?fried|deep[- ]?fried|as[- ]?served|raw|cooked|boiled|steamed|grilled|baked|roasted|fried|finished|no\s+(?:added\s+)?oil|without\s+(?:added\s+)?oil|no\s+ghee|without\s+ghee|oil[- ]?free)\b/gi,
+          ' ',
+        )
+        .replace(/\b\d+(?:\.\d+)?\s*(?:g|gm|gms|grams?|ml|mls)\b/gi, ' ')
+        .replace(/\b(?:of|with|a|an|the|added|and)\b/gi, ' ')
+        .replace(/[^a-z]+/gi, ' ')
+        .trim();
+      return { clause, basis, isDetached: remainder.length === 0 };
+    });
+}
+
+function applyModifierContext(
+  items: ParsedItem[],
+  contexts: ModifierContext[],
+): ParsedItem[] {
+  const withDetached = contexts.reduce((acc, ctx) => {
+    if (!ctx.isDetached) {
+      acc.push({ ...ctx });
+      return acc;
+    }
+    if (ctx.basis && acc.length > 0) {
+      // Detached modifiers attach to the preceding food clause; multi-item input can make that ambiguous.
+      acc[acc.length - 1] = { ...acc[acc.length - 1], basis: ctx.basis };
+    }
+    return acc;
+  }, [] as ModifierContext[]);
+
+  if (withDetached.length === items.length) {
+    return items.map((item, index) => ({
+      ...item,
+      weight_basis_hint: withDetached[index].basis ?? item.weight_basis_hint,
+    }));
+  }
+
+  // Mismatched clause/item counts: only apply an inline basis when it identifies one item uniquely.
+  const inlineHints = new Map<number, WeightBasis>();
+  for (const context of contexts.filter(({ isDetached, basis }) => !isDetached && basis)) {
+    const normalizedClause = normalizeInput(context.clause);
+    const matches = items
+      .map((item, index) => ({ item, index }))
+      .filter(({ item }) => normalizedClause.includes(item.food_name));
+    if (matches.length === 1 && context.basis) {
+      inlineHints.set(matches[0].index, context.basis);
+    }
+  }
+
+  return items.map((item, index) => ({
+    ...item,
+    weight_basis_hint: inlineHints.get(index) ?? item.weight_basis_hint,
+  }));
+}
+
+function inferWeightBasis(
+  hint: WeightBasis | undefined,
+  inputTerm: string,
+): { basis: WeightBasis; assumption: string | null } {
+  if (hint && hint !== 'unknown') {
+    return { basis: hint, assumption: null };
+  }
+  return {
+    basis: 'unknown',
+    assumption: `Assumed cooked weight for ${inputTerm}.`,
+  };
+}
+
+interface OilContext {
+  userExcluded: boolean;
+  userIncluded: boolean;
+}
+
+function extractOilContext(originalText: string | undefined): OilContext {
+  if (!originalText?.trim()) {
+    return { userExcluded: false, userIncluded: false };
+  }
+  return {
+    userExcluded: /\b(?:no\s+(?:added\s+)?oil|without\s+(?:added\s+)?oil|no\s+ghee|without\s+ghee|oil[- ]?free)\b/i
+      .test(originalText),
+    userIncluded: /\b(?:with\s+(?:added\s+)?oil|add(?:ed)?\s+(?:extra\s+)?oil|extra\s+ghee|with\s+ghee)\b/i
+      .test(originalText),
+  };
+}
+
+function computeOilStatus(
+  userCtx: OilContext,
+  kbOilIncluded: boolean,
+  foodName: string,
+): { status: OilStatus; reviewNeeded: boolean; assumption: string | null } {
+  if (userCtx.userExcluded) {
+    if (userCtx.userIncluded) {
+      return {
+        status: 'excluded',
+        reviewNeeded: true,
+        assumption: 'Conflicting oil instructions; no oil takes precedence - verify oil content.',
+      };
+    }
+    return kbOilIncluded
+      ? {
+        status: 'excluded',
+        reviewNeeded: true,
+        assumption: 'Dish profile includes oil; you specified no oil — verify fat.',
+      }
+      : { status: 'excluded', reviewNeeded: false, assumption: null };
+  }
+  if (userCtx.userIncluded) {
+    return kbOilIncluded
+      ? { status: 'included', reviewNeeded: false, assumption: null }
+      : {
+        status: 'included',
+        reviewNeeded: true,
+        assumption: 'KB shows no oil but you requested oil — verify fat.',
+      };
+  }
+  return kbOilIncluded
+    ? { status: 'included', reviewNeeded: false, assumption: null }
+    : {
+      status: 'unknown',
+      reviewNeeded: false,
+      assumption: `Oil content not specified for ${foodName}; verify if important.`,
+    };
+}
+
+const NON_FOOD_CONTEXT_PATTERNS = [
+  /\b(?:weighed\s+after\s+(?:air[- ]?frying|cooking)|cooked\s+weight|weight\s+after\s+(?:air[-]?frying|cooking)|as\s+served|on\s+the\s+plate)\b/gi,
+  /\b(?:no\s+(?:added\s+)?oil|without\s+(?:added\s+)?oil|no\s+ghee|without\s+ghee|oil[- ]?free)\b/gi,
+];
+
+function stripNonFoodContextClauses(s: string): string {
+  let out = s;
+  for (const pattern of NON_FOOD_CONTEXT_PATTERNS) {
+    out = out.replace(pattern, ' ');
+  }
+  return out
+    .replace(/\s+and\s+and\s+/g, ' and ')
+    .replace(/^\s*and\s+/g, '')
+    .replace(/\s+and\s*$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export function normalizeInput(input: string): string {
   let s = input.toLowerCase().trim();
   s = s.replace(
@@ -282,6 +464,7 @@ export function normalizeInput(input: string): string {
   );
   s = s.replace(/[,+&]/g, ' and ');
   s = s.replace(/\s+with\s+/g, ' and ');
+  s = stripNonFoodContextClauses(s);
   s = s.replace(/\s+and\s+and\s+/g, ' and ');
   s = s.replace(/(\d+(?:\.\d+)?)\s*(g|gm|gms|grams?)\b/g, '$1g');
   s = s.replace(/(\d+(?:\.\d+)?)\s*(ml|mls|milliliters?)\b/g, '$1ml');
@@ -319,6 +502,7 @@ function splitIntoItems(normalized: string): ParsedItem[] {
         quantity: (lo + hi) / 2,
         unit: rangeMatch[3] ?? null,
         food_name: foodStripped.length > 0 ? foodStripped : foodRaw,
+        raw_food_name: foodRaw,
         range: [lo, hi],
       });
       continue;
@@ -340,6 +524,7 @@ function splitIntoItems(normalized: string): ParsedItem[] {
       quantity: qtyStr ? Number(qtyStr) : 1,
       unit,
       food_name: foodStripped.length > 0 ? foodStripped : foodRaw,
+      raw_food_name: foodRaw,
     });
   }
 
@@ -467,6 +652,20 @@ function portionFactor(source: PortionSource): number {
   }
 }
 
+function mapPortionSourceToQuantitySource(source: PortionSource): QuantitySource {
+  switch (source) {
+    case 'passthrough':
+      return 'user_provided';
+    case 'exact_unit':
+    case 'default':
+      return 'portion_reference';
+    case 'legacy_default':
+      return 'default_assumption';
+    default:
+      return 'default_assumption';
+  }
+}
+
 async function buildResolvedItem(
   parsed: ParsedItem,
   food: FoodRow,
@@ -475,6 +674,7 @@ async function buildResolvedItem(
   baseConfidence: number,
   config: ResolverConfig,
   db: ResolverDb,
+  oilContext: OilContext,
 ): Promise<ResolvedItem | null> {
   const resolution = await resolveToGrams(
     db,
@@ -491,6 +691,8 @@ async function buildResolvedItem(
   const requiresConfirmation = confidence < config.confidenceThreshold;
   const kbConfidence = Math.round(confidence * portionFactor(resolution.source) * 100) / 100;
   const scale = grams / 100;
+  const { basis: weightBasis } = inferWeightBasis(parsed.weight_basis_hint, parsed.food_name);
+  const oilStatus = computeOilStatus(oilContext, food.oil_included, parsed.food_name);
 
   return {
     raw_text: parsed.raw_text,
@@ -506,12 +708,15 @@ async function buildResolvedItem(
     fat: Math.round(food.fat_per_100g * scale * 10) / 10,
     carbs: Math.round(food.carbs_per_100g * scale * 10) / 10,
     fiber: Math.round(food.fiber_per_100g * scale * 10) / 10,
+    weight_basis: weightBasis,
+    quantity_source: mapPortionSourceToQuantitySource(resolution.source),
     confidence,
     layer,
     resolution_type: 'matched',
     requires_confirmation: requiresConfirmation,
     oil_included: food.oil_included,
-    oil_review_needed: false,
+    oil_status: oilStatus.status,
+    oil_review_needed: oilStatus.reviewNeeded,
     was_ambiguous: false,
     kb_confidence: kbConfidence,
   };
@@ -521,17 +726,21 @@ async function resolveOneItem(
   parsed: ParsedItem,
   db: ResolverDb,
   config: ResolverConfig,
+  oilContext: OilContext,
 ): Promise<ResolvedItem | null> {
-  const exact = await tryExact(parsed.food_name, db);
+  const rawExact = parsed.raw_food_name && parsed.raw_food_name !== parsed.food_name
+    ? await tryExact(parsed.raw_food_name, db)
+    : null;
+  const exact = rawExact ?? await tryExact(parsed.food_name, db);
   if (exact) {
-    return buildResolvedItem(parsed, exact.food, null, 'exact', 0.95, config, db);
+    return buildResolvedItem(parsed, exact.food, null, 'exact', 0.95, config, db, oilContext);
   }
 
   const alias = await tryAlias(parsed.food_name, parsed.unit, db);
   if (alias) {
     const conf = alias.aliasPortion.grams != null ? 0.9 : 0.8;
     return buildResolvedItem(
-      parsed, alias.food, alias.aliasPortion, 'alias', conf, config, db,
+      parsed, alias.food, alias.aliasPortion, 'alias', conf, config, db, oilContext,
     );
   }
 
@@ -540,7 +749,7 @@ async function resolveOneItem(
   );
   if (fuzzy) {
     const conf = fuzzy.similarity >= 0.6 ? 0.75 : 0.5;
-    return buildResolvedItem(parsed, fuzzy.food, null, 'local_search', conf, config, db);
+    return buildResolvedItem(parsed, fuzzy.food, null, 'local_search', conf, config, db, oilContext);
   }
 
   return null;
@@ -713,13 +922,16 @@ async function applySelections(
       fat: Math.round(food.fat_per_100g * scale * 10) / 10,
       carbs: Math.round(food.carbs_per_100g * scale * 10) / 10,
       fiber: Math.round(food.fiber_per_100g * scale * 10) / 10,
+      weight_basis: item.weight_basis,
+      quantity_source: item.quantity_source,
       confidence: 1.0,
       layer: 'user_selection',
       resolution_type: 'matched',
       requires_confirmation: false,
       candidates: undefined,
       oil_included: food.oil_included,
-      oil_review_needed: false,
+      oil_status: item.oil_status,
+      oil_review_needed: item.oil_review_needed,
       was_ambiguous: false,
       kb_confidence: 1.0,
     });
@@ -731,31 +943,73 @@ async function applySelections(
 // Memory / popular (renamed layer to distinguish from post-selection)
 // =============================================================================
 
+interface RevalidatedCacheItems {
+  items: ResolvedItem[];
+  legacyOilTerms: Set<string>;
+}
+
 async function revalidateItems(
   cachedItems: ResolvedItem[],
   db: ResolverDb,
-): Promise<ResolvedItem[] | null> {
-  const ids = cachedItems
+  config: ResolverConfig,
+): Promise<RevalidatedCacheItems | null> {
+  const refreshedItems = await Promise.all(cachedItems.map(async (item) => {
+    if (
+      item.weight_basis != null &&
+      item.oil_status != null &&
+      item.quantity_source != null
+    ) {
+      return null;
+    }
+
+    const parsed = applyModifierContext(
+      splitIntoItems(normalizeInput(item.raw_text)).slice(0, 1),
+      extractModifierContext(item.raw_text),
+    )[0];
+    if (!parsed) return null;
+
+    return resolveOneItem(
+      parsed,
+      db,
+      config,
+      extractOilContext(item.raw_text),
+    );
+  }));
+
+  const itemsToValidate = cachedItems.filter((_, index) => !refreshedItems[index]);
+  const ids = itemsToValidate
     .map((i) => i.food_id)
     .filter((id): id is number => id != null);
-  if (ids.length === 0) return null;
+  if (itemsToValidate.length > 0 && ids.length === 0) return null;
 
-  const liveFoods = await db.getFoodsByIds(ids);
+  const liveFoods = ids.length > 0 ? await db.getFoodsByIds(ids) : [];
   const byId = new Map(liveFoods.map((f) => [f.id, f]));
 
-  for (const item of cachedItems) {
+  for (let index = 0; index < cachedItems.length; index += 1) {
+    if (refreshedItems[index]) continue;
+    const item = cachedItems[index];
     if (item.food_id == null) return null;
     const live = byId.get(item.food_id);
     if (!live) return null;
     if (!macrosMatch(item, live)) return null;
   }
 
-  return cachedItems.map((item) => {
+  const legacyOilTerms = new Set<string>();
+  const items = cachedItems.map((item, index) => {
+    const refreshed = refreshedItems[index];
+    if (refreshed) return refreshed;
+
+    if (!item.oil_status && item.fat !== 0) {
+      legacyOilTerms.add(item.input_term);
+    }
     const live = item.food_id != null ? byId.get(item.food_id) : null;
     if (!live || item.grams <= 0) {
       return {
         ...item,
         // Defensive defaults for legacy cache rows that predate 6.7.
+        weight_basis: item.weight_basis ?? 'unknown',
+        quantity_source: item.quantity_source ?? 'default_assumption',
+        oil_status: item.oil_status ?? 'unknown',
         was_ambiguous: item.was_ambiguous ?? false,
         kb_confidence: item.kb_confidence ?? item.confidence,
       };
@@ -763,6 +1017,9 @@ async function revalidateItems(
     const scale = item.grams / 100;
     return {
       ...item,
+      weight_basis: item.weight_basis ?? 'unknown',
+      quantity_source: item.quantity_source ?? 'default_assumption',
+      oil_status: item.oil_status ?? 'unknown',
       kcal: Math.round(live.kcal_per_100g * scale),
       protein: Math.round(live.protein_per_100g * scale * 10) / 10,
       fat: Math.round(live.fat_per_100g * scale * 10) / 10,
@@ -772,6 +1029,35 @@ async function revalidateItems(
       kb_confidence: item.kb_confidence ?? item.confidence,
     };
   });
+  return { items, legacyOilTerms };
+}
+
+function applyOilContext(
+  items: ResolvedItem[],
+  oilContext: OilContext,
+  legacyOilTerms: ReadonlySet<string> = new Set(),
+): { items: ResolvedItem[]; assumptions: string[] } {
+  const assumptions: string[] = [];
+  const updatedItems = items.map((item) => {
+    const result = computeOilStatus(oilContext, item.oil_included, item.input_term);
+    if (legacyOilTerms.has(item.input_term) && item.fat !== 0) {
+      assumptions.push(`Oil content not specified for ${item.input_term}.`);
+      if (!oilContext.userExcluded && !oilContext.userIncluded) {
+        return {
+          ...item,
+          oil_status: 'unknown',
+          oil_review_needed: result.reviewNeeded,
+        };
+      }
+    }
+    if (result.assumption) assumptions.push(result.assumption);
+    return {
+      ...item,
+      oil_status: result.status,
+      oil_review_needed: result.reviewNeeded,
+    };
+  });
+  return { items: updatedItems, assumptions };
 }
 
 function macrosMatch(cached: ResolvedItem, live: FoodRow): boolean {
@@ -795,31 +1081,39 @@ async function tryMemory(
   userId: string,
   normalizedText: string,
   db: ResolverDb,
-): Promise<ResolvedItem[] | null> {
+  config: ResolverConfig,
+): Promise<RevalidatedCacheItems | null> {
   const entry = await db.getMemoryEntry(userId, normalizedText);
   if (!entry) return null;
-  const revalidated = await revalidateItems(entry.items, db);
+  const revalidated = await revalidateItems(entry.items, db, config);
   if (!revalidated) return null;
   // Rewrite layer to 'memory' so the ambiguity overlay re-checks these
   // items (Phase 6.7 — closes a04 gap).
-  return revalidated.map((item) => ({
-    ...item,
-    layer: 'memory' as MatchLayer,
-  }));
+  return {
+    ...revalidated,
+    items: revalidated.items.map((item) => ({
+      ...item,
+      layer: 'memory' as MatchLayer,
+    })),
+  };
 }
 
 async function tryPopular(
   normalizedText: string,
   db: ResolverDb,
-): Promise<ResolvedItem[] | null> {
+  config: ResolverConfig,
+): Promise<RevalidatedCacheItems | null> {
   const entry = await db.getPopularMeal(normalizedText);
   if (!entry) return null;
-  const revalidated = await revalidateItems(entry.items, db);
+  const revalidated = await revalidateItems(entry.items, db, config);
   if (!revalidated) return null;
-  return revalidated.map((item) => ({
-    ...item,
-    layer: 'popular' as MatchLayer,
-  }));
+  return {
+    ...revalidated,
+    items: revalidated.items.map((item) => ({
+      ...item,
+      layer: 'popular' as MatchLayer,
+    })),
+  };
 }
 
 // =============================================================================
@@ -854,16 +1148,24 @@ async function resolveItems(
   config: ResolverConfig,
   layersUsed: Set<MatchLayer>,
   ambiguousTerms: ReadonlySet<string>,
+  oilContext: OilContext,
   selections: UserSelection[] = [],
-): Promise<{ items: ResolvedItem[]; unresolved: UnresolvedItem[] }> {
+): Promise<{ items: ResolvedItem[]; unresolved: UnresolvedItem[]; oilAssumptions: string[] }> {
   const items: ResolvedItem[] = [];
   const unresolved: UnresolvedItem[] = [];
+  const oilAssumptions: string[] = [];
 
   for (const p of parsed) {
-    const resolved = await resolveOneItem(p, db, config);
+    const resolved = await resolveOneItem(p, db, config, oilContext);
     if (resolved) {
       items.push(resolved);
       layersUsed.add(resolved.layer);
+      const { assumption } = computeOilStatus(
+        oilContext,
+        resolved.oil_included,
+        resolved.input_term,
+      );
+      if (assumption) oilAssumptions.push(assumption);
     } else {
       unresolved.push({
         raw_text: p.raw_text,
@@ -887,7 +1189,7 @@ async function resolveItems(
   if (overlaid.some((i) => i.layer === 'ambiguous')) layersUsed.add('ambiguous');
 
   const oiled = applyOilOverlay(overlaid);
-  return { items: oiled, unresolved };
+  return { items: oiled, unresolved, oilAssumptions };
 }
 
 // =============================================================================
@@ -935,6 +1237,8 @@ export async function resolve(
 ): Promise<ResolverResult> {
   const startMs = Date.now();
   const layersUsed = new Set<MatchLayer>();
+  const modifierContexts = extractModifierContext(input.rawText);
+  const oilContext = extractOilContext(input.rawText);
 
   const normalizedText = input.normalizedText ?? normalizeInput(input.rawText);
 
@@ -944,53 +1248,65 @@ export async function resolve(
 
   // ---- Seeded path ------------------------------------------------------
   if (input.seededItems && input.seededItems.length > 0) {
-    const seeded = input.seededItems.slice(0, config.maxItemsPerMeal);
-    const { items, unresolved } = await resolveItems(
-      seeded, db, config, layersUsed, ambiguousTerms,
+    const seeded = applyModifierContext(
+      input.seededItems.slice(0, config.maxItemsPerMeal),
+      modifierContexts,
+    );
+    const { items, unresolved, oilAssumptions } = await resolveItems(
+      seeded, db, config, layersUsed, ambiguousTerms, oilContext,
     );
     return finalize({
       items, unresolved, layersUsed, startMs, config, db,
       userId: input.userId, normalizedText, fromMemory: false, ambiguousTerms,
+      additionalAssumptions: oilAssumptions,
     });
   }
 
   // ---- Layer 1: memory --------------------------------------------------
   if (config.memoryReadEnabled) {
-    const memoryHit = await tryMemory(input.userId, normalizedText, db);
+    const memoryHit = await tryMemory(input.userId, normalizedText, db, config);
     if (memoryHit) {
       layersUsed.add('memory');
-      const overlaid = await applyAmbiguityOverlay(memoryHit, db, config, ambiguousTerms);
+      const oilAdjusted = applyOilContext(memoryHit.items, oilContext, memoryHit.legacyOilTerms);
+      const overlaid = await applyAmbiguityOverlay(oilAdjusted.items, db, config, ambiguousTerms);
       if (overlaid.some((i) => i.layer === 'ambiguous')) layersUsed.add('ambiguous');
       const oiled = applyOilOverlay(overlaid);
       return finalize({
         items: oiled, unresolved: [], layersUsed, startMs, config, db,
         userId: input.userId, normalizedText, fromMemory: true, ambiguousTerms,
+        additionalAssumptions: oilAdjusted.assumptions,
       });
     }
   }
 
   // ---- Layer 2: popular cache -------------------------------------------
-  const popularHit = await tryPopular(normalizedText, db);
+  const popularHit = await tryPopular(normalizedText, db, config);
   if (popularHit) {
     layersUsed.add('popular');
-    const overlaid = await applyAmbiguityOverlay(popularHit, db, config, ambiguousTerms);
+    const oilAdjusted = applyOilContext(popularHit.items, oilContext, popularHit.legacyOilTerms);
+    const overlaid = await applyAmbiguityOverlay(oilAdjusted.items, db, config, ambiguousTerms);
     if (overlaid.some((i) => i.layer === 'ambiguous')) layersUsed.add('ambiguous');
     const oiled = applyOilOverlay(overlaid);
     return finalize({
       items: oiled, unresolved: [], layersUsed, startMs, config, db,
       userId: input.userId, normalizedText, fromMemory: false, ambiguousTerms,
+      additionalAssumptions: oilAdjusted.assumptions,
     });
   }
 
   // ---- Layers 3–5: per-item resolution ----------------------------------
-  const parsed = splitIntoItems(normalizedText).slice(0, config.maxItemsPerMeal);
-  const { items, unresolved } = await resolveItems(
-    parsed, db, config, layersUsed, ambiguousTerms, input.selections ?? [],
+  const parsed = applyModifierContext(
+    splitIntoItems(normalizedText).slice(0, config.maxItemsPerMeal),
+    modifierContexts,
+  );
+  const { items, unresolved, oilAssumptions } = await resolveItems(
+    parsed, db, config, layersUsed, ambiguousTerms, oilContext, input.selections ?? [],
   );
 
   return finalize({
     items, unresolved, layersUsed, startMs, config, db,
     userId: input.userId, normalizedText, fromMemory: false, ambiguousTerms,
+    additionalAssumptions: oilAssumptions,
   });
 }
 
@@ -1009,27 +1325,46 @@ interface FinalizeInput {
   normalizedText: string;
   fromMemory: boolean;
   ambiguousTerms: ReadonlySet<string>;
+  additionalAssumptions?: string[];
 }
 
 async function finalize(input: FinalizeInput): Promise<ResolverResult> {
-  const totals = aggregate(input.items);
+  const items = input.items.map((item) => ({
+    ...item,
+    weight_basis: item.weight_basis ?? 'unknown',
+    quantity_source: item.quantity_source ?? 'default_assumption',
+  }));
+  const totals = aggregate(items);
+  const assumptions = items.flatMap((item) => {
+    const { assumption } = inferWeightBasis(item.weight_basis, item.input_term);
+    return assumption ? [assumption] : [];
+  });
+  assumptions.push(...(input.additionalAssumptions ?? []));
+  for (const item of items) {
+    if (item.quantity_source === 'default_assumption') {
+      assumptions.push(
+        `Used a default portion size for ${item.input_term}; adjust if inaccurate.`,
+      );
+    }
+  }
+  const uniqueAssumptions = Array.from(new Set(assumptions));
 
   const meal_confidence =
-    input.items.length > 0
-      ? Math.min(...input.items.map((i) => i.confidence))
+    items.length > 0
+      ? Math.min(...items.map((i) => i.confidence))
       : 0;
 
   const meal_kb_confidence =
-    input.items.length > 0
-      ? Math.min(...input.items.map((i) => i.kb_confidence))
+    items.length > 0
+      ? Math.min(...items.map((i) => i.kb_confidence))
       : 0;
 
-  const needs_confirmation = input.items.some((i) => i.requires_confirmation);
-  const was_ambiguous = input.items.some((i) => i.was_ambiguous === true);
+  const needs_confirmation = items.some((i) => i.requires_confirmation);
+  const was_ambiguous = items.some((i) => i.was_ambiguous === true);
 
   if (
     isMemoryEligible(
-      input.items,
+      items,
       input.unresolved,
       input.config,
       input.fromMemory,
@@ -1038,7 +1373,7 @@ async function finalize(input: FinalizeInput): Promise<ResolverResult> {
   ) {
     try {
       await input.db.upsertMemoryEntry(input.userId, input.normalizedText, {
-        items: input.items,
+        items,
         total_kcal: totals.kcal,
         total_protein: totals.protein,
         total_fat: totals.fat,
@@ -1053,8 +1388,9 @@ async function finalize(input: FinalizeInput): Promise<ResolverResult> {
   }
 
   return {
-    items: input.items,
+    items,
     unresolved_items: input.unresolved,
+    ...(uniqueAssumptions.length > 0 ? { assumptions: uniqueAssumptions } : {}),
     totals,
     meal_confidence,
     needs_confirmation,
