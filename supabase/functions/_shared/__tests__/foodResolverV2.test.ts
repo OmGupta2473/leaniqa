@@ -9,6 +9,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   resolve,
+  splitIntoItems,
+  mergeAiItems,
   DEFAULT_RESOLVER_CONFIG,
   type ResolverDb,
   type ResolverConfig,

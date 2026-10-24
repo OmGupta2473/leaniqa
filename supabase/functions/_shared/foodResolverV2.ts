@@ -19,7 +19,14 @@
  *   - getAllAmbiguousTerms(): Promise<string[]>
  */
 
-import { stripPreparationWords } from './prepStrip.ts';
+import { stripPreparationWords, hasRawPrefix } from './prepStrip.ts';
+import type {
+  MealComponent,
+  MealComponentRole,
+  MealInterpretation,
+  NutritionBasis,
+  UnresolvedMealComponent,
+} from './fullMealEstimator.ts';
 import {
   lookupPortion,
   type FoodPortionRow,
@@ -140,7 +147,8 @@ export type MatchLayer =
   | 'alias'
   | 'local_search'
   | 'user_selection'
-  | 'ambiguous';
+  | 'ambiguous'
+  | 'ai_fallback';
 
 export type ResolutionType = 'matched' | 'default_guess' | 'unknown';
 
@@ -171,6 +179,12 @@ export interface ResolvedItem {
   /** Phase 6.7 — confidence in (food × portion). Distinct from
    *  `confidence` which is only about food match. */
   kb_confidence: number;
+  /** R3.1 — human-readable single-line description (uses display_name). */
+  display: string;
+  /** R3.1 — 'ai' iff layer === 'ai_fallback'. */
+  source: 'kb' | 'ai';
+  /** R3.1 — populated only when source === 'ai'. */
+  note: string | null;
 }
 
 export interface UnresolvedItem {
@@ -179,6 +193,31 @@ export interface UnresolvedItem {
   quantity: number;
   unit: string | null;
   range?: [number, number];
+  /** R3.1 — present when the splitter saw both a leading count and a
+   *  trailing weight ("2 roti 80g"). Routes to AI, never guessed. */
+  conflict?: {
+    leadingQty: number;
+    trailingGrams: number;
+    trailingUnit: 'g' | 'ml';
+    foodNameWithoutQty: string;
+  };
+}
+
+/** Canonical component returned after AI interpretation and backend validation. */
+export interface ResolvedMealComponent extends ResolvedItem {
+  label: string;
+  role: MealComponentRole;
+  nutrition_basis: NutritionBasis;
+  assumption: string | null;
+}
+
+/** An AI-declared or backend-rejected component that was not included in totals. */
+export interface UnresolvedComponent {
+  label: string;
+  role: MealComponentRole;
+  grams: number | null;
+  assumption: string | null;
+  reason: string;
 }
 
 export interface ParsedItem {
@@ -187,6 +226,14 @@ export interface ParsedItem {
   unit: string | null;
   food_name: string;
   range?: [number, number];
+  /** R3.1 — present when the splitter saw both a leading count and a
+   *  trailing weight ("2 roti 80g"). */
+  conflict?: {
+    leadingQty: number;
+    trailingGrams: number;
+    trailingUnit: 'g' | 'ml';
+    foodNameWithoutQty: string;
+  };
 }
 
 export interface ResolverInput {
@@ -201,6 +248,15 @@ export interface ResolverInput {
 export interface ResolverResult {
   items: ResolvedItem[];
   unresolved_items: UnresolvedItem[];
+  /** Canonical, validated components. `totals` is calculated exclusively from these. */
+  components: ResolvedMealComponent[];
+  /** Components excluded from totals because AI or backend could not resolve them safely. */
+  unresolved_components: UnresolvedComponent[];
+  /** Full-meal interpretation metadata, present when the AI fallback was used. */
+  meal_title?: string;
+  meal_style?: string;
+  assumptions?: string[];
+  best_value_to_log?: { calories: number; protein: number; carbs: number; fat: number };
   totals: {
     kcal: number;
     protein: number;
@@ -220,8 +276,12 @@ export interface ResolverResult {
   was_ambiguous: boolean;
   /** Phase 6.7 — min(kb_confidence) across items. 0 for empty meals. */
   kb_confidence: number;
-  /** Phase 6.7 — always false in v2; AI fallback is disabled this phase. */
-  ai_used: false;
+  /** R3.1 — true iff at least one item was resolved via AI fallback. */
+  ai_used: boolean;
+  /** R3.1 — categorical label derived from meal_confidence. */
+  confidence: 'high' | 'medium' | 'low';
+  /** R3.1 — true iff unresolved_items.length > 0. */
+  needs_review: boolean;
 }
 
 export interface ResolverConfig {
@@ -273,6 +333,10 @@ const NUMBER_WORDS: Record<string, number> = {
 };
 
 const UNIT_ALT = '(glass|tbsp|tsp|scoop|piece|slice|bowl|katori|cup|ml|g)\\b';
+const LEADING_RE = new RegExp(`^(?:(\\d+(?:\\.\\d+)?)\\s*(?:${UNIT_ALT})?\\s*(?:of\\s+)?)?(.+)$`);
+const RANGE_RE = new RegExp(`^(\\d+(?:\\.\\d+)?)\\s*-\\s*(\\d+(?:\\.\\d+)?)\\s*(?:${UNIT_ALT})?\\s*(?:of\\s+)?(.+)$`);
+const TRAILING_WEIGHT_RE = /\s+(\d+(?:\.\d+)?)\s*(g|ml)$/i;
+const TRAILING_PIECES_RE = /\s+(\d+(?:\.\d+)?)\s*(?:pieces?|pcs?)$/i;
 
 export function normalizeInput(input: string): string {
   let s = input.toLowerCase().trim();
@@ -299,16 +363,13 @@ export function normalizeInput(input: string): string {
   return s;
 }
 
-function splitIntoItems(normalized: string): ParsedItem[] {
+export function splitIntoItems(normalized: string): ParsedItem[] {
   const parts = normalized.split(/\s+and\s+/).filter(Boolean);
   const items: ParsedItem[] = [];
 
   for (const part of parts) {
-    const rangeMatch = part.match(
-      new RegExp(
-        `^(\\d+(?:\\.\\d+)?)\\s*-\\s*(\\d+(?:\\.\\d+)?)\\s*(?:${UNIT_ALT})?\\s*(?:of\\s+)?(.+)$`,
-      ),
-    );
+    // 1. Range ("2-3 tbsp oil").
+    const rangeMatch = part.match(RANGE_RE);
     if (rangeMatch) {
       const lo = Number(rangeMatch[1]);
       const hi = Number(rangeMatch[2]);
@@ -324,23 +385,78 @@ function splitIntoItems(normalized: string): ParsedItem[] {
       continue;
     }
 
-    const m = part.match(
-      new RegExp(
-        `^(?:(\\d+(?:\\.\\d+)?)\\s*(?:${UNIT_ALT})?\\s*(?:of\\s+)?)?(.+)$`,
-      ),
-    );
-    if (!m) continue;
-    const qtyStr = m[1];
-    const unit = m[2] ?? null;
-    const foodRaw = m[3].trim();
-    if (!foodRaw) continue;
+    // 2. Detect trailing weight ("1 papad 8g") or trailing pieces ("chicken curry 4 pieces").
+    let lead = part;
+    let trailWeight: { qty: number; unit: 'g' | 'ml' } | null = null;
+    let trailPieces: { qty: number } | null = null;
+
+    const wMatch = part.match(TRAILING_WEIGHT_RE);
+    if (wMatch) {
+      trailWeight = { qty: Number(wMatch[1]), unit: wMatch[2].toLowerCase() as 'g' | 'ml' };
+      lead = part.slice(0, part.length - wMatch[0].length).trim();
+    } else {
+      const pMatch = part.match(TRAILING_PIECES_RE);
+      if (pMatch) {
+        trailPieces = { qty: Number(pMatch[1]) };
+        lead = part.slice(0, part.length - pMatch[0].length).trim();
+      }
+    }
+
+    // 3. Parse a leading quantity+unit on the remaining text.
+    const m = lead.match(LEADING_RE);
+    const leadQtyStr = m?.[1];
+    const leadUnit = m?.[2] ?? null;
+    const leadFoodRaw = m?.[3]?.trim() ?? '';
+    const leadQty = leadQtyStr ? Number(leadQtyStr) : 1;
+
+    const foodRaw = leadFoodRaw || part;
     const foodStripped = stripPreparationWords(foodRaw);
-    items.push({
-      raw_text: part.trim(),
-      quantity: qtyStr ? Number(qtyStr) : 1,
-      unit,
-      food_name: foodStripped.length > 0 ? foodStripped : foodRaw,
-    });
+    const food_name = foodStripped.length > 0 ? foodStripped : foodRaw;
+
+    if (trailWeight) {
+      if (leadQtyStr != null && leadQty !== 1) {
+        // "2 roti 80g" — genuine conflict. Route to AI, do not guess.
+        items.push({
+          raw_text: part.trim(),
+          quantity: leadQty,
+          unit: leadUnit,
+          food_name,
+          conflict: {
+            leadingQty: leadQty,
+            trailingGrams: trailWeight.qty,
+            trailingUnit: trailWeight.unit,
+            foodNameWithoutQty: food_name,
+          },
+        });
+      } else {
+        // "1 papad 8g" / "papad 8g" — trailing weight wins.
+        items.push({
+          raw_text: part.trim(),
+          quantity: trailWeight.qty,
+          unit: trailWeight.unit,
+          food_name,
+        });
+      }
+      continue;
+    }
+
+    if (trailPieces) {
+      // "chicken curry 4 pieces" — trailing count wins, unit = piece.
+      items.push({
+        raw_text: part.trim(),
+        quantity: trailPieces.qty,
+        unit: 'piece',
+        food_name,
+      });
+      continue;
+    }
+
+    // 4. No trailing marker — existing behavior.
+    if (!foodRaw) {
+      items.push({ raw_text: part.trim(), quantity: 1, unit: null, food_name: part });
+      continue;
+    }
+    items.push({ raw_text: part.trim(), quantity: leadQty, unit: leadUnit, food_name });
   }
 
   return items;
@@ -453,6 +569,14 @@ async function tryLocalSearch(
 // Item construction
 // =============================================================================
 
+function formatKbDisplay(food: FoodRow, quantity: number, unit: string | null): string {
+  const name = food.display_name || food.canonical_name;
+  const qty = String(quantity);
+  if (!unit) return `${qty} ${name}`;
+  if (unit === 'g' || unit === 'ml') return `${qty}${unit} ${name}`;
+  return `${qty} ${unit} ${name}`;
+}
+
 function portionFactor(source: PortionSource): number {
   switch (source) {
     case 'passthrough':
@@ -514,6 +638,9 @@ async function buildResolvedItem(
     oil_review_needed: false,
     was_ambiguous: false,
     kb_confidence: kbConfidence,
+    display: formatKbDisplay(food, parsed.quantity, parsed.unit),
+    source: 'kb',
+    note: null,
   };
 }
 
@@ -522,6 +649,25 @@ async function resolveOneItem(
   db: ResolverDb,
   config: ResolverConfig,
 ): Promise<ResolvedItem | null> {
+  // R3.1 — conflicting leading count + trailing weight: never guess, route to AI.
+  if (parsed.conflict) return null;
+
+  // R3.1 — raw/uncooked/dry: try a preparation-specific profile first.
+  // If nothing matches the raw form, route to AI. Never fall through to
+  // the cooked form (cooked vs raw macros differ materially).
+  if (hasRawPrefix(parsed.food_name)) {
+    const rawExact = await db.getFoodByCanonicalName(parsed.food_name);
+    if (rawExact) {
+      return buildResolvedItem(parsed, rawExact, null, 'exact', 0.95, config, db);
+    }
+    const rawAlias = await tryAlias(parsed.food_name, parsed.unit, db);
+    if (rawAlias) {
+      const conf = rawAlias.aliasPortion.grams != null ? 0.9 : 0.8;
+      return buildResolvedItem(parsed, rawAlias.food, rawAlias.aliasPortion, 'alias', conf, config, db);
+    }
+    return null;
+  }
+
   const exact = await tryExact(parsed.food_name, db);
   if (exact) {
     return buildResolvedItem(parsed, exact.food, null, 'exact', 0.95, config, db);
@@ -844,6 +990,26 @@ function aggregate(items: ResolvedItem[]) {
   };
 }
 
+function itemAsComponent(item: ResolvedItem): ResolvedMealComponent {
+  return {
+    ...item,
+    label: item.display || item.canonical_name,
+    role: 'whole_dish',
+    nutrition_basis: item.food_id == null ? 'ai_estimate' : 'kb_profile',
+    assumption: item.note,
+  };
+}
+
+function unresolvedItemAsComponent(item: UnresolvedItem): UnresolvedComponent {
+  return {
+    label: item.raw_text,
+    role: 'whole_dish',
+    grams: item.conflict?.trailingGrams ?? null,
+    assumption: null,
+    reason: 'No validated KB profile or AI estimate was available.',
+  };
+}
+
 // =============================================================================
 // Item pipeline
 // =============================================================================
@@ -865,13 +1031,15 @@ async function resolveItems(
       items.push(resolved);
       layersUsed.add(resolved.layer);
     } else {
-      unresolved.push({
+      const entry: UnresolvedItem = {
         raw_text: p.raw_text,
         input_term: p.food_name,
         quantity: p.quantity,
         unit: p.unit,
         range: p.range,
-      });
+      };
+      if (p.conflict) entry.conflict = p.conflict;
+      unresolved.push(entry);
     }
   }
 
@@ -998,6 +1166,12 @@ export async function resolve(
 // Finalize
 // =============================================================================
 
+function confidenceLabel(min: number): 'high' | 'medium' | 'low' {
+  if (min >= 0.85) return 'high';
+  if (min >= 0.60) return 'medium';
+  return 'low';
+}
+
 interface FinalizeInput {
   items: ResolvedItem[];
   unresolved: UnresolvedItem[];
@@ -1052,9 +1226,15 @@ async function finalize(input: FinalizeInput): Promise<ResolverResult> {
     }
   }
 
+  const ai_used = input.items.some((i) => i.source === 'ai');
+  const needs_review = input.unresolved.length > 0;
+  const confidence = confidenceLabel(meal_confidence);
+
   return {
     items: input.items,
     unresolved_items: input.unresolved,
+    components: input.items.map(itemAsComponent),
+    unresolved_components: input.unresolved.map(unresolvedItemAsComponent),
     totals,
     meal_confidence,
     needs_confirmation,
@@ -1066,6 +1246,215 @@ async function finalize(input: FinalizeInput): Promise<ResolverResult> {
     },
     was_ambiguous,
     kb_confidence: meal_kb_confidence,
-    ai_used: false,
+    ai_used,
+    confidence,
+    needs_review,
+  };
+}
+
+/**
+ * The AI is a last resort. Fully KB/cache-resolved meals never reach it;
+ * an unresolved item is itself the missing-KB signal that qualifies a meal
+ * for full-meal interpretation. Multi-item and conflicting-portion meals are
+ * recorded explicitly to keep this routing policy visible and testable.
+ */
+export function shouldUseFullMealAi(
+  result: Pick<ResolverResult, 'items' | 'unresolved_items'>,
+): boolean {
+  const hasMissingKbData = result.unresolved_items.length > 0;
+  if (!hasMissingKbData) return false;
+
+  const hasMultipleItems = result.items.length + result.unresolved_items.length > 1;
+  const hasAmbiguousPortion = result.unresolved_items.some(
+    (item) => item.conflict != null || item.range != null,
+  );
+
+  // Missing KB data is sufficient for a one-item unknown meal; the other
+  // conditions identify the higher-complexity paths that also qualify.
+  return result.unresolved_items.length === 1 || hasMultipleItems || hasAmbiguousPortion;
+}
+
+export async function mergeAiItems(
+  base: ResolverResult,
+  interpretation: MealInterpretation,
+  db: ResolverDb,
+): Promise<ResolverResult> {
+  const newItems: ResolvedItem[] = [...base.items];
+  const newComponents: ResolvedMealComponent[] = [...(base.components || [])];
+  const unresolvedComponents: UnresolvedComponent[] = interpretation.unresolved_components.map(
+    unresolvedFromAi,
+  );
+  const layersUsed = new Set<MatchLayer>(base.layers_used);
+
+  // Fetch every KB profile once. The AI is never a source of KB macro values.
+  const foodIds = interpretation.components
+    .filter((component) => component.nutrition_basis === 'kb_profile')
+    .map((component) => component.food_id);
+  const foods = await db.getFoodsByIds([...new Set(foodIds)]);
+  const foodsById = new Map(foods.map((food) => [food.id, food]));
+
+  // A whole-dish profile with oil included already represents its subordinate
+  // ingredients/gravy/fat. Counting those siblings would inflate the meal.
+  const hasOilIncludedWholeDish = interpretation.components.some((component) =>
+    component.role === 'whole_dish' &&
+    component.nutrition_basis === 'kb_profile' &&
+    foodsById.get(component.food_id)?.oil_included === true
+  );
+
+  for (const component of interpretation.components) {
+    if (
+      hasOilIncludedWholeDish &&
+      (component.role === 'ingredient' || component.role === 'cooking_fat' || component.role === 'gravy')
+    ) {
+      unresolvedComponents.push({
+        label: component.label,
+        role: component.role,
+        grams: component.grams,
+        assumption: component.assumption,
+        reason: 'Rejected to prevent double counting against an oil-included whole-dish profile.',
+      });
+      continue;
+    }
+
+    const resolved = resolvedFromMealComponent(component, foodsById);
+    if (!resolved) {
+      unresolvedComponents.push({
+        label: component.label,
+        role: component.role,
+        grams: component.grams,
+        assumption: component.assumption,
+        reason: component.nutrition_basis === 'kb_profile'
+          ? `KB food_id ${component.food_id} was not found during validation.`
+          : 'AI component did not contain a valid direct estimate.',
+      });
+      continue;
+    }
+
+    newItems.push(resolved);
+    newComponents.push({
+      ...resolved,
+      label: component.label,
+      role: component.role,
+      nutrition_basis: component.nutrition_basis,
+      assumption: component.assumption,
+    });
+    layersUsed.add('ai_fallback');
+  }
+
+  // The full-meal interpretation supersedes unresolved text fragments. Every
+  // unresolvable part is preserved in unresolved_components instead.
+  const newUnresolved: UnresolvedItem[] = unresolvedComponents.map((component) => ({
+    raw_text: component.label,
+    input_term: component.label,
+    quantity: 1,
+    unit: null,
+  }));
+  const newTotals = aggregate(newItems);
+  const meal_confidence = newItems.length > 0 ? Math.min(...newItems.map((i) => i.confidence)) : 0;
+  const meal_kb_confidence = newItems.length > 0 ? Math.min(...newItems.map((i) => i.kb_confidence)) : 0;
+  const needs_confirmation = newItems.some((i) => i.requires_confirmation);
+  const was_ambiguous = newItems.some((i) => i.was_ambiguous === true);
+  const ai_used = newItems.some((i) => i.source === 'ai');
+  const needs_review = newUnresolved.length > 0;
+  const confidence = confidenceLabel(meal_confidence);
+
+  return {
+    items: newItems,
+    unresolved_items: newUnresolved,
+    components: newComponents,
+    unresolved_components: unresolvedComponents,
+    components: [], // 👈 ADD THIS LINE
+    unresolved_components: [], // 👈 AND THIS LINE
+    meal_title: interpretation.meal_title,
+    meal_style: interpretation.meal_style,
+    assumptions: interpretation.assumptions,
+    best_value_to_log: interpretation.best_value_to_log,
+    totals: newTotals,
+    meal_confidence,
+    needs_confirmation,
+    layers_used: Array.from(layersUsed),
+    metadata: base.metadata,
+    was_ambiguous,
+    kb_confidence: meal_kb_confidence,
+    ai_used,
+    confidence,
+    needs_review,
+  };
+}
+
+function unresolvedFromAi(component: UnresolvedMealComponent): UnresolvedComponent {
+  return {
+    label: component.label,
+    role: component.role,
+    grams: component.grams,
+    assumption: component.assumption,
+    reason: component.reason,
+  };
+}
+
+function resolvedFromMealComponent(
+  component: MealComponent,
+  foodsById: ReadonlyMap<number, FoodRow>,
+): ResolvedItem | null {
+  const grams = Math.round(component.grams);
+  if (component.nutrition_basis === 'kb_profile') {
+    const food = foodsById.get(component.food_id);
+    if (!food) return null;
+    const scale = grams / 100;
+    return {
+      raw_text: component.label,
+      input_term: component.label,
+      food_id: food.id,
+      canonical_name: food.canonical_name,
+      category: food.category,
+      quantity: 1,
+      unit: 'g',
+      grams,
+      // Canonical macros are calculated from the food row, never AI output.
+      kcal: Math.round(food.kcal_per_100g * scale),
+      protein: Math.round(food.protein_per_100g * scale * 10) / 10,
+      fat: Math.round(food.fat_per_100g * scale * 10) / 10,
+      carbs: Math.round(food.carbs_per_100g * scale * 10) / 10,
+      fiber: Math.round(food.fiber_per_100g * scale * 10) / 10,
+      confidence: 0.60,
+      layer: 'ai_fallback',
+      resolution_type: 'default_guess',
+      requires_confirmation: true,
+      oil_included: food.oil_included,
+      oil_review_needed: false,
+      was_ambiguous: false,
+      kb_confidence: 0.60,
+      display: `${food.display_name || food.canonical_name} (~${grams}g)`,
+      source: 'ai',
+      note: component.assumption,
+    };
+  }
+
+  const macros = component.direct_macros;
+  return {
+    raw_text: component.label,
+    input_term: component.label,
+    food_id: null,
+    canonical_name: component.label,
+    category: null,
+    quantity: 1,
+    unit: 'g',
+    grams,
+    kcal: Math.round(macros.calories),
+    protein: Math.round(macros.protein * 10) / 10,
+    fat: Math.round(macros.fat * 10) / 10,
+    carbs: Math.round(macros.carbs * 10) / 10,
+    fiber: 0,
+    confidence: 0.50,
+    layer: 'ai_fallback',
+    resolution_type: 'default_guess',
+    requires_confirmation: true,
+    oil_included: false,
+    oil_review_needed: false,
+    was_ambiguous: false,
+    kb_confidence: 0.50,
+    display: `${component.label} (~${grams}g)`,
+    source: 'ai',
+    note: component.assumption,
   };
 }
