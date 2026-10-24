@@ -723,6 +723,17 @@ describe('foodResolverV2 ? non-food modifier clauses', () => {
     expect(r.assumptions).toContain('Assumed cooked weight for rice.');
   });
 
+  it('does not assume cooked weight for roti', async () => {
+    const r = await resolve(
+      { userId: TEST_USER, rawText: '2 roti', mealType: 'lunch' },
+      setupDb(),
+      TEST_CONFIG,
+    );
+
+    expect(r.items[0].weight_basis).toBe('unknown');
+    expect(r.assumptions?.some((text) => /Assumed cooked weight/i.test(text)) ?? false).toBe(false);
+  });
+
   it('uses pre-strip context for a detached air-frying modifier', async () => {
     const db = setupModifierDb();
     const chicken = db.foods.get(102)!;
