@@ -22,9 +22,9 @@ import 'dotenv/config';
 import { config as loadEnv } from 'dotenv';
 import { writeFileSync } from 'fs';
 import { createClient } from '@supabase/supabase-js';
-import { EVAL_SET, type EvalMeal } from './eval-set';
-import { findFood } from './data/foods';
-import { identifyCanonicalId } from './resolver';
+import { EVAL_SET, type EvalMeal } from '../../spike/eval-set';
+import { findFood } from '../../spike/data/foods';
+import { identifyCanonicalId } from '../../spike/resolver';
 
 // Load .env.local first (wins over .env), then fall back to .env.
 loadEnv({ path: '.env.local' });
