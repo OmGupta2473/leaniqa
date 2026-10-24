@@ -443,6 +443,25 @@ const NON_FOOD_CONTEXT_PATTERNS = [
   /\b(?:no\s+(?:added\s+)?oil|without\s+(?:added\s+)?oil|no\s+ghee|without\s+ghee|oil[- ]?free)\b/gi,
 ];
 
+const BASIS_SENSITIVE_CATEGORIES = new Set([
+  'rice',
+  'dal',
+  'legume',
+  'vegetable',
+  'paneer',
+  'nonveg',
+  'egg',
+  // 'grain' is included because rice is categorized as grain in existing
+  // data/tests. Raw-vs-cooked materially changes rice macros.
+  'grain',
+]);
+
+function shouldEmitBasisAssumption(category: string | null): boolean {
+  if (!category) return false;
+  const lower = category.toLowerCase().trim();
+  return BASIS_SENSITIVE_CATEGORIES.has(lower);
+}
+
 function stripNonFoodContextClauses(s: string): string {
   let out = s;
   for (const pattern of NON_FOOD_CONTEXT_PATTERNS) {
