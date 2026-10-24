@@ -14,6 +14,7 @@
 // ENV VARS (from .env.local or shell):
 //   VITE_SUPABASE_URL           (fallback: SUPABASE_URL)
 //   VITE_SUPABASE_ANON_KEY      (fallback: SUPABASE_ANON_KEY)
+//   EXPECTED_STAGING_REF        must be yvtoxpsmxlrljpuqvzgv
 //   TEST_USER_EMAIL
 //   TEST_USER_PASSWORD
 //
@@ -41,6 +42,7 @@ import { createClient } from '@supabase/supabase-js';
 import { writeFileSync, mkdirSync } from 'fs';
 import { dirname } from 'path';
 import { EVAL_SET_V2, type EvalMealV2, type ExpectedItemV2 } from './eval-set-v2';
+import { assertStagingTarget } from './assert-staging-target';
 
 // ---- Env --------------------------------------------------------------------
 
@@ -53,6 +55,7 @@ function env(key: string, fallbackKey?: string): string | undefined {
 
 function loadConfig() {
   const url = env('VITE_SUPABASE_URL', 'SUPABASE_URL');
+  assertStagingTarget(url, env('EXPECTED_STAGING_REF'));
   const key = env('VITE_SUPABASE_ANON_KEY', 'SUPABASE_ANON_KEY');
   const email = env('TEST_USER_EMAIL');
   const password = env('TEST_USER_PASSWORD');

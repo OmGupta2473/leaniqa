@@ -31,7 +31,7 @@ import 'dotenv/config';
 import { config as loadEnv } from 'dotenv';
 import { readFileSync, existsSync } from 'fs';
 import { resolve, join } from 'path';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { CURATED_INDIAN_DISHES, type CuratedDish } from './data/curated-indian-dishes';
 import { assertStagingTarget, assertProductionTarget } from './_validate-target';
 
@@ -359,7 +359,7 @@ function validateRows(rows: FoodRow[]): ValidationError[] {
 // ---------- Upsert ----------
 
 async function upsertInBatches(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient<any>,
   rows: FoodRow[],
   dryRun: boolean,
 ): Promise<{ inserted: number; failed: number }> {
@@ -373,8 +373,7 @@ async function upsertInBatches(
 
   for (let i = 0; i < rows.length; i += BATCH) {
     const chunk = rows.slice(i, i + BATCH);
-    const { error } = await supabase
-      .from('foods')
+    const { error } = await (supabase.from('foods') as any)
       .upsert(chunk, { onConflict: 'source,source_id' });
     if (error) {
       console.error(`\n[upsert] batch ${i}-${i + chunk.length} failed: ${error.message}`);
@@ -389,12 +388,12 @@ async function upsertInBatches(
 }
 
 async function countBySource(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient<any>,
 ): Promise<Record<string, number>> {
   const { data, error } = await supabase.from('foods').select('source');
   if (error || !data) return {};
   const out: Record<string, number> = {};
-  for (const row of data) out[row.source] = (out[row.source] ?? 0) + 1;
+for (const row of (data as Array<{ source: string }>)) out[row.source] = (out[row.source] ?? 0) + 1;
   return out;
 }
 

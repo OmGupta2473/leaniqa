@@ -17,6 +17,7 @@
 // ENV VARS (from .env.local or shell):
 //   VITE_SUPABASE_URL           (fallback: SUPABASE_URL)
 //   VITE_SUPABASE_ANON_KEY      (fallback: SUPABASE_ANON_KEY)
+//   EXPECTED_STAGING_REF        must be yvtoxpsmxlrljpuqvzgv
 //   TEST_USER_EMAIL             test account email on staging
 //   TEST_USER_PASSWORD          test account password on staging
 //
@@ -29,11 +30,11 @@
 //   npx tsx scripts/spike/run-v1.ts
 //   npx tsx scripts/spike/run-v1.ts --filter m01,m02,a01
 // =============================================================================
-
-import { createClient } from '@supabase/supabase-js';
 import { writeFileSync, mkdirSync } from 'fs';
 import { dirname } from 'path';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { EVAL_SET_V2, type EvalMealV2, type ExpectedItemV2 } from './eval-set-v2';
+import { assertStagingTarget } from './assert-staging-target';
 
 // ---- Env --------------------------------------------------------------------
 
@@ -46,6 +47,7 @@ function env(key: string, fallbackKey?: string): string | undefined {
 
 function loadConfig() {
   const url = env('VITE_SUPABASE_URL', 'SUPABASE_URL');
+  assertStagingTarget(url, env('EXPECTED_STAGING_REF'));
   const key = env('VITE_SUPABASE_ANON_KEY', 'SUPABASE_ANON_KEY');
   const email = env('TEST_USER_EMAIL');
   const password = env('TEST_USER_PASSWORD');
@@ -251,10 +253,10 @@ function scoreMeal(
 // ---- Per-case runner --------------------------------------------------------
 
 async function runCase(
-  client: ReturnType<typeof createClient>,
+  client: SupabaseClient<any>,
   expected: EvalMealV2,
   timeoutMs: number,
-): Promise<ResultRow> {
+): Promise<ResultRow>{
   const started = Date.now();
   try {
     const resp = await withTimeout(

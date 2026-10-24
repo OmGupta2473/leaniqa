@@ -26,6 +26,28 @@ function readJwtClaims(authHeader: string | null): Record<string, unknown> | nul
     return null;
   }
 }
+const WeightBasisSchema = z.enum(['raw', 'cooked', 'finished', 'unknown']);
+
+const QuantitySourceSchema = z.enum([
+  'user_provided',
+  'portion_reference',
+  'default_assumption',
+  'ai_estimated',
+]);
+
+const MealItemSchema = z.object({
+  food_name: z.string().min(1).max(200),
+  quantity: z.number().positive().nullable(),
+  unit: z.enum(['g', 'ml', 'bowl', 'cup', 'katori', 'piece', 'slice', 'scoop', 'tbsp', 'tsp']).nullable(),
+  weight_basis: WeightBasisSchema,
+  preparation_method: z.string().max(80).nullable(),
+  quantity_source: QuantitySourceSchema,
+});
+
+const AddedOilSchema = z.object({
+  status: z.enum(['explicitly_none', 'explicit_quantity', 'inferred_included', 'unknown']),
+  quantity_g: z.number().nonnegative().nullable(),
+});
 
 const MealSchema = z.object({
   calories: z.number(),
@@ -36,6 +58,9 @@ const MealSchema = z.object({
   confidence: z.number(),
   foods_detected: z.array(z.string()),
   coaching_tip: z.string(),
+  items: z.array(MealItemSchema).max(20).optional(),
+  added_oil: AddedOilSchema.optional(),
+  assumptions: z.array(z.string().max(160)).max(10).optional(),
 });
 
 type MealResult = z.infer<typeof MealSchema>;
@@ -286,7 +311,7 @@ const KnowledgeBase: Record<string, KnowledgeFood> = {
   "chicken":            { calories: 165, protein: 31.0, fat: 3.6,  carbs: 0.0,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g" },
   "chicken curry":      { calories: 140, protein: 14.0, fat: 8.0,  carbs: 3.0,  fiber: 0.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
   "chicken breast":     { calories: 165, protein: 31.0, fat: 3.6,  carbs: 0.0,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g" },
-  "raw chicken":        { calories: 120, protein: 22.5, fat: 2.6,  carbs: 0.0,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g" },
+  "raw chicken breast": { calories: 120, protein: 22.5, fat: 2.6, carbs: 0.0, fiber: 0.0, referenceAmount: 100, referenceUnit: "g" },
   "raw mutton":         { calories: 143, protein: 19.0, fat: 6.5,  carbs: 0.0,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g" },
   "raw fish":           { calories: 96,  protein: 20.0, fat: 1.5,  carbs: 0.0,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g" },
   "chicken tikka":      { calories: 165, protein: 25.0, fat: 7.0,  carbs: 1.0,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g" },
@@ -440,7 +465,56 @@ Return JSON only with this exact shape:
   "fiber": number,
   "confidence": number,
   "foods_detected": string[],
-  "coaching_tip": string
+  "coaching_tip": string,
+  "items": [
+    {
+      "food_name": string,
+      "quantity": number | null,
+      "unit": "g" | "ml" | "bowl" | "cup" | "katori" | "piece" | "slice" | "scoop" | "tbsp" | "tsp" | null,
+      "weight_basis": "raw" | "cooked" | "finished" | "unknown",
+      "preparation_method": string | null,
+      "quantity_source": "user_provided" | "portion_reference" | "default_assumption" | "ai_estimated"
+    }
+  ],
+  "added_oil": {
+    "status": "explicitly_none" | "explicit_quantity" | "inferred_included" | "unknown",
+    "quantity_g": number | null
+  },
+  "assumptions": string[]
+}
+
+Rules for items and modifiers:
+
+1. Emit one item per distinct food. Use the user's word for food_name, not a canonical name.
+
+2. weight_basis — DERIVE ONLY FROM EXPLICIT WEIGHT HINTS. Never infer from dish identity.
+   - "weighed after cooking", "cooked weight", "cooked", "boiled", "grilled", "air fried", "roasted" → "cooked"
+   - "raw", "uncooked", "dry", "before cooking" → "raw"
+   - "final weight", "as served", "on the plate" → "finished"
+   - No weight hint whatsoever → "unknown"
+   CRITICAL: "200g rice" with no hint is "unknown". "200g cooked rice" is "cooked".
+   Do not assume a dish is cooked just because it usually is.
+
+3. preparation_method — ONLY if the user stated it. "air fried" → "air_fried". "boiled" → "boiled".
+   Otherwise null. Never invent.
+
+4. quantity_source:
+   - user stated the quantity ("150g", "2 pieces", "1 bowl") → "user_provided"
+   - user gave a household measure and a reference portion exists ("1 bowl", "1 katori") → "portion_reference"
+   - no quantity and you are defaulting to a typical serving → "default_assumption"
+   - you estimated a portion from context ("some chicken" → 100g) → "ai_estimated"
+
+5. added_oil.status:
+   - "no oil", "without oil", "no ghee", "oil-free" → "explicitly_none", quantity_g null
+   - "1 tsp oil", "1 tbsp ghee", "X g oil" → "explicit_quantity", quantity_g = grams (1 tsp = 5g, 1 tbsp = 14g)
+   - "curry", "fried", "restaurant", "street-side", or dish name implies cooking fat → "inferred_included", quantity_g null
+   - Otherwise → "unknown"
+
+6. assumptions: only for things the user did NOT say. E.g. "Assumed 1 katori = 100g".
+   Max 3. Never restate what the user said. Empty array if you made no assumption.
+
+7. Top-level calories/protein/fat/carbs/fiber remain your best estimate.
+   items / added_oil / assumptions are advisory metadata the backend reconciles.
 }`;
 }
 
@@ -813,28 +887,144 @@ class MealParserChain implements MealParser {
   }
 }
 
+// Phase 1 addendum — modifier application.
+//
+// Responsibilities (and ONLY these):
+//   - pick the raw vs cooked KB profile when weight_basis resolves it
+//   - add explicit added-oil grams as a separate contribution
+//   - flag mismatches for review (never rewrite a profile's oil_included flag)
+//
+// What this must NOT do:
+//   - change data.calories based on an assumption the user did not state
+//   - flip `oil_included` on a KB profile (the flag is metadata; the calories
+//     are already baked in — flipping the flag does not subtract them)
+//   - reject the meal
+
+const RAW_PROFILE_NAMES = new Set([
+  'raw rice', 'raw oats', 'raw dal', 'raw moong dal', 'raw masoor dal',
+  'raw chicken', 'raw chicken breast', 'raw mutton', 'raw fish',
+]);
+
+function isRawProfile(foodName: string): boolean {
+  return RAW_PROFILE_NAMES.has(foodName) || foodName.startsWith('raw ');
+}
+
+function applyModifiers(data: MealResult): MealResult & {
+  oil_review_needed?: boolean;
+  weight_basis_review_needed?: boolean;
+} {
+  if (!data.items || data.items.length === 0) return data;
+
+  const assumptions: string[] = [...(data.assumptions ?? [])];
+  let extraKcal = 0, extraProtein = 0, extraFat = 0, extraCarbs = 0, extraFiber = 0;
+  let oilReviewNeeded = false;
+  let weightBasisReviewNeeded = false;
+
+  for (const item of data.items) {
+    const isRawBasis = item.weight_basis === 'raw';
+    const rawKey = 'raw ' + item.food_name;
+    const profile = isRawBasis && KnowledgeBase[rawKey]
+      ? KnowledgeBase[rawKey]
+      : KnowledgeBase[item.food_name];
+
+    // Mismatch: user said cooked, only a raw profile exists for this food.
+    if (
+      !profile ||
+      (item.weight_basis === 'cooked' && profile && isRawProfile(item.food_name))
+    ) {
+      weightBasisReviewNeeded = true;
+      assumptions.push(
+        `Only a raw profile exists for "${item.food_name}" but you said cooked — values may be off by ~30%`,
+      );
+      continue;
+    }
+
+    // User said no oil but the profile already includes oil.
+    // We CANNOT subtract — we don't know how much. Flag for review.
+    if (
+      profile.oil_included &&
+      data.added_oil?.status === 'explicitly_none'
+    ) {
+      oilReviewNeeded = true;
+      assumptions.push(
+        `"${item.food_name}" profile includes cooking oil; you said none — verify fat`,
+      );
+    }
+  }
+
+  // Explicit added oil — add as a separate contribution, never double-count.
+  if (
+    data.added_oil?.status === 'explicit_quantity' &&
+    data.added_oil.quantity_g != null &&
+    data.added_oil.quantity_g > 0
+  ) {
+    const oil = KnowledgeBase['ghee']; // 900 kcal, 99.5 fat per 100g
+    if (oil) {
+      const scale = data.added_oil.quantity_g / 100;
+      extraKcal    += Math.round(oil.calories * scale);
+      extraProtein += Math.round(oil.protein * scale * 10) / 10;
+      extraFat     += Math.round(oil.fat     * scale * 10) / 10;
+      extraCarbs   += Math.round(oil.carbs   * scale * 10) / 10;
+      extraFiber   += Math.round(oil.fiber   * scale * 10) / 10;
+      assumptions.push(`Added ${data.added_oil.quantity_g}g cooking oil`);
+    }
+  }
+
+  return {
+    ...data,
+    calories: data.calories + extraKcal,
+    protein: Math.round((data.protein + extraProtein) * 10) / 10,
+    fat:     Math.round((data.fat     + extraFat)     * 10) / 10,
+    carbs:   Math.round((data.carbs   + extraCarbs)   * 10) / 10,
+    fiber:   Math.round((data.fiber   + extraFiber)   * 10) / 10,
+    assumptions: assumptions.length > 0 ? assumptions : undefined,
+    oil_review_needed: oilReviewNeeded || undefined,
+    weight_basis_review_needed: weightBasisReviewNeeded || undefined,
+  };
+}
+
 class NutritionValidator {
   validate(data: MealResult): MealResult {
-    // Gibberish input can yield a schema-valid but empty payload (every macro
-    // reported as 0). Treat it as an unidentifiable meal so the credit is
-    // refunded instead of surfacing a meaningless "0 kcal" confirm card.
-    if (
-      data.calories === 0 &&
-      data.protein === 0 &&
-      data.fat === 0 &&
-      data.carbs === 0 &&
-      data.fiber === 0
-    ) {
-      throw new Error("Nutrition values are all zero — meal could not be identified");
+  // STRUCTURAL violations — reject (these indicate gibberish or provider failure).
+  if (data.protein < 0) throw new Error('Negative protein');
+  if (data.fat < 0) throw new Error('Negative fat');
+  if (data.carbs < 0) throw new Error('Negative carbs');
+
+  // Gibberish detector: only reject all-zero if there are no items claiming a
+  // known zero-calorie food. Water/black-coffee/plain-tea legitimately have
+  // near-zero kcal; we don't want to reject them.
+  const allZero =
+    data.calories === 0 && data.protein === 0 && data.fat === 0 &&
+    data.carbs === 0 && data.fiber === 0;
+  if (allZero) {
+    const zeroKcalFoods = new Set(['water', 'black coffee', 'plain tea', 'green tea']);
+    const hasNonZeroItem = (data.items ?? []).some(
+      (i) => !zeroKcalFoods.has(i.food_name.toLowerCase()),
+    );
+    if (hasNonZeroItem || !data.items || data.items.length === 0) {
+      throw new Error('Nutrition values are all zero — meal could not be identified');
     }
-    if (data.protein < 0) data.protein = 0;
-    if (data.fat < 0) data.fat = 0;
-    if (data.carbs < 0) data.carbs = 0;
-    const macroCalories = (data.protein * 4) + (data.carbs * 4) + (data.fat * 9);
-    if (macroCalories > data.calories * 1.5 || macroCalories < data.calories * 0.5) data.calories = Math.round(macroCalories);
-    if (data.calories > 10_000 || data.protein > 500 || data.fat > 500 || data.carbs > 1_000) throw new Error("Parsed nutrition values exceed reasonable limits");
-    return data;
+    // else: legitimate zero-calorie meal, fall through
   }
+
+  // PLAUSIBILITY violations — flag, do not reject.
+  if (
+    data.calories > 5000 ||
+    data.protein > 300 ||
+    data.fat > 300 ||
+    data.carbs > 800
+  ) {
+    (data as any).plausibility_review_needed = true;
+  }
+
+  // Arithmetic consistency — flag, do not silently rewrite.
+  const macroCalories = data.protein * 4 + data.carbs * 4 + data.fat * 9;
+  if (data.calories > 0 && (macroCalories > data.calories * 1.5 || macroCalories < data.calories * 0.5)) {
+    (data as any).arithmetic_review_needed = true;
+  }
+
+  return data;
+}
 }
 
 type CacheEntry = {
@@ -1168,7 +1358,7 @@ serve(async (req) => {
     ]);
     let data: MealResult;
     try {
-      data = validator.validate(await chain.parse(context));
+      data = applyModifiers(validator.validate(await chain.parse(context)));
     } catch (chainErr) {
       // Chain failed after quota was reserved — refund the credit
       // so a server-side error doesn't consume the user's daily parse.
