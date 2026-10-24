@@ -967,6 +967,17 @@ interface RevalidatedCacheItems {
   legacyOilTerms: Set<string>;
 }
 
+function modifierContextConflicts(cachedItems: ResolvedItem[], rawText: string): boolean {
+  const currentItems = applyModifierContext(
+    splitIntoItems(normalizeInput(rawText)),
+    extractModifierContext(rawText),
+  );
+  return cachedItems.some((cached, index) => {
+    const currentBasis = currentItems[index]?.weight_basis_hint ?? 'unknown';
+    return cached.weight_basis !== currentBasis;
+  });
+}
+
 async function revalidateItems(
   cachedItems: ResolvedItem[],
   db: ResolverDb,
@@ -1101,11 +1112,18 @@ async function tryMemory(
   normalizedText: string,
   db: ResolverDb,
   config: ResolverConfig,
+  rawText: string,
 ): Promise<RevalidatedCacheItems | null> {
   const entry = await db.getMemoryEntry(userId, normalizedText);
   if (!entry) return null;
   const revalidated = await revalidateItems(entry.items, db, config);
   if (!revalidated) return null;
+
+  // Modifier clauses are stripped from the cache key, so compare cached basis
+  // with the current raw input before accepting a memory hit.
+  const hasConflict = modifierContextConflicts(revalidated.items, rawText);
+  if (hasConflict) return null;
+
   // Rewrite layer to 'memory' so the ambiguity overlay re-checks these
   // items (Phase 6.7 — closes a04 gap).
   return {
@@ -1277,13 +1295,14 @@ export async function resolve(
     return finalize({
       items, unresolved, layersUsed, startMs, config, db,
       userId: input.userId, normalizedText, fromMemory: false, ambiguousTerms,
+      rawText: input.rawText,
       additionalAssumptions: oilAssumptions,
     });
   }
 
   // ---- Layer 1: memory --------------------------------------------------
   if (config.memoryReadEnabled) {
-    const memoryHit = await tryMemory(input.userId, normalizedText, db, config);
+    const memoryHit = await tryMemory(input.userId, normalizedText, db, config, input.rawText);
     if (memoryHit) {
       layersUsed.add('memory');
       const oilAdjusted = applyOilContext(memoryHit.items, oilContext, memoryHit.legacyOilTerms);
@@ -1293,6 +1312,7 @@ export async function resolve(
       return finalize({
         items: oiled, unresolved: [], layersUsed, startMs, config, db,
         userId: input.userId, normalizedText, fromMemory: true, ambiguousTerms,
+        rawText: input.rawText,
         additionalAssumptions: oilAdjusted.assumptions,
       });
     }
@@ -1309,6 +1329,7 @@ export async function resolve(
     return finalize({
       items: oiled, unresolved: [], layersUsed, startMs, config, db,
       userId: input.userId, normalizedText, fromMemory: false, ambiguousTerms,
+      rawText: input.rawText,
       additionalAssumptions: oilAdjusted.assumptions,
     });
   }
@@ -1325,6 +1346,7 @@ export async function resolve(
   return finalize({
     items, unresolved, layersUsed, startMs, config, db,
     userId: input.userId, normalizedText, fromMemory: false, ambiguousTerms,
+    rawText: input.rawText,
     additionalAssumptions: oilAssumptions,
   });
 }
@@ -1342,6 +1364,7 @@ interface FinalizeInput {
   db: ResolverDb;
   userId: string;
   normalizedText: string;
+  rawText: string;
   fromMemory: boolean;
   ambiguousTerms: ReadonlySet<string>;
   additionalAssumptions?: string[];
