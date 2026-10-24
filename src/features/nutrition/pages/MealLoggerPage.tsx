@@ -80,6 +80,39 @@ const getDeterministicFallback = (text: string) => {
   return { calories, protein, fat, carbs, confidence: foundMatch ? 80 : 30, foods_detected: detected, coaching_tip: "Stay consistent with your portions to hit your goals." };
 };
 
+function getMealNutritionValues(data: {
+  calories: number;
+  protein: number;
+  fat: number;
+  carbs: number;
+  fiber?: number | null;
+  _userEdited?: boolean;
+}) {
+  if (data._userEdited) {
+    return {
+      calories: data.calories,
+      protein: data.protein,
+      fat: data.fat,
+      carbs: data.carbs,
+      fiber: data.fiber ?? 0,
+    };
+  }
+
+  return {
+    calories: Math.round(data.calories),
+    protein: Math.round(data.protein),
+    fat: Math.round(data.fat),
+    carbs: Math.round(data.carbs),
+    fiber: data.fiber ? Math.round(data.fiber) : undefined,
+  };
+}
+
+function sentenceCaseAssumption(assumption: string): string {
+  const normalized = assumption.trim().toLowerCase();
+  return normalized.replace(/^([^a-z]*)([a-z])/, (_match, prefix: string, letter: string) =>
+    prefix + letter.toUpperCase());
+}
+
 // ── SLOT ROW — used in the persistent summary ─────────────────────────────
 function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete, onEdit }: { slot: string; icon: React.ReactNode; label: string; timeRange: string; meals: any[], onDelete: (id: string) => void; onEdit: (meal: any) => void }) {
   const [expanded, setExpanded] = useState(false);
@@ -348,6 +381,7 @@ export function MealLoggerPage() {
     items: Array<{
       food_id: number | null;
       canonical_name: string;
+      input_term: string;
       grams: number;
       kcal: number;
       protein: number;
@@ -356,7 +390,11 @@ export function MealLoggerPage() {
       fiber: number;
       unit: string | null;
       quantity: number;
+      weight_basis: 'raw' | 'cooked' | 'finished' | 'unknown';
+      quantity_source: 'user_provided' | 'portion_reference' | 'default_assumption' | 'ai_estimated';
+      oil_review_needed: boolean;
     }>;
+    assumptions?: string[];
     unresolved_items: Array<{
       input_term: string;
       quantity: number;
@@ -369,6 +407,10 @@ export function MealLoggerPage() {
     source?: string;
     request_id?: string;
     was_ambiguous?: boolean;
+    oil_review_needed?: boolean;
+    weight_basis_review_needed?: boolean;
+    plausibility_review_needed?: boolean;
+    arithmetic_review_needed?: boolean;
     kb_confidence?: number;
     ai_used?: boolean;
   };
@@ -985,7 +1027,9 @@ export function MealLoggerPage() {
       // Partial resolution → transparent fall-through to parse-meal.
       // Loading and submitting-ref stay true — parseMealMutation's own
       // handlers clear them when the AI path settles.
-      if (data.unresolved_items.length > 0) {
+      const unresolved = data.unresolved_items ?? [];
+      const allQualifierOnly = isQualifierOnly(unresolved);
+      if (unresolved.length > 0 && !allQualifierOnly) {
         parseMealMutation.mutate(text);
         return;
       }
@@ -1000,6 +1044,17 @@ export function MealLoggerPage() {
         creditsConsumed: false,
         lowConfidence: data.meal_confidence < 0.8,
         was_ambiguous: data.was_ambiguous === true,
+        assumptions: Array.isArray(data.assumptions) ? data.assumptions : undefined,
+        oil_review_needed: data.oil_review_needed === true ||
+          data.items.some((item) => item.oil_review_needed),
+        weight_basis_review_needed: data.weight_basis_review_needed === true,
+        plausibility_review_needed: data.plausibility_review_needed === true,
+        arithmetic_review_needed: data.arithmetic_review_needed === true,
+        items: data.items.map((item) => ({
+          food_name: item.canonical_name || item.input_term,
+          weight_basis: item.weight_basis,
+          quantity_source: item.quantity_source,
+        })),
       });
     },
     onError: (_err, text) => {
@@ -1019,11 +1074,7 @@ export function MealLoggerPage() {
 
       const mealData = {
         meal_text: text,
-        calories: Math.round(data.calories),
-        protein: Math.round(data.protein),
-        fat: Math.round(data.fat),
-        carbs: Math.round(data.carbs),
-        fiber: data.fiber ? Math.round(data.fiber) : undefined,
+        ...getMealNutritionValues(data),
         meal_time: getMealTime().toISOString(),
         tip: data.tip || data.foods_detected?.join(', ') || text,
         meal_slot: finalSlot,
@@ -1054,11 +1105,7 @@ export function MealLoggerPage() {
       const newMealObj = {
         id: 'temp-' + Date.now(),
         meal_text: text,
-        calories: Math.round(data.calories),
-        protein: Math.round(data.protein),
-        fat: Math.round(data.fat),
-        carbs: Math.round(data.carbs),
-        fiber: data.fiber ? Math.round(data.fiber) : undefined,
+        ...getMealNutritionValues(data),
         meal_slot: finalSlot,
         meal_source: source || 'ai',
         _localOnly: true
@@ -1474,7 +1521,12 @@ export function MealLoggerPage() {
                           className="bg-[rgba(255,255,255,0.02)] border-[0.5px] border-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.85)] rounded-[24px] rounded-tl-sm max-w-[90%] self-start p-[12px_16px] text-[14px] leading-relaxed"
                         >
                           <div className="font-semibold text-white mb-2">Here is the estimated nutrition. Would you like to log this?</div>
-                          {pendingMeal.lowConfidence && !pendingMeal.was_ambiguous && (
+                          {pendingMeal.lowConfidence &&
+                            !pendingMeal.was_ambiguous &&
+                            !pendingMeal.arithmetic_review_needed &&
+                            !pendingMeal.weight_basis_review_needed &&
+                            !pendingMeal.oil_review_needed &&
+                            !pendingMeal.plausibility_review_needed && (
                             <div className="mb-3 flex items-start gap-2 rounded-xl border border-[rgba(255,179,71,0.25)] bg-[rgba(255,179,71,0.08)] p-2.5 text-[12px] leading-relaxed text-[#FFB347]">
                               <AlertTriangle size={14} className="mt-0.5 shrink-0" />
                               <span>Low confidence — please review the values before logging.</span>
@@ -1513,7 +1565,7 @@ export function MealLoggerPage() {
                             if (maxSeverity === 'medium') {
                               const message =
                                 pendingMeal.oil_review_needed
-                                  ? 'Dish profile includes oil. If you truly added none, tap Edit and adjust fat.'
+                                  ? "This dish's profile includes cooking oil. If you truly added none, tap Edit and adjust the fat value."
                                   : 'Portion or macros look unusual. Please verify.';
                               return (
                                 <div className="mb-3 flex items-start gap-2 rounded-xl border border-[rgba(255,179,71,0.25)] bg-[rgba(255,179,71,0.08)] p-2.5 text-[12px] leading-relaxed text-[#FFB347]">
@@ -1539,7 +1591,7 @@ export function MealLoggerPage() {
                                   item.quantity_source === 'user_provided' ? 'You entered'
                                     : item.quantity_source === 'ai_estimated' ? 'AI estimated'
                                       : item.quantity_source === 'default_assumption' ? 'Default portion'
-                                        : 'Portion ref';
+                                        : 'Portion reference';
                                 const sourceIsAssumed =
                                   item.quantity_source === 'ai_estimated' ||
                                   item.quantity_source === 'default_assumption';
@@ -1564,21 +1616,27 @@ export function MealLoggerPage() {
                           )}
 
                           {/* Assumption list — only render if assumptions present */}
-                          {pendingMeal.assumptions && pendingMeal.assumptions.length > 0 && (
-                            <div className="mb-3 flex flex-col gap-1.5">
-                              {pendingMeal.assumptions.map((a, i) => (
-                                <div
-                                  key={i}
-                                  className="flex items-start gap-2 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-2.5 py-2"
-                                >
-                                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 shrink-0 mt-0.5">
-                                    Assumed
-                                  </span>
-                                  <span className="text-[12px] text-zinc-300 leading-snug">{a}</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                          {(() => {
+                            const assumptions = (pendingMeal.assumptions ?? [])
+                              .filter((assumption) => assumption.trim().length > 0)
+                              .slice(0, 3)
+                              .map(sentenceCaseAssumption);
+                            return assumptions.length > 0 ? (
+                              <div className="mb-3 flex flex-col gap-1.5">
+                                {assumptions.map((a, i) => (
+                                  <div
+                                    key={i}
+                                    className="flex items-start gap-2 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-2.5 py-2"
+                                  >
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 shrink-0 mt-0.5">
+                                      Assumed
+                                    </span>
+                                    <span className="text-[12px] text-zinc-300 leading-snug">{a}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : null;
+                          })()}
 
                           <div className="flex gap-[6px] flex-wrap mb-[12px]">
                             <span className="text-[10px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">~{pendingMeal.data.calories} kcal</span>
