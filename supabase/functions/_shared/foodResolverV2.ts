@@ -1379,9 +1379,14 @@ async function finalize(input: FinalizeInput): Promise<ResolverResult> {
   const totals = aggregate(items);
   const assumptions = items.flatMap((item) => {
     const { assumption } = inferWeightBasis(item.weight_basis, item.input_term);
-    return assumption ? [assumption] : [];
+    if (assumption && shouldEmitBasisAssumption(item.category)) {
+      return [assumption];
+    }
+    return [];
   });
   assumptions.push(...(input.additionalAssumptions ?? []));
+  const qualifierAssumption = buildQualifierAssumption(input.rawText, items);
+  if (qualifierAssumption) assumptions.push(qualifierAssumption);
   for (const item of items) {
     if (item.quantity_source === 'default_assumption') {
       assumptions.push(
@@ -1446,4 +1451,49 @@ async function finalize(input: FinalizeInput): Promise<ResolverResult> {
     kb_confidence: meal_kb_confidence,
     ai_used: false,
   };
+}
+
+const QUALIFIER_TOKENS = new Set([
+  'total',
+  'each',
+  'each one',
+  'approximately',
+  'approx',
+  'half',
+]);
+
+function detectQualifierClauses(rawText: string): ReadonlySet<string> {
+  const found = new Set<string>();
+  for (const token of QUALIFIER_TOKENS) {
+    const escapedToken = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (new RegExp(`\\b${escapedToken}\\b`, 'i').test(rawText)) {
+      found.add(token);
+    }
+  }
+  return found;
+}
+
+function buildQualifierAssumption(rawText: string, items: ResolvedItem[]): string | null {
+  const qualifiers = detectQualifierClauses(rawText);
+  if (qualifiers.has('each') || qualifiers.has('each one')) {
+    return 'Noted "each" instruction; used default portions for this meal.';
+  }
+  if (qualifiers.has('total')) {
+    const specified = rawText.match(/\b(\d+(?:\.\d+)?)\s*(?:g|grams?)\s*total\b/i);
+    if (!specified || items.length === 0) return null;
+    const specifiedGrams = Number(specified[1]);
+    const estimatedGrams = items.reduce((sum, item) => sum + item.grams, 0);
+    const diff = Math.abs(specifiedGrams - estimatedGrams);
+    if (diff <= 1) {
+      return `Total weight of ${specifiedGrams}g matches the estimated portion total.`;
+    }
+    return `You specified ${specifiedGrams}g total, but this estimate uses default portions totaling ${estimatedGrams}g. Tap Edit to adjust.`;
+  }
+  if (qualifiers.has('approximately') || qualifiers.has('approx')) {
+    return 'Noted approximate quantity instruction; used default portions.';
+  }
+  if (qualifiers.has('half')) {
+    return 'Noted half-portion instruction; used default portions.';
+  }
+  return null;
 }
