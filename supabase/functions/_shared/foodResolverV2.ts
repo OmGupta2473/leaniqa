@@ -443,6 +443,25 @@ const NON_FOOD_CONTEXT_PATTERNS = [
   /\b(?:no\s+(?:added\s+)?oil|without\s+(?:added\s+)?oil|no\s+ghee|without\s+ghee|oil[- ]?free)\b/gi,
 ];
 
+const BASIS_SENSITIVE_CATEGORIES = new Set([
+  'rice',
+  'dal',
+  'legume',
+  'vegetable',
+  'paneer',
+  'nonveg',
+  'egg',
+  // 'grain' is included because rice is categorized as grain in existing
+  // data/tests. Raw-vs-cooked materially changes rice macros.
+  'grain',
+]);
+
+function shouldEmitBasisAssumption(category: string | null): boolean {
+  if (!category) return false;
+  const lower = category.toLowerCase().trim();
+  return BASIS_SENSITIVE_CATEGORIES.has(lower);
+}
+
 function stripNonFoodContextClauses(s: string): string {
   let out = s;
   for (const pattern of NON_FOOD_CONTEXT_PATTERNS) {
@@ -948,6 +967,17 @@ interface RevalidatedCacheItems {
   legacyOilTerms: Set<string>;
 }
 
+function modifierContextConflicts(cachedItems: ResolvedItem[], rawText: string): boolean {
+  const currentItems = applyModifierContext(
+    splitIntoItems(normalizeInput(rawText)),
+    extractModifierContext(rawText),
+  );
+  return cachedItems.some((cached, index) => {
+    const currentBasis = currentItems[index]?.weight_basis_hint ?? 'unknown';
+    return cached.weight_basis !== currentBasis;
+  });
+}
+
 async function revalidateItems(
   cachedItems: ResolvedItem[],
   db: ResolverDb,
@@ -1082,11 +1112,18 @@ async function tryMemory(
   normalizedText: string,
   db: ResolverDb,
   config: ResolverConfig,
+  rawText: string,
 ): Promise<RevalidatedCacheItems | null> {
   const entry = await db.getMemoryEntry(userId, normalizedText);
   if (!entry) return null;
   const revalidated = await revalidateItems(entry.items, db, config);
   if (!revalidated) return null;
+
+  // Modifier clauses are stripped from the cache key, so compare cached basis
+  // with the current raw input before accepting a memory hit.
+  const hasConflict = modifierContextConflicts(revalidated.items, rawText);
+  if (hasConflict) return null;
+
   // Rewrite layer to 'memory' so the ambiguity overlay re-checks these
   // items (Phase 6.7 — closes a04 gap).
   return {
@@ -1258,13 +1295,14 @@ export async function resolve(
     return finalize({
       items, unresolved, layersUsed, startMs, config, db,
       userId: input.userId, normalizedText, fromMemory: false, ambiguousTerms,
+      rawText: input.rawText,
       additionalAssumptions: oilAssumptions,
     });
   }
 
   // ---- Layer 1: memory --------------------------------------------------
   if (config.memoryReadEnabled) {
-    const memoryHit = await tryMemory(input.userId, normalizedText, db, config);
+    const memoryHit = await tryMemory(input.userId, normalizedText, db, config, input.rawText);
     if (memoryHit) {
       layersUsed.add('memory');
       const oilAdjusted = applyOilContext(memoryHit.items, oilContext, memoryHit.legacyOilTerms);
@@ -1274,6 +1312,7 @@ export async function resolve(
       return finalize({
         items: oiled, unresolved: [], layersUsed, startMs, config, db,
         userId: input.userId, normalizedText, fromMemory: true, ambiguousTerms,
+        rawText: input.rawText,
         additionalAssumptions: oilAdjusted.assumptions,
       });
     }
@@ -1290,6 +1329,7 @@ export async function resolve(
     return finalize({
       items: oiled, unresolved: [], layersUsed, startMs, config, db,
       userId: input.userId, normalizedText, fromMemory: false, ambiguousTerms,
+      rawText: input.rawText,
       additionalAssumptions: oilAdjusted.assumptions,
     });
   }
@@ -1306,6 +1346,7 @@ export async function resolve(
   return finalize({
     items, unresolved, layersUsed, startMs, config, db,
     userId: input.userId, normalizedText, fromMemory: false, ambiguousTerms,
+    rawText: input.rawText,
     additionalAssumptions: oilAssumptions,
   });
 }
@@ -1323,6 +1364,7 @@ interface FinalizeInput {
   db: ResolverDb;
   userId: string;
   normalizedText: string;
+  rawText: string;
   fromMemory: boolean;
   ambiguousTerms: ReadonlySet<string>;
   additionalAssumptions?: string[];
@@ -1337,9 +1379,14 @@ async function finalize(input: FinalizeInput): Promise<ResolverResult> {
   const totals = aggregate(items);
   const assumptions = items.flatMap((item) => {
     const { assumption } = inferWeightBasis(item.weight_basis, item.input_term);
-    return assumption ? [assumption] : [];
+    if (assumption && shouldEmitBasisAssumption(item.category)) {
+      return [assumption];
+    }
+    return [];
   });
   assumptions.push(...(input.additionalAssumptions ?? []));
+  const qualifierAssumption = buildQualifierAssumption(input.rawText, items);
+  if (qualifierAssumption) assumptions.push(qualifierAssumption);
   for (const item of items) {
     if (item.quantity_source === 'default_assumption') {
       assumptions.push(
@@ -1404,4 +1451,49 @@ async function finalize(input: FinalizeInput): Promise<ResolverResult> {
     kb_confidence: meal_kb_confidence,
     ai_used: false,
   };
+}
+
+const QUALIFIER_TOKENS = new Set([
+  'total',
+  'each',
+  'each one',
+  'approximately',
+  'approx',
+  'half',
+]);
+
+function detectQualifierClauses(rawText: string): ReadonlySet<string> {
+  const found = new Set<string>();
+  for (const token of QUALIFIER_TOKENS) {
+    const escapedToken = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (new RegExp(`\\b${escapedToken}\\b`, 'i').test(rawText)) {
+      found.add(token);
+    }
+  }
+  return found;
+}
+
+function buildQualifierAssumption(rawText: string, items: ResolvedItem[]): string | null {
+  const qualifiers = detectQualifierClauses(rawText);
+  if (qualifiers.has('each') || qualifiers.has('each one')) {
+    return 'Noted "each" instruction; used default portions for this meal.';
+  }
+  if (qualifiers.has('total')) {
+    const specified = rawText.match(/\b(\d+(?:\.\d+)?)\s*(?:g|grams?)\s*total\b/i);
+    if (!specified || items.length === 0) return null;
+    const specifiedGrams = Number(specified[1]);
+    const estimatedGrams = items.reduce((sum, item) => sum + item.grams, 0);
+    const diff = Math.abs(specifiedGrams - estimatedGrams);
+    if (diff <= 1) {
+      return `Total weight of ${specifiedGrams}g matches the estimated portion total.`;
+    }
+    return `You specified ${specifiedGrams}g total, but this estimate uses default portions totaling ${estimatedGrams}g. Tap Edit to adjust.`;
+  }
+  if (qualifiers.has('approximately') || qualifiers.has('approx')) {
+    return 'Noted approximate quantity instruction; used default portions.';
+  }
+  if (qualifiers.has('half')) {
+    return 'Noted half-portion instruction; used default portions.';
+  }
+  return null;
 }

@@ -24,6 +24,7 @@ import { SmoothInput } from "@/shared/components/SmoothInput";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useDailyNutrition } from "@/features/nutrition/hooks/useDailyNutrition";
 import { onMealSaved } from "@/features/nutrition/utils/mealSync";
+import { isQualifierOnly } from "@/features/nutrition/utils/qualifierDetect";
 import { mealService } from "../services/mealService";
 import { fetchTodayMessages, saveMessage } from '../services/chatService';
 import { profileService } from "@/features/profile/services/profileService";
@@ -867,6 +868,16 @@ export function MealLoggerPage() {
         }
       } else {
         setRetryCount(0);
+
+        // F2 frontend: qualifier-only fallback filter
+        if (
+          data.unresolved_items?.length > 0 &&
+          !isQualifierOnly(data.unresolved_items)
+        ) {
+          parseMealMutation.mutate(text);
+          return;
+        }
+
         analytics.trackEvent('Meal Parse Analytics', eventData);
         analytics.trackEvent('AI Parse Success', {
           confidence: data.confidence,
