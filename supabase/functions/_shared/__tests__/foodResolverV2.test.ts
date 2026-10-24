@@ -600,6 +600,59 @@ describe('foodResolverV2 ? non-food modifier clauses', () => {
     expect(result.items[0].quantity_source).toBe('user_provided');
   });
 
+  it('matches a specified total weight to estimated portions', async () => {
+    const result = await resolve(
+      { userId: TEST_USER, rawText: '2 rotis, 80g total', mealType: 'lunch' },
+      setupQualifierDb(),
+      TEST_CONFIG,
+    );
+
+    expect(result.items[0].grams).toBe(80);
+    expect(result.unresolved_items.some((item) => item.input_term === 'total')).toBe(true);
+    expect(result.assumptions).toContain(
+      'Total weight of 80g matches the estimated portion total.',
+    );
+  });
+
+  it('accepts a specified total weight within 1g of estimated portions', async () => {
+    const result = await resolve(
+      { userId: TEST_USER, rawText: '2 rotis, 81g total', mealType: 'lunch' },
+      setupQualifierDb(),
+      TEST_CONFIG,
+    );
+
+    expect(result.items[0].grams).toBe(80);
+    expect(result.assumptions).toContain(
+      'Total weight of 81g matches the estimated portion total.',
+    );
+  });
+
+  it('reports a specified total weight that differs from estimated portions', async () => {
+    const result = await resolve(
+      { userId: TEST_USER, rawText: '2 rotis, 100g total', mealType: 'lunch' },
+      setupQualifierDb(),
+      TEST_CONFIG,
+    );
+
+    expect(result.items[0].grams).toBe(80);
+    expect(result.unresolved_items.some((item) => item.input_term === 'total')).toBe(true);
+    expect(result.assumptions).toContain(
+      'You specified 100g total, but this estimate uses default portions totaling 80g. Tap Edit to adjust.',
+    );
+  });
+
+  it('adds an assumption for a generic each qualifier', async () => {
+    const result = await resolve(
+      { userId: TEST_USER, rawText: '2 rotis, each', mealType: 'lunch' },
+      setupQualifierDb(),
+      TEST_CONFIG,
+    );
+
+    expect(result.assumptions).toContain(
+      'Noted "each" instruction; used default portions for this meal.',
+    );
+  });
+
   it('marks explicit grams as user provided', async () => {
     const r = await resolve(
       { userId: TEST_USER, rawText: '150g raw chicken breast', mealType: 'lunch' },
