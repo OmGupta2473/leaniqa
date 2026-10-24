@@ -88,6 +88,19 @@ class FakeDb implements ResolverDb {
   }
   async upsertMemoryEntry(userId: string, normalizedText: string, entry: MemoryWrite): Promise<void> {
     this.memoryWrites.push(entry);
+    const key = `${userId}:${normalizedText}`;
+    const previous = this.memory.get(key);
+    this.memory.set(key, {
+      user_id: userId,
+      normalized_text: normalizedText,
+      items: entry.items,
+      total_kcal: entry.total_kcal,
+      total_protein: entry.total_protein,
+      total_fat: entry.total_fat,
+      total_carbs: entry.total_carbs,
+      uses: (previous?.uses ?? 0) + 1,
+      last_used_at: new Date().toISOString(),
+    });
   }
   async getPopularMeal(): Promise<PopularMealRow | null> { return null; }
   async getFoodPortions(foodId: number): Promise<FoodPortionRow[]> {
@@ -435,6 +448,102 @@ describe('foodResolverV2 ? non-food modifier clauses', () => {
     return db;
   }
 
+  function setupQualifierDb(): FakeDb {
+    const db = setupDb();
+    db.aliases.set('rotis', {
+      alias: 'rotis',
+      food_id: 5,
+      portion_grams: null,
+      portion_unit: null,
+      confidence: 0.95,
+    });
+    return db;
+  }
+
+  it('self-heals modifier cache from finished basis to unknown basis', async () => {
+    const db = setupModifierDb();
+    const chicken = db.foods.get(102)!;
+    db.foods.set(102, { ...chicken, oil_included: false });
+    const config = { ...TEST_CONFIG, memoryReadEnabled: true };
+    const key = `${TEST_USER}:150g chicken breast`;
+
+    const first = await resolve(
+      {
+        userId: TEST_USER,
+        rawText: '150g chicken breast weighed after air frying, no oil',
+        mealType: 'lunch',
+      },
+      db,
+      config,
+    );
+    expect(first.items[0].weight_basis).toBe('finished');
+
+    const second = await resolve(
+      { userId: TEST_USER, rawText: '150g chicken breast', mealType: 'lunch' },
+      db,
+      config,
+    );
+    expect(second.metadata.memory_hit).toBe(false);
+    expect(second.items[0].weight_basis).toBe('unknown');
+    expect(db.memory.get(key)?.items[0].weight_basis).toBe('unknown');
+
+    const third = await resolve(
+      { userId: TEST_USER, rawText: '150g chicken breast', mealType: 'lunch' },
+      db,
+      config,
+    );
+    expect(third.metadata.memory_hit).toBe(true);
+    expect(third.items[0].weight_basis).toBe('unknown');
+  });
+
+  it('self-heals modifier cache symmetrically from unknown to finished basis', async () => {
+    const db = setupModifierDb();
+    const chicken = db.foods.get(102)!;
+    db.foods.set(102, { ...chicken, oil_included: false });
+    const config = { ...TEST_CONFIG, memoryReadEnabled: true };
+
+    const first = await resolve(
+      { userId: TEST_USER, rawText: '150g chicken breast', mealType: 'lunch' },
+      db,
+      config,
+    );
+    expect(first.items[0].weight_basis).toBe('unknown');
+
+    const modifiedText = '150g chicken breast weighed after air frying, no oil';
+    const second = await resolve(
+      { userId: TEST_USER, rawText: modifiedText, mealType: 'lunch' },
+      db,
+      config,
+    );
+    expect(second.metadata.memory_hit).toBe(false);
+    expect(second.items[0].weight_basis).toBe('finished');
+
+    const third = await resolve(
+      { userId: TEST_USER, rawText: modifiedText, mealType: 'lunch' },
+      db,
+      config,
+    );
+    expect(third.metadata.memory_hit).toBe(true);
+    expect(third.items[0].weight_basis).toBe('finished');
+  });
+
+  it('still serves an unchanged roti meal from memory', async () => {
+    const db = setupDb();
+    const config = { ...TEST_CONFIG, memoryReadEnabled: true };
+    await resolve(
+      { userId: TEST_USER, rawText: '2 roti', mealType: 'lunch' },
+      db,
+      config,
+    );
+    const second = await resolve(
+      { userId: TEST_USER, rawText: '2 roti', mealType: 'lunch' },
+      db,
+      config,
+    );
+
+    expect(second.metadata.memory_hit).toBe(true);
+  });
+
   it('re-resolves a stale cached item missing new fields', async () => {
     const db = setupModifierDb();
     const staleItem = {
@@ -489,6 +598,59 @@ describe('foodResolverV2 ? non-food modifier clauses', () => {
     expect(result.items[0].food_id).toBe(103);
     expect(result.items[0].weight_basis).toBe('raw');
     expect(result.items[0].quantity_source).toBe('user_provided');
+  });
+
+  it('matches a specified total weight to estimated portions', async () => {
+    const result = await resolve(
+      { userId: TEST_USER, rawText: '2 rotis, 80g total', mealType: 'lunch' },
+      setupQualifierDb(),
+      TEST_CONFIG,
+    );
+
+    expect(result.items[0].grams).toBe(80);
+    expect(result.unresolved_items.some((item) => item.input_term === 'total')).toBe(true);
+    expect(result.assumptions).toContain(
+      'Total weight of 80g matches the estimated portion total.',
+    );
+  });
+
+  it('accepts a specified total weight within 1g of estimated portions', async () => {
+    const result = await resolve(
+      { userId: TEST_USER, rawText: '2 rotis, 81g total', mealType: 'lunch' },
+      setupQualifierDb(),
+      TEST_CONFIG,
+    );
+
+    expect(result.items[0].grams).toBe(80);
+    expect(result.assumptions).toContain(
+      'Total weight of 81g matches the estimated portion total.',
+    );
+  });
+
+  it('reports a specified total weight that differs from estimated portions', async () => {
+    const result = await resolve(
+      { userId: TEST_USER, rawText: '2 rotis, 100g total', mealType: 'lunch' },
+      setupQualifierDb(),
+      TEST_CONFIG,
+    );
+
+    expect(result.items[0].grams).toBe(80);
+    expect(result.unresolved_items.some((item) => item.input_term === 'total')).toBe(true);
+    expect(result.assumptions).toContain(
+      'You specified 100g total, but this estimate uses default portions totaling 80g. Tap Edit to adjust.',
+    );
+  });
+
+  it('adds an assumption for a generic each qualifier', async () => {
+    const result = await resolve(
+      { userId: TEST_USER, rawText: '2 rotis, each', mealType: 'lunch' },
+      setupQualifierDb(),
+      TEST_CONFIG,
+    );
+
+    expect(result.assumptions).toContain(
+      'Noted "each" instruction; used default portions for this meal.',
+    );
   });
 
   it('marks explicit grams as user provided', async () => {
@@ -721,6 +883,17 @@ describe('foodResolverV2 ? non-food modifier clauses', () => {
     );
     expect(r.items[0].weight_basis).toBe('unknown');
     expect(r.assumptions).toContain('Assumed cooked weight for rice.');
+  });
+
+  it('does not assume cooked weight for roti', async () => {
+    const r = await resolve(
+      { userId: TEST_USER, rawText: '2 roti', mealType: 'lunch' },
+      setupDb(),
+      TEST_CONFIG,
+    );
+
+    expect(r.items[0].weight_basis).toBe('unknown');
+    expect(r.assumptions?.some((text) => /Assumed cooked weight/i.test(text)) ?? false).toBe(false);
   });
 
   it('uses pre-strip context for a detached air-frying modifier', async () => {
