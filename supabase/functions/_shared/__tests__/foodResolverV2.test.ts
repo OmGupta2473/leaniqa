@@ -627,15 +627,100 @@ describe('foodResolverV2 ? non-food modifier clauses', () => {
     );
   });
 
-  it('reports a specified total weight that differs from estimated portions', async () => {
+  it('rescales one portion-reference item to the specified total weight', async () => {
+    const db = setupQualifierDb();
     const result = await resolve(
       { userId: TEST_USER, rawText: '2 rotis, 100g total', mealType: 'lunch' },
+      db,
+      TEST_CONFIG,
+    );
+
+    expect(result.items[0].grams).toBe(100);
+    expect(result.items[0].kcal).toBe(298);
+    expect(result.items[0].protein).toBe(11);
+    expect(result.items[0].fat).toBe(5);
+    expect(result.items[0].carbs).toBe(51);
+    expect(result.items[0].fiber).toBe(4.9);
+    expect(result.totals.kcal).toBe(298);
+    expect(result.unresolved_items.some((item) => item.input_term === 'total')).toBe(true);
+    expect(result.assumptions).toContain(
+      'Scaled 2 rotis from 80g (KB portion) to your stated 100g total.',
+    );
+    expect(result.assumptions).not.toContain(
+      'You specified 100g total, but this estimate uses default portions totaling 80g. Tap Edit to adjust.',
+    );
+    expect(db.memoryWrites).toHaveLength(0);
+  });
+
+  it('does not rescale a total shared by multiple resolved items', async () => {
+    const db = setupQualifierDb();
+    db.foods.set(90, makeFood({
+      id: 90,
+      canonical_name: 'rice',
+      category: 'grain',
+      default_portion_grams: 150,
+      default_portion_label: '1 bowl',
+    }));
+    db.portions.set(90, [
+      { unit: 'bowl', grams: 150, is_default: true, confidence: 1 },
+    ]);
+
+    const result = await resolve(
+      { userId: TEST_USER, rawText: '2 rotis and 1 bowl rice, 100g total', mealType: 'lunch' },
+      db,
+      TEST_CONFIG,
+    );
+
+    expect(result.items).toHaveLength(2);
+    expect(result.items.map((item) => item.grams)).toEqual([80, 150]);
+    expect(result.assumptions).toContain(
+      'You specified 100g total, but this estimate uses default portions totaling 230g. Tap Edit to adjust.',
+    );
+    expect(result.assumptions?.some((assumption) => assumption.startsWith('Scaled '))).toBe(false);
+  });
+
+  it('does not rescale an ambiguous item to the specified total weight', async () => {
+    const result = await resolve(
+      { userId: TEST_USER, rawText: '1 bowl dal, 200g total', mealType: 'lunch' },
+      setupDb(),
+      TEST_CONFIG,
+    );
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].was_ambiguous).toBe(true);
+    expect(result.items[0].grams).toBe(150);
+    expect(result.assumptions).toContain(
+      'You specified 200g total, but this estimate uses default portions totaling 150g. Tap Edit to adjust.',
+    );
+  });
+
+  it('does not rescale when an explicit cooked basis is present', async () => {
+    const result = await resolve(
+      { userId: TEST_USER, rawText: '2 cooked rotis, 100g total', mealType: 'lunch' },
       setupQualifierDb(),
       TEST_CONFIG,
     );
 
+    expect(result.items[0].weight_basis).toBe('cooked');
     expect(result.items[0].grams).toBe(80);
-    expect(result.unresolved_items.some((item) => item.input_term === 'total')).toBe(true);
+    expect(result.assumptions).toContain(
+      'You specified 100g total, but this estimate uses default portions totaling 80g. Tap Edit to adjust.',
+    );
+  });
+
+  it('does not rescale when the item needs oil review', async () => {
+    const db = setupQualifierDb();
+    const roti = db.foods.get(5)!;
+    db.foods.set(5, { ...roti, oil_included: true });
+
+    const result = await resolve(
+      { userId: TEST_USER, rawText: '2 rotis, no oil, 100g total', mealType: 'lunch' },
+      db,
+      TEST_CONFIG,
+    );
+
+    expect(result.items[0].oil_review_needed).toBe(true);
+    expect(result.items[0].grams).toBe(80);
     expect(result.assumptions).toContain(
       'You specified 100g total, but this estimate uses default portions totaling 80g. Tap Edit to adjust.',
     );
