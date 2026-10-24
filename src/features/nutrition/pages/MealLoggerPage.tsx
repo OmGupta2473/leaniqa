@@ -1,6 +1,6 @@
 import React from 'react';
 import { PerfProfiler } from '@/shared/utils/perfDebug';
-import {  useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
 import { createPortal } from "react-dom";
 import { AmbiguityIndicator } from '../components/AmbiguityIndicator';
 import '../components/ambiguityIndicator.css';
@@ -9,8 +9,9 @@ import { useNavigate } from "react-router-dom";
 import { useChatStore } from "@/app/store";
 import { useNutritionStore } from "../store/nutritionStore";
 import {
-  Send, Loader2, Dumbbell, Lightbulb, Sun, Sunrise, Moon, Coffee, Plus, X, ChevronLeft, ChevronRight, ArrowRight, ChevronDown, 
- Zap, AlertTriangle, Pencil, Lock } from "lucide-react";
+  Send, Loader2, Dumbbell, Lightbulb, Sun, Sunrise, Moon, Coffee, Plus, X, ChevronLeft, ChevronRight, ArrowRight, ChevronDown,
+  Zap, AlertTriangle, Pencil, Lock
+} from "lucide-react";
 import { EmptyState } from '@/shared/components/EmptyState';
 import { CustomMealModal } from '../components/CustomMealModal';
 import { AiLimitNudge } from '../components/AiLimitNudge';
@@ -86,73 +87,73 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete, onEdit }: 
   const pro = meals.reduce((s, m) => s + m.protein, 0);
   return (
     <PerfProfiler id="MealLoggerPage">
-      <motion.div 
+      <motion.div
         layout
         className="mb-4 overflow-hidden rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] shadow-sm backdrop-blur-xl transition-all duration-300 hover:bg-[rgba(255,255,255,0.05)]"
       >
-      <div className="p-5 flex items-center justify-between select-none cursor-pointer" onClick={() => { haptics.tap(); setExpanded(!expanded); }}>
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-[16px] bg-[rgba(255,255,255,0.05)] flex items-center justify-center text-[rgba(255,255,255,0.8)] shadow-inner">
-            {icon}
+        <div className="p-5 flex items-center justify-between select-none cursor-pointer" onClick={() => { haptics.tap(); setExpanded(!expanded); }}>
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-[16px] bg-[rgba(255,255,255,0.05)] flex items-center justify-center text-[rgba(255,255,255,0.8)] shadow-inner">
+              {icon}
+            </div>
+            <div>
+              <div className="text-[17px] font-semibold text-white tracking-tight">{label}</div>
+              <div className="text-[13px] font-medium text-[rgba(255,255,255,0.4)] mt-0.5">{timeRange}</div>
+            </div>
           </div>
-          <div>
-            <div className="text-[17px] font-semibold text-white tracking-tight">{label}</div>
-            <div className="text-[13px] font-medium text-[rgba(255,255,255,0.4)] mt-0.5">{timeRange}</div>
+          <div className="flex items-center gap-5 text-right">
+            <div>
+              <div className="text-[16px] font-bold text-white tracking-tight">{kcal} <span className="text-[12px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">kcal</span></div>
+              <div className="text-[13px] font-semibold text-[#378ADD] mt-0.5">{pro}<span className="text-[10px] font-medium opacity-70 uppercase tracking-wider">g pro</span></div>
+            </div>
+            <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ type: "spring", stiffness: 300, damping: 24 }}>
+              <ChevronDown size={20} className="text-[rgba(255,255,255,0.4)]" />
+            </motion.div>
           </div>
         </div>
-        <div className="flex items-center gap-5 text-right">
-          <div>
-            <div className="text-[16px] font-bold text-white tracking-tight">{kcal} <span className="text-[12px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">kcal</span></div>
-            <div className="text-[13px] font-semibold text-[#378ADD] mt-0.5">{pro}<span className="text-[10px] font-medium opacity-70 uppercase tracking-wider">g pro</span></div>
-          </div>
-          <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ type: "spring", stiffness: 300, damping: 24 }}>
-            <ChevronDown size={20} className="text-[rgba(255,255,255,0.4)]" />
-          </motion.div>
-        </div>
-      </div>
-      <AnimatePresence initial={false}>
-        {expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 28 }}
-            className="overflow-hidden"
-          >
-            <div className="px-5 pb-5 space-y-3 border-t border-[rgba(255,255,255,0.06)] pt-4">
-              {meals.length > 0 ? meals.map((m, i) => (
-                <motion.div 
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  key={m.id || i} 
-                  className="flex items-center justify-between group p-2.5 sm:p-3 rounded-[16px] bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)] transition-colors gap-2"
-                >
-                  <button
-                    type="button"
-                    onClick={() => onEdit(m)}
-                    aria-label="Edit meal"
-                    className="flex-1 min-w-0 pr-1 flex flex-col justify-center items-start gap-1 text-left cursor-pointer"
+        <AnimatePresence initial={false}>
+          {expanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 28 }}
+              className="overflow-hidden"
+            >
+              <div className="px-5 pb-5 space-y-3 border-t border-[rgba(255,255,255,0.06)] pt-4">
+                {meals.length > 0 ? meals.map((m, i) => (
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    key={m.id || i}
+                    className="flex items-center justify-between group p-2.5 sm:p-3 rounded-[16px] bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)] transition-colors gap-2"
                   >
-                    <div className="text-[13px] leading-tight font-medium text-[rgba(255,255,255,0.9)] capitalize break-words whitespace-normal break-all sm:break-normal">{m.meal_text}</div>
-                    <div className="flex gap-1.5 mt-0.5">
-                      {m._localOnly && (
-                        <span className="text-[9px] bg-[rgba(255,255,255,0.1)] text-white px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 shrink-0">
-                          Offline
-                        </span>
-                      )}
-                      {(m.meal_source === 'manual' || m.tip === 'Manually logged meal.') && (
-                        <span className="text-[9px] bg-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.5)] px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wider flex items-center gap-1 shrink-0">
-                          Manual
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <span className="text-[8.5px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-1.5 py-0.5 rounded-full font-bold tracking-wide whitespace-nowrap">{m.calories} KCAL</span>
-                    <span className="text-[8.5px] badge-lime px-1.5 py-0.5 font-bold rounded-full tracking-wide whitespace-nowrap">{m.protein}G PRO</span>
-                    {m.id && !m.id.toString().startsWith('opt-') && (
-                      <button aria-label="Delete meal" className="ml-0.5 w-6 h-6 shrink-0 rounded-full bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,77,28,0.2)] flex items-center justify-center text-[rgba(255,255,255,0.5)] hover:text-[#FF4D1C] transition-colors" onClick={(e) => {
+                    <button
+                      type="button"
+                      onClick={() => onEdit(m)}
+                      aria-label="Edit meal"
+                      className="flex-1 min-w-0 pr-1 flex flex-col justify-center items-start gap-1 text-left cursor-pointer"
+                    >
+                      <div className="text-[13px] leading-tight font-medium text-[rgba(255,255,255,0.9)] capitalize break-words whitespace-normal break-all sm:break-normal">{m.meal_text}</div>
+                      <div className="flex gap-1.5 mt-0.5">
+                        {m._localOnly && (
+                          <span className="text-[9px] bg-[rgba(255,255,255,0.1)] text-white px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 shrink-0">
+                            Offline
+                          </span>
+                        )}
+                        {(m.meal_source === 'manual' || m.tip === 'Manually logged meal.') && (
+                          <span className="text-[9px] bg-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.5)] px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wider flex items-center gap-1 shrink-0">
+                            Manual
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="text-[8.5px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-1.5 py-0.5 rounded-full font-bold tracking-wide whitespace-nowrap">{m.calories} KCAL</span>
+                      <span className="text-[8.5px] badge-lime px-1.5 py-0.5 font-bold rounded-full tracking-wide whitespace-nowrap">{m.protein}G PRO</span>
+                      {m.id && !m.id.toString().startsWith('opt-') && (
+                        <button aria-label="Delete meal" className="ml-0.5 w-6 h-6 shrink-0 rounded-full bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,77,28,0.2)] flex items-center justify-center text-[rgba(255,255,255,0.5)] hover:text-[#FF4D1C] transition-colors" onClick={(e) => {
                           e.stopPropagation();
                           toast({
                             type: 'warning',
@@ -163,20 +164,20 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete, onEdit }: 
                               onClick: () => onDelete(m.id)
                             }
                           });
-                      }}>
-                        <X size={14} />
-                      </button>
-                    )}
-                  </div>
-                </motion.div>
-              )) : (
-                <div className="text-[14px] text-[rgba(255,255,255,0.4)] text-center py-4 font-medium">Nothing logged yet</div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+                        }}>
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </motion.div>
+                )) : (
+                  <div className="text-[14px] text-[rgba(255,255,255,0.4)] text-center py-4 font-medium">Nothing logged yet</div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </PerfProfiler>
   );
 }
@@ -243,7 +244,7 @@ const LOADING_MESSAGES = [
 
 function LoadingStatusMessage() {
   const [index, setIndex] = React.useState(0);
-  
+
   React.useEffect(() => {
     const timer = setInterval(() => {
       setIndex(prev => (prev + 1) % LOADING_MESSAGES.length);
@@ -252,13 +253,13 @@ function LoadingStatusMessage() {
   }, []);
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       className="bg-[rgba(255,255,255,0.02)] border-[0.5px] border-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.85)] rounded-[24px] rounded-tl-sm max-w-[85%] self-start p-[10px_14px] flex items-center gap-[8px] text-[13px]"
     >
       <Loader2 size={16} className="animate-spin text-[#D4FF00]" />
-      <motion.span 
+      <motion.span
         key={index}
         initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
@@ -322,6 +323,16 @@ export function MealLoggerPage() {
     source?: string;
     creditsConsumed?: boolean;   // true when source === 'llm'
     lowConfidence?: boolean;     // true when the parse came back with confidence < 80
+    assumptions?: string[];
+    oil_review_needed?: boolean;
+    weight_basis_review_needed?: boolean;
+    plausibility_review_needed?: boolean;
+    arithmetic_review_needed?: boolean;
+    items?: Array<{
+      food_name: string;
+      weight_basis: 'raw' | 'cooked' | 'finished' | 'unknown';
+      quantity_source: 'user_provided' | 'portion_reference' | 'default_assumption' | 'ai_estimated';
+    }>;
   };
 
   const [selectedDateStr, setSelectedDateStr] = useState<string>(() => getKolkataDateString());
@@ -563,11 +574,11 @@ export function MealLoggerPage() {
   const todayStatus: MetricStatus | null =
     isViewingToday && dailyTargetKcal > 0
       ? classifyDay(goalType, {
-          actual_calories: eatenKcal,
-          target_calories: dailyTargetKcal,
-          actual_protein: eatenProtein,
-          target_protein: proteinTarget,
-        })
+        actual_calories: eatenKcal,
+        target_calories: dailyTargetKcal,
+        actual_protein: eatenProtein,
+        target_protein: proteinTarget,
+      })
       : null;
 
   const breakfastMeals = meals.filter(m => m.meal_slot?.toLowerCase() === "breakfast");
@@ -607,17 +618,17 @@ export function MealLoggerPage() {
     },
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ["meals", "date", dateKeyStr] });
-      
+
       const previousMeals = queryClient.getQueryData<any[]>(["meals", "date", dateKeyStr]);
-      
+
       const newMeals = previousMeals ? previousMeals.filter((m: any) => m.id !== id) : [];
       queryClient.setQueryData(["meals", "date", dateKeyStr], newMeals);
-      
+
       devLog('Remaining Meals:', newMeals.length);
       const newKcal = newMeals.reduce((s, m) => s + m.calories, 0);
       const newPro = newMeals.reduce((s, m) => s + m.protein, 0);
       devLog('Recalculated Daily Totals:', { calories: newKcal, protein: newPro });
-      
+
       return { previousMeals };
     },
     onError: (err, id, context) => {
@@ -636,7 +647,7 @@ export function MealLoggerPage() {
     }
   });
 
-  
+
   const updateMealMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Parameters<typeof mealService.updateMeal>[1] }) => {
       if (typeof window !== 'undefined' && !navigator.onLine) {
@@ -699,7 +710,7 @@ export function MealLoggerPage() {
       devLog("Nutrition Source Used: AI / Function");
       let lastError: Error | null = null;
       let aiResponseDuration = 0;
-      
+
       const reqStart = Date.now();
       if (typeof window !== 'undefined' && !navigator.onLine) {
         lastError = new Error('Network failure');
@@ -717,11 +728,11 @@ export function MealLoggerPage() {
 
             const edgeStart = Date.now();
             const { data: responseBody, error: functionError } = await supabase.functions.invoke('parse-meal', {
-              body: { 
-                text, 
-                remainingCalories, 
-                remainingProtein, 
-                mealType: selectedMealSlot, 
+              body: {
+                text,
+                remainingCalories,
+                remainingProtein,
+                mealType: selectedMealSlot,
                 userGoal: onboardingData?.goal,
                 dietaryPreference: profile?.dietary_preference ?? 'unspecified'
               }
@@ -734,7 +745,7 @@ export function MealLoggerPage() {
             if (functionError) {
               let msg = functionError.message || 'Server error';
               let errorMeta: { _refunded?: boolean; request_id?: string; error_code?: string } = {};
-              
+
               if (functionError.context && typeof functionError.context.json === 'function') {
                 try {
                   const errorBody = await functionError.context.json();
@@ -748,7 +759,7 @@ export function MealLoggerPage() {
                       error_code: errorBody.error_code,
                     };
                   }
-                } catch(e) {}
+                } catch (e) { }
               }
 
               if (msg.includes('Auth') || msg.includes('Authentication') || msg.includes('JWT') || functionError.message?.includes('Auth')) {
@@ -769,7 +780,7 @@ export function MealLoggerPage() {
                     msg = ''; // Clear error to proceed
                   }
                 } catch (fallbackErr) {
-                   console.error('Fallback parse failed', fallbackErr);
+                  console.error('Fallback parse failed', fallbackErr);
                 }
               }
 
@@ -786,14 +797,14 @@ export function MealLoggerPage() {
               data._latency = aiResponseDuration;
             }
 
-            if (!data || typeof data.calories !== 'number') { 
+            if (!data || typeof data.calories !== 'number') {
               if (import.meta.env.DEV) {
                 console.error('[MealLogger] Parsing Error - Invalid AI response data:', data);
               }
               lastError = new Error('AI returned invalid data');
               throw new Error('AI returned invalid data');
             }
-            
+
             return data;
           } catch (err: any) {
             // err may carry _refunded/request_id/error_code attached in the
@@ -807,7 +818,7 @@ export function MealLoggerPage() {
         const msg = lastError?.message ?? '';
         return msg || 'AI temporarily unavailable';
       })();
-      
+
       return {
         _errorMessage: errorContext,
         text,
@@ -818,7 +829,7 @@ export function MealLoggerPage() {
     onSuccess: (data, text) => {
       isSubmittingRef.current = false;
       setLoading(false);
-      
+
       // Calculate costs
       let cost = 0;
       if (data.provider === 'gemini') cost = 0.0001;
@@ -890,6 +901,18 @@ export function MealLoggerPage() {
             source: data.source,
             creditsConsumed: data.source === 'llm',
             lowConfidence: typeof data.confidence === 'number' && data.confidence < 80,
+            assumptions: Array.isArray(data.assumptions) ? data.assumptions : undefined,
+            oil_review_needed: data.oil_review_needed === true,
+            weight_basis_review_needed: data.weight_basis_review_needed === true,
+            plausibility_review_needed: data.plausibility_review_needed === true,
+            arithmetic_review_needed: data.arithmetic_review_needed === true,
+            items: Array.isArray(data.items)
+              ? (data.items as Array<{ food_name: string; weight_basis: string; quantity_source: string }>).map((i) => ({
+                food_name: i.food_name,
+                weight_basis: i.weight_basis as 'raw' | 'cooked' | 'finished' | 'unknown',
+                quantity_source: i.quantity_source as 'user_provided' | 'portion_reference' | 'default_assumption' | 'ai_estimated',
+              }))
+              : undefined,
           });
           refetchCredits();
         }
@@ -901,7 +924,7 @@ export function MealLoggerPage() {
       let errorMessage = 'An unexpected error occurred';
       if (err instanceof Error) errorMessage = err.message;
       else if (typeof err === 'string') errorMessage = err;
-      
+
       analytics.trackEvent('AI Parse Failure', { error: errorMessage, type: 'mutation_error' });
       setFailedMealError(errorMessage);
       setFailedMealText(null);
@@ -983,15 +1006,15 @@ export function MealLoggerPage() {
         if (finalSlot === 'snacks') finalSlot = 'snack';
       }
 
-      const mealData = { 
-        meal_text: text, 
-        calories: Math.round(data.calories), 
-        protein: Math.round(data.protein), 
-        fat: Math.round(data.fat), 
-        carbs: Math.round(data.carbs), 
+      const mealData = {
+        meal_text: text,
+        calories: Math.round(data.calories),
+        protein: Math.round(data.protein),
+        fat: Math.round(data.fat),
+        carbs: Math.round(data.carbs),
         fiber: data.fiber ? Math.round(data.fiber) : undefined,
-        meal_time: getMealTime().toISOString(), 
-        tip: data.tip || data.foods_detected?.join(', ') || text, 
+        meal_time: getMealTime().toISOString(),
+        tip: data.tip || data.foods_detected?.join(', ') || text,
         meal_slot: finalSlot,
         client_token
       };
@@ -1010,15 +1033,15 @@ export function MealLoggerPage() {
       await queryClient.cancelQueries({ queryKey: ["meals", "date", dateKeyStr] });
 
       const previousMeals = queryClient.getQueryData<any[]>(["meals", "date", dateKeyStr]);
-      
+
       let finalSlot = data.meal_slot || selectedMealSlot || undefined;
       if (typeof finalSlot === 'string') {
         finalSlot = finalSlot.toLowerCase();
         if (finalSlot === 'snacks') finalSlot = 'snack';
       }
 
-      const newMealObj = { 
-        id: 'temp-' + Date.now(), 
+      const newMealObj = {
+        id: 'temp-' + Date.now(),
         meal_text: text,
         calories: Math.round(data.calories),
         protein: Math.round(data.protein),
@@ -1027,7 +1050,7 @@ export function MealLoggerPage() {
         fiber: data.fiber ? Math.round(data.fiber) : undefined,
         meal_slot: finalSlot,
         meal_source: source || 'ai',
-        _localOnly: true 
+        _localOnly: true
       };
 
       if (previousMeals) {
@@ -1039,7 +1062,7 @@ export function MealLoggerPage() {
       setPendingMeal(null);
       haptics.success();
       haptics.success();
-      
+
       if (source === 'manual') {
         analytics.trackEvent('Custom Meal Logged', { calories: data.calories } as any);
         setIsCustomMealModalOpen(false);
@@ -1059,23 +1082,23 @@ export function MealLoggerPage() {
           void saveMessage(profile.id, { role: 'ai', text: responseText, data }).catch((err) =>
             console.error('Failed to persist chat message', err));
         }
-      
-      // Removed automatic modal close to allow continuous meal logging
-      // setTimeout(() => {
-      //   setModalOpen(false);
-      // }, 800);
 
-      // Show protect progress sheet for guest users after 3 meals in a day
-      if (isGuest && shouldShowProtectProgress()) {
-        const todayKey = new Date().toDateString();
-        const todayCount = meals.filter(
-          (m) => new Date(m.meal_time).toDateString() === todayKey,
-        ).length;
-if (todayCount >= PROTECT_PROGRESS_MEAL_THRESHOLD) {
-          window.setTimeout(() => setProtectOpen(true), 800);
+        // Removed automatic modal close to allow continuous meal logging
+        // setTimeout(() => {
+        //   setModalOpen(false);
+        // }, 800);
+
+        // Show protect progress sheet for guest users after 3 meals in a day
+        if (isGuest && shouldShowProtectProgress()) {
+          const todayKey = new Date().toDateString();
+          const todayCount = meals.filter(
+            (m) => new Date(m.meal_time).toDateString() === todayKey,
+          ).length;
+          if (todayCount >= PROTECT_PROGRESS_MEAL_THRESHOLD) {
+            window.setTimeout(() => setProtectOpen(true), 800);
+          }
         }
       }
-    }
     },
     onError: (err: any, variables: any, context: any) => {
       console.error('[confirmMealMutation] onError:', err);
@@ -1084,7 +1107,7 @@ if (todayCount >= PROTECT_PROGRESS_MEAL_THRESHOLD) {
         void saveMessage(profile.id, { role: 'ai', text: `⚠️ Failed to save meal. Please try again.` }).catch((err) =>
           console.error('Failed to persist chat message', err));
       }
-      
+
       if (context?.dateKeyStr && context?.previousMeals) {
         queryClient.setQueryData(["meals", "date", context.dateKeyStr], context.previousMeals);
       }
@@ -1134,574 +1157,665 @@ if (todayCount >= PROTECT_PROGRESS_MEAL_THRESHOLD) {
 
   return (
     <MotionConfig reducedMotion="user">
-    <>
-      <div className="screen-container screen-enter" style={{ display: 'flex', flexDirection: 'column' }}>
-      {/* ── PAGE HEADER ── */}
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex flex-col">
-          <h2 className="text-[28px] font-semibold text-white tracking-tight">Meal Log</h2>
-          <div className="text-[14px] font-medium text-[rgba(235,235,245,0.5)] mt-0.5">{formatDateLabel(selectedDateStr)}</div>
-        </div>
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => {
-              if (isAtOrBeforeFloor(selectedDateStr)) return;
-              setSelectedDateStr(shiftKolkataDateString(selectedDateStr, -1));
-            }}
-            disabled={isAtOrBeforeFloor(selectedDateStr)}
-            className={cn(
-              "min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full transition-all duration-200",
-              isAtOrBeforeFloor(selectedDateStr) ? "opacity-30 cursor-not-allowed" : "bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] cursor-pointer active:scale-95"
-            )}
-            aria-label="Previous Day" title={isAtOrBeforeFloor(selectedDateStr) ? "You've reached the start of your plan's history window. Upgrade for more." : "Previous Day"}
-          >
-            <ChevronLeft size={18} className="text-white" />
-          </button>
-          <button 
-            onClick={() => setCalendarOpen(true)}
-            aria-label="Open calendar"
-            className="text-[15px] font-semibold text-white min-w-[85px] text-center tracking-tight hover:text-[#D4FF00] transition-colors"
-          >
-            {formatDateLabel(selectedDateStr)}
-          </button>
-          <button 
-            onClick={() => {
-              if (isToday(selectedDateStr)) return;
-              setSelectedDateStr(shiftKolkataDateString(selectedDateStr, 1));
-            }}
-            disabled={isToday(selectedDateStr)}
-            className={cn(
-              "min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full transition-all duration-200",
-              isToday(selectedDateStr) ? "opacity-30 cursor-not-allowed" : "bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] cursor-pointer active:scale-95"
-            )}
-          >
-            <ChevronRight size={18} className="text-white" />
-          </button>
-        </div>
-      </div>
-
-      {/* ── LOCKED DAY OVERLAY ── */}
-      {isLockedDay && <LockedHistoryView plan={plan} />}
-
-      {/* ── CALORIE RING SUMMARY ── */}
-      {!isLockedDay && <div className="mb-6 rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] p-5 shadow-sm backdrop-blur-xl relative overflow-hidden">
-        <div className="flex justify-between items-center mb-5">
-          <div className="text-[12px] font-semibold uppercase tracking-widest text-[rgba(235,235,245,0.5)]">Daily Summary</div>
-          <div className="text-[13px] font-bold px-2.5 py-1 rounded-full bg-[rgba(255,255,255,0.05)]" style={{ color: eatenKcal > dailyTargetKcal ? '#FF4D1C' : '#D4FF00' }}>
-            {eatenKcal > dailyTargetKcal ? `${eatenKcal - dailyTargetKcal} over` : `${dailyTargetKcal - eatenKcal} left`}
-          </div>
-        </div>
-
-        {/* Calorie bar */}
-        <div className="mb-4">
-          <div className="flex justify-between mb-1.5 items-end">
-            <span className="text-[13px] font-medium text-[rgba(235,235,245,0.5)]">Calories</span>
-            <span className="text-[14px] font-bold text-white tracking-tight">{eatenKcal} <span className="text-[11px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">/ {dailyTargetKcal}</span></span>
-          </div>
-          <div className="h-2 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden shadow-inner">
-            <div className="h-full w-full rounded-full origin-left transition-transform duration-1000 ease-out will-change-transform" style={{ transform: `translateX(-${100 - caloriePercent}%)`, background: eatenKcal > dailyTargetKcal ? '#FF4D1C' : '#D4FF00' }}></div>
-          </div>
-        </div>
-
-        {/* Protein bar */}
-        <div>
-          <div className="flex justify-between mb-1.5 items-end">
-            <span className="text-[13px] font-medium text-[rgba(235,235,245,0.5)]">Protein</span>
-            <span className="text-[14px] font-bold text-white tracking-tight">{eatenProtein}g <span className="text-[11px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">/ {proteinTarget}g</span></span>
-          </div>
-          <div className="h-2 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden shadow-inner">
-            <div className="h-full w-full rounded-full bg-[#378ADD] origin-left transition-transform duration-1000 ease-out will-change-transform" style={{ transform: `translateX(-${100 - proteinPercent}%)` }}></div>
-          </div>
-        </div>
-
-        {/* Macros row */}
-        <div className="grid grid-cols-4 gap-2 mt-5 pt-4 border-t border-[rgba(255,255,255,0.06)]">
-          {[{ label: 'Kcal', val: eatenKcal, target: dailyTargetKcal, unit: '', color: '#FF4D1C' }, 
-            { label: 'Protein', val: eatenProtein, target: proteinTarget, unit: 'g', color: '#378ADD' }, 
-            { label: 'Fat', val: eatenFat, target: fatTarget, unit: 'g', color: 'white' }, 
-            { label: 'Carbs', val: eatenCarbs, target: carbsTarget, unit: 'g', color: 'white' }].map(item => (
-            <div key={item.label} className="text-center flex flex-col items-center">
-              <div className="text-[16px] font-bold tracking-tight" style={{ color: item.color }}>
-                {item.val}<span className="text-[12px]">{item.unit}</span>
-              </div>
-              <div className="text-[10px] text-[rgba(235,235,245,0.5)] uppercase tracking-widest mt-0.5 font-medium">{item.label}</div>
+      <>
+        <div className="screen-container screen-enter" style={{ display: 'flex', flexDirection: 'column' }}>
+          {/* ── PAGE HEADER ── */}
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex flex-col">
+              <h2 className="text-[28px] font-semibold text-white tracking-tight">Meal Log</h2>
+              <div className="text-[14px] font-medium text-[rgba(235,235,245,0.5)] mt-0.5">{formatDateLabel(selectedDateStr)}</div>
             </div>
-          ))}
-        </div>
-      </div>
-
-      }
-
-      {/* ── MEAL SLOT ROWS ── */}
-      {!isLockedDay && <div>
-        <div className="flex items-center justify-between mb-3 px-1">
-          <div className="text-[12px] font-semibold uppercase tracking-widest text-[rgba(235,235,245,0.5)]">Meal Log</div>
-          {credits && (
-            <div className="flex items-center gap-1 rounded-full border border-[rgba(212,255,0,0.3)] bg-[rgba(212,255,0,0.08)] px-2.5 py-1">
-              <Zap size={11} className="text-[#D4FF00]" strokeWidth={2.5} />
-              <span className="text-[11px] font-semibold text-[#D4FF00] tabular-nums">
-                {credits.remaining} / {credits.limit}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {plan === 'free' && credits && (
-          <AiLimitNudge remaining={credits.remaining} nextTierLimit={25} />
-        )}
-        
-        {meals.length === 0 && (
-          <EmptyState
-            icon={Lightbulb}
-            title="No meals logged yet"
-            description="Your daily meal log is empty. Tap the '+' button below to add your first meal."
-            className="my-8 py-10"
-          />
-        )}
-
-        <MealSlotRow slot="breakfast" icon={<Sunrise size={20} />} label="Breakfast" timeRange="6 am – 12 pm" meals={breakfastMeals} onDelete={handleDeleteMeal} onEdit={(meal) => setEditingMeal(meal)} />
-        <MealSlotRow slot="lunch" icon={<Sun size={20} />} label="Lunch" timeRange="12 pm – 6 pm" meals={lunchMeals} onDelete={handleDeleteMeal} onEdit={(meal) => setEditingMeal(meal)} />
-        <MealSlotRow slot="dinner" icon={<Moon size={20} />} label="Dinner" timeRange="6 pm – 10 pm" meals={dinnerMeals} onDelete={handleDeleteMeal} onEdit={(meal) => setEditingMeal(meal)} />
-        <MealSlotRow slot="snack" icon={<Coffee size={20} />} label="Snack" timeRange="Anytime" meals={snackMeals} onDelete={handleDeleteMeal} onEdit={(meal) => setEditingMeal(meal)} />
-      </div>
-      }
-
-      {/* ── SPACER TO PREVENT FAB OVERLAP ── */}
-      <div style={{ height: '120px', flexShrink: 0 }} aria-hidden="true" />
-
-
-      </div>
-      {/* ── FLOATING ADD BUTTON ── */}
-      {!isLockedDay && <div className="meal-fab-positioner screen-enter">
-        <div className="meal-fab-container">
-        <button
-          onClick={() => setModalOpen(true)}
-          style={{
-            width: '56px',
-            height: '56px',
-            borderRadius: '50%',
-            background: '#D4FF00',
-            border: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            boxShadow: '0 4px 20px rgba(212,255,0,0.35), 0 2px 8px rgba(0,0,0,0.4)',
-            pointerEvents: 'auto',
-            transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-            flexShrink: 0,
-          }}
-          onPointerDown={e => { e.currentTarget.style.transform = 'scale(0.92)'; }}
-          onPointerUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
-          onPointerLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
-          aria-label="Log a meal"
-        >
-          <Plus size={24} color="#0A0A0A" strokeWidth={2.5} />
-        </button>
-        </div>
-      </div>}
-
-      {/* ── LOG MEAL MODAL ── */}
-      {createPortal(
-        <AnimatePresence>
-          {modalOpen && (
-            <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 100, display: 'flex', alignItems: 'flex-end' }}
-            onClick={() => setModalOpen(false)}
-          >
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-              onClick={e => e.stopPropagation()}
-              className="meal-modal-content"
-              style={{
-                marginBottom: isKeyboardOpen ? `${keyboardOffset + 16}px` : undefined,
-                paddingBottom: isKeyboardOpen ? '16px' : undefined
-              }}
-            >
-              
-              {/* Modal header */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px 12px', borderBottom: '0.5px solid rgba(255,255,255,0.08)' }}>
-                <div style={{ minWidth: 0, paddingRight: '12px' }}>
-                  <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Log a meal</div>
-                  <div style={{ fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.45)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Type naturally, I handle the rest</div>
-                </div>
-                <button aria-label="Close modal" onClick={() => setModalOpen(false)} style={{ minWidth: '44px', minHeight: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0 }}>
-                  <X size={16} />
-                </button>
-              </div>
-
-              {/* Meal slot selector */}
-              <div className="px-5 pt-3">
-                <div className="bg-[rgba(255,255,255,0.02)] rounded-[24px] p-1.5 flex gap-1 relative">
-                  {([['breakfast', Sunrise, 'Breakfast', '6 AM - 12 PM'], ['lunch', Sun, 'Lunch', '12 PM - 6 PM'], ['dinner', Moon, 'Dinner', '6 PM - 10 PM'], ['snack', Coffee, 'Snack', 'Anytime']] as const).map(([slot, Icon, label, time]) => {
-                    const isActive = selectedMealSlot === slot;
-                    return (
-                      <div
-                        key={slot}
-                        onClick={() => setSelectedMealSlot(slot as any)}
-                        className={cn(
-                          "flex-1 flex flex-col items-center py-2.5 rounded-[24px] cursor-pointer transition-colors duration-200 relative z-10",
-                          isActive ? "text-white font-medium" : "text-[rgba(255,255,255,0.4)] bg-transparent"
-                        )}
-                      >
-                        {isActive && (
-                          <motion.div
-                            layoutId="slotActive"
-                            className="absolute inset-0 bg-[rgba(255,255,255,0.1)] rounded-[24px] -z-10"
-                            transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                          />
-                        )}
-                        <Icon size={14} className="mb-1" />
-                        <div className="text-[13px]">{label}</div>
-                        <div className="text-[9px] text-[rgba(255,255,255,0.32)] font-normal">{time}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* AI status indicator */}
-              <div className="px-5 pt-3 flex items-center justify-center">
-                {aiStatus === 'offline' && (
-                  <div className="flex items-center gap-2 text-[13px] text-[rgba(235,235,245,0.5)]">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[rgba(255,255,255,0.25)]" />
-                    <span>AI Offline — Using Database</span>
-                  </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  if (isAtOrBeforeFloor(selectedDateStr)) return;
+                  setSelectedDateStr(shiftKolkataDateString(selectedDateStr, -1));
+                }}
+                disabled={isAtOrBeforeFloor(selectedDateStr)}
+                className={cn(
+                  "min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full transition-all duration-200",
+                  isAtOrBeforeFloor(selectedDateStr) ? "opacity-30 cursor-not-allowed" : "bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] cursor-pointer active:scale-95"
                 )}
-                {aiStatus === 'online' && (
-                  <div className="flex items-center gap-2 text-[13px] text-[rgba(235,235,245,0.5)]">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#D4FF00] shadow-[0_0_6px_#D4FF00] animate-pulse-glow" style={{ animation: 'pulseGlow 2s infinite ease-in-out' }} />
-                    <style>{'@keyframes pulseGlow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }'}</style>
-                    <span>Groq AI Active</span>
-                    {credits && (
-                      <div className="flex items-center gap-1 text-[11px] font-medium text-[rgba(255,255,255,0.45)]">
-                        <span className={cn(
-                          'tabular-nums',
-                          credits.remaining === 0 && 'text-[#FF4D1C]',
-                          credits.remaining > 0 && credits.remaining <= 3 && 'text-[#D4FF00]',
-                        )}>
-                          {credits.remaining}
-                        </span>
-                        <span>/ {credits.limit} AI parses left</span>
+                aria-label="Previous Day" title={isAtOrBeforeFloor(selectedDateStr) ? "You've reached the start of your plan's history window. Upgrade for more." : "Previous Day"}
+              >
+                <ChevronLeft size={18} className="text-white" />
+              </button>
+              <button
+                onClick={() => setCalendarOpen(true)}
+                aria-label="Open calendar"
+                className="text-[15px] font-semibold text-white min-w-[85px] text-center tracking-tight hover:text-[#D4FF00] transition-colors"
+              >
+                {formatDateLabel(selectedDateStr)}
+              </button>
+              <button
+                onClick={() => {
+                  if (isToday(selectedDateStr)) return;
+                  setSelectedDateStr(shiftKolkataDateString(selectedDateStr, 1));
+                }}
+                disabled={isToday(selectedDateStr)}
+                className={cn(
+                  "min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full transition-all duration-200",
+                  isToday(selectedDateStr) ? "opacity-30 cursor-not-allowed" : "bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] cursor-pointer active:scale-95"
+                )}
+              >
+                <ChevronRight size={18} className="text-white" />
+              </button>
+            </div>
+          </div>
+
+          {/* ── LOCKED DAY OVERLAY ── */}
+          {isLockedDay && <LockedHistoryView plan={plan} />}
+
+          {/* ── CALORIE RING SUMMARY ── */}
+          {!isLockedDay && <div className="mb-6 rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] p-5 shadow-sm backdrop-blur-xl relative overflow-hidden">
+            <div className="flex justify-between items-center mb-5">
+              <div className="text-[12px] font-semibold uppercase tracking-widest text-[rgba(235,235,245,0.5)]">Daily Summary</div>
+              <div className="text-[13px] font-bold px-2.5 py-1 rounded-full bg-[rgba(255,255,255,0.05)]" style={{ color: eatenKcal > dailyTargetKcal ? '#FF4D1C' : '#D4FF00' }}>
+                {eatenKcal > dailyTargetKcal ? `${eatenKcal - dailyTargetKcal} over` : `${dailyTargetKcal - eatenKcal} left`}
+              </div>
+            </div>
+
+            {/* Calorie bar */}
+            <div className="mb-4">
+              <div className="flex justify-between mb-1.5 items-end">
+                <span className="text-[13px] font-medium text-[rgba(235,235,245,0.5)]">Calories</span>
+                <span className="text-[14px] font-bold text-white tracking-tight">{eatenKcal} <span className="text-[11px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">/ {dailyTargetKcal}</span></span>
+              </div>
+              <div className="h-2 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden shadow-inner">
+                <div className="h-full w-full rounded-full origin-left transition-transform duration-1000 ease-out will-change-transform" style={{ transform: `translateX(-${100 - caloriePercent}%)`, background: eatenKcal > dailyTargetKcal ? '#FF4D1C' : '#D4FF00' }}></div>
+              </div>
+            </div>
+
+            {/* Protein bar */}
+            <div>
+              <div className="flex justify-between mb-1.5 items-end">
+                <span className="text-[13px] font-medium text-[rgba(235,235,245,0.5)]">Protein</span>
+                <span className="text-[14px] font-bold text-white tracking-tight">{eatenProtein}g <span className="text-[11px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">/ {proteinTarget}g</span></span>
+              </div>
+              <div className="h-2 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden shadow-inner">
+                <div className="h-full w-full rounded-full bg-[#378ADD] origin-left transition-transform duration-1000 ease-out will-change-transform" style={{ transform: `translateX(-${100 - proteinPercent}%)` }}></div>
+              </div>
+            </div>
+
+            {/* Macros row */}
+            <div className="grid grid-cols-4 gap-2 mt-5 pt-4 border-t border-[rgba(255,255,255,0.06)]">
+              {[{ label: 'Kcal', val: eatenKcal, target: dailyTargetKcal, unit: '', color: '#FF4D1C' },
+              { label: 'Protein', val: eatenProtein, target: proteinTarget, unit: 'g', color: '#378ADD' },
+              { label: 'Fat', val: eatenFat, target: fatTarget, unit: 'g', color: 'white' },
+              { label: 'Carbs', val: eatenCarbs, target: carbsTarget, unit: 'g', color: 'white' }].map(item => (
+                <div key={item.label} className="text-center flex flex-col items-center">
+                  <div className="text-[16px] font-bold tracking-tight" style={{ color: item.color }}>
+                    {item.val}<span className="text-[12px]">{item.unit}</span>
+                  </div>
+                  <div className="text-[10px] text-[rgba(235,235,245,0.5)] uppercase tracking-widest mt-0.5 font-medium">{item.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          }
+
+          {/* ── MEAL SLOT ROWS ── */}
+          {!isLockedDay && <div>
+            <div className="flex items-center justify-between mb-3 px-1">
+              <div className="text-[12px] font-semibold uppercase tracking-widest text-[rgba(235,235,245,0.5)]">Meal Log</div>
+              {credits && (
+                <div className="flex items-center gap-1 rounded-full border border-[rgba(212,255,0,0.3)] bg-[rgba(212,255,0,0.08)] px-2.5 py-1">
+                  <Zap size={11} className="text-[#D4FF00]" strokeWidth={2.5} />
+                  <span className="text-[11px] font-semibold text-[#D4FF00] tabular-nums">
+                    {credits.remaining} / {credits.limit}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {plan === 'free' && credits && (
+              <AiLimitNudge remaining={credits.remaining} nextTierLimit={25} />
+            )}
+
+            {meals.length === 0 && (
+              <EmptyState
+                icon={Lightbulb}
+                title="No meals logged yet"
+                description="Your daily meal log is empty. Tap the '+' button below to add your first meal."
+                className="my-8 py-10"
+              />
+            )}
+
+            <MealSlotRow slot="breakfast" icon={<Sunrise size={20} />} label="Breakfast" timeRange="6 am – 12 pm" meals={breakfastMeals} onDelete={handleDeleteMeal} onEdit={(meal) => setEditingMeal(meal)} />
+            <MealSlotRow slot="lunch" icon={<Sun size={20} />} label="Lunch" timeRange="12 pm – 6 pm" meals={lunchMeals} onDelete={handleDeleteMeal} onEdit={(meal) => setEditingMeal(meal)} />
+            <MealSlotRow slot="dinner" icon={<Moon size={20} />} label="Dinner" timeRange="6 pm – 10 pm" meals={dinnerMeals} onDelete={handleDeleteMeal} onEdit={(meal) => setEditingMeal(meal)} />
+            <MealSlotRow slot="snack" icon={<Coffee size={20} />} label="Snack" timeRange="Anytime" meals={snackMeals} onDelete={handleDeleteMeal} onEdit={(meal) => setEditingMeal(meal)} />
+          </div>
+          }
+
+          {/* ── SPACER TO PREVENT FAB OVERLAP ── */}
+          <div style={{ height: '120px', flexShrink: 0 }} aria-hidden="true" />
+
+
+        </div>
+        {/* ── FLOATING ADD BUTTON ── */}
+        {!isLockedDay && <div className="meal-fab-positioner screen-enter">
+          <div className="meal-fab-container">
+            <button
+              onClick={() => setModalOpen(true)}
+              style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '50%',
+                background: '#D4FF00',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                boxShadow: '0 4px 20px rgba(212,255,0,0.35), 0 2px 8px rgba(0,0,0,0.4)',
+                pointerEvents: 'auto',
+                transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                flexShrink: 0,
+              }}
+              onPointerDown={e => { e.currentTarget.style.transform = 'scale(0.92)'; }}
+              onPointerUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+              onPointerLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+              aria-label="Log a meal"
+            >
+              <Plus size={24} color="#0A0A0A" strokeWidth={2.5} />
+            </button>
+          </div>
+        </div>}
+
+        {/* ── LOG MEAL MODAL ── */}
+        {createPortal(
+          <AnimatePresence>
+            {modalOpen && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 100, display: 'flex', alignItems: 'flex-end' }}
+                onClick={() => setModalOpen(false)}
+              >
+                <motion.div
+                  initial={{ y: '100%' }}
+                  animate={{ y: 0 }}
+                  exit={{ y: '100%' }}
+                  transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+                  onClick={e => e.stopPropagation()}
+                  className="meal-modal-content"
+                  style={{
+                    marginBottom: isKeyboardOpen ? `${keyboardOffset + 16}px` : undefined,
+                    paddingBottom: isKeyboardOpen ? '16px' : undefined
+                  }}
+                >
+
+                  {/* Modal header */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px 12px', borderBottom: '0.5px solid rgba(255,255,255,0.08)' }}>
+                    <div style={{ minWidth: 0, paddingRight: '12px' }}>
+                      <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Log a meal</div>
+                      <div style={{ fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.45)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Type naturally, I handle the rest</div>
+                    </div>
+                    <button aria-label="Close modal" onClick={() => setModalOpen(false)} style={{ minWidth: '44px', minHeight: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0 }}>
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  {/* Meal slot selector */}
+                  <div className="px-5 pt-3">
+                    <div className="bg-[rgba(255,255,255,0.02)] rounded-[24px] p-1.5 flex gap-1 relative">
+                      {([['breakfast', Sunrise, 'Breakfast', '6 AM - 12 PM'], ['lunch', Sun, 'Lunch', '12 PM - 6 PM'], ['dinner', Moon, 'Dinner', '6 PM - 10 PM'], ['snack', Coffee, 'Snack', 'Anytime']] as const).map(([slot, Icon, label, time]) => {
+                        const isActive = selectedMealSlot === slot;
+                        return (
+                          <div
+                            key={slot}
+                            onClick={() => setSelectedMealSlot(slot as any)}
+                            className={cn(
+                              "flex-1 flex flex-col items-center py-2.5 rounded-[24px] cursor-pointer transition-colors duration-200 relative z-10",
+                              isActive ? "text-white font-medium" : "text-[rgba(255,255,255,0.4)] bg-transparent"
+                            )}
+                          >
+                            {isActive && (
+                              <motion.div
+                                layoutId="slotActive"
+                                className="absolute inset-0 bg-[rgba(255,255,255,0.1)] rounded-[24px] -z-10"
+                                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                              />
+                            )}
+                            <Icon size={14} className="mb-1" />
+                            <div className="text-[13px]">{label}</div>
+                            <div className="text-[9px] text-[rgba(255,255,255,0.32)] font-normal">{time}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* AI status indicator */}
+                  <div className="px-5 pt-3 flex items-center justify-center">
+                    {aiStatus === 'offline' && (
+                      <div className="flex items-center gap-2 text-[13px] text-[rgba(235,235,245,0.5)]">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[rgba(255,255,255,0.25)]" />
+                        <span>AI Offline — Using Database</span>
+                      </div>
+                    )}
+                    {aiStatus === 'online' && (
+                      <div className="flex items-center gap-2 text-[13px] text-[rgba(235,235,245,0.5)]">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#D4FF00] shadow-[0_0_6px_#D4FF00] animate-pulse-glow" style={{ animation: 'pulseGlow 2s infinite ease-in-out' }} />
+                        <style>{'@keyframes pulseGlow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }'}</style>
+                        <span>Groq AI Active</span>
+                        {credits && (
+                          <div className="flex items-center gap-1 text-[11px] font-medium text-[rgba(255,255,255,0.45)]">
+                            <span className={cn(
+                              'tabular-nums',
+                              credits.remaining === 0 && 'text-[#FF4D1C]',
+                              credits.remaining > 0 && credits.remaining <= 3 && 'text-[#D4FF00]',
+                            )}>
+                              {credits.remaining}
+                            </span>
+                            <span>/ {credits.limit} AI parses left</span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                )}
-              </div>
 
-              {/* Chat messages */}
-              <div ref={chatRef} style={{ flex: 1, overflowY: 'auto', padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '120px' }}>
-                <AnimatePresence>
-                  {chat.map((msg, i) => {
-                    const isUser = msg.role === "user";
-                    return (
-                      <motion.div 
-                        key={i}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, ease: [0.16,1,0.3,1] }}
-                        className={cn(
-                          "p-[12px_16px] text-[14px] leading-relaxed relative",
-                          isUser 
-                            ? "bg-[rgba(212,255,0,0.12)] border-[0.5px] border-[rgba(212,255,0,0.2)] text-white rounded-[24px] rounded-tr-sm max-w-[85%] self-end" 
-                            : "bg-[rgba(255,255,255,0.02)] border-[0.5px] border-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.85)] rounded-[24px] rounded-tl-sm max-w-[90%] self-start"
-                        )}
-                      >
-                        <div className="whitespace-pre-wrap">{msg.text}</div>
-                        {msg.data && (
-                          <div className="flex gap-[6px] flex-wrap mt-[8px]">
-                            <span className="text-[10px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">~{msg.data.calories} kcal</span>
-                            <span className="text-[10px] badge-lime px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{msg.data.protein}g pro</span>
-                            <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.6)] px-2 py-0.5 rounded-full font-semibold">{msg.data.fat}g fat</span>
-                            <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.6)] px-2 py-0.5 rounded-full font-semibold">{msg.data.carbs}g carb</span>
-                          </div>
-                        )}
-                        {msg.data?.coaching_tip && (
-                          <div className="mt-[12px] border-l-[3px] border-[#D4FF00]/40 bg-[rgba(212,255,0,0.05)] p-3 rounded-r-xl italic text-[13px] flex gap-[8px] items-start">
-                            <Lightbulb size={16} className="text-[#D4FF00] mt-0.5 shrink-0" />
-                            <div className="text-[rgba(235,235,245,0.75)]">{msg.data.coaching_tip}</div>
-                          </div>
-                        )}
-                      </motion.div>
-                    );
-                  })}
-                  {loading && <LoadingStatusMessage />}
-                  {pendingMeal && !loading && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-[rgba(255,255,255,0.02)] border-[0.5px] border-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.85)] rounded-[24px] rounded-tl-sm max-w-[90%] self-start p-[12px_16px] text-[14px] leading-relaxed"
-                    >
-                      <div className="font-semibold text-white mb-2">Here is the estimated nutrition. Would you like to log this?</div>
-                        {pendingMeal.lowConfidence && !pendingMeal.was_ambiguous && (
-                          <div className="mb-3 flex items-start gap-2 rounded-xl border border-[rgba(255,179,71,0.25)] bg-[rgba(255,179,71,0.08)] p-2.5 text-[12px] leading-relaxed text-[#FFB347]">
-                            <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-                            <span>Low confidence — please review the values before logging.</span>
-                          </div>
-                        )}
-                        {pendingMeal.was_ambiguous && (
+                  {/* Chat messages */}
+                  <div ref={chatRef} style={{ flex: 1, overflowY: 'auto', padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '120px' }}>
+                    <AnimatePresence>
+                      {chat.map((msg, i) => {
+                        const isUser = msg.role === "user";
+                        return (
                           <motion.div
-                            initial={{ opacity: 0, y: 6 }}
+                            key={i}
+                            initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                            className={cn(
+                              "p-[12px_16px] text-[14px] leading-relaxed relative",
+                              isUser
+                                ? "bg-[rgba(212,255,0,0.12)] border-[0.5px] border-[rgba(212,255,0,0.2)] text-white rounded-[24px] rounded-tr-sm max-w-[85%] self-end"
+                                : "bg-[rgba(255,255,255,0.02)] border-[0.5px] border-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.85)] rounded-[24px] rounded-tl-sm max-w-[90%] self-start"
+                            )}
                           >
-                            <AmbiguityIndicator wasAmbiguous={true} />
+                            <div className="whitespace-pre-wrap">{msg.text}</div>
+                            {msg.data && (
+                              <div className="flex gap-[6px] flex-wrap mt-[8px]">
+                                <span className="text-[10px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">~{msg.data.calories} kcal</span>
+                                <span className="text-[10px] badge-lime px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{msg.data.protein}g pro</span>
+                                <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.6)] px-2 py-0.5 rounded-full font-semibold">{msg.data.fat}g fat</span>
+                                <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.6)] px-2 py-0.5 rounded-full font-semibold">{msg.data.carbs}g carb</span>
+                              </div>
+                            )}
+                            {msg.data?.coaching_tip && (
+                              <div className="mt-[12px] border-l-[3px] border-[#D4FF00]/40 bg-[rgba(212,255,0,0.05)] p-3 rounded-r-xl italic text-[13px] flex gap-[8px] items-start">
+                                <Lightbulb size={16} className="text-[#D4FF00] mt-0.5 shrink-0" />
+                                <div className="text-[rgba(235,235,245,0.75)]">{msg.data.coaching_tip}</div>
+                              </div>
+                            )}
                           </motion.div>
-                        )}
-                      <div className="flex gap-[6px] flex-wrap mb-[12px]">
-                        <span className="text-[10px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">~{pendingMeal.data.calories} kcal</span>
-                        <span className="text-[10px] badge-lime px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{pendingMeal.data.protein}g pro</span>
-                        <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.6)] px-2 py-0.5 rounded-full font-semibold">{pendingMeal.data.fat}g fat</span>
-                        <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.6)] px-2 py-0.5 rounded-full font-semibold">{pendingMeal.data.carbs}g carb</span>
-                      </div>
-                      {pendingMeal.creditsConsumed && (
-                        <div className="mb-2 text-center text-[11px] text-[rgba(255,255,255,0.4)]">
-                          1 credit reserved — Cancel will refund it
-                        </div>
+                        );
+                      })}
+                      {loading && <LoadingStatusMessage />}
+                      {pendingMeal && !loading && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="bg-[rgba(255,255,255,0.02)] border-[0.5px] border-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.85)] rounded-[24px] rounded-tl-sm max-w-[90%] self-start p-[12px_16px] text-[14px] leading-relaxed"
+                        >
+                          <div className="font-semibold text-white mb-2">Here is the estimated nutrition. Would you like to log this?</div>
+                          {pendingMeal.lowConfidence && !pendingMeal.was_ambiguous && (
+                            <div className="mb-3 flex items-start gap-2 rounded-xl border border-[rgba(255,179,71,0.25)] bg-[rgba(255,179,71,0.08)] p-2.5 text-[12px] leading-relaxed text-[#FFB347]">
+                              <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+                              <span>Low confidence — please review the values before logging.</span>
+                            </div>
+                          )}
+                          {pendingMeal.was_ambiguous && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 6 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                            >
+                              <AmbiguityIndicator wasAmbiguous={true} />
+                            </motion.div>
+                          )}
+
+                          {/* Phase 1 modifier review — single highest-severity banner */}
+                          {(() => {
+                            const maxSeverity: 'high' | 'medium' | null =
+                              pendingMeal.arithmetic_review_needed || pendingMeal.weight_basis_review_needed ? 'high'
+                                : pendingMeal.oil_review_needed || pendingMeal.plausibility_review_needed ? 'medium'
+                                  : null;
+
+                            if (maxSeverity === 'high') {
+                              const message =
+                                pendingMeal.arithmetic_review_needed
+                                  ? "Calories don't match the macros. Please verify before logging."
+                                  : 'Raw / cooked weight mismatch. Please verify.';
+                              return (
+                                <div className="mb-3 flex items-start gap-2 rounded-xl border border-[rgba(255,77,28,0.25)] bg-[rgba(255,77,28,0.08)] p-2.5 text-[12px] leading-relaxed text-[#FF4D1C]">
+                                  <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+                                  <span>{message}</span>
+                                </div>
+                              );
+                            }
+
+                            if (maxSeverity === 'medium') {
+                              const message =
+                                pendingMeal.oil_review_needed
+                                  ? 'Dish profile includes oil. If you truly added none, tap Edit and adjust fat.'
+                                  : 'Portion or macros look unusual. Please verify.';
+                              return (
+                                <div className="mb-3 flex items-start gap-2 rounded-xl border border-[rgba(255,179,71,0.25)] bg-[rgba(255,179,71,0.08)] p-2.5 text-[12px] leading-relaxed text-[#FFB347]">
+                                  <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+                                  <span>{message}</span>
+                                </div>
+                              );
+                            }
+
+                            return null;
+                          })()}
+
+                          {/* Per-item provenance pills — only render if items present */}
+                          {pendingMeal.items && pendingMeal.items.length > 0 && (
+                            <div className="mb-3 flex flex-wrap gap-1.5">
+                              {pendingMeal.items.map((item, i) => {
+                                const basisLabel =
+                                  item.weight_basis === 'raw' ? 'Raw'
+                                    : item.weight_basis === 'cooked' ? 'Cooked'
+                                      : item.weight_basis === 'finished' ? 'As served'
+                                        : null;
+                                const sourceLabel =
+                                  item.quantity_source === 'user_provided' ? 'You entered'
+                                    : item.quantity_source === 'ai_estimated' ? 'AI estimated'
+                                      : item.quantity_source === 'default_assumption' ? 'Default portion'
+                                        : 'Portion ref';
+                                const sourceIsAssumed =
+                                  item.quantity_source === 'ai_estimated' ||
+                                  item.quantity_source === 'default_assumption';
+                                return (
+                                  <div
+                                    key={i}
+                                    className="text-[10px] text-zinc-500 bg-[rgba(255,255,255,0.04)] px-2 py-0.5 rounded-full flex items-center gap-1.5"
+                                  >
+                                    <span className="text-zinc-400 font-medium">{item.food_name}</span>
+                                    {basisLabel && (
+                                      <>
+                                        <span className="text-zinc-600">·</span>
+                                        <span>{basisLabel}</span>
+                                      </>
+                                    )}
+                                    <span className="text-zinc-600">·</span>
+                                    <span className={sourceIsAssumed ? 'text-[#FFB347]' : ''}>{sourceLabel}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* Assumption list — only render if assumptions present */}
+                          {pendingMeal.assumptions && pendingMeal.assumptions.length > 0 && (
+                            <div className="mb-3 flex flex-col gap-1.5">
+                              {pendingMeal.assumptions.map((a, i) => (
+                                <div
+                                  key={i}
+                                  className="flex items-start gap-2 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-2.5 py-2"
+                                >
+                                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 shrink-0 mt-0.5">
+                                    Assumed
+                                  </span>
+                                  <span className="text-[12px] text-zinc-300 leading-snug">{a}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          <div className="flex gap-[6px] flex-wrap mb-[12px]">
+                            <span className="text-[10px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">~{pendingMeal.data.calories} kcal</span>
+                            <span className="text-[10px] badge-lime px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{pendingMeal.data.protein}g pro</span>
+                            <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.6)] px-2 py-0.5 rounded-full font-semibold">{pendingMeal.data.fat}g fat</span>
+                            <span className="text-[10px] bg-[rgba(255,255,255,0.1)] text-[rgba(235,235,245,0.6)] px-2 py-0.5 rounded-full font-semibold">{pendingMeal.data.carbs}g carb</span>
+                          </div>
+                          {pendingMeal.creditsConsumed && (
+                            <div className="mb-2 text-center text-[11px] text-[rgba(255,255,255,0.4)]">
+                              1 credit reserved — Cancel will refund it
+                            </div>
+                          )}
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => confirmMealMutation.mutate({ ...pendingMeal, source: 'ai', client_token: crypto.randomUUID() })}
+                              disabled={confirmMealMutation.isPending}
+                              className="flex-1 bg-[#D4FF00] text-black font-bold py-2 rounded-[12px] text-[13px]"
+                            >
+                              {confirmMealMutation.isPending ? 'Logging...' : 'Confirm'}
+                            </button>
+                            <button
+                              onClick={handleCancelPendingMeal}
+                              disabled={confirmMealMutation.isPending}
+                              className="flex-1 bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] text-white font-bold py-2 rounded-[12px] text-[13px] transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setEditingPending(true)}
+                            disabled={confirmMealMutation.isPending}
+                            className="mt-2 flex w-full items-center justify-center gap-1.5 text-[12px] font-medium text-[rgba(255,255,255,0.45)] transition-colors hover:text-white disabled:opacity-40"
+                          >
+                            <Pencil size={12} />
+                            Edit estimate
+                          </button>
+                        </motion.div>
                       )}
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={() => confirmMealMutation.mutate({ ...pendingMeal, source: 'ai', client_token: crypto.randomUUID() })}
-                          disabled={confirmMealMutation.isPending}
-                          className="flex-1 bg-[#D4FF00] text-black font-bold py-2 rounded-[12px] text-[13px]"
+                      {failedMealError && !loading && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="bg-[rgba(255,77,28,0.05)] border-[0.5px] border-[rgba(255,77,28,0.2)] text-[rgba(255,255,255,0.85)] rounded-[24px] rounded-tl-sm max-w-[90%] self-start p-[12px_16px] text-[14px] leading-relaxed"
                         >
-                          {confirmMealMutation.isPending ? 'Logging...' : 'Confirm'}
-                        </button>
-                        <button 
-                          onClick={handleCancelPendingMeal}
-                          disabled={confirmMealMutation.isPending}
-                          className="flex-1 bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] text-white font-bold py-2 rounded-[12px] text-[13px] transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setEditingPending(true)}
-                        disabled={confirmMealMutation.isPending}
-                        className="mt-2 flex w-full items-center justify-center gap-1.5 text-[12px] font-medium text-[rgba(255,255,255,0.45)] transition-colors hover:text-white disabled:opacity-40"
-                      >
-                        <Pencil size={12} />
-                        Edit estimate
-                      </button>
-                    </motion.div>
-                  )}
-                                    {failedMealError && !loading && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-[rgba(255,77,28,0.05)] border-[0.5px] border-[rgba(255,77,28,0.2)] text-[rgba(255,255,255,0.85)] rounded-[24px] rounded-tl-sm max-w-[90%] self-start p-[12px_16px] text-[14px] leading-relaxed"
-                    >
-                      <div className="mb-3 text-[rgba(255,255,255,0.9)]">
-                        <strong>Error:</strong> {failedMealError}
-                      </div>
-                      <button 
-                        onClick={() => {
-                          setFailedMealError(null);
-                          setFailedMealText(null);
-                          setRetryCount(0);
-                        }}
-                        className="bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] text-white font-bold py-2 px-4 rounded-[12px] text-[13px] transition-colors w-full"
-                      >
-                        Dismiss
-                      </button>
-                    </motion.div>
-                  )}
-                  {failedMealText && !loading && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-[rgba(255,77,28,0.05)] border-[0.5px] border-[rgba(255,77,28,0.2)] text-[rgba(255,255,255,0.85)] rounded-[24px] rounded-tl-sm max-w-[90%] self-start p-[12px_16px] text-[14px] leading-relaxed"
-                    >
-                      {retryCount >= 2 ? (
-                        <>
-                          <div className="mb-3 text-[rgba(255,255,255,0.9)]">AI is currently unable to identify this meal confidently. Please try entering a more descriptive meal.</div>
-                          <div className="mb-3 text-[13px] text-[rgba(255,255,255,0.6)] italic">Example: "2 chapati + 150g paneer" instead of "{failedMealText}"</div>
-                          <button 
+                          <div className="mb-3 text-[rgba(255,255,255,0.9)]">
+                            <strong>Error:</strong> {failedMealError}
+                          </div>
+                          <button
                             onClick={() => {
-                              setFailedMealText(null);
                               setFailedMealError(null);
+                              setFailedMealText(null);
                               setRetryCount(0);
                             }}
                             className="bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] text-white font-bold py-2 px-4 rounded-[12px] text-[13px] transition-colors w-full"
                           >
                             Dismiss
                           </button>
-                        </>
-                      ) : (
-                        <>
-                          <div className="mb-3 text-[rgba(255,255,255,0.9)]">We couldn't confidently identify this meal. Nothing has been logged. Please try again.</div>
-                          <button 
-                            onClick={() => {
-                              const text = failedMealText;
-                              setFailedMealText(null);
-                              setRetryCount(prev => prev + 1);
-                              setLoading(true);
-                              parseMealMutation.mutate(text);
-                            }}
-                            className="bg-[#FF4D1C] hover:bg-[#FF4D1C]/80 text-white font-bold py-2 px-4 rounded-[12px] text-[13px] transition-colors w-full"
-                          >
-                            Retry
-                          </button>
-                        </>
+                        </motion.div>
                       )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                      {failedMealText && !loading && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="bg-[rgba(255,77,28,0.05)] border-[0.5px] border-[rgba(255,77,28,0.2)] text-[rgba(255,255,255,0.85)] rounded-[24px] rounded-tl-sm max-w-[90%] self-start p-[12px_16px] text-[14px] leading-relaxed"
+                        >
+                          {retryCount >= 2 ? (
+                            <>
+                              <div className="mb-3 text-[rgba(255,255,255,0.9)]">AI is currently unable to identify this meal confidently. Please try entering a more descriptive meal.</div>
+                              <div className="mb-3 text-[13px] text-[rgba(255,255,255,0.6)] italic">Example: "2 chapati + 150g paneer" instead of "{failedMealText}"</div>
+                              <button
+                                onClick={() => {
+                                  setFailedMealText(null);
+                                  setFailedMealError(null);
+                                  setRetryCount(0);
+                                }}
+                                className="bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] text-white font-bold py-2 px-4 rounded-[12px] text-[13px] transition-colors w-full"
+                              >
+                                Dismiss
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <div className="mb-3 text-[rgba(255,255,255,0.9)]">We couldn't confidently identify this meal. Nothing has been logged. Please try again.</div>
+                              <button
+                                onClick={() => {
+                                  const text = failedMealText;
+                                  setFailedMealText(null);
+                                  setRetryCount(prev => prev + 1);
+                                  setLoading(true);
+                                  parseMealMutation.mutate(text);
+                                }}
+                                className="bg-[#FF4D1C] hover:bg-[#FF4D1C]/80 text-white font-bold py-2 px-4 rounded-[12px] text-[13px] transition-colors w-full"
+                              >
+                                Retry
+                              </button>
+                            </>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
 
 
-              {/* Input row */}
-              <div className="glass-strong border-t border-[rgba(255,255,255,0.06)] px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex flex-col gap-3">
-                <div className="flex gap-3 items-center">
+                  {/* Input row */}
+                  <div className="glass-strong border-t border-[rgba(255,255,255,0.06)] px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex flex-col gap-3">
+                    <div className="flex gap-3 items-center">
 
-                <input aria-label="Meal description"
-                  className="input-apple flex-1 text-[16px] placeholder:text-[rgba(255,255,255,0.3)] bg-[rgba(255,255,255,0.03)]"
-                  style={{ borderRadius: '14px', border: '0.5px solid rgba(255,255,255,0.15)', padding: '12px 16px' }}
-                  type="text"
-                  placeholder={selectedMealSlot ? "e.g. 2 boiled eggs and chai" : "Select breakfast / lunch / dinner"}
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSend()}
-                  onFocus={(e) => {
-                    const target = e.target;
-                    setTimeout(() => {
-                      target.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                    }, 300);
-                  }}
-                  disabled={!selectedMealSlot}
-                />
-                <motion.button
-                  whileHover={{ scale: 1.08 }}
-                  whileTap={{ scale: 0.92 }}
-                  onPointerDown={(e) => e.preventDefault()}
-                  onClick={() => handleSend()}
-                  disabled={loading || !selectedMealSlot || !input.trim()}
-                  className="w-[40px] h-[40px] rounded-full flex items-center justify-center shrink-0 transition-colors"
-                  style={{ background: loading || !selectedMealSlot || !input.trim() ? 'rgba(212,255,0,0.3)' : '#D4FF00' }}
-                >
-                  {loading ? (
-                    <Loader2 size={18} className="animate-spin text-black" />
-                  ) : (
-                    <ArrowRight size={18} strokeWidth={2} color="#0A0A0A" />
-                  )}
-                </motion.button>
-                </div>
-                                {/* OR divider */}
-                <div className="flex items-center gap-3 py-3">
-                  <div className="flex-1 h-px bg-[rgba(255,255,255,0.08)]" />
-                  <span className="text-[11px] font-medium text-[rgba(255,255,255,0.35)] tracking-[0.08em]">
-                    OR
-                  </span>
-                  <div className="flex-1 h-px bg-[rgba(255,255,255,0.08)]" />
-                </div>
+                      <input aria-label="Meal description"
+                        className="input-apple flex-1 text-[16px] placeholder:text-[rgba(255,255,255,0.3)] bg-[rgba(255,255,255,0.03)]"
+                        style={{ borderRadius: '14px', border: '0.5px solid rgba(255,255,255,0.15)', padding: '12px 16px' }}
+                        type="text"
+                        placeholder={selectedMealSlot ? "e.g. 2 boiled eggs and chai" : "Select breakfast / lunch / dinner"}
+                        value={input}
+                        onChange={e => setInput(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleSend()}
+                        onFocus={(e) => {
+                          const target = e.target;
+                          setTimeout(() => {
+                            target.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                          }, 300);
+                        }}
+                        disabled={!selectedMealSlot}
+                      />
+                      <motion.button
+                        whileHover={{ scale: 1.08 }}
+                        whileTap={{ scale: 0.92 }}
+                        onPointerDown={(e) => e.preventDefault()}
+                        onClick={() => handleSend()}
+                        disabled={loading || !selectedMealSlot || !input.trim()}
+                        className="w-[40px] h-[40px] rounded-full flex items-center justify-center shrink-0 transition-colors"
+                        style={{ background: loading || !selectedMealSlot || !input.trim() ? 'rgba(212,255,0,0.3)' : '#D4FF00' }}
+                      >
+                        {loading ? (
+                          <Loader2 size={18} className="animate-spin text-black" />
+                        ) : (
+                          <ArrowRight size={18} strokeWidth={2} color="#0A0A0A" />
+                        )}
+                      </motion.button>
+                    </div>
+                    {/* OR divider */}
+                    <div className="flex items-center gap-3 py-3">
+                      <div className="flex-1 h-px bg-[rgba(255,255,255,0.08)]" />
+                      <span className="text-[11px] font-medium text-[rgba(255,255,255,0.35)] tracking-[0.08em]">
+                        OR
+                      </span>
+                      <div className="flex-1 h-px bg-[rgba(255,255,255,0.08)]" />
+                    </div>
 
-                {/* Custom meal row */}
-                <button
-                  onClick={() => { setModalOpen(false); setTimeout(() => setIsCustomMealModalOpen(true), 300); }}
-                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl border border-dashed border-[#D4FF00]/40 bg-[#D4FF00]/[0.03] transition-colors hover:bg-[#D4FF00]/[0.06] text-left"
-                >
-                  <span
-                    className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
-                    style={{ background: 'radial-gradient(circle at 30% 30%, rgba(212,255,0,0.35), rgba(212,255,0,0.10))' }}
-                  >
-                    <Plus size={16} className="text-[#D4FF00]" strokeWidth={2.5} />
-                  </span>
-                  <span className="flex-1 min-w-0">
-                    <span className="block text-[14px] font-semibold text-white leading-tight">
-                      Create a custom meal
-                    </span>
-                    <span className="block text-[12px] text-zinc-500 leading-tight mt-0.5">
-                      Save your own meal and macros
-                    </span>
-                  </span>
-                  <ChevronRight size={16} className="text-white shrink-0" />
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
+                    {/* Custom meal row */}
+                    <button
+                      onClick={() => { setModalOpen(false); setTimeout(() => setIsCustomMealModalOpen(true), 300); }}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl border border-dashed border-[#D4FF00]/40 bg-[#D4FF00]/[0.03] transition-colors hover:bg-[#D4FF00]/[0.06] text-left"
+                    >
+                      <span
+                        className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                        style={{ background: 'radial-gradient(circle at 30% 30%, rgba(212,255,0,0.35), rgba(212,255,0,0.10))' }}
+                      >
+                        <Plus size={16} className="text-[#D4FF00]" strokeWidth={2.5} />
+                      </span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-[14px] font-semibold text-white leading-tight">
+                          Create a custom meal
+                        </span>
+                        <span className="block text-[12px] text-zinc-500 leading-tight mt-0.5">
+                          Save your own meal and macros
+                        </span>
+                      </span>
+                      <ChevronRight size={16} className="text-white shrink-0" />
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
 
+            )}
+          </AnimatePresence>,
+          document.body
         )}
-        </AnimatePresence>,
-        document.body
-      )}
-      
-      <CustomMealModal
-        isOpen={isCustomMealModalOpen}
-        onClose={() => setIsCustomMealModalOpen(false)}
-        onSave={handleCustomMealSave}
-        defaultSlot={selectedMealSlot || undefined}
-      />
 
-      <EditMealModal
-        isOpen={!!editingMeal}
-        onClose={() => setEditingMeal(null)}
-        meal={editingMeal}
-        onSave={(updates) => {
-          if (!editingMeal) return;
-          updateMealMutation.mutate({ id: editingMeal.id, updates });
-        }}
-      />
-      <PreCommitEditModal
-        isOpen={editingPending && !!pendingMeal}
-        onClose={() => setEditingPending(false)}
-        initial={pendingMeal ? {
-          meal_text: pendingMeal.text,
-          calories: pendingMeal.data?.calories ?? 0,
-          protein: pendingMeal.data?.protein ?? 0,
-          fat: pendingMeal.data?.fat ?? 0,
-          carbs: pendingMeal.data?.carbs ?? 0,
-          fiber: pendingMeal.data?.fiber,
-        } : null}
-        onSave={(updates) => {
-          if (!pendingMeal) return;
-          const edited = {
-            text: updates.meal_text,
-            request_id: pendingMeal.request_id,
-            source: pendingMeal.source,
-            creditsConsumed: pendingMeal.creditsConsumed,
-            data: {
-              ...pendingMeal.data,
-              calories: updates.calories,
-              protein: updates.protein,
-              fat: updates.fat,
-              carbs: updates.carbs,
-              fiber: updates.fiber,
-              _userEdited: true,
-            },
-          };
-          setPendingMeal(edited);
-          setEditingPending(false);
-          haptics.tap();
-          confirmMealMutation.mutate({
-            ...edited,
-            source: 'ai',
-            client_token: crypto.randomUUID(),
-          });
-        }}
-      />
-      <LogCalendar
-        isOpen={calendarOpen}
-        onClose={() => setCalendarOpen(false)}
-        floorDate={floorDate}
-        selectedDate={selectedDateStr}
-        onSelectDate={setSelectedDateStr}
-        goalType={goalType}
-        todayStatus={todayStatus}
-        metrics={dailyMetrics}
-      />
-      <ProtectProgressSheet
-        isOpen={protectOpen}
-        onClose={() => setProtectOpen(false)}
-      />
-    </>
+        <CustomMealModal
+          isOpen={isCustomMealModalOpen}
+          onClose={() => setIsCustomMealModalOpen(false)}
+          onSave={handleCustomMealSave}
+          defaultSlot={selectedMealSlot || undefined}
+        />
+
+        <EditMealModal
+          isOpen={!!editingMeal}
+          onClose={() => setEditingMeal(null)}
+          meal={editingMeal}
+          onSave={(updates) => {
+            if (!editingMeal) return;
+            updateMealMutation.mutate({ id: editingMeal.id, updates });
+          }}
+        />
+        <PreCommitEditModal
+          isOpen={editingPending && !!pendingMeal}
+          onClose={() => setEditingPending(false)}
+          initial={pendingMeal ? {
+            meal_text: pendingMeal.text,
+            calories: pendingMeal.data?.calories ?? 0,
+            protein: pendingMeal.data?.protein ?? 0,
+            fat: pendingMeal.data?.fat ?? 0,
+            carbs: pendingMeal.data?.carbs ?? 0,
+            fiber: pendingMeal.data?.fiber,
+          } : null}
+          onSave={(updates) => {
+            if (!pendingMeal) return;
+            const edited = {
+              text: updates.meal_text,
+              request_id: pendingMeal.request_id,
+              source: pendingMeal.source,
+              creditsConsumed: pendingMeal.creditsConsumed,
+              data: {
+                ...pendingMeal.data,
+                calories: updates.calories,
+                protein: updates.protein,
+                fat: updates.fat,
+                carbs: updates.carbs,
+                fiber: updates.fiber,
+                _userEdited: true,
+              },
+            };
+            setPendingMeal(edited);
+            setEditingPending(false);
+            haptics.tap();
+            confirmMealMutation.mutate({
+              ...edited,
+              source: 'ai',
+              client_token: crypto.randomUUID(),
+            });
+          }}
+        />
+        <LogCalendar
+          isOpen={calendarOpen}
+          onClose={() => setCalendarOpen(false)}
+          floorDate={floorDate}
+          selectedDate={selectedDateStr}
+          onSelectDate={setSelectedDateStr}
+          goalType={goalType}
+          todayStatus={todayStatus}
+          metrics={dailyMetrics}
+        />
+        <ProtectProgressSheet
+          isOpen={protectOpen}
+          onClose={() => setProtectOpen(false)}
+        />
+      </>
     </MotionConfig>
   );
 }

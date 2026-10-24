@@ -1,0 +1,148 @@
+﻿diff --git a/src/features/nutrition/pages/MealLoggerPage.tsx b/src/features/nutrition/pages/MealLoggerPage.tsx
+index 25849c2..cddffa8 100644
+--- a/src/features/nutrition/pages/MealLoggerPage.tsx
++++ b/src/features/nutrition/pages/MealLoggerPage.tsx
+@@ -10,7 +10,8 @@ import { useChatStore } from "@/app/store";
+ import { useNutritionStore } from "../store/nutritionStore";
+ import {
+   Send, Loader2, Dumbbell, Lightbulb, Sun, Sunrise, Moon, Coffee, Plus, X, ChevronLeft, ChevronRight, ArrowRight, ChevronDown,
+- Zap, AlertTriangle, Pencil, Lock } from "lucide-react";
++  Zap, AlertTriangle, Pencil, Lock
++} from "lucide-react";
+ import { EmptyState } from '@/shared/components/EmptyState';
+ import { CustomMealModal } from '../components/CustomMealModal';
+ import { AiLimitNudge } from '../components/AiLimitNudge';
+@@ -322,6 +323,16 @@ export function MealLoggerPage() {
+     source?: string;
+     creditsConsumed?: boolean;   // true when source === 'llm'
+     lowConfidence?: boolean;     // true when the parse came back with confidence < 80
++    assumptions?: string[];
++    oil_review_needed?: boolean;
++    weight_basis_review_needed?: boolean;
++    plausibility_review_needed?: boolean;
++    arithmetic_review_needed?: boolean;
++    items?: Array<{
++      food_name: string;
++      weight_basis: 'raw' | 'cooked' | 'finished' | 'unknown';
++      quantity_source: 'user_provided' | 'portion_reference' | 'default_assumption' | 'ai_estimated';
++    }>;
+   };
+ 
+   const [selectedDateStr, setSelectedDateStr] = useState<string>(() => getKolkataDateString());
+@@ -890,6 +901,18 @@ export function MealLoggerPage() {
+             source: data.source,
+             creditsConsumed: data.source === 'llm',
+             lowConfidence: typeof data.confidence === 'number' && data.confidence < 80,
++            assumptions: Array.isArray(data.assumptions) ? data.assumptions : undefined,
++            oil_review_needed: data.oil_review_needed === true,
++            weight_basis_review_needed: data.weight_basis_review_needed === true,
++            plausibility_review_needed: data.plausibility_review_needed === true,
++            arithmetic_review_needed: data.arithmetic_review_needed === true,
++            items: Array.isArray(data.items)
++              ? (data.items as Array<{ food_name: string; weight_basis: string; quantity_source: string }>).map((i) => ({
++                food_name: i.food_name,
++                weight_basis: i.weight_basis as 'raw' | 'cooked' | 'finished' | 'unknown',
++                quantity_source: i.quantity_source as 'user_provided' | 'portion_reference' | 'default_assumption' | 'ai_estimated',
++              }))
++              : undefined,
+           });
+           refetchCredits();
+         }
+@@ -1455,6 +1478,97 @@ if (todayCount >= PROTECT_PROGRESS_MEAL_THRESHOLD) {
+                               <AmbiguityIndicator wasAmbiguous={true} />
+                             </motion.div>
+                           )}
++
++                          {/* Phase 1 modifier review ΓÇö single highest-severity banner */}
++                          {(() => {
++                            const maxSeverity: 'high' | 'medium' | null =
++                              pendingMeal.arithmetic_review_needed || pendingMeal.weight_basis_review_needed ? 'high'
++                                : pendingMeal.oil_review_needed || pendingMeal.plausibility_review_needed ? 'medium'
++                                  : null;
++
++                            if (maxSeverity === 'high') {
++                              const message =
++                                pendingMeal.arithmetic_review_needed
++                                  ? "Calories don't match the macros. Please verify before logging."
++                                  : 'Raw / cooked weight mismatch. Please verify.';
++                              return (
++                                <div className="mb-3 flex items-start gap-2 rounded-xl border border-[rgba(255,77,28,0.25)] bg-[rgba(255,77,28,0.08)] p-2.5 text-[12px] leading-relaxed text-[#FF4D1C]">
++                                  <AlertTriangle size={14} className="mt-0.5 shrink-0" />
++                                  <span>{message}</span>
++                                </div>
++                              );
++                            }
++
++                            if (maxSeverity === 'medium') {
++                              const message =
++                                pendingMeal.oil_review_needed
++                                  ? 'Dish profile includes oil. If you truly added none, tap Edit and adjust fat.'
++                                  : 'Portion or macros look unusual. Please verify.';
++                              return (
++                                <div className="mb-3 flex items-start gap-2 rounded-xl border border-[rgba(255,179,71,0.25)] bg-[rgba(255,179,71,0.08)] p-2.5 text-[12px] leading-relaxed text-[#FFB347]">
++                                  <AlertTriangle size={14} className="mt-0.5 shrink-0" />
++                                  <span>{message}</span>
++                                </div>
++                              );
++                            }
++
++                            return null;
++                          })()}
++
++                          {/* Per-item provenance pills ΓÇö only render if items present */}
++                          {pendingMeal.items && pendingMeal.items.length > 0 && (
++                            <div className="mb-3 flex flex-wrap gap-1.5">
++                              {pendingMeal.items.map((item, i) => {
++                                const basisLabel =
++                                  item.weight_basis === 'raw' ? 'Raw'
++                                    : item.weight_basis === 'cooked' ? 'Cooked'
++                                      : item.weight_basis === 'finished' ? 'As served'
++                                        : null;
++                                const sourceLabel =
++                                  item.quantity_source === 'user_provided' ? 'You entered'
++                                    : item.quantity_source === 'ai_estimated' ? 'AI estimated'
++                                      : item.quantity_source === 'default_assumption' ? 'Default portion'
++                                        : 'Portion ref';
++                                const sourceIsAssumed =
++                                  item.quantity_source === 'ai_estimated' ||
++                                  item.quantity_source === 'default_assumption';
++                                return (
++                                  <div
++                                    key={i}
++                                    className="text-[10px] text-zinc-500 bg-[rgba(255,255,255,0.04)] px-2 py-0.5 rounded-full flex items-center gap-1.5"
++                                  >
++                                    <span className="text-zinc-400 font-medium">{item.food_name}</span>
++                                    {basisLabel && (
++                                      <>
++                                        <span className="text-zinc-600">┬╖</span>
++                                        <span>{basisLabel}</span>
++                                      </>
++                                    )}
++                                    <span className="text-zinc-600">┬╖</span>
++                                    <span className={sourceIsAssumed ? 'text-[#FFB347]' : ''}>{sourceLabel}</span>
++                                  </div>
++                                );
++                              })}
++                            </div>
++                          )}
++
++                          {/* Assumption list ΓÇö only render if assumptions present */}
++                          {pendingMeal.assumptions && pendingMeal.assumptions.length > 0 && (
++                            <div className="mb-3 flex flex-col gap-1.5">
++                              {pendingMeal.assumptions.map((a, i) => (
++                                <div
++                                  key={i}
++                                  className="flex items-start gap-2 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-2.5 py-2"
++                                >
++                                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 shrink-0 mt-0.5">
++                                    Assumed
++                                  </span>
++                                  <span className="text-[12px] text-zinc-300 leading-snug">{a}</span>
++                                </div>
++                              ))}
++                            </div>
++                          )}
++
+                           <div className="flex gap-[6px] flex-wrap mb-[12px]">
+                             <span className="text-[10px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">~{pendingMeal.data.calories} kcal</span>
+                             <span className="text-[10px] badge-lime px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{pendingMeal.data.protein}g pro</span>
