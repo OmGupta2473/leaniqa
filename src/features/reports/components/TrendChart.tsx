@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   LineChart,
   Line,
@@ -7,7 +7,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  ReferenceLine,
+  Legend,
 } from 'recharts';
 import { cn } from '@/shared/utils/utils';
 
@@ -19,8 +19,6 @@ interface TrendChartProps {
   }>;
   targetCalories: number;
   targetProteinG: number;
-  trendView: '7d' | '30d';
-  onTrendViewChange: (view: '7d' | '30d') => void;
   className?: string;
 }
 
@@ -38,8 +36,6 @@ export function TrendChart({
   points,
   targetCalories,
   targetProteinG,
-  trendView,
-  onTrendViewChange,
   className,
 }: TrendChartProps) {
   const data = useMemo(
@@ -73,41 +69,39 @@ export function TrendChart({
     [data, targetProteinG],
   );
 
-  const [view, setView] = useState<'calories' | 'protein'>('calories');
+  const [view, setView] = React.useState<'calories' | 'protein'>('calories');
 
   if (data.length === 0) {
     return (
-      <div className="rounded-[24px] border border-white/5 bg-white/[0.03] p-6 md:p-8 h-[300px]">
-        <div className="flex flex-col items-center justify-center h-full text-zinc-500">
-          <p className="text-lg font-medium text-white mb-2">No trend data available</p>
-          <p className="text-zinc-500 text-sm">Log meals to see your trend</p>
-        </div>
+      <div className={cn('flex h-48 items-center justify-center text-[rgba(255,255,255,0.3)]', className)}>
+        No trend data available
       </div>
     );
   }
 
   return (
-    <div className="rounded-[24px] border border-white/5 bg-white/[0.03] p-6 md:p-8">
-      {/* Header with Calories/Protein toggle */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <h3 className="text-lg font-semibold text-white">Calories Trend</h3>
-        <div className="flex gap-2">
+    <div className={cn('w-full', className)}>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-[14px] font-semibold text-white">
+          {view === 'calories' ? 'Calories' : 'Protein'} Trend
+        </h3>
+        <div className="flex gap-1.5">
           <button
             onClick={() => setView('calories')}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+            className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors ${
               view === 'calories'
-                ? 'bg-[#D4FF00] text-[#0A0A0A] shadow-[0_0_10px_rgba(212,255,0,0.3)]'
-                : 'bg-white/5 text-zinc-400 hover:bg-white/10'
+                ? 'bg-[#D4FF00] text-[#0A0A0A]'
+                : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.5)] hover:bg-[rgba(255,255,255,0.1)]'
             }`}
           >
             Calories
           </button>
           <button
             onClick={() => setView('protein')}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+            className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors ${
               view === 'protein'
-                ? 'bg-[#D4FF00] text-[#0A0A0A] shadow-[0_0_10px_rgba(212,255,0,0.3)]'
-                : 'bg-white/5 text-zinc-400 hover:bg-white/10'
+                ? 'bg-[#D4FF00] text-[#0A0A0A]'
+                : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.5)] hover:bg-[rgba(255,255,255,0.1)]'
             }`}
           >
             Protein
@@ -115,38 +109,34 @@ export function TrendChart({
         </div>
       </div>
 
-      {/* Chart */}
-      <div className="h-[300px] md:h-[350px] mb-6" style={{ width: '100%' }}>
+      <div className="h-48" style={{ width: '100%' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+          <LineChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke="rgba(255,255,255,0.1)"
+              stroke="rgba(255,255,255,0.05)"
               vertical={false}
             />
             <XAxis
               dataKey="label"
-              tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }}
+              tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10 }}
               axisLine={false}
               tickLine={false}
-              tickMargin={8}
-              interval={0}
+              tickMargin={4}
             />
             <YAxis
-              tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }}
+              tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10 }}
               axisLine={false}
               tickLine={false}
               domain={[0, view === 'calories' ? maxCalories * 1.15 : maxProtein * 1.15]}
               tickFormatter={(v) => (view === 'calories' ? `${v}kcal` : `${v}g`)}
-              tickCount={4}
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: '#111111',
+                backgroundColor: '#1A1A1C',
                 border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '12px',
-                padding: '10px 14px',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                borderRadius: '8px',
+                padding: '8px 12px',
               }}
               labelStyle={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}
               formatter={(value: number, name: string) => {
@@ -157,12 +147,12 @@ export function TrendChart({
                 return [value, name];
               }}
             />
-            <ReferenceLine
-              y={view === 'calories' ? targetCalories : targetProteinG}
-              stroke="#D4FF00"
-              strokeWidth={2}
-              strokeDasharray="6 6"
-              label={{ position: 'right', fill: '#D4FF00', fontSize: 10, offset: 8 }}
+            <Legend
+              layout="horizontal"
+              align="center"
+              verticalAlign="bottom"
+              iconType="line"
+              wrapperStyle={{ paddingTop: 8 }}
             />
             {view === 'calories' ? (
               <>
@@ -170,9 +160,19 @@ export function TrendChart({
                   type="monotone"
                   dataKey="calories"
                   stroke="#D4FF00"
-                  strokeWidth={3}
+                  strokeWidth={2}
                   dot={false}
-                  activeDot={{ r: 6, fill: '#D4FF00', strokeWidth: 2, stroke: '#0A0A0A' }}
+                  activeDot={{ r: 5 }}
+                  name="Calories"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="targetCalories"
+                  stroke="rgba(255,255,255,0.3)"
+                  strokeWidth={1.5}
+                  strokeDasharray="4 4"
+                  dot={false}
+                  name="Target"
                 />
               </>
             ) : (
@@ -181,50 +181,24 @@ export function TrendChart({
                   type="monotone"
                   dataKey="proteinG"
                   stroke="#00B4D8"
-                  strokeWidth={3}
+                  strokeWidth={2}
                   dot={false}
-                  activeDot={{ r: 6, fill: '#00B4D8', strokeWidth: 2, stroke: '#0A0A0A' }}
+                  activeDot={{ r: 5 }}
+                  name="Protein"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="targetProteinG"
+                  stroke="rgba(0,180,216,0.3)"
+                  strokeWidth={1.5}
+                  strokeDasharray="4 4"
+                  dot={false}
+                  name="Target"
                 />
               </>
             )}
           </LineChart>
         </ResponsiveContainer>
-      </div>
-
-      {/* Footer: Legend + 7/30 Day Toggle */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex items-center justify-center md:justify-start gap-6">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#D4FF00]" />
-            <span className="text-sm text-zinc-400">Calories</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-4 h-0.5 bg-[rgba(212,255,0,0.5)]" />
-            <span className="text-sm text-zinc-400">Target</span>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => onTrendViewChange('7d')}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              trendView === '7d'
-                ? 'bg-[#D4FF00] text-[#0A0A0A] shadow-[0_0_10px_rgba(212,255,0,0.3)]'
-                : 'bg-white/5 text-zinc-400 hover:bg-white/10'
-            }`}
-          >
-            7 Day
-          </button>
-          <button
-            onClick={() => onTrendViewChange('30d')}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              trendView === '30d'
-                ? 'bg-[#D4FF00] text-[#0A0A0A] shadow-[0_0_10px_rgba(212,255,0,0.3)]'
-                : 'bg-white/5 text-zinc-400 hover:bg-white/10'
-            }`}
-          >
-            30 Day
-          </button>
-        </div>
       </div>
     </div>
   );

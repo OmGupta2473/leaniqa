@@ -113,119 +113,34 @@ export function AwardsSkeleton() {
 
 export function WeeklyReportSkeleton() {
   return (
-    <div className="page-enter pt-[calc(env(safe-area-inset-top)+20px)] pb-[calc(100px+env(safe-area-inset-bottom))] min-h-[100dvh] bg-[#0A0A0A] px-4 md:px-8">
-      {/* Header Skeleton */}
-      <header className="relative mb-8 md:mb-12 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-white/5 animate-pulse" />
-          <div className="h-6 w-24 bg-white/5 animate-pulse rounded-lg hidden sm:block" />
-        </div>
-
-        <div className="absolute left-1/2 top-0 -translate-x-1/2 hidden md:block">
-          <div className="w-24 h-8 rounded-full bg-white/5 animate-pulse" />
-        </div>
-
-        <div className="flex items-center gap-3 w-full md:w-auto md:justify-end">
-          <div className="w-10 h-10 rounded-full bg-white/5 animate-pulse" />
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded bg-white/5 animate-pulse" />
-            <div className="w-8 h-8 rounded-full bg-white/5 animate-pulse" />
-          </div>
-        </div>
-      </header>
-
-      {/* Mobile badge skeleton */}
-      <div className="md:hidden mb-6 text-center">
-        <div className="w-24 h-8 mx-auto rounded-full bg-white/5 animate-pulse" />
+    <div className="page-enter pt-[calc(env(safe-area-inset-top)+20px)] pb-[calc(100px+env(safe-area-inset-bottom))] min-h-[100dvh] bg-[#0A0A0A] px-5">
+      <div className="flex items-center justify-between mb-8">
+        <div className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.05)] animate-pulse motion-reduce:animate-none" />
+        <div className="h-5 w-32 bg-[rgba(255,255,255,0.05)] animate-pulse motion-reduce:animate-none rounded-lg" />
+        <div className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.05)] animate-pulse motion-reduce:animate-none" />
       </div>
 
-      {/* Week Selector Skeleton */}
-      <div className="mb-8">
-        <div className="w-48 h-10 mx-auto rounded-full bg-white/5 animate-pulse" />
+      <div className="mb-6">
+        <div className="h-10 w-48 bg-[rgba(255,255,255,0.05)] animate-pulse motion-reduce:animate-none rounded-lg mb-2" />
+        <div className="h-4 w-64 bg-[rgba(255,255,255,0.05)] animate-pulse motion-reduce:animate-none rounded-lg" />
       </div>
 
-      <div className="max-w-5xl mx-auto">
-        {/* Week Label Skeleton */}
-        <div className="mb-8 text-center">
-          <div className="w-40 h-8 mx-auto rounded-full bg-white/5 animate-pulse" />
-        </div>
+      <div className="card-base p-6 mb-8 flex items-center justify-between h-[120px]">
+         <div className="flex flex-col gap-2">
+            <div className="h-4 w-32 bg-[rgba(255,255,255,0.05)] animate-pulse motion-reduce:animate-none rounded-lg" />
+            <div className="h-10 w-24 bg-[rgba(255,255,255,0.05)] animate-pulse motion-reduce:animate-none rounded-lg" />
+         </div>
+         <div className="w-[80px] h-[80px] rounded-full bg-[rgba(255,255,255,0.05)] animate-pulse motion-reduce:animate-none" />
+      </div>
 
-        {/* Weekly Consistency Card Skeleton */}
-        <div className="mb-8 rounded-[24px] border border-white/5 bg-white/[0.03] p-6 md:p-8 animate-pulse">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8">
-            <div className="flex flex-col items-center md:w-48 md:h-48 md:shrink-0">
-              <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-white/5" />
-              <div className="absolute -top-10 -left-10 w-24 h-24 md:w-32 md:h-32 rounded-full bg-white/5" />
-            </div>
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-6 flex-1">
-              <div className="text-center md:text-left">
-                <div className="h-5 w-32 bg-white/5 animate-pulse rounded mb-2 mx-auto md:mx-0" />
-                <div className="h-4 w-40 bg-white/5 animate-pulse rounded mx-auto md:mx-0" />
-              </div>
-              <div className="flex flex-wrap items-center justify-center md:justify-end gap-2 md:gap-3 mt-4 md:mt-0">
-                <div className="w-24 h-8 rounded-full bg-white/5 animate-pulse" />
-                <div className="w-28 h-8 rounded-full bg-white/5 animate-pulse" />
-                <div className="w-28 h-8 rounded-full bg-white/5 animate-pulse" />
-              </div>
-            </div>
+      <div className="h-4 w-40 bg-[rgba(255,255,255,0.05)] animate-pulse motion-reduce:animate-none rounded-lg mb-4" />
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="card-base p-5 h-[110px] flex flex-col justify-between">
+            <div className="h-4 w-20 bg-[rgba(255,255,255,0.05)] animate-pulse motion-reduce:animate-none rounded-lg" />
+            <div className="h-8 w-24 bg-[rgba(255,255,255,0.05)] animate-pulse motion-reduce:animate-none rounded-lg" />
           </div>
-        </div>
-
-        {/* Trend Chart Card Skeleton */}
-        <div className="mb-8 rounded-[24px] border border-white/5 bg-white/[0.03] p-6 md:p-8 animate-pulse">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-            <div className="h-5 w-24 bg-white/5 animate-pulse rounded" />
-            <div className="flex gap-2">
-              <div className="w-16 h-8 rounded-full bg-white/5 animate-pulse" />
-              <div className="w-20 h-8 rounded-full bg-white/5 animate-pulse" />
-            </div>
-          </div>
-          <div className="h-[300px] md:h-[350px] mb-6 bg-white/5 animate-pulse rounded-lg" />
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex items-center justify-center md:justify-start gap-6">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-white/5 animate-pulse" />
-                <div className="w-12 h-4 bg-white/5 animate-pulse rounded" />
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-1 bg-white/5 animate-pulse rounded" />
-                <div className="w-10 h-4 bg-white/5 animate-pulse rounded" />
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <div className="w-16 h-8 rounded-full bg-white/5 animate-pulse" />
-              <div className="w-20 h-8 rounded-full bg-white/5 animate-pulse" />
-            </div>
-          </div>
-        </div>
-
-        {/* Action Items Skeleton */}
-        <div className="mb-8">
-          <div className="h-4 w-20 bg-white/5 animate-pulse rounded mb-4" />
-          <div className="space-y-3">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4 md:p-5 animate-pulse">
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 mt-2 rounded-full bg-white/5 animate-pulse" />
-                  <div className="h-5 w-full bg-white/5 animate-pulse rounded" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Day Timeline Skeleton */}
-        <div className="space-y-4">
-          {[1, 2, 3, 4, 5, 6, 7].map(i => (
-            <div key={i} className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4 md:p-5 animate-pulse">
-              <div className="flex items-center justify-between mb-3">
-                <div className="h-4 w-20 bg-white/5 animate-pulse rounded" />
-                <div className="h-6 w-16 bg-white/5 animate-pulse rounded-full" />
-              </div>
-              <div className="h-3 w-full bg-white/5 animate-pulse rounded" />
-            </div>
-          ))}
-        </div>
+        ))}
       </div>
     </div>
   );
