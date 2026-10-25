@@ -18,6 +18,7 @@ import { subscriptionService } from '@/features/pricing/services/subscriptionSer
 import { EditProfileModal } from '../components/EditProfileModal';
 import { EditNutritionModal } from '../components/EditNutritionModal';
 import { CancelRenewalSheet } from '@/features/pricing/components/CancelRenewalSheet';
+import { DeleteAccountSheet } from '../components/DeleteAccountSheet';
 import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
 import { ProfileSkeleton } from '@/shared/components/Skeletons';
 import { Logo } from '@/shared/components/Logo';
@@ -54,10 +55,17 @@ export function ProfilePage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showNutritionModal, setShowNutritionModal] = useState(false);
   const [showCancelSheet, setShowCancelSheet] = useState(false);
+  const [showDeleteSheet, setShowDeleteSheet] = useState(false);
   const { session } = useAuthSession();
   const isGuest = session?.user?.is_anonymous === true;
   const { toast } = useToast();
   const [linking, setLinking] = useState(false);
+
+  const { data: accountDeletionRequest } = useQuery({
+    queryKey: ['accountDeletionRequest'],
+    queryFn: () => profileService.getAccountDeletionRequest(),
+    enabled: !isGuest,
+  });
 
   const handleLinkGoogle = async () => {
     if (linking) return;
@@ -155,6 +163,46 @@ export function ProfilePage() {
       navigate('/onboarding');
     },
   });
+
+  const handleDeleteAccountRequest = async () => {
+    try {
+      const { requestedAt } = await profileService.requestAccountDeletion();
+      setShowDeleteSheet(false);
+      await queryClient.invalidateQueries({ queryKey: ['accountDeletionRequest'] });
+      await queryClient.invalidateQueries({ queryKey: ['profile'] });
+      await queryClient.invalidateQueries({ queryKey: ['goal'] });
+      authService.logout();
+      toast({
+        type: 'success',
+        message: 'Deletion requested. You have 24 hours to cancel.',
+        duration: 5000,
+      });
+    } catch (err: any) {
+      if (err.code === 'already_requested' && err.message === 'Deletion already requested.') {
+        // The sheet shouldn't be open in this case, but handle gracefully
+        setShowDeleteSheet(false);
+        await queryClient.invalidateQueries({ queryKey: ['accountDeletionRequest'] });
+      } else {
+        toast({
+          type: 'error',
+          message: err.message || 'Could not request deletion. Please try again.',
+        });
+      }
+    }
+  };
+
+  const handleCancelAccountDeletion = async () => {
+    try {
+      await profileService.cancelAccountDeletion();
+      await queryClient.invalidateQueries({ queryKey: ['accountDeletionRequest'] });
+      toast({ type: 'success', message: 'Deletion request cancelled.', duration: 3000 });
+    } catch (err: any) {
+      toast({
+        type: 'error',
+        message: err.message || 'Could not cancel deletion. Please try again.',
+      });
+    }
+  };
 
   const { name, gender, age, activityLevel, dailyCalorieGoal, targetMacros, proteinMid } = calculated;
 
@@ -592,6 +640,61 @@ export function ProfilePage() {
               Test Crash Report
             </button>
           )}
+
+          {/* Delete Account */}
+          {!isGuest && (
+            <>
+              {accountDeletionRequest && !accountDeletionRequest.cancelledAt && (
+                <div className="mb-3 p-4 rounded-2xl bg-[#FF5C4D]/10 border border-[#FF5C4D]/30">
+                  <div className="flex items-center gap-2 mb-1">
+                    <AlertTriangle size={16} className="text-[#FF5C4D] shrink-0" />
+                    <span className="text-[14px] font-medium text-[#FF5C4D]">
+                      Account deletion scheduled
+                    </span>
+                  </div>
+                  <div className="text-[13px] text-[rgba(255,255,255,0.7)] ml-6">
+                    Your account will be permanently deleted on{' '}
+                    <span className="font-medium text-white">
+                      {new Date(new Date(accountDeletionRequest.requestedAt).getTime() + 24 * 60 * 60 * 1000).toLocaleDateString('en-GB', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                    . You can cancel until then.
+                  </div>
+                </div>
+              )}
+              <button
+                onClick={accountDeletionRequest && !accountDeletionRequest.cancelledAt ? handleCancelAccountDeletion : () => setShowDeleteSheet(true)}
+                disabled={accountDeletionRequest && !accountDeletionRequest.cancelledAt && false}
+                className="flex items-center justify-center gap-2 w-full py-3.5 rounded-[24px] border text-[15px] font-medium transition-colors min-h-[44px]"
+                style={{
+                  background: accountDeletionRequest && !accountDeletionRequest.cancelledAt ? 'rgba(255,92,77,0.1)' : 'rgba(255,255,255,0.03)',
+                  borderColor: accountDeletionRequest && !accountDeletionRequest.cancelledAt ? 'rgba(255,92,77,0.35)' : 'rgba(255,255,255,0.06)',
+                  color: accountDeletionRequest && !accountDeletionRequest.cancelledAt ? '#FF5C4D' : 'rgba(255,255,255,0.7)',
+                }}
+              >
+                {accountDeletionRequest && !accountDeletionRequest.cancelledAt ? (
+                  <>
+                    <AlertTriangle size={18} className="text-[#FF5C4D]" />
+                    Cancel deletion request
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle size={18} className="text-red-500" />
+                    Delete account
+                  </>
+                )}
+              </button>
+              <div className="text-center text-[12px] text-[rgba(255,255,255,0.4)] mt-1">
+                Permanently delete your account and all associated data.
+              </div>
+            </>
+          )}
+
           <button
             onClick={() => navigate('/about')}
             className="flex items-center justify-center gap-2 w-full py-3.5 rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.7)] font-medium text-[15px] transition-colors hover:bg-[rgba(255,255,255,0.06)]"
@@ -709,6 +812,11 @@ export function ProfilePage() {
             });
           }
         }}
+      />
+      <DeleteAccountSheet
+        isOpen={showDeleteSheet}
+        onClose={() => setShowDeleteSheet(false)}
+        onRequested={handleDeleteAccountRequest}
       />
     </div>
   );

@@ -334,5 +334,108 @@ export const profileService = {
         details: err,
       });
     }
+  },
+
+  // NOTE: This does not delete auth.users. For store-compliant account
+  // deletion, use requestAccountDeletion() + the 1.5B cron. Do not use this
+  // as an account-deletion entry point.
+
+  async requestAccountDeletion(): Promise<{ requestedAt: string }> {
+    try {
+      const { data, error } = await supabase.functions.invoke('request-account-deletion', {
+        body: { action: 'request' },
+      });
+      if (error) {
+        const message = error.context?.json
+          ? (await error.context.json()).error || error.message
+          : error.message;
+        throw new AppError({
+          code: ErrorCodes.INTERNAL_SERVER_ERROR,
+          message: message || 'Failed to request account deletion',
+          retryable: true,
+          status: error.status || 500,
+          details: error,
+        });
+      }
+      if (!data?.requested_at) {
+        throw new AppError({
+          code: ErrorCodes.INTERNAL_SERVER_ERROR,
+          message: 'Invalid response from deletion request',
+          retryable: false,
+          status: 500,
+        });
+      }
+      return { requestedAt: data.requested_at };
+    } catch (err) {
+      if (err instanceof AppError) throw err;
+      throw new AppError({
+        code: ErrorCodes.INTERNAL_SERVER_ERROR,
+        message: 'An unexpected error occurred while requesting account deletion',
+        retryable: false,
+        status: 500,
+        details: err,
+      });
+    }
+  },
+
+  async cancelAccountDeletion(): Promise<void> {
+    try {
+      const { error } = await supabase.functions.invoke('request-account-deletion', {
+        body: { action: 'cancel' },
+      });
+      if (error) {
+        const message = error.context?.json
+          ? (await error.context.json()).error || error.message
+          : error.message;
+        throw new AppError({
+          code: ErrorCodes.INTERNAL_SERVER_ERROR,
+          message: message || 'Failed to cancel account deletion',
+          retryable: true,
+          status: error.status || 500,
+          details: error,
+        });
+      }
+    } catch (err) {
+      if (err instanceof AppError) throw err;
+      throw new AppError({
+        code: ErrorCodes.INTERNAL_SERVER_ERROR,
+        message: 'An unexpected error occurred while cancelling account deletion',
+        retryable: false,
+        status: 500,
+        details: err,
+      });
+    }
+  },
+
+  async getAccountDeletionRequest(): Promise<{ requestedAt: string; cancelledAt: string | null } | null> {
+    try {
+      const userId = await authService.getUserId();
+      const { data, error } = await supabase
+        .from('deletion_requests')
+        .select('requested_at, cancelled_at')
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      if (error && error.code !== 'PGRST116') {
+        throw new AppError({
+          code: ErrorCodes.INTERNAL_SERVER_ERROR,
+          message: 'Failed to fetch account deletion request',
+          retryable: true,
+          status: 500,
+          details: error,
+        });
+      }
+      if (!data) return null;
+      return { requestedAt: data.requested_at, cancelledAt: data.cancelled_at };
+    } catch (err) {
+      if (err instanceof AppError) throw err;
+      throw new AppError({
+        code: ErrorCodes.INTERNAL_SERVER_ERROR,
+        message: 'An unexpected error occurred while fetching account deletion request',
+        retryable: false,
+        status: 500,
+        details: err,
+      });
+    }
   }
 };
