@@ -229,9 +229,9 @@ export function ProfilePage() {
       : 'Free plan';
   const planSubtitle =
     subscription?.plan === 'premium'
-      ? '100 AI parses per day · unlimited history'
+      ? '25 AI parses per day · unlimited history'
       : subscription?.plan === 'discipline'
-      ? '25 AI parses per day · 180-day history'
+      ? '12 AI parses per day · 180-day history'
       : '5 AI parses per day · 14-day history';
   //     console.log('[Profile-diag]', {
   //   plan: subscription?.plan,
