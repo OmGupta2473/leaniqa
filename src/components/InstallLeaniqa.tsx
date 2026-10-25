@@ -218,7 +218,7 @@ function PickerScreen({
         </div>
         <h3 className="text-xl font-bold text-white mb-1.5">Add LeanIQA to your home screen</h3>
         <p className="text-zinc-400 text-sm max-w-[280px]">
-          Works offline and opens instantly. Choose your device to see the steps.
+          Installs like an app and caches your data. Choose your device to see the steps.
         </p>
       </div>
 
@@ -268,7 +268,7 @@ function OutroScreen({ onDone }: { onDone: () => void }) {
       </motion.div>
       <h3 className="text-2xl font-bold text-white mb-2">You&apos;re set</h3>
       <p className="text-zinc-400 text-center mb-8 max-w-[280px]">
-        LeanIQA is on your home screen. Open it any time — no browser, no loading.
+        LeanIQA is on your home screen. It opens instantly and caches your data — connect to sync.
       </p>
       <button
         onClick={onDone}
