@@ -12,6 +12,8 @@ export function preloadRoute(path: string): void {
     case '/onboarding': void import('@/features/onboarding/pages/OnboardingPage'); break;
     case '/science':    void import('@/features/onboarding/pages/SciencePage'); break;
     case '/login':      void import('@/features/auth/pages/AuthPage'); break;
+    case '/delete-account':      void import('@/features/account/pages/DeleteAccountPage'); break;
+    case '/delete-account/confirm': void import('@/features/account/pages/DeleteAccountConfirmPage'); break;
     default: break;
   }
 }
