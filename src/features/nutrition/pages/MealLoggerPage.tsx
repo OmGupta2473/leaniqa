@@ -86,24 +86,13 @@ function getMealNutritionValues(data: {
   fat: number;
   carbs: number;
   fiber?: number | null;
-  _userEdited?: boolean;
 }) {
-  if (data._userEdited) {
-    return {
-      calories: data.calories,
-      protein: data.protein,
-      fat: data.fat,
-      carbs: data.carbs,
-      fiber: data.fiber ?? 0,
-    };
-  }
-
   return {
-    calories: Math.round(data.calories),
-    protein: Math.round(data.protein),
-    fat: Math.round(data.fat),
-    carbs: Math.round(data.carbs),
-    fiber: data.fiber ? Math.round(data.fiber) : undefined,
+    calories: data.calories,
+    protein: data.protein,
+    fat: data.fat,
+    carbs: data.carbs,
+    fiber: data.fiber ?? 0,
   };
 }
 
@@ -1859,7 +1848,6 @@ export function MealLoggerPage() {
                 fat: updates.fat,
                 carbs: updates.carbs,
                 fiber: updates.fiber,
-                _userEdited: true,
               },
             };
             setPendingMeal(edited);

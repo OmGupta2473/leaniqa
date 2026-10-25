@@ -101,12 +101,14 @@ export const mealService = {
       user_id: userId,
     };
     
-    // Ensure all numeric fields are integers (Supabase expects integers based on schema)
-    payload.calories = Math.round(payload.calories || 0);
-    payload.protein = Math.round(payload.protein || 0);
-    payload.fat = Math.round(payload.fat || 0);
-    payload.carbs = Math.round(payload.carbs || 0);
-    payload.fiber = Math.round(fiber || 0);
+    // Ensure all numeric fields are non-negative (schema allows decimals)
+    // Use Number.isFinite to guard against NaN/Infinity
+    const safe = (v: unknown) => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : 0; };
+    payload.calories = safe(payload.calories);
+    payload.protein = safe(payload.protein);
+    payload.fat = safe(payload.fat);
+    payload.carbs = safe(payload.carbs);
+    payload.fiber = safe(fiber);
     
     devLog('--- SUPABASE INSERT PAYLOAD ---', payload);
     
@@ -146,11 +148,12 @@ export const mealService = {
   ): Promise<DbMealLog | null> {
     const userId = await authService.getUserId();
     const payload: Record<string, unknown> = { ...updates };
-    if (typeof payload.calories === 'number') payload.calories = Math.round(payload.calories);
-    if (typeof payload.protein === 'number') payload.protein = Math.round(payload.protein);
-    if (typeof payload.fat === 'number') payload.fat = Math.round(payload.fat);
-    if (typeof payload.carbs === 'number') payload.carbs = Math.round(payload.carbs);
-    if (typeof payload.fiber === 'number') payload.fiber = Math.round(payload.fiber);
+    const safe = (v: unknown) => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : 0; };
+    if (typeof payload.calories === 'number') payload.calories = safe(payload.calories);
+    if (typeof payload.protein === 'number') payload.protein = safe(payload.protein);
+    if (typeof payload.fat === 'number') payload.fat = safe(payload.fat);
+    if (typeof payload.carbs === 'number') payload.carbs = safe(payload.carbs);
+    if (typeof payload.fiber === 'number') payload.fiber = safe(payload.fiber);
     if (payload.meal_slot === 'snack') delete payload.meal_slot;  // matches addMeal behaviour
     const { data, error } = await supabase
       .from('meal_logs')

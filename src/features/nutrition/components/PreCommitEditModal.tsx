@@ -27,8 +27,13 @@ interface PreCommitEditModalProps {
 
 const isValidMacro = (v: string) => v !== '' && !Number.isNaN(Number(v)) && Number(v) >= 0;
 
-function sanitizeWholeNumber(raw: string): string {
-  return raw.replace(/\D/g, '');
+function sanitizeDecimal(raw: string): string {
+  // Allow digits and a single decimal point
+  const cleaned = raw.replace(/[^0-9.]/g, '');
+  // Ensure only one decimal point
+  const parts = cleaned.split('.');
+  if (parts.length <= 2) return cleaned;
+  return parts[0] + '.' + parts.slice(1).join('');
 }
 
 const SectionLabel = ({ children }: { children: React.ReactNode }) => (
@@ -54,9 +59,9 @@ const NumField = ({
     <div className="flex items-baseline justify-between">
       <input
         type="text"
-        inputMode="numeric"
+        inputMode="decimal"
         value={value}
-        onChange={(e) => onChange(sanitizeWholeNumber(e.target.value))}
+        onChange={(e) => onChange(sanitizeDecimal(e.target.value))}
         placeholder={placeholder}
         className="w-full bg-transparent text-[16px] font-semibold text-white placeholder:text-[rgba(255,255,255,0.25)] outline-none tabular-nums sm:text-[17px]"
       />
@@ -84,11 +89,11 @@ export function PreCommitEditModal({ isOpen, onClose, onSave, initial }: PreComm
   useEffect(() => {
     if (!isOpen || !initial) return undefined;
     setName(initial.meal_text ?? '');
-    setCalories(String(Math.round(initial.calories ?? 0)));
-    setProtein(String(Math.round(initial.protein ?? 0)));
-    setFat(String(Math.round(initial.fat ?? 0)));
-    setCarbs(String(Math.round(initial.carbs ?? 0)));
-    setFiber(initial.fiber === undefined || initial.fiber === null ? '' : String(Math.round(initial.fiber)));
+    setCalories(String(initial.calories ?? 0));
+    setProtein(String(initial.protein ?? 0));
+    setFat(String(initial.fat ?? 0));
+    setCarbs(String(initial.carbs ?? 0));
+    setFiber(initial.fiber === undefined || initial.fiber === null ? '' : String(initial.fiber));
     return undefined;
   // Reset from `initial` only when the sheet opens. Parent re-renders pass a
   // fresh `initial` object reference, which would otherwise clobber the
@@ -176,7 +181,7 @@ export function PreCommitEditModal({ isOpen, onClose, onSave, initial }: PreComm
                     Edit Estimate
                   </h2>
                   <p className="mt-1 text-[13px] font-medium text-[rgba(255,255,255,0.5)]">
-                    Adjust whole-number values before logging.
+                    Adjust values before logging. Decimals supported.
                   </p>
                 </div>
                 <button

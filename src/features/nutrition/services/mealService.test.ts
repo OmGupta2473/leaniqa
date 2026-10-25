@@ -103,7 +103,7 @@ describe('mealService.addMeal meal_slot handling', () => {
     expect(mocks.upsert.mock.calls[0][0]).not.toHaveProperty('meal_slot');
   });
 
-  it('T-D9-4: rounds numeric fields in the upsert payload', async () => {
+  it('T-D9-4: preserves decimal precision in the upsert payload', async () => {
     await mealService.addMeal({
       ...validMeal,
       calories: 349.7,
@@ -113,10 +113,10 @@ describe('mealService.addMeal meal_slot handling', () => {
     });
 
     expect(mocks.upsert.mock.calls[0][0]).toMatchObject({
-      calories: 350,
-      protein: 11,
-      fat: 8,
-      carbs: 58,
+      calories: 349.7,
+      protein: 11.4,
+      fat: 7.6,
+      carbs: 57.5,
     });
   });
 
