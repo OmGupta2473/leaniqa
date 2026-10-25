@@ -11,14 +11,14 @@ type TargetPlan = 'discipline' | 'premium';
 
 const PLAN_BENEFITS: Record<TargetPlan, string[]> = {
   discipline: [
-    '25 AI meal parses every day',
+    '12 AI meal parses every day',
     '180 days of detailed meal history',
     'Full weekly reports and macro balance',
     'Coach-style weekly summary',
     'Weekly trends and consistency insights',
   ],
   premium: [
-    '100 AI meal parses every day',
+    '25 AI meal parses every day',
     'Unlimited detailed meal history',
     'Advanced progress projections',
     'Everything in Discipline',

@@ -21,7 +21,7 @@ export const ENTITLEMENTS: Record<PlanId, Entitlements> = {
     projections: 'none',
   },
   discipline: {
-    aiParsesPerDay: 25,
+    aiParsesPerDay: 12,
     historyDays: 180,
     weeklyReports: 'full',
     macroBalance: true,
@@ -30,7 +30,7 @@ export const ENTITLEMENTS: Record<PlanId, Entitlements> = {
     projections: 'basic',
   },
   premium: {
-    aiParsesPerDay: 100,
+    aiParsesPerDay: 25,
     historyDays: null,
     weeklyReports: 'full',
     macroBalance: true,

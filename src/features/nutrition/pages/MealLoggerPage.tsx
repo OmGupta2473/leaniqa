@@ -899,7 +899,7 @@ export function MealLoggerPage() {
         if (typeof data._errorMessage === 'string' && data._errorMessage.includes('Daily AI limit reached')) {
           toast({
             type: 'warning',
-            message: 'Daily AI parses used up. Resets at midnight IST.',
+            message: 'Daily AI parses used up. Use the Custom meal button to keep logging.',
             duration: 5000,
           });
         }
@@ -1340,8 +1340,15 @@ export function MealLoggerPage() {
               )}
             </div>
 
-            {plan === 'free' && credits && (
-              <AiLimitNudge remaining={credits.remaining} nextTierLimit={25} />
+            {credits && (
+              <AiLimitNudge
+                remaining={credits.remaining}
+                plan={plan}
+                onOpenCustomMeal={() => {
+                  setModalOpen(false);
+                  setTimeout(() => setIsCustomMealModalOpen(true), 300);
+                }}
+              />
             )}
 
             {meals.length === 0 && (

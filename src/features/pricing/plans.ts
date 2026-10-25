@@ -41,7 +41,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     annualINR: 1199,
     features: [
       'Everything in Free, plus:',
-      '25 AI meal parses per day',
+      '12 AI meal parses per day',
       'Full detail for 180 days',
       'Full weekly reports',
       'Macro balance and weekly trends',
@@ -61,7 +61,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     annualINR: 2399,
     features: [
       'Everything in Discipline, plus:',
-      '100 AI meal parses per day',
+      '25 AI meal parses per day',
       'Unlimited detailed history',
       'Advanced progress projections',
     ],

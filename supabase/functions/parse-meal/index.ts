@@ -1196,7 +1196,7 @@ serve(async (req) => {
     const tier = typeof accessRow?.tier === "string" ? accessRow.tier : "free";
 
     const limit =
-      !hasAccess ? 5 : tier === "premium" ? 100 : tier === "discipline" ? 25 : 5;
+      !hasAccess ? 5 : tier === "premium" ? 25 : tier === "discipline" ? 12 : 5;
     const istDate = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
     const today = istDate.toISOString().split("T")[0];
     const context: ParseContext = {
