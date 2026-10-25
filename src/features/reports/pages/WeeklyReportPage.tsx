@@ -7,9 +7,7 @@ import { ChevronLeft } from 'lucide-react';
 import { weeklyReportService } from '../services/weeklyReportService';
 import { useLiveWeekReport } from '../hooks/useLiveWeekReport';
 import { useTrendData } from '../hooks/useTrendData';
-import { useStreaks } from '../hooks/useStreaks';
 import { TrendChart } from '../components/TrendChart';
-import { StreakCounter } from '../components/StreakCounter';
 import { WeekSelector } from '../components/WeekSelector';
 import { HeroCard } from '../components/HeroCard';
 import { ComparisonStrip } from '../components/ComparisonStrip';
@@ -82,9 +80,6 @@ export function WeeklyReportPage() {
   const trend7 = useTrendData({ days: 7, enabled: isTrendEnabled });
   const trend30 = useTrendData({ days: 30, enabled: isTrendEnabled });
   const [trendView, setTrendView] = useState<'7d' | '30d'>('7d');
-
-  // Streaks
-  const streaks = useStreaks({ enabled: isTrendEnabled });
 
   return (
     <div className="page-enter pt-[calc(env(safe-area-inset-top)+20px)] pb-[calc(100px+env(safe-area-inset-bottom))] min-h-[100dvh] bg-[#0A0A0A] px-5">
@@ -187,22 +182,14 @@ export function WeeklyReportPage() {
                   </button>
                 </div>
               </div>
-              {/* Streak Counter */}
-              <div className="mb-6">
-                <StreakCounter
-                  calorie={streaks.data?.calorie ?? { current: 0, longest: 0, inProgress: false }}
-                  protein={streaks.data?.protein ?? { current: 0, longest: 0, inProgress: false }}
-                />
-              </div>
-
               {/* Weekly Action Items */}
               {report && (() => {
                 const actionItems = weeklyReportService.generateActionItems({
                   daySummaries: report.day_summaries,
                   targets: { calories: report.target_calories, protein: report.target_protein_g },
                   streaks: {
-                    calorie: { current: streaks.data?.calorie.current ?? 0, longest: streaks.data?.calorie.longest ?? 0 },
-                    protein: { current: streaks.data?.protein.current ?? 0, longest: streaks.data?.protein.longest ?? 0 },
+                    calorie: { current: 0, longest: 0 },
+                    protein: { current: 0, longest: 0 },
                   },
                 });
                 if (actionItems.length === 0) return null;
