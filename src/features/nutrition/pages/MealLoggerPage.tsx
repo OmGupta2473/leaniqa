@@ -24,6 +24,7 @@ import { SmoothInput } from "@/shared/components/SmoothInput";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useDailyNutrition } from "@/features/nutrition/hooks/useDailyNutrition";
 import { onMealSaved } from "@/features/nutrition/utils/mealSync";
+import { useStreaks } from "@/features/reports/hooks/useStreaks";
 import { isQualifierOnly } from "@/features/nutrition/utils/qualifierDetect";
 import { mealService } from "../services/mealService";
 import { fetchTodayMessages, saveMessage } from '../services/chatService';
@@ -598,12 +599,16 @@ export function MealLoggerPage() {
     eatenCarbs,
     remainingKcal: remainingCalories,
     remainingProtein,
+    remaining,
     calPct,
     proPct,
     isOnline
   } = useDailyNutrition(selectedDateStr);
 
   const isViewingToday = selectedDateStr === todayStr;
+
+  // Streaks
+  const streaks = useStreaks({ enabled: isViewingToday });
 
   const todayStatus: MetricStatus | null =
     isViewingToday && dailyTargetKcal > 0
@@ -1264,6 +1269,59 @@ export function MealLoggerPage() {
               </div>
             </div>
 
+            {/* Remaining banner */}
+            <div className="mb-4 p-3 rounded-xl bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)]">
+              {(() => {
+                const calRem = remaining.calories;
+                const proRem = remaining.protein;
+                const calPctRem = dailyTargetKcal ? calRem / dailyTargetKcal : 0;
+                const proPctRem = proteinTarget ? proRem / proteinTarget : 0;
+
+                if (calRem <= 0 && proRem <= 0) {
+                  return (
+                    <div className="flex items-center gap-2 text-[#FF4D1C]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#FF4D1C]" />
+                      <span className="text-[13px] font-medium">Over budget by {Math.abs(calRem).toFixed(1)} kcal</span>
+                      <span className="text-[13px] font-medium text-[rgba(255,255,255,0.4)]">· Protein target met</span>
+                    </div>
+                  );
+                }
+                if (calRem <= 0) {
+                  return (
+                    <div className="flex items-center gap-2 text-[#FF4D1C]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#FF4D1C]" />
+                      <span className="text-[13px] font-medium">Over budget by {Math.abs(calRem).toFixed(1)} kcal</span>
+                      {proRem > 0 && (
+                        <span className="text-[13px] font-medium text-[rgba(255,255,255,0.4)]">· {proRem.toFixed(1)}g protein left</span>
+                      )}
+                    </div>
+                  );
+                }
+                if (proRem <= 0) {
+                  return (
+                    <div className="flex items-center gap-2 text-[#D4FF00]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF00]" />
+                      <span className="text-[13px] font-medium">{calRem.toFixed(1)} kcal left</span>
+                      <span className="text-[13px] font-medium text-[rgba(255,255,255,0.4)]">· Protein target met</span>
+                    </div>
+                  );
+                }
+
+                // Both positive - determine color by worst remaining percentage
+                const worstPct = Math.min(calPctRem, proPctRem);
+                const isRed = worstPct < 0.05;
+                const isYellow = worstPct < 0.2;
+                const color = isRed ? '#FF4D1C' : isYellow ? '#FFB347' : '#D4FF00';
+
+                return (
+                  <div className="flex items-center gap-2" style={{ color }}>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
+                    <span className="text-[13px] font-medium">{calRem.toFixed(1)} kcal / {proRem.toFixed(1)}g protein left today</span>
+                  </div>
+                );
+              })()}
+            </div>
+
             {/* Calorie bar */}
             <div className="mb-4">
               <div className="flex justify-between mb-1.5 items-end">
@@ -1283,6 +1341,36 @@ export function MealLoggerPage() {
               </div>
               <div className="h-2 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden shadow-inner">
                 <div className="h-full w-full rounded-full bg-[#378ADD] origin-left transition-transform duration-1000 ease-out will-change-transform" style={{ transform: `translateX(-${100 - proteinPercent}%)` }}></div>
+              </div>
+            </div>
+
+            {/* Streak badges */}
+            <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-[rgba(255,255,255,0.06)]">
+              <div className="rounded-xl border border-[rgba(212,255,0,0.2)] bg-[rgba(212,255,0,0.05)] p-3 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF00]" />
+                <div>
+                  <div className="text-[10px] font-semibold uppercase tracking-widest text-[#D4FF00]">Calorie Streak</div>
+                  <div className="text-[16px] font-bold text-white">{streaks.data?.calorie.current ?? 0}</div>
+                </div>
+                {streaks.data?.calorie.inProgress && (
+                  <span className="ml-auto text-[10px] text-[#D4FF00] flex items-center gap-1">
+                    <span className="w-1 h-1 rounded-full bg-[#D4FF00] animate-pulse" />
+                    In progress
+                  </span>
+                )}
+              </div>
+              <div className="rounded-xl border border-[rgba(0,180,216,0.2)] bg-[rgba(0,180,216,0.05)] p-3 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#00B4D8]" />
+                <div>
+                  <div className="text-[10px] font-semibold uppercase tracking-widest text-[#00B4D8]">Protein Streak</div>
+                  <div className="text-[16px] font-bold text-white">{streaks.data?.protein.current ?? 0}</div>
+                </div>
+                {streaks.data?.protein.inProgress && (
+                  <span className="ml-auto text-[10px] text-[#00B4D8] flex items-center gap-1">
+                    <span className="w-1 h-1 rounded-full bg-[#00B4D8] animate-pulse" />
+                    In progress
+                  </span>
+                )}
               </div>
             </div>
 

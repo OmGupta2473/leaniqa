@@ -6,6 +6,10 @@ import { ChevronLeft } from 'lucide-react';
 
 import { weeklyReportService } from '../services/weeklyReportService';
 import { useLiveWeekReport } from '../hooks/useLiveWeekReport';
+import { useTrendData } from '../hooks/useTrendData';
+import { useStreaks } from '../hooks/useStreaks';
+import { TrendChart } from '../components/TrendChart';
+import { StreakCounter } from '../components/StreakCounter';
 import { WeekSelector } from '../components/WeekSelector';
 import { HeroCard } from '../components/HeroCard';
 import { ComparisonStrip } from '../components/ComparisonStrip';
@@ -72,6 +76,15 @@ export function WeeklyReportPage() {
   const weekEnd = getWeekEnd(selectedWeekStart);
   const status = computeWeekStatus(weekEnd, todayIso);
   const showGrace = status === 'final' && shouldShowGraceHint(weekEnd, todayIso);
+
+  // Trend data for 7/30-day charts
+  const isTrendEnabled = isCurrentWeek || report != null;
+  const trend7 = useTrendData({ days: 7, enabled: isTrendEnabled });
+  const trend30 = useTrendData({ days: 30, enabled: isTrendEnabled });
+  const [trendView, setTrendView] = useState<'7d' | '30d'>('7d');
+
+  // Streaks
+  const streaks = useStreaks({ enabled: isTrendEnabled });
 
   return (
     <div className="page-enter pt-[calc(env(safe-area-inset-top)+20px)] pb-[calc(100px+env(safe-area-inset-bottom))] min-h-[100dvh] bg-[#0A0A0A] px-5">
@@ -144,6 +157,72 @@ export function WeeklyReportPage() {
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             >
               <HeroCard report={report} />
+              {/* Trend Chart - 7/30 day */}
+              <div className="mb-6">
+                <TrendChart
+                  points={trendView === '7d' ? trend7.data?.points ?? [] : trend30.data?.points ?? []}
+                  targetCalories={trendView === '7d' ? trend7.data?.targetCalories ?? 2000 : trend30.data?.targetCalories ?? 2000}
+                  targetProteinG={trendView === '7d' ? trend7.data?.targetProteinG ?? 150 : trend30.data?.targetProteinG ?? 150}
+                />
+                <div className="flex justify-center gap-2 mt-2">
+                  <button
+                    onClick={() => setTrendView('7d')}
+                    className={`px-3 py-1.5 rounded text-[12px] font-medium transition-colors ${
+                      trendView === '7d'
+                        ? 'bg-[#D4FF00] text-[#0A0A0A]'
+                        : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.5)] hover:bg-[rgba(255,255,255,0.1)]'
+                    }`}
+                  >
+                    7 Day
+                  </button>
+                  <button
+                    onClick={() => setTrendView('30d')}
+                    className={`px-3 py-1.5 rounded text-[12px] font-medium transition-colors ${
+                      trendView === '30d'
+                        ? 'bg-[#D4FF00] text-[#0A0A0A]'
+                        : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.5)] hover:bg-[rgba(255,255,255,0.1)]'
+                    }`}
+                  >
+                    30 Day
+                  </button>
+                </div>
+              </div>
+              {/* Streak Counter */}
+              <div className="mb-6">
+                <StreakCounter
+                  calorie={streaks.data?.calorie ?? { current: 0, longest: 0, inProgress: false }}
+                  protein={streaks.data?.protein ?? { current: 0, longest: 0, inProgress: false }}
+                />
+              </div>
+
+              {/* Weekly Action Items */}
+              {report && (() => {
+                const actionItems = weeklyReportService.generateActionItems({
+                  daySummaries: report.day_summaries,
+                  targets: { calories: report.target_calories, protein: report.target_protein_g },
+                  streaks: {
+                    calorie: { current: streaks.data?.calorie.current ?? 0, longest: streaks.data?.calorie.longest ?? 0 },
+                    protein: { current: streaks.data?.protein.current ?? 0, longest: streaks.data?.protein.longest ?? 0 },
+                  },
+                });
+                if (actionItems.length === 0) return null;
+                return (
+                  <div className="mb-6">
+                    <div className="text-[12px] font-semibold uppercase tracking-widest text-[rgba(235,235,245,0.5)] mb-3">This Week</div>
+                    <div className="space-y-2">
+                      {actionItems.map((item, i) => (
+                        <div key={i} className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-4">
+                          <div className="flex items-start gap-3">
+                            <span className="flex-shrink-0 w-1.5 h-1.5 mt-1.5 rounded-full bg-[#D4FF00]" />
+                            <span className="text-[13px] leading-relaxed text-[rgba(255,255,255,0.85)]">{item}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
               <DayTimeline
                 key={selectedWeekStart}
                 days={report.day_summaries}

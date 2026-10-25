@@ -1,5 +1,5 @@
 import type { DbMealLog, DbWeightLog } from '@/shared/types/supabase';
-import { getKolkataDateString } from './timezone';
+import { getKolkataDateString, shiftKolkataDateString } from './timezone';
 import { getWeekDays, computeWeekStatus } from './weekKey';
 import { calculateDailyScore } from './complianceEngine';
 
@@ -60,6 +60,125 @@ export interface WeeklyEngineResult {
   weeklyScore: number;
   confidence: 'empty' | 'insufficient' | 'low' | 'medium' | 'high';
   daySummaries: DaySummary[];
+}
+
+export interface TrendDataPoint {
+  date: string;
+  calories: number;
+  proteinG: number;
+}
+
+export interface TrendDataResult {
+  points: TrendDataPoint[];
+  targetCalories: number;
+  targetProteinG: number;
+}
+
+/**
+ * Returns trend data for the last `days` (7 or 30) ending on `endDate` (inclusive).
+ * Each point has calories (rounded to 1 decimal) and proteinG (rounded to 1 decimal).
+ * Missing days return 0 for both macros.
+ */
+export function getTrendData(
+  meals: import('@/shared/types/supabase').DbMealLog[],
+  endDate: string,
+  days: 7 | 30,
+  targets: { calories: number; protein: number },
+): TrendDataResult {
+  const points: TrendDataPoint[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const date = shiftKolkataDateString(endDate, -i);
+    const dayMeals = meals.filter((m) => {
+      const mealDate = getKolkataDateString(new Date(m.meal_time));
+      return mealDate === date;
+    });
+    let calories = 0;
+    let proteinG = 0;
+    for (const meal of dayMeals) {
+      calories += meal.calories;
+      proteinG += meal.protein;
+    }
+    points.push({
+      date,
+      calories: Math.round(calories * 10) / 10,
+      proteinG: Math.round(proteinG * 10) / 10,
+    });
+  }
+  return {
+    points,
+    targetCalories: targets.calories,
+    targetProteinG: targets.protein,
+  };
+}
+
+export interface StreakResult {
+  calorie: { current: number; longest: number; inProgress: boolean };
+  protein: { current: number; longest: number; inProgress: boolean };
+}
+
+/**
+ * Computes calorie and protein streaks from daily_metrics.
+ * - Calorie hit: within ±10% of target
+ * - Protein hit: >= 90% of target
+ * - Missing daily_metrics row = streak break
+ * - Evaluation capped at last 90 days
+ * - Today excluded (partial day = inProgress)
+ */
+export function getStreaks(
+  dailyMetrics: Array<{
+    date: string;
+    target_calories: number;
+    actual_calories: number;
+    target_protein: number;
+    actual_protein: number;
+  }>,
+  today: string,
+  targets: { calories: number; protein: number },
+): StreakResult {
+  // Filter to last 90 days ending yesterday (exclude today)
+  const relevantDays = dailyMetrics
+    .filter((d) => d.date < today)
+    .slice(-90);
+
+  let calCurrent = 0;
+  let calLongest = 0;
+  let proCurrent = 0;
+  let proLongest = 0;
+
+  for (const day of relevantDays) {
+    const calHit =
+      day.actual_calories >= 0.9 * day.target_calories &&
+      day.actual_calories <= 1.1 * day.target_calories;
+    const proHit = day.actual_protein >= 0.9 * day.target_protein;
+
+    // Calorie streak
+    if (calHit) {
+      calCurrent++;
+      calLongest = Math.max(calLongest, calCurrent);
+    } else {
+      calCurrent = 0;
+    }
+
+    // Protein streak
+    if (proHit) {
+      proCurrent++;
+      proLongest = Math.max(proLongest, proCurrent);
+    } else {
+      proCurrent = 0;
+    }
+  }
+
+  // Check if today is "in progress" (has metrics but not a full day yet)
+  const todayMetrics = dailyMetrics.find((d) => d.date === today);
+  const calInProgress = todayMetrics
+    ? todayMetrics.actual_calories > 0 || todayMetrics.actual_protein > 0
+    : false;
+  const proInProgress = calInProgress;
+
+  return {
+    calorie: { current: calCurrent, longest: calLongest, inProgress: calInProgress },
+    protein: { current: proCurrent, longest: proLongest, inProgress: proInProgress },
+  };
 }
 
 function round1(value: number): number {

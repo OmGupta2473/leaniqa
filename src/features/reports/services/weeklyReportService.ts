@@ -167,4 +167,107 @@ export const weeklyReportService = {
       confidence: result.confidence,
     };
   },
+
+  /**
+   * Generates 2-3 rule-based action items for the weekly report.
+   * Tone: suggestions/options, never commands.
+   * Max 3 items, deduplicated by category.
+   */
+  generateActionItems: (weekData: {
+    daySummaries: Array<{
+      date: string;
+      calories: number;
+      proteinG: number;
+      logged: boolean;
+      isToday: boolean;
+    }>;
+    targets: { calories: number; protein: number };
+    streaks: { calorie: { current: number; longest: number }; protein: { current: number; longest: number } };
+  }): string[] => {
+    const { daySummaries, targets, streaks } = weekData;
+    const completedDays = daySummaries.filter((d) => d.logged && !d.isToday);
+    if (completedDays.length === 0) return [];
+
+    const items: Array<{ category: string; text: string; priority: number }> = [];
+
+    // Rule 1: Protein avg < 80% target on >= 4 days
+    const proteinLowDays = completedDays.filter(
+      (d) => d.proteinG < 0.8 * targets.protein
+    ).length;
+    if (proteinLowDays >= 4) {
+      items.push({
+        category: 'protein',
+        text: 'If breakfast tends to be low in protein, adding eggs or Greek yogurt could help you reach your target.',
+        priority: 1,
+      });
+    }
+
+    // Rule 2: Calorie avg > 110% target on >= 4 days
+    const calorieHighDays = completedDays.filter(
+      (d) => d.calories > 1.1 * targets.calories
+    ).length;
+    if (calorieHighDays >= 4) {
+      items.push({
+        category: 'calories',
+        text: 'If dinner tends to run high, swapping rice for vegetables could save around 100 kcal.',
+        priority: 2,
+      });
+    }
+
+    // Rule 3: Protein streak = 0
+    if (streaks.protein.current === 0) {
+      items.push({
+        category: 'protein_streak',
+        text: 'Aiming for roughly 25g of protein per meal could make the daily target easier to reach.',
+        priority: 3,
+      });
+    }
+
+    // Rule 4: Calorie streak >= 5
+    if (streaks.calorie.current >= 5) {
+      items.push({
+        category: 'calorie_streak',
+        text: 'Great consistency this week — your current portions are working well.',
+        priority: 4,
+      });
+    }
+
+    // Rule 5: Weekend calories > weekday average + 300
+    const weekdayDays = completedDays.filter((d) => {
+      const dayOfWeek = new Date(d.date).getUTCDay();
+      return dayOfWeek >= 1 && dayOfWeek <= 5; // Mon-Fri
+    });
+    const weekendDays = completedDays.filter((d) => {
+      const dayOfWeek = new Date(d.date).getUTCDay();
+      return dayOfWeek === 0 || dayOfWeek === 6; // Sat-Sun
+    });
+    if (weekdayDays.length > 0 && weekendDays.length > 0) {
+      const weekdayAvg = weekdayDays.reduce((sum, d) => sum + d.calories, 0) / weekdayDays.length;
+      const weekendAvg = weekendDays.reduce((sum, d) => sum + d.calories, 0) / weekendDays.length;
+      if (weekendAvg > weekdayAvg + 300) {
+        items.push({
+          category: 'weekend',
+          text: 'Weekend intake ran higher than weekdays — planning meals ahead could help.',
+          priority: 5,
+        });
+      }
+    }
+
+    // Deduplicate by category (keep highest priority = lowest number)
+    const byCategory = new Map<string, typeof items[0]>();
+    for (const item of items) {
+      const existing = byCategory.get(item.category);
+      if (!existing || item.priority < existing.priority) {
+        byCategory.set(item.category, item);
+      }
+    }
+
+    // Sort by priority and take top 3
+    const deduped = Array.from(byCategory.values())
+      .sort((a, b) => a.priority - b.priority)
+      .slice(0, 3)
+      .map((i) => i.text);
+
+    return deduped;
+  },
 };
