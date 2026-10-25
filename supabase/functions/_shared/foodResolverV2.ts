@@ -1484,9 +1484,16 @@ async function finalize(input: FinalizeInput): Promise<ResolverResult> {
   const needs_confirmation = items.some((i) => i.requires_confirmation);
   const was_ambiguous = items.some((i) => i.was_ambiguous === true);
 
+  // Write memory with items stripped of oil_review_needed (defer oil overlay for response only).
+  // This allows memory to be written even when oil_review_needed would block it.
+  const itemsForMemory = items.map((item) => ({
+    ...item,
+    oil_review_needed: false,
+  }));
+
   if (
     isMemoryEligible(
-      items,
+      itemsForMemory,
       input.unresolved,
       input.config,
       input.fromMemory,
@@ -1495,7 +1502,7 @@ async function finalize(input: FinalizeInput): Promise<ResolverResult> {
   ) {
     try {
       await input.db.upsertMemoryEntry(input.userId, input.normalizedText, {
-        items,
+        items: itemsForMemory,
         total_kcal: totals.kcal,
         total_protein: totals.protein,
         total_fat: totals.fat,
@@ -1509,8 +1516,11 @@ async function finalize(input: FinalizeInput): Promise<ResolverResult> {
     }
   }
 
+  // Apply oil overlay for the response (after memory write).
+  const oiledItems = applyOilOverlay(items);
+
   return {
-    items,
+    items: oiledItems,
     unresolved_items: input.unresolved,
     ...(uniqueAssumptions.length > 0 ? { assumptions: uniqueAssumptions } : {}),
     totals,
