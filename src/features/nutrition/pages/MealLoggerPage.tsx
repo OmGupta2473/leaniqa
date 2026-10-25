@@ -24,7 +24,6 @@ import { SmoothInput } from "@/shared/components/SmoothInput";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useDailyNutrition } from "@/features/nutrition/hooks/useDailyNutrition";
 import { onMealSaved } from "@/features/nutrition/utils/mealSync";
-import { useStreaks } from "@/features/reports/hooks/useStreaks";
 import { isQualifierOnly } from "@/features/nutrition/utils/qualifierDetect";
 import { mealService } from "../services/mealService";
 import { fetchTodayMessages, saveMessage } from '../services/chatService';
@@ -51,6 +50,9 @@ import { ProtectProgressSheet, shouldShowProtectProgress, PROTECT_PROGRESS_MEAL_
 import { useAuthSession } from '@/router/useAuthSession';
 import { getKolkataDateString, getKolkataHour, shiftKolkataDateString, kolkataDateStringToUtcMidnight, msSinceKolkataMidnight } from '@/shared/utils/timezone';
 import { useEntitlements } from '@/features/pricing/hooks/useEntitlements';
+
+// Display formatter: max 1 decimal place, strips trailing ".0"
+const formatMacro = (v: number) => Number(v.toFixed(1)).toString();
 
 const getDeterministicFallback = (text: string) => {
   const normalizedText = text.toLowerCase();
@@ -129,8 +131,8 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete, onEdit }: 
           </div>
           <div className="flex items-center gap-5 text-right">
             <div>
-              <div className="text-[16px] font-bold text-white tracking-tight">{kcal} <span className="text-[12px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">kcal</span></div>
-              <div className="text-[13px] font-semibold text-[#378ADD] mt-0.5">{pro}<span className="text-[10px] font-medium opacity-70 uppercase tracking-wider">g pro</span></div>
+              <div className="text-[16px] font-bold text-white tracking-tight">{formatMacro(kcal)} <span className="text-[12px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">kcal</span></div>
+              <div className="text-[13px] font-semibold text-[#378ADD] mt-0.5">{formatMacro(pro)}<span className="text-[10px] font-medium opacity-70 uppercase tracking-wider">g pro</span></div>
             </div>
             <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ type: "spring", stiffness: 300, damping: 24 }}>
               <ChevronDown size={20} className="text-[rgba(255,255,255,0.4)]" />
@@ -175,9 +177,9 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete, onEdit }: 
                         )}
                       </div>
                     </button>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <span className="text-[8.5px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-1.5 py-0.5 rounded-full font-bold tracking-wide whitespace-nowrap">{m.calories} KCAL</span>
-                      <span className="text-[8.5px] badge-lime px-1.5 py-0.5 font-bold rounded-full tracking-wide whitespace-nowrap">{m.protein}G PRO</span>
+<div className="flex items-center gap-1 shrink-0">
+                       <span className="text-[8.5px] bg-[rgba(255,77,28,0.12)] text-[#FF4D1C] px-1.5 py-0.5 rounded-full font-bold tracking-wide whitespace-nowrap">{formatMacro(m.calories)} KCAL</span>
+                       <span className="text-[8.5px] badge-lime px-1.5 py-0.5 font-bold rounded-full tracking-wide whitespace-nowrap">{formatMacro(m.protein)}G PRO</span>
                       {m.id && !m.id.toString().startsWith('opt-') && (
                         <button aria-label="Delete meal" className="ml-0.5 w-6 h-6 shrink-0 rounded-full bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,77,28,0.2)] flex items-center justify-center text-[rgba(255,255,255,0.5)] hover:text-[#FF4D1C] transition-colors" onClick={(e) => {
                           e.stopPropagation();
@@ -606,9 +608,6 @@ export function MealLoggerPage() {
   } = useDailyNutrition(selectedDateStr);
 
   const isViewingToday = selectedDateStr === todayStr;
-
-  // Streaks
-  const streaks = useStreaks({ enabled: isViewingToday });
 
   const todayStatus: MetricStatus | null =
     isViewingToday && dailyTargetKcal > 0
@@ -1262,64 +1261,29 @@ export function MealLoggerPage() {
 
           {/* ── CALORIE RING SUMMARY ── */}
           {!isLockedDay && <div className="mb-6 rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] p-5 shadow-sm backdrop-blur-xl relative overflow-hidden">
-            <div className="flex justify-between items-center mb-5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-5">
               <div className="text-[12px] font-semibold uppercase tracking-widest text-[rgba(235,235,245,0.5)]">Daily Summary</div>
-              <div className="text-[13px] font-bold px-2.5 py-1 rounded-full bg-[rgba(255,255,255,0.05)]" style={{ color: eatenKcal > dailyTargetKcal ? '#FF4D1C' : '#D4FF00' }}>
-                {eatenKcal > dailyTargetKcal ? `${eatenKcal - dailyTargetKcal} over` : `${dailyTargetKcal - eatenKcal} left`}
-              </div>
-            </div>
-
-            {/* Remaining banner */}
-            <div className="mb-4 p-3 rounded-xl bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)]">
-              {(() => {
-                const calRem = remaining.calories;
-                const proRem = remaining.protein;
-                const calPctRem = dailyTargetKcal ? calRem / dailyTargetKcal : 0;
-                const proPctRem = proteinTarget ? proRem / proteinTarget : 0;
-
-                if (calRem <= 0 && proRem <= 0) {
+              <div className="flex items-center gap-3 flex-wrap">
+                {(() => {
+                  const calRem = remaining.calories;
+                  const proRem = remaining.protein;
+                  const calPctRem = dailyTargetKcal ? calRem / dailyTargetKcal : 0;
                   return (
-                    <div className="flex items-center gap-2 text-[#FF4D1C]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#FF4D1C]" />
-                      <span className="text-[13px] font-medium">Over budget by {Math.abs(calRem).toFixed(1)} kcal</span>
-                      <span className="text-[13px] font-medium text-[rgba(255,255,255,0.4)]">· Protein target met</span>
-                    </div>
-                  );
-                }
-                if (calRem <= 0) {
-                  return (
-                    <div className="flex items-center gap-2 text-[#FF4D1C]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#FF4D1C]" />
-                      <span className="text-[13px] font-medium">Over budget by {Math.abs(calRem).toFixed(1)} kcal</span>
-                      {proRem > 0 && (
-                        <span className="text-[13px] font-medium text-[rgba(255,255,255,0.4)]">· {proRem.toFixed(1)}g protein left</span>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="text-[16px] font-bold" style={{ color: calRem > 0 ? (calPctRem > 0.2 ? '#D4FF00' : calPctRem > 0.05 ? '#FFB347' : '#FF4D1C') : '#FF4D1C' }}>
+                        {calRem > 0 ? `${formatMacro(calRem)} kcal` : `Over budget by ${formatMacro(Math.abs(calRem))} kcal`}
+                      </div>
+                      {proRem <= 0 ? (
+                        <span className="text-[13px] text-[rgba(255,255,255,0.4)]">Protein target met</span>
+                      ) : (
+                        <span className="text-[13px] text-[rgba(255,255,255,0.6)]">
+                          {formatMacro(remaining.protein)}g protein left today
+                        </span>
                       )}
                     </div>
                   );
-                }
-                if (proRem <= 0) {
-                  return (
-                    <div className="flex items-center gap-2 text-[#D4FF00]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF00]" />
-                      <span className="text-[13px] font-medium">{calRem.toFixed(1)} kcal left</span>
-                      <span className="text-[13px] font-medium text-[rgba(255,255,255,0.4)]">· Protein target met</span>
-                    </div>
-                  );
-                }
-
-                // Both positive - determine color by worst remaining percentage
-                const worstPct = Math.min(calPctRem, proPctRem);
-                const isRed = worstPct < 0.05;
-                const isYellow = worstPct < 0.2;
-                const color = isRed ? '#FF4D1C' : isYellow ? '#FFB347' : '#D4FF00';
-
-                return (
-                  <div className="flex items-center gap-2" style={{ color }}>
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
-                    <span className="text-[13px] font-medium">{calRem.toFixed(1)} kcal / {proRem.toFixed(1)}g protein left today</span>
-                  </div>
-                );
-              })()}
+                })()}
+              </div>
             </div>
 
             {/* Calorie bar */}
@@ -1344,36 +1308,6 @@ export function MealLoggerPage() {
               </div>
             </div>
 
-            {/* Streak badges */}
-            <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-[rgba(255,255,255,0.06)]">
-              <div className="rounded-xl border border-[rgba(212,255,0,0.2)] bg-[rgba(212,255,0,0.05)] p-3 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF00]" />
-                <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-widest text-[#D4FF00]">Calorie Streak</div>
-                  <div className="text-[16px] font-bold text-white">{streaks.data?.calorie.current ?? 0}</div>
-                </div>
-                {streaks.data?.calorie.inProgress && (
-                  <span className="ml-auto text-[10px] text-[#D4FF00] flex items-center gap-1">
-                    <span className="w-1 h-1 rounded-full bg-[#D4FF00] animate-pulse" />
-                    In progress
-                  </span>
-                )}
-              </div>
-              <div className="rounded-xl border border-[rgba(0,180,216,0.2)] bg-[rgba(0,180,216,0.05)] p-3 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#00B4D8]" />
-                <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-widest text-[#00B4D8]">Protein Streak</div>
-                  <div className="text-[16px] font-bold text-white">{streaks.data?.protein.current ?? 0}</div>
-                </div>
-                {streaks.data?.protein.inProgress && (
-                  <span className="ml-auto text-[10px] text-[#00B4D8] flex items-center gap-1">
-                    <span className="w-1 h-1 rounded-full bg-[#00B4D8] animate-pulse" />
-                    In progress
-                  </span>
-                )}
-              </div>
-            </div>
-
             {/* Macros row */}
             <div className="grid grid-cols-4 gap-2 mt-5 pt-4 border-t border-[rgba(255,255,255,0.06)]">
               {[{ label: 'Kcal', val: eatenKcal, target: dailyTargetKcal, unit: '', color: '#FF4D1C' },
@@ -1382,7 +1316,7 @@ export function MealLoggerPage() {
               { label: 'Carbs', val: eatenCarbs, target: carbsTarget, unit: 'g', color: 'white' }].map(item => (
                 <div key={item.label} className="text-center flex flex-col items-center">
                   <div className="text-[16px] font-bold tracking-tight" style={{ color: item.color }}>
-                    {item.val}<span className="text-[12px]">{item.unit}</span>
+                    {formatMacro(item.val)}<span className="text-[12px]">{item.unit}</span>
                   </div>
                   <div className="text-[10px] text-[rgba(235,235,245,0.5)] uppercase tracking-widest mt-0.5 font-medium">{item.label}</div>
                 </div>
