@@ -14,17 +14,17 @@ export function useDailyNutrition(dateStr: string) {
 
   const { profileData, isLoading: isProfileLoading } = useCalculatedProfile();
 
-  const proteinTarget = Math.round(profileData?.targetMacros?.protein || 0);
-  const dailyTargetKcal = Math.round(profileData?.dailyCalorieGoal || 0);
-  const fatTarget = Math.round(profileData?.targetMacros?.fat || 0);
-  const carbsTarget = Math.round(profileData?.targetMacros?.carbs || 0);
+  const proteinTarget = profileData?.targetMacros?.protein || 0;
+  const dailyTargetKcal = profileData?.dailyCalorieGoal || 0;
+  const fatTarget = profileData?.targetMacros?.fat || 0;
+  const carbsTarget = profileData?.targetMacros?.carbs || 0;
 
-  const eatenKcal = Math.round(meals.reduce((acc, m) => acc + m.calories, 0));
-  const eatenProtein = Math.round(meals.reduce((acc, m) => acc + m.protein, 0));
-  const eatenFat = Math.round(meals.reduce((acc, m) => acc + m.fat, 0));
-  const eatenCarbs = Math.round(meals.reduce((acc, m) => acc + m.carbs, 0));
+  const eatenKcal = meals.reduce((acc, m) => acc + m.calories, 0);
+  const eatenProtein = meals.reduce((acc, m) => acc + m.protein, 0);
+  const eatenFat = meals.reduce((acc, m) => acc + m.fat, 0);
+  const eatenCarbs = meals.reduce((acc, m) => acc + m.carbs, 0);
 
-  const remainingKcal = dailyTargetKcal ? dailyTargetKcal - eatenKcal : 0;
+  const remainingCalories = dailyTargetKcal ? dailyTargetKcal - eatenKcal : 0;
   const remainingProtein = proteinTarget ? proteinTarget - eatenProtein : 0;
 
   const calPct = dailyTargetKcal ? Math.min(eatenKcal / dailyTargetKcal, 1) : 0;
@@ -50,7 +50,11 @@ export function useDailyNutrition(dateStr: string) {
     eatenProtein,
     eatenFat,
     eatenCarbs,
-    remainingKcal,
+    remaining: {
+      calories: remainingCalories,
+      protein: remainingProtein,
+    },
+    remainingKcal: remainingCalories,
     remainingProtein,
     calPct,
     proPct,
