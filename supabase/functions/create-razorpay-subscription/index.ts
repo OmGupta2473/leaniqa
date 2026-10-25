@@ -80,6 +80,32 @@ serve(async (req) => {
       return json({ error: "billingCycle must be 'monthly' or 'annual'" }, 400);
     }
 
+    const { data: existingSub } = await supabase
+      .from("subscriptions")
+      .select("plan, status, current_period_end, access_type, razorpay_subscription_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const isBlockingSubscription =
+      existingSub?.razorpay_subscription_id != null &&
+      existingSub.access_type !== "one_time" &&
+      existingSub.plan !== "free" &&
+      (existingSub.status === "active" ||
+        (existingSub.status === "cancelled" &&
+          existingSub.current_period_end != null &&
+          new Date(existingSub.current_period_end as string) > new Date()));
+
+    if (isBlockingSubscription) {
+      return json(
+        {
+          error:
+            "You already have an active subscription. Cancel it from Profile → Manage subscription, or wait until your current period ends before subscribing again.",
+          error_code: "duplicate_subscription",
+        },
+        409,
+      );
+    }
+
     const razorpayPlanId = planIdFor(plan, billingCycle);
     if (!razorpayPlanId) {
       return json(
