@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkPaymentRateLimit, clientIpFrom } from "../_shared/rateLimit.ts";
 
 const RAZORPAY_API = "https://api.razorpay.com/v1";
 
@@ -65,6 +66,12 @@ serve(async (req) => {
       );
     }
 
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!serviceRoleKey) {
+      return json({ error: "Server misconfiguration" }, 500);
+    }
+    const admin = createClient(supabaseUrl, serviceRoleKey);
+
     const body = await req.json().catch(() => null);
     if (!body || typeof body !== "object") {
       return json({ error: "Invalid request body" }, 400);
@@ -78,6 +85,34 @@ serve(async (req) => {
     }
     if (billingCycle !== "monthly" && billingCycle !== "annual") {
       return json({ error: "billingCycle must be 'monthly' or 'annual'" }, 400);
+    }
+
+    const clientIp = clientIpFrom(req);
+    const rl = await checkPaymentRateLimit(
+      admin,
+      user.id,
+      clientIp,
+      "create-payment",
+      5,
+      20,
+      60,
+    );
+
+    if (!rl.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: "Too many attempts. Please wait a moment and try again.",
+          error_code: "rate_limited",
+        }),
+        {
+          status: 429,
+          headers: {
+            ...CORS_HEADERS,
+            "Content-Type": "application/json",
+            "Retry-After": String(rl.retryAfterSeconds),
+          },
+        },
+      );
     }
 
     const { data: existingSub } = await supabase
@@ -187,12 +222,6 @@ serve(async (req) => {
     const rzpData = await rzpRes.json() as { id: string; short_url: string };
     const subscriptionId = rzpData.id;
     const shortUrl = rzpData.short_url;
-
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!serviceRoleKey) {
-      return json({ error: "Server misconfiguration" }, 500);
-    }
-    const admin = createClient(supabaseUrl, serviceRoleKey);
 
     // Ensure the subscriptions row exists before updating it.
     await supabase.rpc("get_or_create_subscription", { p_user_id: user.id });
