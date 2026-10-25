@@ -18,17 +18,57 @@ import { offlineSyncService } from '@/shared/services/offlineSyncService';
 
 let sessionEndPromise: Promise<void> | null = null;
 
+// A genuine auth failure means the server told us the credential is
+// invalid or gone. Network errors, 5xx, and timeouts are NOT auth
+// failures — they mean we couldn't ask the server.
+function isAuthError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const e = error as { code?: string; name?: string; status?: number };
+  if (e.status === 401) return true;
+  if (e.code === 'invalid_jwt') return true;
+  if (e.code === 'session_not_found') return true;
+  if (e.name === 'AuthSessionMissingError') return true;
+  if (e.name === 'AuthApiError' && e.status === 401) return true;
+  return false;
+}
+
+function isRetryableNetworkError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const e = error as { code?: string; message?: string; name?: string; status?: number };
+  if (e.name === 'AuthRetryableFetchError') return true;
+  if (e.status === 0) return true;
+  if (e.status === undefined && typeof e.message === 'string') {
+    const m = e.message.toLowerCase();
+    if (m.includes('fetch') || m.includes('network') || m.includes('offline')) return true;
+  }
+  return false;
+}
+
+// Default-deny: only true if we positively identified an auth error.
+function classifyGetUserError(error: unknown): 'auth' | 'retryable' {
+  return isAuthError(error) ? 'auth' : 'retryable';
+}
+
 export const authService = {
   async getUserId(): Promise<string> {
-    // First try to get the active session from local cache
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
+
     if (sessionError) {
+      if (classifyGetUserError(sessionError) === 'auth') {
+        throw new AppError({
+          code: ErrorCodes.UNAUTHORIZED,
+          message: 'Your session is invalid or has expired. Please log in again.',
+          retryable: false,
+          status: 401,
+          details: sessionError,
+        });
+      }
       throw new AppError({
-        code: ErrorCodes.UNAUTHORIZED,
-        message: sessionError.message,
-        retryable: false,
-        status: 401,
+        code: ErrorCodes.NETWORK_ERROR,
+        message: 'Unable to read your session. Please check your connection and try again.',
+        retryable: true,
+        status: 0,
+        details: sessionError,
       });
     }
 
@@ -41,13 +81,36 @@ export const authService = {
       });
     }
 
-    // Verify the user actually exists in the database still
-    // This is important because in development, the database might be reset while the local session is still active
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    if (userError || !user) {
+
+    if (userError) {
+      if (classifyGetUserError(userError) === 'auth') {
+        await this.logout();
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+        throw new AppError({
+          code: ErrorCodes.UNAUTHORIZED,
+          message: 'Your session is invalid or has expired. Please log in again.',
+          retryable: false,
+          status: 401,
+          details: userError,
+        });
+      }
+      throw new AppError({
+        code: ErrorCodes.NETWORK_ERROR,
+        message: 'Unable to verify your session. Please check your connection and try again.',
+        retryable: true,
+        status: 0,
+        details: userError,
+      });
+    }
+
+    if (!user) {
       await this.logout();
-      window.location.href = '/login';
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
       throw new AppError({
         code: ErrorCodes.UNAUTHORIZED,
         message: 'Your session is invalid or has expired. Please log in again.',
