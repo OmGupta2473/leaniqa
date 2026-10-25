@@ -34,6 +34,8 @@ const AwardsGallery = lazy(() => import('@/features/awards/dev/AwardsGallery').t
 const PrivacyPage = lazy(() => import('@/features/legal/pages/PrivacyPage').then(module => ({ default: module.PrivacyPage })));
 const TermsPage = lazy(() => import('@/features/legal/pages/TermsPage').then(module => ({ default: module.TermsPage })));
 const RefundPage = lazy(() => import('@/features/legal/pages/RefundPage').then(module => ({ default: module.RefundPage })));
+const DeleteAccountPage = lazy(() => import('@/features/account/pages/DeleteAccountPage').then(module => ({ default: module.DeleteAccountPage })));
+const DeleteAccountConfirmPage = lazy(() => import('@/features/account/pages/DeleteAccountConfirmPage').then(module => ({ default: module.DeleteAccountConfirmPage })));
 import { PublicLayout } from './layouts/PublicLayout';
 import { useAwardsSync } from '@/features/awards/hooks/useAwardsSync';
 import { AwardCelebrationSheet } from '@/features/awards/components/AwardCelebrationSheet';
@@ -124,7 +126,9 @@ export const routes: RouteObject[] = [
         children: [
           { path: '/privacy', element: <Suspense fallback={<PageSkeleton route="legal" />}><PrivacyPage /></Suspense>, handle: { title: 'Privacy Policy' } },
           { path: '/terms', element: <Suspense fallback={<PageSkeleton route="legal" />}><TermsPage /></Suspense>, handle: { title: 'Terms of Service' } },
-          { path: '/refund', element: <Suspense fallback={<PageSkeleton route="legal" />}><RefundPage /></Suspense>, handle: { title: 'Refund Policy' } }
+          { path: '/refund', element: <Suspense fallback={<PageSkeleton route="legal" />}><RefundPage /></Suspense>, handle: { title: 'Refund Policy' } },
+          { path: '/delete-account', element: <Suspense fallback={<PageSkeleton route="legal" />}><DeleteAccountPage /></Suspense>, handle: { title: 'Delete Account' } },
+          { path: '/delete-account/confirm', element: <Suspense fallback={<PageSkeleton route="legal" />}><DeleteAccountConfirmPage /></Suspense>, handle: { title: 'Confirm Account Deletion' } }
         ]
       },
       {
