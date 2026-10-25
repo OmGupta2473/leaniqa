@@ -427,6 +427,7 @@ export function MealLoggerPage() {
   const [failedMealError, setFailedMealError] = useState<string | null>(null);
   const [isCustomMealModalOpen, setIsCustomMealModalOpen] = useState(false);
   const [retryCount, setRetryCount] = useState<number>(0);
+  const autoRetryAttemptRef = React.useRef<number>(0);
   const [editingMeal, setEditingMeal] = useState<(DbMealLog & { id: string }) | null>(null);
   const [editingPending, setEditingPending] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -907,13 +908,31 @@ export function MealLoggerPage() {
         setRetryCount(0);
 
         // F2 frontend: qualifier-only fallback filter
+        // Bounded: at most 1 auto-retry to prevent infinite credit drain.
         if (
           data.unresolved_items?.length > 0 &&
           !isQualifierOnly(data.unresolved_items)
         ) {
-          parseMealMutation.mutate(text);
+          if (autoRetryAttemptRef.current < 1) {
+            autoRetryAttemptRef.current += 1;
+            analytics.trackEvent('AI Parse Failure', {
+              attempt: autoRetryAttemptRef.current,
+              unresolved_count: data.unresolved_items.length,
+              reason: 'unresolved_items_auto_retry',
+            });
+            setLoading(true);
+            parseMealMutation.mutate(text);
+            return;
+          }
+          // Bounded: surface to the user instead of looping.
+          autoRetryAttemptRef.current = 0;
+          setLoading(false);
+          setFailedMealText(text);
+          setFailedMealError(null);
+          refetchCredits();
           return;
         }
+        autoRetryAttemptRef.current = 0;
 
         analytics.trackEvent('Meal Parse Analytics', eventData);
         analytics.trackEvent('AI Parse Success', {
@@ -968,6 +987,7 @@ export function MealLoggerPage() {
     },
     onError: (err: any, variables) => {
       isSubmittingRef.current = false;
+      autoRetryAttemptRef.current = 0;
       console.error('[parseMealMutation] onError fired:', err);
       let errorMessage = 'An unexpected error occurred';
       if (err instanceof Error) errorMessage = err.message;
@@ -1174,6 +1194,7 @@ export function MealLoggerPage() {
     const text = input.trim();
     if (!text || loading || isSubmittingRef.current || !selectedMealSlot) return;
     isSubmittingRef.current = true;
+    autoRetryAttemptRef.current = 0;
     if (import.meta.env.DEV) console.time('[PERF] MealLogger handleSend');
     setInput("");
     setPendingMeal(null);
@@ -1746,6 +1767,7 @@ export function MealLoggerPage() {
                                   const text = failedMealText;
                                   setFailedMealText(null);
                                   setRetryCount(prev => prev + 1);
+                                  autoRetryAttemptRef.current = 0;
                                   setLoading(true);
                                   parseMealMutation.mutate(text);
                                 }}
