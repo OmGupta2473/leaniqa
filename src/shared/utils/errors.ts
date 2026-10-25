@@ -29,6 +29,7 @@ export const ErrorCodes = {
   INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR',
   AI_SERVICE_ERROR: 'AI_SERVICE_ERROR',
   RATE_LIMIT_EXCEEDED: 'RATE_LIMIT_EXCEEDED',
+  NETWORK_ERROR: 'NETWORK_ERROR',
 } as const;
 
 export function handleApiError(error: any): AppError {
