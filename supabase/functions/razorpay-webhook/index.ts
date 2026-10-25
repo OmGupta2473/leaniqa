@@ -386,6 +386,7 @@ serve(async (req) => {
           .update({
             plan: requestedPlan,
             status: "active",
+            access_type: "subscription",
             razorpay_subscription_id: subscription.id,
             razorpay_plan_id: subscription.plan_id,
             billing_cycle: requestedCycle,
