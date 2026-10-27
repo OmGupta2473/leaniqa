@@ -12,7 +12,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
 
   return (
     <div 
-      className="app-scroll min-h-[100dvh] overflow-y-auto w-full flex-1 bg-background-primary flex flex-col"
+      className="app-scroll min-h-[100dvh] overflow-y-auto w-full flex-1 bg-[#080809] flex flex-col"
       style={{
         paddingBottom: isKeyboardOpen ? `${Math.max(keyboardOffset, 20)}px` : 'env(safe-area-inset-bottom)'
       }}
