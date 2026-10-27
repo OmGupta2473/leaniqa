@@ -1619,23 +1619,16 @@ export function MealLoggerPage() {
                             return null;
                           })()}
 
-                          {/* Per-item provenance pills — only render if items present */}
-                          {pendingMeal.items && pendingMeal.items.length > 0 && (
+                          {/* Clean items pills — only render user-provided items */}
+                          {pendingMeal.items && pendingMeal.items.some(i => i.quantity_source === 'user_provided') && (
                             <div className="mb-3 flex flex-wrap gap-1.5">
                               {pendingMeal.items.map((item, i) => {
+                                if (item.quantity_source !== 'user_provided') return null;
                                 const basisLabel =
                                   item.weight_basis === 'raw' ? 'Raw'
                                     : item.weight_basis === 'cooked' ? 'Cooked'
                                       : item.weight_basis === 'finished' ? 'As served'
                                         : null;
-                                const sourceLabel =
-                                  item.quantity_source === 'user_provided' ? 'You entered'
-                                    : item.quantity_source === 'ai_estimated' ? 'AI estimated'
-                                      : item.quantity_source === 'default_assumption' ? 'Default portion'
-                                        : 'Portion reference';
-                                const sourceIsAssumed =
-                                  item.quantity_source === 'ai_estimated' ||
-                                  item.quantity_source === 'default_assumption';
                                 return (
                                   <div
                                     key={i}
@@ -1648,35 +1641,47 @@ export function MealLoggerPage() {
                                         <span>{basisLabel}</span>
                                       </>
                                     )}
-                                    <span className="text-zinc-600">·</span>
-                                    <span className={sourceIsAssumed ? 'text-[#FFB347]' : ''}>{sourceLabel}</span>
                                   </div>
                                 );
                               })}
                             </div>
                           )}
 
-                          {/* Assumption list — only render if assumptions present */}
+                          {/* Merged Assumption block */}
                           {(() => {
-                            const assumptions = (pendingMeal.assumptions ?? [])
-                              .filter((assumption) => assumption.trim().length > 0)
-                              .slice(0, 3)
+                            const assumedItems = (pendingMeal.items ?? [])
+                              .filter((item) => item.quantity_source !== 'user_provided')
+                              .map((item) => {
+                                let label = item.food_name;
+                                if (item.quantity_source === 'ai_estimated') label += ' (AI estimated portion)';
+                                else if (item.quantity_source === 'default_assumption') label += ' (default portion)';
+                                else if (item.quantity_source === 'portion_reference') label += ' (portion reference)';
+                                return label;
+                              });
+
+                            const manualAssumptions = (pendingMeal.assumptions ?? [])
+                              .filter((a) => a.trim().length > 0)
                               .map(sentenceCaseAssumption);
-                            return assumptions.length > 0 ? (
-                              <div className="mb-3 flex flex-col gap-1.5">
-                                {assumptions.map((a, i) => (
-                                  <div
-                                    key={i}
-                                    className="flex items-start gap-2 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-2.5 py-2"
-                                  >
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 shrink-0 mt-0.5">
-                                      Assumed
-                                    </span>
-                                    <span className="text-[12px] text-zinc-300 leading-snug">{a}</span>
-                                  </div>
-                                ))}
+
+                            const allAssumptions = [...assumedItems, ...manualAssumptions];
+
+                            if (allAssumptions.length === 0) return null;
+
+                            return (
+                              <div className="mb-3 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5">
+                                <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1.5">
+                                  Assumed
+                                </div>
+                                <ul className="flex flex-col gap-1">
+                                  {allAssumptions.map((a, i) => (
+                                    <li key={i} className="text-[12px] text-zinc-300 leading-snug flex items-start gap-1.5">
+                                      <span className="text-zinc-500 mt-0.5">•</span>
+                                      <span>{a}</span>
+                                    </li>
+                                  ))}
+                                </ul>
                               </div>
-                            ) : null;
+                            );
                           })()}
 
                           <div className="flex gap-[6px] flex-wrap mb-[12px]">

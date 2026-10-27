@@ -256,6 +256,16 @@ const KnowledgeBase: Record<string, KnowledgeFood> = {
   // ============================================================
   "dal":                { calories: 114, protein: 7.2,  fat: 0.5,  carbs: 20.9, fiber: 5.1,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150, cup: 200 }, defaultUnit: "bowl" },
   "raw dal":            { calories: 340, protein: 24.0, fat: 1.5,  carbs: 60.0, fiber: 12.0, referenceAmount: 100, referenceUnit: "g" },
+  "cooked rice":        { calories: 130, protein: 2.7,  fat: 0.3,  carbs: 28.0, fiber: 0.4,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150, cup: 158 }, defaultUnit: "bowl" },
+  "boiled rice":        { calories: 130, protein: 2.7,  fat: 0.3,  carbs: 28.0, fiber: 0.4,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150, cup: 158 }, defaultUnit: "bowl" },
+  "cooked dal":         { calories: 114, protein: 7.2,  fat: 0.5,  carbs: 20.9, fiber: 5.1,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150, cup: 200 }, defaultUnit: "bowl" },
+  "cooked moong dal":   { calories: 105, protein: 7.6,  fat: 0.7,  carbs: 19.0, fiber: 4.1,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "cooked oats":        { calories: 71,  protein: 2.5,  fat: 1.5,  carbs: 12.0, fiber: 1.7,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 240 }, defaultUnit: "bowl" },
+  "cooked pasta":       { calories: 131, protein: 5.0,  fat: 1.0,  carbs: 25.0, fiber: 1.8,  referenceAmount: 100, referenceUnit: "g" },
+  "boiled egg":         { calories: 155, protein: 13.0, fat: 11.0, carbs: 1.1,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 50 }, defaultUnit: "piece" },
+  "boiled eggs":        { calories: 155, protein: 13.0, fat: 11.0, carbs: 1.1,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 50 }, defaultUnit: "piece" },
+  "cooked chicken":     { calories: 165, protein: 31.0, fat: 3.6,  carbs: 0.0,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g" },
+  "cooked chicken breast": { calories: 165, protein: 31.0, fat: 3.6,  carbs: 0.0,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g" },
   "raw moong dal":      { calories: 347, protein: 24.0, fat: 1.2,  carbs: 63.0, fiber: 12.0, referenceAmount: 100, referenceUnit: "g" },
   "raw masoor dal":     { calories: 340, protein: 25.0, fat: 1.0,  carbs: 60.0, fiber: 11.0, referenceAmount: 100, referenceUnit: "g" },
   "dal tadka":          { calories: 131, protein: 6.5,  fat: 5.0,  carbs: 16.0, fiber: 3.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
@@ -920,24 +930,33 @@ function applyModifiers(data: MealResult): MealResult & {
   let oilReviewNeeded = false;
   let weightBasisReviewNeeded = false;
 
-  for (const item of data.items) {
-    const isRawBasis = item.weight_basis === 'raw';
-    const rawKey = 'raw ' + item.food_name;
-    const profile = isRawBasis && KnowledgeBase[rawKey]
-      ? KnowledgeBase[rawKey]
-      : KnowledgeBase[item.food_name];
+      for (const item of data.items) {
+        const isRawBasis = item.weight_basis === 'raw';
+        let profile: KnowledgeFood | undefined;
 
-    // Mismatch: user said cooked, only a raw profile exists for this food.
-    if (
-      !profile ||
-      (item.weight_basis === 'cooked' && profile && isRawProfile(item.food_name))
-    ) {
-      weightBasisReviewNeeded = true;
-      assumptions.push(
-        `Only a raw profile exists for "${item.food_name}" but you said cooked — values may be off by ~30%`,
-      );
-      continue;
-    }
+        if (isRawBasis) {
+          profile = KnowledgeBase['raw ' + item.food_name] || KnowledgeBase[item.food_name];
+        } else if (item.weight_basis === 'cooked') {
+          profile = KnowledgeBase['cooked ' + item.food_name] || 
+                    KnowledgeBase['boiled ' + item.food_name] || 
+                    KnowledgeBase[item.food_name];
+        } else {
+          profile = KnowledgeBase[item.food_name];
+        }
+
+        if (!profile) {
+          // No KB match. Trust AI estimate, don't flag as raw/cooked mismatch.
+          continue;
+        }
+
+        // Mismatch: user said cooked, but the only profile available is raw.
+        if (item.weight_basis === 'cooked' && isRawProfile(item.food_name)) {
+          weightBasisReviewNeeded = true;
+          assumptions.push(
+            `Only a raw profile exists for "${item.food_name}" but you said cooked — values may be off by ~30%`,
+          );
+          continue;
+        }
 
     // User said no oil but the profile already includes oil.
     // We CANNOT subtract — we don't know how much. Flag for review.
