@@ -39,7 +39,9 @@ export const weightService = {
         profile.neck,
         profile.hip
       );
-      bodyFatEstimate = Math.max(3, Math.min(60, Math.round(rawEstimate * 10) / 10));
+      if (Number.isFinite(rawEstimate)) {
+        bodyFatEstimate = Math.max(3, Math.min(60, Math.round(rawEstimate * 10) / 10));
+      }
     }
     
     const payload = {

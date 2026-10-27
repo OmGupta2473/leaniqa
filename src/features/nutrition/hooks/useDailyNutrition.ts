@@ -19,13 +19,14 @@ export function useDailyNutrition(dateStr: string) {
   const fatTarget = profileData?.targetMacros?.fat || 0;
   const carbsTarget = profileData?.targetMacros?.carbs || 0;
 
-  const eatenKcal = meals.reduce((acc, m) => acc + m.calories, 0);
-  const eatenProtein = meals.reduce((acc, m) => acc + m.protein, 0);
-  const eatenFat = meals.reduce((acc, m) => acc + m.fat, 0);
-  const eatenCarbs = meals.reduce((acc, m) => acc + m.carbs, 0);
+  const round1 = (v: number) => Math.round(v * 10) / 10;
+  const eatenKcal = round1(meals.reduce((acc, m) => acc + m.calories, 0));
+  const eatenProtein = round1(meals.reduce((acc, m) => acc + m.protein, 0));
+  const eatenFat = round1(meals.reduce((acc, m) => acc + m.fat, 0));
+  const eatenCarbs = round1(meals.reduce((acc, m) => acc + m.carbs, 0));
 
-  const remainingCalories = dailyTargetKcal ? dailyTargetKcal - eatenKcal : 0;
-  const remainingProtein = proteinTarget ? proteinTarget - eatenProtein : 0;
+  const remainingCalories = dailyTargetKcal ? round1(dailyTargetKcal - eatenKcal) : 0;
+  const remainingProtein = proteinTarget ? round1(proteinTarget - eatenProtein) : 0;
 
   const calPct = dailyTargetKcal ? Math.min(eatenKcal / dailyTargetKcal, 1) : 0;
   const proPct = proteinTarget ? Math.min(eatenProtein / proteinTarget, 1) : 0;

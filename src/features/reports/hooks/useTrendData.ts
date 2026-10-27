@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/shared/utils/supabase';
 import { authService } from '@/features/auth/services/authService';
-import { shiftKolkataDateString, getKolkataDateString } from '@/shared/utils/timezone';
+import { shiftKolkataDateString, getKolkataDateString, kolkataDateStringToUtcMidnight } from '@/shared/utils/timezone';
 import { getTrendData, type TrendDataResult } from '@/shared/utils/weeklyEngine';
 
 interface UseTrendDataOptions {
@@ -24,8 +24,8 @@ export function useTrendData({ days, enabled = true }: UseTrendDataOptions) {
         .from('meal_logs')
         .select('*')
         .eq('user_id', userId)
-        .gte('meal_time', `${startDate}T00:00:00.000Z`)
-        .lte('meal_time', `${endDate}T23:59:59.999Z`);
+        .gte('meal_time', kolkataDateStringToUtcMidnight(startDate).toISOString())
+        .lt('meal_time', kolkataDateStringToUtcMidnight(shiftKolkataDateString(endDate, 1)).toISOString());
 
       if (error) throw error;
 
