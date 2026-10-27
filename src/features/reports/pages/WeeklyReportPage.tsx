@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
+import { springTap } from '../components/motion';
 import { ChevronLeft } from 'lucide-react';
 
 import { weeklyReportService } from '../services/weeklyReportService';
@@ -159,27 +160,39 @@ export function WeeklyReportPage() {
                   targetCalories={trendView === '7d' ? trend7.data?.targetCalories ?? 2000 : trend30.data?.targetCalories ?? 2000}
                   targetProteinG={trendView === '7d' ? trend7.data?.targetProteinG ?? 150 : trend30.data?.targetProteinG ?? 150}
                 />
-                <div className="flex justify-center gap-2 mt-2">
-                  <button
-                    onClick={() => setTrendView('7d')}
-                    className={`px-3 py-1.5 rounded text-[12px] font-medium transition-colors ${
-                      trendView === '7d'
-                        ? 'bg-[#D4FF00] text-[#0A0A0A]'
-                        : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.5)] hover:bg-[rgba(255,255,255,0.1)]'
-                    }`}
-                  >
-                    7 Day
-                  </button>
-                  <button
-                    onClick={() => setTrendView('30d')}
-                    className={`px-3 py-1.5 rounded text-[12px] font-medium transition-colors ${
-                      trendView === '30d'
-                        ? 'bg-[#D4FF00] text-[#0A0A0A]'
-                        : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.5)] hover:bg-[rgba(255,255,255,0.1)]'
-                    }`}
-                  >
-                    30 Day
-                  </button>
+                <div className="flex justify-center mt-3">
+                  <div className="flex bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] backdrop-blur-md p-1 rounded-full relative">
+                    <button
+                      onClick={() => setTrendView('7d')}
+                      className={`relative px-6 py-1.5 rounded-full text-[13px] font-semibold transition-colors z-10 ${
+                        trendView === '7d' ? 'text-[#D4FF00]' : 'text-white/50 hover:text-white/80'
+                      }`}
+                    >
+                      {trendView === '7d' && (
+                        <motion.div
+                          layoutId="trend-view-pill"
+                          className="absolute inset-0 bg-[#D4FF00]/15 border border-[#D4FF00]/30 shadow-[inset_0_1px_0_rgba(212,255,0,0.3),0_2px_12px_rgba(212,255,0,0.15)] rounded-full -z-10"
+                          transition={springTap}
+                        />
+                      )}
+                      7 Day
+                    </button>
+                    <button
+                      onClick={() => setTrendView('30d')}
+                      className={`relative px-6 py-1.5 rounded-full text-[13px] font-semibold transition-colors z-10 ${
+                        trendView === '30d' ? 'text-[#D4FF00]' : 'text-white/50 hover:text-white/80'
+                      }`}
+                    >
+                      {trendView === '30d' && (
+                        <motion.div
+                          layoutId="trend-view-pill"
+                          className="absolute inset-0 bg-[#D4FF00]/15 border border-[#D4FF00]/30 shadow-[inset_0_1px_0_rgba(212,255,0,0.3),0_2px_12px_rgba(212,255,0,0.15)] rounded-full -z-10"
+                          transition={springTap}
+                        />
+                      )}
+                      30 Day
+                    </button>
+                  </div>
                 </div>
               </div>
               {/* Weekly Action Items */}

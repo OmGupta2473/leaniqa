@@ -1,4 +1,6 @@
 import React, { useMemo } from 'react';
+import { motion } from 'motion/react';
+import { springTap } from './motion';
 import {
   LineChart,
   Line,
@@ -85,25 +87,35 @@ export function TrendChart({
         <h3 className="text-[14px] font-semibold text-white">
           {view === 'calories' ? 'Calories' : 'Protein'} Trend
         </h3>
-        <div className="flex gap-1.5">
+        <div className="flex bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] backdrop-blur-md p-1 rounded-full relative">
           <button
             onClick={() => setView('calories')}
-            className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors ${
-              view === 'calories'
-                ? 'bg-[#D4FF00] text-[#0A0A0A]'
-                : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.5)] hover:bg-[rgba(255,255,255,0.1)]'
+            className={`relative px-4 py-1.5 rounded-full text-[12px] font-semibold transition-colors z-10 ${
+              view === 'calories' ? 'text-[#D4FF00]' : 'text-white/50 hover:text-white/80'
             }`}
           >
+            {view === 'calories' && (
+              <motion.div
+                layoutId="chart-view-pill"
+                className="absolute inset-0 bg-[#D4FF00]/15 border border-[#D4FF00]/30 shadow-[inset_0_1px_0_rgba(212,255,0,0.3),0_2px_12px_rgba(212,255,0,0.15)] rounded-full -z-10"
+                transition={springTap}
+              />
+            )}
             Calories
           </button>
           <button
             onClick={() => setView('protein')}
-            className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors ${
-              view === 'protein'
-                ? 'bg-[#D4FF00] text-[#0A0A0A]'
-                : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.5)] hover:bg-[rgba(255,255,255,0.1)]'
+            className={`relative px-4 py-1.5 rounded-full text-[12px] font-semibold transition-colors z-10 ${
+              view === 'protein' ? 'text-[#D4FF00]' : 'text-white/50 hover:text-white/80'
             }`}
           >
+            {view === 'protein' && (
+              <motion.div
+                layoutId="chart-view-pill"
+                className="absolute inset-0 bg-[#D4FF00]/15 border border-[#D4FF00]/30 shadow-[inset_0_1px_0_rgba(212,255,0,0.3),0_2px_12px_rgba(212,255,0,0.15)] rounded-full -z-10"
+                transition={springTap}
+              />
+            )}
             Protein
           </button>
         </div>
