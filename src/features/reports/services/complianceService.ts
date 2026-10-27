@@ -27,10 +27,13 @@ export const complianceService = {
       const hasWeightLogged = weightLogs.some((w: any) => w.date.startsWith(dateStr));
       let actualCalories = 0;
       meals.forEach((m: any) => actualCalories += m.calories);
+      actualCalories = Math.round(actualCalories * 10) / 10;
       let actualProtein = 0;
       meals.forEach((m: any) => actualProtein += m.protein);
+      actualProtein = Math.round(actualProtein * 10) / 10;
       
-      const targetCalories = (profile.maintenance_kcal || 2200) - (goal?.deficit_kcal ?? 400);
+      const fallbackTargetCalories = (profile.maintenance_kcal || 2200) - (goal?.deficit_kcal ?? 400);
+      const targetCalories = profile.target_kcal ?? fallbackTargetCalories;
       const targetProtein = profile.protein_target || 150;
       
       const score = calculateDailyScore({
@@ -97,10 +100,13 @@ export const complianceService = {
       const hasWeightLogged = weightLogs.some(w => w.date.startsWith(today));
       let actualCalories = 0;
       meals.forEach((m: any) => actualCalories += m.calories);
+      actualCalories = Math.round(actualCalories * 10) / 10;
       let actualProtein = 0;
       meals.forEach((m: any) => actualProtein += m.protein);
+      actualProtein = Math.round(actualProtein * 10) / 10;
       
-      const targetCalories = (profile.maintenance_kcal || 2200) - (goal?.deficit_kcal ?? 400);
+      const fallbackTargetCalories = (profile.maintenance_kcal || 2200) - (goal?.deficit_kcal ?? 400);
+      const targetCalories = profile.target_kcal ?? fallbackTargetCalories;
       const targetProtein = profile.protein_target || 150;
       
       const score = calculateDailyScore({

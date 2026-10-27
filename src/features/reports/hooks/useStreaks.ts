@@ -23,7 +23,8 @@ export function useStreaks({ enabled = true }: UseStreaksOptions = {}) {
         .select('date, target_calories, actual_calories, target_protein, actual_protein')
         .eq('user_id', userId)
         .gte('date', startDate)
-        .lte('date', today);
+        .lte('date', today)
+        .order('date', { ascending: true });
 
       if (error) throw error;
 

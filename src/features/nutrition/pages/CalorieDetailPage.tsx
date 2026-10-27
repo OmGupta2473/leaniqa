@@ -87,7 +87,7 @@ export function CalorieDetailPage() {
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     return dateStr === todayStr;
   });
-  const caloriesConsumed = todayMeals.reduce((acc, m) => acc + m.calories, 0);
+  const caloriesConsumed = Math.round(todayMeals.reduce((acc, m) => acc + m.calories, 0) * 10) / 10;
   const isUnderTarget = caloriesConsumed <= dailyCalorieGoal;
   
   const chartLogs = useMemo(() => {
@@ -234,7 +234,7 @@ export function CalorieDetailPage() {
         ) : (
           <div>
             {slots.filter(s => s.items.length > 0).map(slot => {
-              const slotKcal = slot.items.reduce((a, b) => a + b.calories, 0);
+              const slotKcal = Math.round(slot.items.reduce((a, b) => a + b.calories, 0) * 10) / 10;
               return (
                 <div key={slot.id} className="rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] mb-4 overflow-hidden shadow-sm backdrop-blur-xl">
                   <div className="flex items-center justify-between p-5 bg-[rgba(255,255,255,0.02)] border-b border-[rgba(255,255,255,0.06)]">
@@ -245,7 +245,7 @@ export function CalorieDetailPage() {
                     {slot.items.map((item, i) => (
                       <div key={item.id || i} className={cn("flex items-center justify-between py-3.5", i < slot.items.length - 1 && "border-b border-[rgba(255,255,255,0.06)]")}>
                         <span className="text-[15px] font-medium text-[rgba(255,255,255,0.85)] leading-relaxed capitalize pr-4">{item.meal_text}</span>
-                        <span className="text-[14px] font-bold tracking-tight text-[#FF4D1C] bg-[rgba(255,77,28,0.1)] px-2.5 py-1 rounded-full shrink-0">{item.calories} kcal</span>
+                        <span className="text-[14px] font-bold tracking-tight text-[#FF4D1C] bg-[rgba(255,77,28,0.1)] px-2.5 py-1 rounded-full shrink-0">{Math.round(item.calories * 10) / 10} kcal</span>
                       </div>
                     ))}
                   </div>

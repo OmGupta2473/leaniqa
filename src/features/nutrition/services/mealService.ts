@@ -101,14 +101,19 @@ export const mealService = {
       user_id: userId,
     };
     
-    // Ensure all numeric fields are non-negative (schema allows decimals)
-    // Use Number.isFinite to guard against NaN/Infinity
-    const safe = (v: unknown) => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : 0; };
-    payload.calories = safe(payload.calories);
-    payload.protein = safe(payload.protein);
-    payload.fat = safe(payload.fat);
-    payload.carbs = safe(payload.carbs);
-    payload.fiber = safe(fiber);
+      // Ensure numeric fields are finite, non-negative, and rounded to 1
+      // decimal place. Rounding here prevents floating-point artefacts
+      // (e.g. 49.50000000000001) from being stored and later surfaced in
+      // the UI when per-item rows are displayed.
+      const round1 = (v: unknown) => {
+        const n = Number(v);
+        return Number.isFinite(n) && n > 0 ? Math.round(n * 10) / 10 : 0;
+      };
+      payload.calories = round1(payload.calories);
+      payload.protein = round1(payload.protein);
+      payload.fat = round1(payload.fat);
+      payload.carbs = round1(payload.carbs);
+      payload.fiber = round1(fiber);
     
     devLog('--- SUPABASE INSERT PAYLOAD ---', payload);
     
@@ -148,12 +153,15 @@ export const mealService = {
   ): Promise<DbMealLog | null> {
     const userId = await authService.getUserId();
     const payload: Record<string, unknown> = { ...updates };
-    const safe = (v: unknown) => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : 0; };
-    if (typeof payload.calories === 'number') payload.calories = safe(payload.calories);
-    if (typeof payload.protein === 'number') payload.protein = safe(payload.protein);
-    if (typeof payload.fat === 'number') payload.fat = safe(payload.fat);
-    if (typeof payload.carbs === 'number') payload.carbs = safe(payload.carbs);
-    if (typeof payload.fiber === 'number') payload.fiber = safe(payload.fiber);
+    const round1 = (v: unknown) => {
+      const n = Number(v);
+      return Number.isFinite(n) && n > 0 ? Math.round(n * 10) / 10 : 0;
+    };
+    if (typeof payload.calories === 'number') payload.calories = round1(payload.calories);
+    if (typeof payload.protein === 'number') payload.protein = round1(payload.protein);
+    if (typeof payload.fat === 'number') payload.fat = round1(payload.fat);
+    if (typeof payload.carbs === 'number') payload.carbs = round1(payload.carbs);
+    if (typeof payload.fiber === 'number') payload.fiber = round1(payload.fiber);
     if (payload.meal_slot === 'snack') delete payload.meal_slot;  // matches addMeal behaviour
     const { data, error } = await supabase
       .from('meal_logs')
