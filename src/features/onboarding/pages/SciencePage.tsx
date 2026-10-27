@@ -51,29 +51,21 @@ export function SciencePage() {
 
   const proteinFactor =
     goalType === 'cut'
-      ? cutPace === 22 || cutPace === 26
-        ? 1.8
-        : 1.6
-      : goalType === 'bulk'
-      ? gainPace === 10
-        ? 1.7
-        : gainPace === 12
-        ? 1.8
-        : 1.6
-      : goalType === 'recomp'
+      ? (cutPace === 22 || cutPace === 16)
+        ? 2.2
+        : 2.0
+      : (goalType === 'bulk' || goalType === 'recomp')
       ? 1.8
       : 1.4;
 
   const proteinLine =
     `${proteinFactor} g per kg * ${weight} kg. ` +
-    (goalType === 'cut' && (cutPace === 22 || cutPace === 26)
-      ? 'At aggressive deficits we use 1.8 g/kg to protect muscle.'
+    (goalType === 'cut' && (cutPace === 22 || cutPace === 16)
+      ? 'At aggressive and moderate deficits we use 2.2 g/kg to protect muscle.'
       : goalType === 'cut'
-      ? 'At moderate deficits we use 1.6 g/kg.'
-      : goalType === 'bulk'
-      ? 'Higher surpluses get slightly more protein to support training.'
-      : goalType === 'recomp'
-      ? 'Recomp uses 1.8 g/kg to build muscle while staying lean.'
+      ? 'At standard and mild deficits we use 2.0 g/kg.'
+      : (goalType === 'bulk' || goalType === 'recomp')
+      ? 'Recomp and muscle gain use 1.8 g/kg.'
       : 'Maintenance uses 1.4 g/kg.');
 
   const fatFactor =
@@ -178,17 +170,28 @@ export function SciencePage() {
           <ScienceSection
             title="How we calculate your daily calories"
             body={
-              <>
-                We start with your <span className="text-white font-medium">resting metabolism</span> —
-                the energy your body burns just staying alive. We use the
-                <span className="text-white font-medium"> Mifflin–St Jeor formula</span>,
-                the most accurate predictor for most adults.
-                <br /><br />
-                Then we multiply by an activity factor (1.2 if you sit all day,
-                up to 1.9 if you train twice daily). The result is your
-                <span className="text-white font-medium"> maintenance calories</span> —
-                the number you'd eat to stay the same weight.
-              </>
+              hasPlan ? (
+                <>
+                  We start with your <span className="text-white font-medium">resting metabolism</span> —
+                  the energy your body burns just staying alive. We use the
+                  <span className="text-white font-medium"> Mifflin–St Jeor formula</span> with your exact stats ({profile.weight}kg, {profile.height}cm, {profile.age} y/o).
+                  <br /><br />
+                  Then we multiply by an activity factor based on your <span className="text-white font-medium">{profile.activity_level}</span> profile. The result is your
+                  <span className="text-white font-medium"> maintenance calories</span> — <span className="text-[#D4FF00] font-medium">{maintenance} kcal</span>.
+                </>
+              ) : (
+                <>
+                  We start with your <span className="text-white font-medium">resting metabolism</span> —
+                  the energy your body burns just staying alive. We use the
+                  <span className="text-white font-medium"> Mifflin–St Jeor formula</span>,
+                  the most accurate predictor for most adults.
+                  <br /><br />
+                  Then we multiply by an activity factor (1.2 if you sit all day,
+                  up to 1.9 if you train twice daily). The result is your
+                  <span className="text-white font-medium"> maintenance calories</span> —
+                  the number you'd eat to stay the same weight.
+                </>
+              )
             }
             sources={[
               { label: 'Mifflin & St Jeor 1990 · Am J Clin Nutr', url: 'https://pubmed.ncbi.nlm.nih.gov/2305711/' },
@@ -198,21 +201,37 @@ export function SciencePage() {
           <ScienceSection
             title="Why protein is your #1 priority"
             body={
-              <>
-                Protein is what builds and protects muscle. Two numbers matter:
-                <ul className="mt-2 space-y-1.5 list-disc list-inside text-zinc-400">
-                  <li>
-                    <span className="text-white font-medium">1.6 g per kg body weight</span> is
-                    where muscle gains max out for most lifters. More than this
-                    doesn't add extra muscle.
-                  </li>
-                  <li>
-                    <span className="text-white font-medium">2.0–2.2 g per kg</span> while
-                    cutting. When you eat fewer calories, higher protein protects
-                    muscle from being burned for energy.
-                  </li>
-                </ul>
-              </>
+              hasPlan ? (
+                <>
+                  Protein is what builds and protects muscle. At your weight of <span className="text-white font-medium">{profile.weight} kg</span>, we set your target to <span className="text-[#D4FF00] font-medium">{proteinTarget} g</span>.
+                  <ul className="mt-2 space-y-1.5 list-disc list-inside text-zinc-400">
+                    <li>
+                      This is roughly <span className="text-white font-medium">{(proteinTarget / profile.weight).toFixed(1)} g per kg</span> of body weight.
+                    </li>
+                    <li>
+                      {goalType === 'cut' 
+                        ? 'A higher protein intake protects your muscle from being burned while you are in a calorie deficit.' 
+                        : 'This amount maximizes muscle growth and recovery.'}
+                    </li>
+                  </ul>
+                </>
+              ) : (
+                <>
+                  Protein is what builds and protects muscle. Two numbers matter:
+                  <ul className="mt-2 space-y-1.5 list-disc list-inside text-zinc-400">
+                    <li>
+                      <span className="text-white font-medium">1.6 g per kg body weight</span> is
+                      where muscle gains max out for most lifters. More than this
+                      doesn't add extra muscle.
+                    </li>
+                    <li>
+                      <span className="text-white font-medium">2.0–2.2 g per kg</span> while
+                      cutting. When you eat fewer calories, higher protein protects
+                      muscle from being burned for energy.
+                    </li>
+                  </ul>
+                </>
+              )
             }
             sources={[
               { label: 'Morton 2018 · Br J Sports Med', url: 'https://pubmed.ncbi.nlm.nih.gov/28698222/' },
@@ -223,13 +242,19 @@ export function SciencePage() {
           <ScienceSection
             title="Why fat has a minimum — never below 0.8 g/kg"
             body={
-              <>
-                Fat is not the enemy. Below ~0.5 g per kg of body weight,
-                testosterone and other hormones drop, and your body can't absorb
-                vitamins A, D, E, and K properly. So we keep you at
-                <span className="text-white font-medium"> 0.8–0.9 g per kg</span> —
-                enough for hormone health without wasting calories.
-              </>
+              hasPlan ? (
+                <>
+                  Fat is not the enemy. Below ~0.5 g per kg of body weight, your body can't absorb vitamins and hormones drop. So we keep you at <span className="text-white font-medium">0.8–0.9 g per kg</span> — for you, that's a floor of <span className="text-[#D4FF00] font-medium">{Math.round(profile.weight * 0.8)} g</span> (your target is <span className="text-[#D4FF00] font-medium">{fatTarget} g</span>).
+                </>
+              ) : (
+                <>
+                  Fat is not the enemy. Below ~0.5 g per kg of body weight,
+                  testosterone and other hormones drop, and your body can't absorb
+                  vitamins A, D, E, and K properly. So we keep you at
+                  <span className="text-white font-medium"> 0.8–0.9 g per kg</span> —
+                  enough for hormone health without wasting calories.
+                </>
+              )
             }
             sources={[
               { label: 'Iraki 2019 · Sports', url: 'https://pubmed.ncbi.nlm.nih.gov/31234309/' },
@@ -239,13 +264,19 @@ export function SciencePage() {
           <ScienceSection
             title="Why carbs fill the rest of your calories"
             body={
-              <>
-                Carbs are your training fuel. They refill the glycogen in your
-                muscles, which is what powers heavy sets and fast recovery.
-                When glycogen is low, your strength drops and workouts feel
-                harder. That's why carbs take whatever calories are left after
-                protein and fat are set.
-              </>
+              hasPlan ? (
+                <>
+                  Carbs are your training fuel. They refill the glycogen in your muscles, which is what powers heavy sets and fast recovery. That's why carbs take whatever calories are left after protein and fat are set. For your plan, that's <span className="text-[#D4FF00] font-medium">{carbsTarget} g</span>.
+                </>
+              ) : (
+                <>
+                  Carbs are your training fuel. They refill the glycogen in your
+                  muscles, which is what powers heavy sets and fast recovery.
+                  When glycogen is low, your strength drops and workouts feel
+                  harder. That's why carbs take whatever calories are left after
+                  protein and fat are set.
+                </>
+              )
             }
             sources={[
               { label: 'Henselmans 2022 · Nutrients', url: 'https://pubmed.ncbi.nlm.nih.gov/35409220/' },
@@ -258,17 +289,17 @@ export function SciencePage() {
               <>
                 <ul className="space-y-2 list-disc list-inside text-zinc-400">
                   <li>
-                    <span className="text-white font-medium">Cut (−22%):</span> a
+                    <span className={goalType === 'cut' ? 'text-[#D4FF00] font-bold' : 'text-white font-medium'}>Cut (−{cutPace || 22}%):</span> a
                     moderate deficit strips fat while protecting muscle. Aim for
                     ~0.5 kg/week — faster costs muscle.
                   </li>
                   <li>
-                    <span className="text-white font-medium">Recomp (0%):</span> eat
+                    <span className={goalType === 'recomp' ? 'text-[#D4FF00] font-bold' : 'text-white font-medium'}>Recomp (0%):</span> eat
                     at maintenance. Studies show beginners and returning lifters
                     can lose fat and build muscle at the same time.
                   </li>
                   <li>
-                    <span className="text-white font-medium">Bulk (+8%):</span> a small
+                    <span className={goalType === 'bulk' ? 'text-[#D4FF00] font-bold' : 'text-white font-medium'}>Bulk (+{gainPace || 8}%):</span> a small
                     surplus (~200–400 kcal/day) grows muscle without adding fat.
                     Going above this only adds fat, not muscle.
                   </li>

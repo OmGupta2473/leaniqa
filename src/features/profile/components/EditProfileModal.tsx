@@ -164,9 +164,9 @@ function EditProfileModalInner({ onClose, profileData, goalData }: Omit<EditProf
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      // Defensive: DB constraint allows only {26,22,18,14}, but legacy rows
-      // could contain {16,20} from the prior migration. paceEngine has no
-      // macro math for those, so fall back to the previously-defaulted 22.
+      // Defensive: DB constraint allows only {22,16,10,6}, but legacy rows
+      // could contain older values. paceEngine has no macro math for those,
+      // so fall back to the previously-defaulted 22.
       const storedPace = goalData?.cut_pace;
       const currentPace: CutPace =
         typeof storedPace === 'number' && (CUT_PACES as readonly number[]).includes(storedPace)

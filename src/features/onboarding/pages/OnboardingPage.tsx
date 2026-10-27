@@ -34,6 +34,8 @@ import { useOnboardingDraft } from '../useOnboardingDraft';
 import type { OnboardingDraft } from '../types';
 import { ConsentScreen } from './ConsentScreen';
 import { useViewport } from '@/shared/styles/responsive';
+import { cn } from '@/shared/utils/utils';
+import { haptics } from '@/shared/utils/haptics';
 import { syncCurrentWeekReport } from "@/features/reports/utils/syncCurrentWeek";
 
 type DraftProps = {
@@ -52,23 +54,127 @@ function formatIsoDate(iso: string): string {
   return `${day} ${MONTHS[month - 1]} ${year}`;
 }
 
-/** Height conversions. The draft always stores centimetres; ft/in is display only. */
-function cmToFtIn(cm: number): { ft: number; inch: number } {
-  const totalInches = cm / 2.54;
-  let ft = Math.floor(totalInches / 12);
-  let inch = Math.round(totalInches - ft * 12);
-  // Rounding can tip 11.6" up to 12" - carry it into the next foot.
-  if (inch >= 12) {
-    ft += 1;
-    inch -= 12;
+function ScalePicker({ value, min, max, step, onChange, formatLabel, formatSubLabel }: {
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (val: number) => void;
+  formatLabel: (val: number) => string;
+  formatSubLabel?: (val: number) => string;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+
+  const ticks = [];
+  for (let i = min; i <= max; i += step) {
+    ticks.push(i);
   }
-  return { ft, inch };
-}
 
-function ftInToCm(ft: number, inch: number): number {
-  return Math.round((ft * 12 + inch) * 2.54 * 10) / 10;
-}
+  // Sync scroll position when value changes from outside
+  useEffect(() => {
+    if (!containerRef.current || isDragging.current) return;
+    const timer = setTimeout(() => {
+      const index = Math.round((value - min) / step);
+      const container = containerRef.current;
+      if (!container) return;
+      const item = container.children[index] as HTMLElement;
+      if (item) {
+        const scrollPos = item.offsetLeft - container.offsetWidth / 2 + item.offsetWidth / 2;
+        container.scrollTo({ left: scrollPos, behavior: 'smooth' });
+      }
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [value, min, step]);
 
+  // Calculate nearest value on scroll
+  const handleScroll = () => {
+    const container = containerRef.current;
+    if (!container) return;
+    const centerX = container.scrollLeft + container.offsetWidth / 2;
+    let closestIndex = 0;
+    let minDistance = Infinity;
+    for (let i = 0; i < container.children.length; i++) {
+      const child = container.children[i] as HTMLElement;
+      const childCenter = child.offsetLeft + child.offsetWidth / 2;
+      const distance = Math.abs(centerX - childCenter);
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestIndex = i;
+      }
+    }
+    const newValue = min + closestIndex * step;
+    if (newValue !== value) {
+      onChange(newValue);
+    }
+  };
+
+  // Debounce scroll end to trigger haptics
+  const scrollTimeout = useRef<number | null>(null);
+  const onScroll = () => {
+    isDragging.current = true;
+    if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+    scrollTimeout.current = window.setTimeout(() => {
+      isDragging.current = false;
+      haptics.tap();
+    }, 150);
+    handleScroll();
+  };
+
+  return (
+    <div className="relative w-full h-32 bg-[#141416] rounded-[20px] border border-[#2A2A2C] overflow-hidden select-none">
+      {/* Center indicator */}
+      <div className="absolute left-1/2 top-0 bottom-0 w-[2px] bg-[#D4FF00] z-20 pointer-events-none -translate-x-1/2" />
+      
+      {/* Side gradients to fade out ticks */}
+      <div className="absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-[#141416] to-transparent z-10 pointer-events-none" />
+      <div className="absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-[#141416] to-transparent z-10 pointer-events-none" />
+      
+      {/* Active Value Display */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 text-center z-20 pointer-events-none">
+        <div className="text-[24px] font-bold text-white leading-none tracking-tight tabular-nums">
+          {formatLabel(value)}
+        </div>
+        {formatSubLabel && (
+          <div className="text-[12px] text-zinc-400 mt-1 font-medium">{formatSubLabel(value)}</div>
+        )}
+      </div>
+
+      {/* Scrollable Ticks */}
+      <div
+        ref={containerRef}
+        onScroll={onScroll}
+        className="w-full h-full flex overflow-x-auto snap-x snap-mandatory pt-16 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+        style={{
+          scrollPaddingLeft: 'calc(50% - 16px)',
+          scrollPaddingRight: 'calc(50% - 16px)',
+          paddingLeft: 'calc(50% - 16px)',
+          paddingRight: 'calc(50% - 16px)',
+        }}
+      >
+        {ticks.map((tick) => {
+          const isMajor = tick % 10 === 0;
+          return (
+            <div
+              key={tick}
+              className="w-8 flex flex-col items-center justify-end shrink-0 snap-center pb-2"
+            >
+              <div className={cn(
+                "w-[2px] rounded-full transition-colors",
+                isMajor ? "h-5 bg-[#5A5A5C]" : "h-3 bg-[#3A3A3C]"
+              )} />
+              {isMajor && (
+                <span className="text-[10px] text-zinc-500 mt-1 tabular-nums font-medium">
+                  {tick}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 /** Engine activity level -> the exact string the profiles table stores. */
 const ACTIVITY_TO_DB_LABEL = {
   sedentary: 'Sedentary',
@@ -138,40 +244,28 @@ function UnitInput({ value, onChange, placeholder, unit }: {
 
 function BasicsScreen({ draft, setDraft }: DraftProps) {
   const [heightMode, setHeightMode] = useState<'cm' | 'ftin'>('cm');
-  const [ft, setFt] = useState<number | null>(null);
-  const [inch, setInch] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (draft.heightCm === null) setDraft((d) => ({ ...d, heightCm: 172 }));
+    if (draft.weightKg === null) setDraft((d) => ({ ...d, weightKg: 65 }));
+  }, []);
+
+  const heightCm = draft.heightCm ?? 172;
+  const weightKg = draft.weightKg ?? 65;
 
   const isValid =
     draft.name.trim().length > 0 &&
     draft.sex !== null &&
     draft.age !== null && draft.age >= 13 && draft.age <= 120 &&
-    draft.heightCm !== null && draft.heightCm > 0 &&
-    draft.weightKg !== null && draft.weightKg > 0;
+    heightCm > 0 &&
+    weightKg > 0;
 
-  const switchHeightMode = (next: 'cm' | 'ftin') => {
-    if (next === heightMode) return;
-    if (next === 'ftin') {
-      if (draft.heightCm) {
-        const converted = cmToFtIn(draft.heightCm);
-        setFt(converted.ft);
-        setInch(converted.inch);
-      }
-    } else if (ft !== null || inch !== null) {
-      setDraft((d) => ({ ...d, heightCm: ftInToCm(ft ?? 0, inch ?? 0) }));
-    }
-    setHeightMode(next);
-  };
-
-  const updateFt = (value: number | null) => {
-    const next = value === null ? null : Math.min(8, Math.max(0, value));
-    setFt(next);
-    setDraft((d) => ({ ...d, heightCm: ftInToCm(next ?? 0, inch ?? 0) }));
-  };
-
-  const updateInch = (value: number | null) => {
-    const next = value === null ? null : Math.min(11, Math.max(0, value));
-    setInch(next);
-    setDraft((d) => ({ ...d, heightCm: ftInToCm(ft ?? 0, next ?? 0) }));
+  const formatFtIn = (cm: number) => {
+    const totalInches = cm / 2.54;
+    let ft = Math.floor(totalInches / 12);
+    let inch = Math.round(totalInches - ft * 12);
+    if (inch >= 12) { ft += 1; inch -= 12; }
+    return `${ft}' ${inch}"`;
   };
 
   return (
@@ -185,7 +279,7 @@ function BasicsScreen({ draft, setDraft }: DraftProps) {
       </header>
 
       <main className="flex-1 min-h-0 overflow-y-auto px-6">
-        <div className="mt-10 space-y-4">
+        <div className="mt-10 space-y-4 pb-10">
           <input
             value={draft.name}
             onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
@@ -218,44 +312,52 @@ function BasicsScreen({ draft, setDraft }: DraftProps) {
             />
           </div>
 
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">Height</span>
-            <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-0.5 flex gap-0.5">
-              {(['cm', 'ftin'] as const).map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => switchHeightMode(mode)}
-                  className={`px-3 py-1 rounded-md text-[11px] font-medium transition-colors ${
-                    heightMode === mode ? 'bg-[#D4FF00] text-black' : 'text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  {mode === 'cm' ? 'cm' : 'ft/in'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            {heightMode === 'cm' ? (
-              <UnitInput
-                value={draft.heightCm}
+          <div className="pt-2 space-y-5">
+            {/* Height Scale */}
+            <div>
+              <div className="flex items-center justify-between mb-2 px-1">
+                <span className="text-[13px] font-medium text-zinc-400">Height</span>
+                <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-0.5 flex gap-0.5">
+                  {(['cm', 'ftin'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setHeightMode(mode)}
+                      className={`px-3 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                        heightMode === mode ? 'bg-[#D4FF00] text-black' : 'text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      {mode === 'cm' ? 'cm' : 'ft/in'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <ScalePicker
+                value={heightCm}
+                min={120}
+                max={220}
+                step={1}
                 onChange={(v) => setDraft((d) => ({ ...d, heightCm: v }))}
-                placeholder="Height"
-                unit="cm"
+                formatLabel={(v) => heightMode === 'cm' ? `${v} cm` : formatFtIn(v)}
+                formatSubLabel={(v) => heightMode === 'cm' ? formatFtIn(v) : `${v} cm`}
               />
-            ) : (
-              <>
-                <UnitInput value={ft} onChange={updateFt} placeholder="ft" unit="ft" />
-                <UnitInput value={inch} onChange={updateInch} placeholder="in" unit="in" />
-              </>
-            )}
-            <UnitInput
-              value={draft.weightKg}
-              onChange={(v) => setDraft((d) => ({ ...d, weightKg: v }))}
-              placeholder="Weight"
-              unit="kg"
-            />
+            </div>
+
+            {/* Weight Scale */}
+            <div>
+              <div className="flex items-center justify-between mb-2 px-1">
+                <span className="text-[13px] font-medium text-zinc-400">Weight</span>
+              </div>
+              <ScalePicker
+                value={weightKg}
+                min={30}
+                max={200}
+                step={1}
+                onChange={(v) => setDraft((d) => ({ ...d, weightKg: v }))}
+                formatLabel={(v) => `${v} kg`}
+                formatSubLabel={(v) => `${Math.round(v * 2.20462)} lbs`}
+              />
+            </div>
           </div>
         </div>
       </main>
