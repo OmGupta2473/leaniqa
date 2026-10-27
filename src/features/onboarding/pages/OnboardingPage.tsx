@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle, Armchair, ArrowLeft, ArrowRight, Calendar, Check, Dumbbell,
   Flame, Footprints, ShieldCheck, Target, TrendingDown, TrendingUp, X, Zap,
+  Leaf, Egg, Drumstick
 } from 'lucide-react';
 import { useAuthSession } from '@/router/useAuthSession';
 import { profileService } from '@/features/profile/services/profileService';
@@ -607,10 +608,10 @@ function MacrosSheet({ open, onClose, draft, setDraft, recommended }: {
   );
 }
 
-const DIET_OPTIONS: { id: 'veg' | 'egg' | 'nonveg'; label: string }[] = [
-  { id: 'veg', label: 'Vegetarian' },
-  { id: 'egg', label: 'Eggetarian' },
-  { id: 'nonveg', label: 'Non-veg' },
+const DIET_OPTIONS: { id: 'veg' | 'egg' | 'nonveg'; label: string; Icon: typeof Leaf }[] = [
+  { id: 'veg', label: 'Veg', Icon: Leaf },
+  { id: 'egg', label: 'Egg', Icon: Egg },
+  { id: 'nonveg', label: 'Non-veg', Icon: Drumstick },
 ];
 
 function PlanScreen({ draft, setDraft, onConsent }: DraftProps & {
@@ -751,7 +752,7 @@ function PlanScreen({ draft, setDraft, onConsent }: DraftProps & {
 
         <section className="mt-[clamp(0.75rem,2dvh,1.25rem)]">
           <div className="text-[clamp(0.7rem,1.8dvh,0.8rem)] uppercase tracking-wider text-zinc-500 mb-[clamp(0.4rem,1.2dvh,0.6rem)]">
-            Your goal
+            Your goal <span className="text-[#D4FF00]">*</span>
           </div>
 
           <div className="grid grid-cols-3 gap-[clamp(0.35rem,1dvh,0.5rem)]">
@@ -761,12 +762,17 @@ function PlanScreen({ draft, setDraft, onConsent }: DraftProps & {
                 <button
                   key={opt.id}
                   onClick={() => setDraft((d) => ({ ...d, goalOverride: opt.id }))}
-                  className={`flex flex-col items-center justify-center gap-1 rounded-xl border py-[clamp(0.45rem,1.4dvh,0.7rem)] px-[clamp(0.25rem,1vw,0.5rem)] transition-colors ${
+                  className={`relative flex flex-col items-center justify-center gap-1 rounded-xl border py-[clamp(0.45rem,1.4dvh,0.7rem)] px-[clamp(0.25rem,1vw,0.5rem)] transition-colors ${
                     active
                       ? 'border-[#D4FF00]/60 bg-[#D4FF00]/8'
                       : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
                   }`}
                 >
+                  {active && (
+                    <div className="absolute -top-1.5 -right-1.5 bg-[#D4FF00] rounded-full p-0.5 shadow-sm border-2 border-[#0A0A0B] z-10">
+                      <Check size={10} className="text-black" strokeWidth={3} />
+                    </div>
+                  )}
                   <opt.Icon
                     className={`w-[clamp(0.9rem,2.2dvh,1.1rem)] h-[clamp(0.9rem,2.2dvh,1.1rem)] ${
                       active ? 'text-[#D4FF00]' : 'text-zinc-400'
@@ -790,7 +796,7 @@ function PlanScreen({ draft, setDraft, onConsent }: DraftProps & {
         {goal === 'cut' && (
           <section className="mt-[clamp(0.65rem,1.8dvh,1rem)]">
             <div className="text-[clamp(0.7rem,1.8dvh,0.8rem)] uppercase tracking-wider text-zinc-500 mb-[clamp(0.4rem,1.2dvh,0.6rem)]">
-              Cut pace
+              Cut pace <span className="text-[#D4FF00]">*</span>
             </div>
             <div className="grid grid-cols-4 gap-[clamp(0.35rem,1dvh,0.5rem)]">
               {CUT_PACES.map((p) => {
@@ -800,12 +806,17 @@ function PlanScreen({ draft, setDraft, onConsent }: DraftProps & {
                     key={p}
                     type="button"
                     onClick={() => setCutPace(p)}
-                    className={`flex flex-col items-center justify-center gap-1 rounded-xl border py-[clamp(0.45rem,1.4dvh,0.7rem)] px-[clamp(0.25rem,1vw,0.5rem)] transition-colors ${
+                    className={`relative flex flex-col items-center justify-center gap-1 rounded-xl border py-[clamp(0.45rem,1.4dvh,0.7rem)] px-[clamp(0.25rem,1vw,0.5rem)] transition-colors ${
                       active
                         ? 'border-[#D4FF00]/60 bg-[#D4FF00]/8'
                         : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
                     }`}
                   >
+                    {active && (
+                      <div className="absolute -top-1.5 -right-1.5 bg-[#D4FF00] rounded-full p-0.5 shadow-sm border-2 border-[#0A0A0B] z-10">
+                        <Check size={10} className="text-black" strokeWidth={3} />
+                      </div>
+                    )}
                     <span className={`text-[clamp(0.68rem,1.75dvh,0.82rem)] font-semibold tracking-tight ${
                       active ? 'text-white' : 'text-zinc-300'
                     }`}>
@@ -821,7 +832,7 @@ function PlanScreen({ draft, setDraft, onConsent }: DraftProps & {
         {goal === 'bulk' && (
           <section className="mt-[clamp(0.65rem,1.8dvh,1rem)]">
             <div className="text-[clamp(0.7rem,1.8dvh,0.8rem)] uppercase tracking-wider text-zinc-500 mb-[clamp(0.4rem,1.2dvh,0.6rem)]">
-              Surplus pace
+              Surplus pace <span className="text-[#D4FF00]">*</span>
             </div>
             <div className="grid grid-cols-3 gap-[clamp(0.35rem,1dvh,0.5rem)]">
               {GAIN_PACES.map((p) => {
@@ -830,12 +841,17 @@ function PlanScreen({ draft, setDraft, onConsent }: DraftProps & {
                   <button
                     key={p}
                     onClick={() => setGainPace(p)}
-                    className={`flex flex-col items-center justify-center gap-1 rounded-xl border py-[clamp(0.45rem,1.4dvh,0.7rem)] px-[clamp(0.25rem,1vw,0.5rem)] transition-colors ${
+                    className={`relative flex flex-col items-center justify-center gap-1 rounded-xl border py-[clamp(0.45rem,1.4dvh,0.7rem)] px-[clamp(0.25rem,1vw,0.5rem)] transition-colors ${
                       active
                         ? 'border-[#D4FF00]/60 bg-[#D4FF00]/8'
                         : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
                     }`}
                   >
+                    {active && (
+                      <div className="absolute -top-1.5 -right-1.5 bg-[#D4FF00] rounded-full p-0.5 shadow-sm border-2 border-[#0A0A0B] z-10">
+                        <Check size={10} className="text-black" strokeWidth={3} />
+                      </div>
+                    )}
                     <span className={`text-[clamp(0.68rem,1.75dvh,0.82rem)] font-semibold tracking-tight ${
                       active ? 'text-white' : 'text-zinc-300'
                     }`}>
@@ -849,8 +865,10 @@ function PlanScreen({ draft, setDraft, onConsent }: DraftProps & {
         )}
 
         <section className="mt-[clamp(0.65rem,1.8dvh,1rem)]">
-          <div className="text-[clamp(0.7rem,1.8dvh,0.8rem)] uppercase tracking-wider text-zinc-500 mb-[clamp(0.4rem,1.2dvh,0.6rem)]">
-            How do you eat?
+          <div className="flex items-center justify-between mb-[clamp(0.4rem,1.2dvh,0.6rem)]">
+            <div className="text-[clamp(0.7rem,1.8dvh,0.8rem)] uppercase tracking-wider text-zinc-500">
+              Select your diet type <span className="text-[#D4FF00]">*</span>
+            </div>
           </div>
           <div className="grid grid-cols-3 gap-[clamp(0.35rem,1dvh,0.5rem)]">
             {DIET_OPTIONS.map((opt) => {
@@ -859,13 +877,27 @@ function PlanScreen({ draft, setDraft, onConsent }: DraftProps & {
                 <button
                   key={opt.id}
                   onClick={() => setDraft((d) => ({ ...d, dietaryPreference: opt.id }))}
-                  className={`rounded-full border py-[clamp(0.4rem,1.2dvh,0.6rem)] text-[clamp(0.7rem,1.85dvh,0.85rem)] font-medium tracking-tight transition-colors ${
+                  className={`relative flex flex-col items-center justify-center gap-1 rounded-xl border py-[clamp(0.45rem,1.4dvh,0.7rem)] px-[clamp(0.25rem,1vw,0.5rem)] transition-colors ${
                     active
-                      ? 'border-[#D4FF00] bg-[#D4FF00] text-black'
-                      : 'border-zinc-800 bg-zinc-900/40 text-zinc-400 hover:border-zinc-700'
+                      ? 'border-[#D4FF00]/60 bg-[#D4FF00]/8'
+                      : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
                   }`}
                 >
-                  {opt.label}
+                  {active && (
+                    <div className="absolute -top-1.5 -right-1.5 bg-[#D4FF00] rounded-full p-0.5 shadow-sm border-2 border-[#0A0A0B] z-10">
+                      <Check size={10} className="text-black" strokeWidth={3} />
+                    </div>
+                  )}
+                  <opt.Icon
+                    className={`w-[clamp(0.9rem,2.2dvh,1.1rem)] h-[clamp(0.9rem,2.2dvh,1.1rem)] ${
+                      active ? 'text-[#D4FF00]' : 'text-zinc-400'
+                    }`}
+                  />
+                  <span className={`text-[clamp(0.68rem,1.75dvh,0.82rem)] font-semibold tracking-tight ${
+                    active ? 'text-white' : 'text-zinc-300'
+                  }`}>
+                    {opt.label}
+                  </span>
                 </button>
               );
             })}
