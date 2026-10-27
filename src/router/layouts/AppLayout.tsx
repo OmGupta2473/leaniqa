@@ -32,7 +32,9 @@ export function AppLayout({ children }: AppLayoutProps) {
             className="app-scroll flex-1 overflow-y-auto scroll-smooth flex flex-col relative" 
             style={{ 
               overscrollBehaviorY: 'contain',
-              paddingBottom: isKeyboardOpen ? `${Math.max(keyboardOffset, 100)}px` : 'calc(100px + env(safe-area-inset-bottom))' 
+              paddingBottom: isKeyboardOpen 
+                ? `${Math.max(keyboardOffset, 100)}px` 
+                : (location.pathname !== '/onboarding' && location.pathname !== '/science' ? 'calc(100px + env(safe-area-inset-bottom))' : '0px')
             }}
           >
             <div className="flex flex-col flex-1 w-full">

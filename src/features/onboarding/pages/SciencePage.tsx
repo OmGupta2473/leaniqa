@@ -94,9 +94,9 @@ export function SciencePage() {
     'Fats below this floor can affect hormone health.';
 
   return (
-    <div className="flex flex-col h-[100dvh] min-h-0 bg-[#0A0A0B] text-zinc-50 font-sans">
-      {/* Fixed header */}
-      <header className="flex-shrink-0 px-[clamp(1rem,4vw,1.5rem)] pt-[calc(env(safe-area-inset-top)+16px)] pb-[clamp(0.75rem,2dvh,1.25rem)] border-b border-zinc-900/60">
+    <div className="bg-[#0A0A0B] text-zinc-50 font-sans min-h-full">
+      {/* Sticky header */}
+      <header className="sticky top-0 z-30 bg-[#0A0A0B]/90 backdrop-blur-md px-[clamp(1rem,4vw,1.5rem)] pt-[calc(env(safe-area-inset-top)+16px)] pb-[clamp(0.75rem,2dvh,1.25rem)] border-b border-zinc-900/60">
         <div className="w-full max-w-md mx-auto flex items-center gap-[clamp(0.5rem,1.4dvh,0.75rem)]">
           <button
             onClick={() => navigate(-1)}
@@ -116,9 +116,9 @@ export function SciencePage() {
         </div>
       </header>
 
-      {/* Scrollable content — a content page, scroll is expected */}
-      <main className="flex-1 min-h-0 overflow-y-auto px-[clamp(1rem,4vw,1.5rem)]">
-        <div className="w-full max-w-md mx-auto py-[clamp(1rem,2.6dvh,1.5rem)] space-y-[clamp(1rem,2.6dvh,1.4rem)] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+      {/* Scrollable content — handled by AppLayout */}
+      <main className="px-[clamp(1rem,4vw,1.5rem)] pb-8">
+        <div className="w-full max-w-md mx-auto py-[clamp(1rem,2.6dvh,1.5rem)] space-y-[clamp(1rem,2.6dvh,1.4rem)]">
 
           {/* Intro */}
           <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/40 p-3 text-[clamp(0.72rem,1.9dvh,0.85rem)] text-zinc-400 leading-relaxed">
