@@ -1449,7 +1449,7 @@ export function MealLoggerPage() {
                 >
 
                   {/* Modal header */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px 12px', borderBottom: '0.5px solid rgba(255,255,255,0.08)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px 8px', borderBottom: '0.5px solid rgba(255,255,255,0.08)' }}>
                     <div style={{ minWidth: 0, paddingRight: '12px' }}>
                       <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Log a meal</div>
                       <div style={{ fontSize: 'var(--font-xs)', color: 'rgba(235,235,245,0.45)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Type naturally, I handle the rest</div>
@@ -1469,7 +1469,7 @@ export function MealLoggerPage() {
                             key={slot}
                             onClick={() => setSelectedMealSlot(slot as any)}
                             className={cn(
-                              "flex-1 flex flex-col items-center py-2.5 rounded-[24px] cursor-pointer transition-colors duration-200 relative z-10",
+                              "flex-1 flex flex-col items-center py-1.5 rounded-[20px] cursor-pointer transition-colors duration-200 relative z-10",
                               isActive ? "text-white font-medium" : "text-[rgba(255,255,255,0.4)] bg-transparent"
                             )}
                           >
@@ -1490,7 +1490,7 @@ export function MealLoggerPage() {
                   </div>
 
                   {/* AI status indicator */}
-                  <div className="px-5 pt-3 flex items-center justify-center">
+                  <div className="px-5 pt-1.5 flex items-center justify-center">
                     {aiStatus === 'offline' && (
                       <div className="flex items-center gap-2 text-[13px] text-[rgba(235,235,245,0.5)]">
                         <div className="w-1.5 h-1.5 rounded-full bg-[rgba(255,255,255,0.25)]" />
@@ -1519,7 +1519,7 @@ export function MealLoggerPage() {
                   </div>
 
                   {/* Chat messages */}
-                  <div ref={chatRef} style={{ flex: 1, overflowY: 'auto', padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '120px' }}>
+                  <div ref={chatRef} style={{ flex: 1, overflowY: 'auto', padding: '10px 16px', display: 'flex', flexDirection: 'column', gap: '8px', minHeight: '120px' }}>
                     <AnimatePresence>
                       {chat.map((msg, i) => {
                         const isUser = msg.role === "user";
@@ -1530,10 +1530,10 @@ export function MealLoggerPage() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                             className={cn(
-                              "p-[12px_16px] text-[14px] leading-relaxed relative",
+                              "p-[10px_14px] text-[13px] leading-snug relative",
                               isUser
-                                ? "bg-[rgba(212,255,0,0.12)] border-[0.5px] border-[rgba(212,255,0,0.2)] text-white rounded-[24px] rounded-tr-sm max-w-[85%] self-end"
-                                : "bg-[rgba(255,255,255,0.02)] border-[0.5px] border-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.85)] rounded-[24px] rounded-tl-sm max-w-[90%] self-start"
+                                ? "bg-[rgba(212,255,0,0.12)] border-[0.5px] border-[rgba(212,255,0,0.2)] text-white rounded-[20px] rounded-tr-sm max-w-[85%] self-end"
+                                : "bg-[rgba(255,255,255,0.02)] border-[0.5px] border-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.85)] rounded-[20px] rounded-tl-sm max-w-[90%] self-start"
                             )}
                           >
                             <div className="whitespace-pre-wrap">{msg.text}</div>
@@ -1546,7 +1546,7 @@ export function MealLoggerPage() {
                               </div>
                             )}
                             {msg.data?.coaching_tip && (
-                              <div className="mt-[12px] border-l-[3px] border-[#D4FF00]/40 bg-[rgba(212,255,0,0.05)] p-3 rounded-r-xl italic text-[13px] flex gap-[8px] items-start">
+                              <div className="mt-[8px] border-l-[3px] border-[#D4FF00]/40 bg-[rgba(212,255,0,0.05)] p-2.5 rounded-r-xl italic text-[12px] flex gap-[6px] items-start">
                                 <Lightbulb size={16} className="text-[#D4FF00] mt-0.5 shrink-0" />
                                 <div className="text-[rgba(235,235,245,0.75)]">{msg.data.coaching_tip}</div>
                               </div>
@@ -1784,7 +1784,7 @@ export function MealLoggerPage() {
 
 
                   {/* Input row */}
-                  <div className="glass-strong border-t border-[rgba(255,255,255,0.06)] px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex flex-col gap-3">
+                  <div className="glass-strong border-t border-[rgba(255,255,255,0.06)] px-4 py-2 pb-[calc(8px+env(safe-area-inset-bottom))] flex flex-col gap-2">
                     <div className="flex gap-3 items-center">
 
                       <input aria-label="Meal description"
@@ -1820,34 +1820,31 @@ export function MealLoggerPage() {
                       </motion.button>
                     </div>
                     {/* OR divider */}
-                    <div className="flex items-center gap-3 py-3">
-                      <div className="flex-1 h-px bg-[rgba(255,255,255,0.08)]" />
-                      <span className="text-[11px] font-medium text-[rgba(255,255,255,0.35)] tracking-[0.08em]">
+                    <div className="flex items-center gap-3 py-1">
+                      <div className="flex-1 h-px bg-[rgba(255,255,255,0.06)]" />
+                      <span className="text-[10px] font-medium text-[rgba(255,255,255,0.3)] tracking-[0.08em]">
                         OR
                       </span>
-                      <div className="flex-1 h-px bg-[rgba(255,255,255,0.08)]" />
+                      <div className="flex-1 h-px bg-[rgba(255,255,255,0.06)]" />
                     </div>
 
                     {/* Custom meal row */}
                     <button
                       onClick={() => { setModalOpen(false); setTimeout(() => setIsCustomMealModalOpen(true), 300); }}
-                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl border border-dashed border-[#D4FF00]/40 bg-[#D4FF00]/[0.03] transition-colors hover:bg-[#D4FF00]/[0.06] text-left"
+                      className="w-full flex items-center gap-3 px-3 py-1.5 rounded-full border border-dashed border-[#D4FF00]/30 bg-[#D4FF00]/[0.02] transition-colors hover:bg-[#D4FF00]/[0.05] text-left"
                     >
-                      <span
-                        className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
-                        style={{ background: 'radial-gradient(circle at 30% 30%, rgba(212,255,0,0.35), rgba(212,255,0,0.10))' }}
-                      >
-                        <Plus size={16} className="text-[#D4FF00]" strokeWidth={2.5} />
+                      <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 bg-[#D4FF00]/10">
+                        <Plus size={12} className="text-[#D4FF00]" strokeWidth={3} />
                       </span>
-                      <span className="flex-1 min-w-0">
-                        <span className="block text-[14px] font-semibold text-white leading-tight">
+                      <span className="flex-1 min-w-0 flex items-center gap-2">
+                        <span className="text-[13px] font-semibold text-zinc-300">
                           Create a custom meal
                         </span>
-                        <span className="block text-[12px] text-zinc-500 leading-tight mt-0.5">
-                          Save your own meal and macros
+                        <span className="text-[11px] text-zinc-500 hidden sm:inline">
+                          (Save your own macros)
                         </span>
                       </span>
-                      <ChevronRight size={16} className="text-white shrink-0" />
+                      <ChevronRight size={14} className="text-zinc-500 shrink-0" />
                     </button>
                   </div>
                 </motion.div>

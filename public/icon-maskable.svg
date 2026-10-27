@@ -1,13 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#D4FF00"/>
-  <text
-    x="256"
-    y="330"
-    font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-    font-size="200"
-    font-weight="900"
-    fill="#0A0A0A"
-    text-anchor="middle"
-    letter-spacing="-15"
-  >LQ</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <!-- Full background for maskable -->
+  <rect width="400" height="400" fill="#080809"/>
+  
+  <!-- Scaled down logo (75% size) to respect the 80% safe-zone -->
+  <g transform="translate(50, 50) scale(0.75)">
+    <path
+      d="M 120 130 A 20 20 0 0 1 160 130 L 160 250 L 210 250 L 250 290 L 160 290 A 40 40 0 0 1 120 250 Z"
+      fill="#FFFFFF"
+    />
+    <g>
+      <path
+        d="M 240 270 A 70 70 0 1 1 240 130 A 70 70 0 1 1 240 270 M 240 245 A 45 45 0 1 0 240 155 A 45 45 0 1 0 240 245"
+        fill="#a3e635"
+        fill-rule="evenodd"
+      />
+      <path
+        d="M 220 245 L 265 290 L 310 290 L 265 245 Z"
+        fill="#a3e635"
+      />
+    </g>
+  </g>
 </svg>
