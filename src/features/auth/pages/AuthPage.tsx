@@ -188,7 +188,13 @@ export function AuthPage() {
   };
 
   return (
-    <div className="bg-[#080809] min-h-dvh flex items-center justify-center px-6 overflow-x-hidden text-white w-full">
+    <div className="bg-[#080809] min-h-[100dvh] flex flex-col justify-center px-4 sm:px-6 py-12 sm:py-16 overflow-y-auto overflow-x-hidden text-white w-full relative">
+      {/* Ambient desktop background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none hidden md:block">
+        <div className="absolute -top-[20%] -left-[10%] w-[50vw] h-[50vw] bg-[#D4FF00] rounded-full mix-blend-screen filter blur-[150px] opacity-[0.04]" />
+        <div className="absolute -bottom-[20%] -right-[10%] w-[50vw] h-[50vw] bg-[#378ADD] rounded-full mix-blend-screen filter blur-[150px] opacity-[0.04]" />
+      </div>
+
       <AnimatePresence mode="wait">
         <motion.div
           key="auth-page"
@@ -196,8 +202,9 @@ export function AuthPage() {
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="w-full max-w-[400px] mx-auto"
+          className="w-full max-w-[420px] mx-auto z-10 my-auto"
         >
+          <div className="md:bg-[rgba(255,255,255,0.02)] md:border md:border-[rgba(255,255,255,0.06)] md:p-10 md:rounded-[32px] md:shadow-[0_24px_64px_rgba(0,0,0,0.4)] md:backdrop-blur-xl">
           {/* Logo / Brand Section */}
           <div 
             className="flex flex-col items-center justify-center mb-10 text-center cursor-pointer transition-opacity hover:opacity-80"
@@ -407,7 +414,7 @@ export function AuthPage() {
             <button onClick={() => navigate('/privacy')} type="button" className="hover:text-[rgba(255,255,255,0.6)] transition-colors cursor-pointer min-h-[44px] min-w-[44px]">Privacy Policy</button>
             <button onClick={() => navigate('/terms')} type="button" className="hover:text-[rgba(255,255,255,0.6)] transition-colors cursor-pointer min-h-[44px] min-w-[44px]">Terms of Service</button>
           </div>
-
+          </div>
         </motion.div>
       </AnimatePresence>
     </div>
