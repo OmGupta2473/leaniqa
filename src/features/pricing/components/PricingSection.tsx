@@ -51,7 +51,7 @@ function loadRazorpayScript(): Promise<void> {
 }
 
 export function PricingSection({ variant, title, subtitle }: PricingSectionProps) {
-  const [billing, setBilling] = useState<'monthly' | 'annual'>('annual');
+  const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly');
   const [loadingPlan, setLoadingPlan] = useState<'discipline' | 'premium' | null>(
     null,
   );
