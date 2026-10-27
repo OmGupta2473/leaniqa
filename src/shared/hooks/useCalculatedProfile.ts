@@ -21,6 +21,7 @@ export function useCalculatedProfile() {
       data.heightCm = profile.height;
       data.tdee = profile.maintenance_kcal;
       data.proteinMid = profile.protein_target;
+      data.dietaryPreference = profile.dietary_preference;
       
       const calcM = calculateMacros(profile.weight, profile.height, profile.age, profile.gender, profile.activity_level);
       data.proteinMin = calcM.proteinMin;

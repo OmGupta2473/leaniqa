@@ -18,6 +18,8 @@ import { mealService } from "@/features/nutrition/services/mealService";
 import { useNetworkConnectivity } from "@/shared/hooks/useNetworkConnectivity";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router-dom";
+import { getMealSuggestions } from "@/features/nutrition/utils/mealSuggestionEngine";
+import { useMemo } from "react";
 
 import { DashboardSkeleton } from "@/shared/components/Skeletons";
 
@@ -130,6 +132,17 @@ export function DashboardPage() {
   const targetWeightKg = profileData?.targetWeightKg || 0;
   const currentBf = profileData?.currentBodyFatPct || 0;
   const targetBf = profileData?.targetBodyFatPct || 0;
+
+  // Smart Suggestion Engine
+  const milestone = Math.floor(eatenKcal / (dailyTargetKcal / 3 || 1));
+  const suggestions = useMemo(() => {
+    return getMealSuggestions({
+      kcal: Math.max(0, remainingKcal),
+      protein: Math.max(0, remainingProtein),
+      carbs: Math.max(0, (carbsTarget || 0) - eatenCarbs),
+      fat: Math.max(0, (fatTarget || 0) - eatenFat)
+    }, milestone, profileData?.dietaryPreference);
+  }, [remainingKcal, remainingProtein, carbsTarget, eatenCarbs, fatTarget, eatenFat, milestone, profileData?.dietaryPreference]);
 
   if (isLoading || isMealsLoading) {
     if (!isOnline) {
@@ -329,7 +342,7 @@ const ringCircumference = 2 * Math.PI * 42;
               </div>
             </motion.div>
 
-            {/* Weight Progress & Next Meal Row */}
+            {/* Weight Progress & Daily Score Row */}
             <div className="grid grid-cols-2 gap-4">
               {/* Weight Progress */}
               <motion.div 
@@ -354,64 +367,64 @@ const ringCircumference = 2 * Math.PI * 42;
                 </div>
               </motion.div>
 
-              {/* Next Meal Suggestion */}
+              {/* Daily Score (Square) */}
               <motion.div 
-                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                onClick={() => navigate('/meals')}
-                className="rounded-[24px] p-5 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] shadow-sm backdrop-blur-xl cursor-pointer flex flex-col justify-between h-[140px] relative"
+                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} 
+                className="rounded-[24px] p-5 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] shadow-sm backdrop-blur-xl flex flex-col justify-between h-[140px]"
               >
-                <div className="flex justify-between items-start mb-2">
-                  <div className="text-[11px] font-bold text-[rgba(235,235,245,0.5)] tracking-widest uppercase">Up Next</div>
-                  <TrendingUp size={16} className="text-[#D4FF00]" />
-                </div>
-                <div>
-                  <div className="text-[15px] font-bold text-white tracking-tight leading-snug mb-2 pr-10">
-                    {remainingProtein <= 0 ? "Goal met!" : (remainingProtein > 30 ? "Chicken Breast" : "Greek Yogurt")}
-                  </div>
-                  {remainingProtein > 0 && (
-                     <div className="inline-block bg-[rgba(212,255,0,0.15)] text-[#D4FF00] text-[10px] font-bold tracking-wide uppercase px-2.5 py-0.5 rounded-full">
-                       ~{remainingProtein > 30 ? '350' : '200'} kcal
-                     </div>
-                  )}
-                </div>
-                <div className="absolute bottom-5 right-5 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-[0_8px_32px_rgba(255,255,255,0.15)]">
-                  <Plus size={20} strokeWidth={2.5} color="#000" />
-                </div>
+                 <div className="flex justify-between items-start mb-2">
+                    <div className="text-[11px] font-bold text-[rgba(235,235,245,0.5)] tracking-widest uppercase">Daily Score</div>
+                    <Star size={16} className="text-[#D4FF00]" />
+                 </div>
+                 <div>
+                    <div className="flex items-baseline gap-1 mb-1">
+                      <span className="text-[28px] font-bold tracking-tighter text-white leading-none">
+                        <AnimatedNumber value={completionScore} duration={1000} />
+                      </span>
+                      <span className="text-[14px] font-semibold text-[rgba(235,235,245,0.4)]">/ 100</span>
+                    </div>
+                    <div className="text-[12px] font-medium text-[rgba(235,235,245,0.5)] tracking-tight">
+                      {completionScore > 80 ? "Great job! Keep going." : "Stay focused."}
+                    </div>
+                 </div>
               </motion.div>
             </div>
 
-            {/* Daily Score */}
+            {/* Smart Meal Suggestion */}
             <motion.div 
-              whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }} 
-              className="rounded-[24px] p-6 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] shadow-sm backdrop-blur-xl flex items-center justify-between"
+              whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
+              onClick={() => navigate('/meals')}
+              className="rounded-[24px] p-5 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] shadow-sm backdrop-blur-xl cursor-pointer flex flex-col justify-between relative overflow-hidden"
             >
-              <div className="flex flex-col">
-                <div className="flex items-center gap-1.5 mb-2">
-                   <Star size={14} className="text-[#D4FF00]" />
-                   <span className="text-[11px] font-bold text-[rgba(235,235,245,0.5)] tracking-widest uppercase">Daily Score</span>
+              <div className="flex justify-between items-start mb-3 z-10">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={16} className="text-[#D4FF00]" />
+                  <span className="text-[11px] font-bold text-[rgba(235,235,245,0.5)] tracking-widest uppercase">Smart Suggestion</span>
                 </div>
-                <div className="flex items-baseline gap-1 mb-1.5">
-                  <span className="text-[36px] tracking-tighter font-bold text-white leading-none">
-                    <AnimatedNumber value={completionScore} duration={1000} />
-                  </span>
-                  <span className="text-[18px] font-semibold text-[rgba(235,235,245,0.4)]">/ 100</span>
-                </div>
-                <div className="text-[14px] font-medium text-[rgba(235,235,245,0.7)] tracking-tight">
-                  {completionScore > 80 ? "Great job! Keep going." : "Almost there, stay focused."}
-                </div>
+                <ChevronRight size={16} className="text-[rgba(235,235,245,0.4)]" />
               </div>
               
-              <div className="relative flex items-center justify-center w-[72px] h-[72px] shrink-0">
-                  <svg width="72" height="72" viewBox="0 0 72 72" className="transform -rotate-90">
-                    <circle cx="36" cy="36" r="32" fill="transparent" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
-                    <circle cx="36" cy="36" r="32" fill="transparent" stroke="#D4FF00" strokeWidth="8" strokeLinecap="round"
-                      strokeDasharray={scoreCircumference * (32/26)} 
-                      style={{ strokeDashoffset: mounted ? (scoreCircumference - (completionScore / 100) * scoreCircumference) * (32/26) : scoreCircumference * (32/26), transition: "stroke-dashoffset 1s cubic-bezier(0.34,1.56,0.64,1) 0.2s" }}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <Star size={20} className="text-[rgba(255,255,255,0.8)]" fill={completionScore >= 100 ? "#D4FF00" : "transparent"} />
+              {suggestions.length > 0 ? (
+                <div className="z-10">
+                  <div className="text-[16px] font-bold text-white tracking-tight leading-snug mb-3 pr-12">
+                    {suggestions[0].name}
                   </div>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="bg-[rgba(255,77,28,0.1)] text-[#FF4D1C] px-2.5 py-1 rounded-md text-[11px] font-bold">{suggestions[0].kcal} kcal</span>
+                    <span className="bg-[rgba(55,138,221,0.1)] text-[#378ADD] px-2.5 py-1 rounded-md text-[11px] font-bold">{suggestions[0].protein}g Pro</span>
+                    <span className="bg-[rgba(212,255,0,0.1)] text-[#D4FF00] px-2.5 py-1 rounded-md text-[11px] font-bold">{suggestions[0].carbs}g Carb</span>
+                    <span className="bg-[rgba(255,255,255,0.1)] text-white px-2.5 py-1 rounded-md text-[11px] font-bold">{suggestions[0].fat}g Fat</span>
+                  </div>
+                </div>
+              ) : (
+                 <div className="text-[14px] font-medium text-zinc-400 z-10">You've hit your target for today!</div>
+              )}
+
+              {/* Decorative background glow */}
+              <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-[#D4FF00]/10 blur-3xl rounded-full z-0 pointer-events-none" />
+
+              <div className="absolute bottom-5 right-5 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-[0_8px_32px_rgba(255,255,255,0.15)] z-10">
+                <Plus size={20} strokeWidth={2.5} color="#000" />
               </div>
             </motion.div>
           </>
