@@ -16,8 +16,8 @@
  * The macros are not scaled proportionally — protein is protected.
  */
 
-export const CUT_PACES = [26, 22, 18, 14] as const;
-export type CutPace = typeof CUT_PACES[number];
+export const CUT_PACES = [22, 16, 10, 6] as const;
+type CutPace = typeof CUT_PACES[number];
 
 export const GAIN_PACES = [8, 10, 12] as const;
 export type GainPace = typeof GAIN_PACES[number];
@@ -37,13 +37,11 @@ export function proteinFactorFor(
   if (goal === 'maintain') return 1.4;
   if (goal === 'recomp') return 1.8;
   if (goal === 'bulk') {
-    if (paceValue === 10) return 1.7;
-    if (paceValue === 12) return 1.8;
-    return 1.6; // +8% and default
+    return 1.8; // Recomp / Muscle gain always uses 1.8
   }
   // cut
-  if (paceValue === 22 || paceValue === 26) return 1.8;
-  return 1.6; // -14%, -18%, and default
+  if (paceValue === 22 || paceValue === 16) return 2.2;
+  return 2.0; // 10%, 6%, and fallback
 }
 
 /**
