@@ -10,7 +10,7 @@ import { useChatStore } from "@/app/store";
 import { useNutritionStore } from "../store/nutritionStore";
 import {
   Send, Loader2, Dumbbell, Lightbulb, Sun, Sunrise, Moon, Coffee, Plus, X, ChevronLeft, ChevronRight, ArrowRight, ChevronDown,
-  Zap, AlertTriangle, Pencil, Lock
+  Zap, AlertTriangle, Pencil, Lock, GripVertical
 } from "lucide-react";
 import { EmptyState } from '@/shared/components/EmptyState';
 import { CustomMealModal } from '../components/CustomMealModal';
@@ -108,8 +108,10 @@ function sentenceCaseAssumption(assumption: string): string {
 }
 
 // ── SLOT ROW — used in the persistent summary ─────────────────────────────
-function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete, onEdit }: { slot: string; icon: React.ReactNode; label: string; timeRange: string; meals: any[], onDelete: (id: string) => void; onEdit: (meal: any) => void }) {
+function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete, onEdit, onDropMeal }: { slot: string; icon: React.ReactNode; label: string; timeRange: string; meals: any[], onDelete: (id: string) => void; onEdit: (meal: any) => void; onDropMeal: (mealId: string, newSlot: string) => void }) {
   const [expanded, setExpanded] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   const { toast } = useToast();
   const kcal = meals.reduce((s, m) => s + m.calories, 0);
   const pro = meals.reduce((s, m) => s + m.protein, 0);
@@ -117,7 +119,20 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete, onEdit }: 
     <PerfProfiler id="MealLoggerPage">
       <motion.div
         layout
-        className="mb-4 overflow-hidden rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] shadow-sm backdrop-blur-xl transition-all duration-300 hover:bg-[rgba(255,255,255,0.05)]"
+        onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+        onDragLeave={() => setIsDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setIsDragOver(false);
+          const mealId = e.dataTransfer.getData('text/plain');
+          if (mealId) onDropMeal(mealId, slot);
+        }}
+        className={cn(
+          "mb-4 overflow-hidden rounded-[24px] border shadow-sm backdrop-blur-xl transition-all duration-300",
+          isDragOver 
+            ? "bg-[rgba(212,255,0,0.08)] border-[#D4FF00] ring-2 ring-[#D4FF00]/20 scale-[1.01]" 
+            : "bg-[rgba(255,255,255,0.03)] border-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.05)]"
+        )}
       >
         <div className="p-5 flex items-center justify-between select-none cursor-pointer" onClick={() => { haptics.tap(); setExpanded(!expanded); }}>
           <div className="flex items-center gap-4">
@@ -155,8 +170,21 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete, onEdit }: 
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.05 }}
                     key={m.id || i}
-                    className="flex items-center justify-between group p-2.5 sm:p-3 rounded-[16px] bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)] transition-colors gap-2"
+                    draggable={!!m.id}
+                    onDragStart={(e: React.DragEvent) => {
+                      e.dataTransfer.setData('text/plain', m.id);
+                      e.dataTransfer.effectAllowed = 'move';
+                      setDraggingId(m.id);
+                    }}
+                    onDragEnd={() => setDraggingId(null)}
+                    className={cn(
+                      "flex items-center justify-between group p-2.5 sm:p-3 rounded-[16px] bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)] transition-colors gap-2",
+                      draggingId === m.id && "opacity-30 border border-dashed border-[#D4FF00]/50"
+                    )}
                   >
+                    <div className="flex items-center gap-1.5 shrink-0 cursor-grab active:cursor-grabbing text-zinc-600 hover:text-zinc-400">
+                      <GripVertical size={14} />
+                    </div>
                     <button
                       type="button"
                       onClick={() => onEdit(m)}
@@ -740,6 +768,23 @@ export function MealLoggerPage() {
 
   const handleDeleteMeal = (id: string) => {
     deleteMealMutation.mutate(id);
+  };
+
+  const handleDropMeal = (mealId: string, newSlot: string) => {
+    const meal = meals.find((m) => m.id === mealId);
+    if (!meal || meal.meal_slot === newSlot) return;
+    
+    updateMealMutation.mutate({ 
+      id: mealId, 
+      updates: { meal_slot: newSlot as any } 
+    });
+    
+    haptics.success();
+    toast({
+      type: 'success',
+      message: `Moved meal to ${newSlot}`,
+      duration: 2000,
+    });
   };
 
   const parseMealMutation = useMutation({
@@ -1381,10 +1426,10 @@ export function MealLoggerPage() {
               />
             )}
 
-            <MealSlotRow slot="breakfast" icon={<Sunrise size={20} />} label="Breakfast" timeRange="6 am – 12 pm" meals={breakfastMeals} onDelete={handleDeleteMeal} onEdit={(meal) => setEditingMeal(meal)} />
-            <MealSlotRow slot="lunch" icon={<Sun size={20} />} label="Lunch" timeRange="12 pm – 6 pm" meals={lunchMeals} onDelete={handleDeleteMeal} onEdit={(meal) => setEditingMeal(meal)} />
-            <MealSlotRow slot="dinner" icon={<Moon size={20} />} label="Dinner" timeRange="6 pm – 10 pm" meals={dinnerMeals} onDelete={handleDeleteMeal} onEdit={(meal) => setEditingMeal(meal)} />
-            <MealSlotRow slot="snack" icon={<Coffee size={20} />} label="Snack" timeRange="Anytime" meals={snackMeals} onDelete={handleDeleteMeal} onEdit={(meal) => setEditingMeal(meal)} />
+            <MealSlotRow slot="breakfast" icon={<Sunrise size={20} />} label="Breakfast" timeRange="6 am – 12 pm" meals={breakfastMeals} onDelete={handleDeleteMeal} onEdit={(meal) => setEditingMeal(meal)} onDropMeal={handleDropMeal} />
+            <MealSlotRow slot="lunch" icon={<Sun size={20} />} label="Lunch" timeRange="12 pm – 6 pm" meals={lunchMeals} onDelete={handleDeleteMeal} onEdit={(meal) => setEditingMeal(meal)} onDropMeal={handleDropMeal} />
+            <MealSlotRow slot="dinner" icon={<Moon size={20} />} label="Dinner" timeRange="6 pm – 10 pm" meals={dinnerMeals} onDelete={handleDeleteMeal} onEdit={(meal) => setEditingMeal(meal)} onDropMeal={handleDropMeal} />
+            <MealSlotRow slot="snack" icon={<Coffee size={20} />} label="Snack" timeRange="Anytime" meals={snackMeals} onDelete={handleDeleteMeal} onEdit={(meal) => setEditingMeal(meal)} onDropMeal={handleDropMeal} />
           </div>
           }
 
