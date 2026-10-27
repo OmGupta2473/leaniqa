@@ -26,7 +26,7 @@ export interface OnboardingDraft {
 export const EMPTY_DRAFT: OnboardingDraft = {
   step: 1,
   name: '', sex: null, age: null, heightCm: 172, weightKg: 65,
-  activity: null, dietaryPreference: null, goalOverride: null, macroOverrides: null,
+  activity: null, dietaryPreference: 'veg', goalOverride: null, macroOverrides: null,
   termsAccepted: false,
   privacyAccepted: false,
   aiConsentAccepted: false,
