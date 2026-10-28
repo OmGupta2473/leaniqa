@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { authService } from '@/features/auth/services/authService';
 import { haptics } from '@/shared/utils/haptics';
 import { subscriptionService } from '@/features/pricing/services/subscriptionService';
+import { useEntitlements } from '@/features/pricing/hooks/useEntitlements';
 import { EditProfileModal } from '../components/EditProfileModal';
 import { EditNutritionModal } from '../components/EditNutritionModal';
 import { CancelRenewalSheet } from '@/features/pricing/components/CancelRenewalSheet';
@@ -142,6 +143,7 @@ export function ProfilePage() {
   const { data: goal } = useQuery({ queryKey: ['goal'], queryFn: () => profileService.getGoal() });
 
   const { profileData: calculated } = useCalculatedProfile();
+  const { entitlements } = useEntitlements();
   const { data: subscription } = useQuery({
     queryKey: ['subscription'],
     queryFn: () => subscriptionService.getSubscriptionStatus()
@@ -488,9 +490,24 @@ export function ProfilePage() {
             </button>
           </div>
 
-          {projection ? (
+          {entitlements.projections === 'none' ? (
+            <div className="flex flex-col items-center justify-center py-6 text-center">
+              <div className="w-10 h-10 rounded-full bg-[rgba(255,255,255,0.04)] flex items-center justify-center mb-3">
+                <Lock size={16} className="text-zinc-500" />
+              </div>
+              <p className="text-[13px] text-zinc-500 mb-3 max-w-[200px]">
+                Upgrade to see your projected progress.
+              </p>
+              <button
+                onClick={() => navigate('/pricing')}
+                className="text-[13px] font-semibold text-[#D4FF00] hover:underline"
+              >
+                View plans ›
+              </button>
+            </div>
+          ) : projection ? (
             <>
-        <div className="text-[clamp(0.75rem,2dvh,0.9rem)] text-zinc-300 mb-[clamp(0.6rem,1.6dvh,0.9rem)] md:text-base">
+              <div className="text-[clamp(0.75rem,2dvh,0.9rem)] text-zinc-300 mb-[clamp(0.6rem,1.6dvh,0.9rem)] md:text-base">
                 {projection.summary}
               </div>
 

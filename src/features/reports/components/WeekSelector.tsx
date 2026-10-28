@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { motion } from 'motion/react';
 import { getWeekLabel } from '@/shared/utils/weekKey';
 import { cn } from '@/shared/utils/utils';
@@ -12,6 +12,7 @@ interface WeekSelectorProps {
   canGoNext: boolean;
   onPrev: () => void;
   onNext: () => void;
+  onOpenPicker: () => void;
 }
 
 export function WeekSelector({
@@ -22,6 +23,7 @@ export function WeekSelector({
   canGoNext,
   onPrev,
   onNext,
+  onOpenPicker,
 }: WeekSelectorProps) {
   const label = getWeekLabel(weekStart);
 
@@ -65,16 +67,27 @@ export function WeekSelector({
           <ChevronLeft size={20} />
         </button>
 
-        <div className="flex-1 text-center min-w-0">
-          <motion.div
-            key={weekStart}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 32 }}
-            className="text-[17px] font-semibold text-white tracking-tight tabular-nums truncate"
+        <div className="flex-1 flex justify-center min-w-0">
+          <button
+            type="button"
+            onClick={onOpenPicker}
+            className="group flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D4FF00] rounded-lg px-2 py-1 -mx-2 transition-colors hover:bg-[rgba(255,255,255,0.04)]"
+            aria-label="Select week"
           >
-            {label}
-          </motion.div>
+            <motion.div
+              key={weekStart}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+              className="text-[17px] font-semibold text-white tracking-tight tabular-nums truncate group-hover:text-[#D4FF00] transition-colors"
+            >
+              {label}
+            </motion.div>
+            <ChevronDown
+              size={16}
+              className="text-zinc-500 group-hover:text-[#D4FF00] transition-colors shrink-0"
+            />
+          </button>
         </div>
 
         <button
