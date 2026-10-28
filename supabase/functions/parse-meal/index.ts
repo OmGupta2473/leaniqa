@@ -105,8 +105,15 @@ function normalizeInput(input: string): string {
   // Raw/cooked modifier: prefix the matched food with "raw " when the user
   // says raw/uncooked/dry, and leave the plain name when they say cooked/
   // boiled/steamed/plain (cooked is the default for KB lookups).
-  normalized = normalized.replace(/\b(raw|uncooked|dry)\s+(rice|oats|dal|moong dal|masoor dal|chicken( breast)?|mutton|fish)\b/g, "raw $2");
-  normalized = normalized.replace(/\b(cooked|boiled|steamed|plain)\s+(rice|oats|dal|moong dal|masoor dal|chicken( breast)?|mutton|fish)\b/g, "$2");
+  //
+  // Applied to both modifier-first ("cooked rice") and modifier-after
+  // ("rice cooked") forms — users write it both ways, and the KB needs the
+  // same canonical base key either way. Egg / paneer / roti are included
+  // because their base KB entry is already the cooked form.
+  normalized = normalized.replace(/\b(raw|uncooked|dry)\s+(rice|oats|dal|moong dal|masoor dal|chicken( breast)?|mutton|fish|egg|paneer|roti)\b/g, "raw $2");
+  normalized = normalized.replace(/\b(cooked|boiled|steamed|plain)\s+(rice|oats|dal|moong dal|masoor dal|chicken( breast)?|mutton|fish|egg|paneer|roti)\b/g, "$2");
+  normalized = normalized.replace(/\b(rice|oats|dal|moong dal|masoor dal|chicken( breast)?|mutton|fish|egg|paneer|roti)\s+(cooked|boiled|steamed|plain)\b/g, "$1");
+  normalized = normalized.replace(/\b(rice|oats|dal|moong dal|masoor dal|chicken( breast)?|mutton|fish|egg|paneer|roti)\s+(raw|uncooked|dry)\b/g, "$2 $1");
   normalized = normalized.replace(/[,+&]/g, " and ");
   normalized = normalized.replace(/\s+with\s+/g, " and ");
   normalized = normalized.replace(/\s+and\s+and\s+/g, " and ");
@@ -402,6 +409,41 @@ function formatAmount(amount: number): string {
   return Number.isInteger(amount) ? String(amount) : String(Math.round(amount * 100) / 100);
 }
 
+/**
+ * Multi-strategy KB lookup. Tries in order:
+ *   1. Exact key
+ *   2. Strip trailing modifier: "rice cooked" → "rice"
+ *   3. Strip leading modifier:  "cooked rice" → "rice"
+ *   4. Singular fallback:       "eggs" → "egg"
+ *
+ * All fallbacks compare case-insensitively against the SAME KnowledgeBase —
+ * no Levenshtein, no new entries. The base key of each staple IS the cooked
+ * form (rice=130 is cooked rice, chicken=165 is cooked chicken, egg=155 is
+ * boiled egg), and raw variants are already separate entries ("raw rice",
+ * "raw chicken breast", "raw mutton"). We never strip a "raw" prefix, so
+ * raw vs cooked macros never get confused.
+ */
+function lookupFood(name: string): KnowledgeFood | null {
+  if (KnowledgeBase[name]) return KnowledgeBase[name];
+
+  const strippedTrailing = name.replace(/\s+(cooked|boiled|steamed|plain|fresh|homemade|simple)$/i, '').trim();
+  if (strippedTrailing && strippedTrailing !== name && KnowledgeBase[strippedTrailing]) {
+    return KnowledgeBase[strippedTrailing];
+  }
+
+  const strippedLeading = name.replace(/^(cooked|boiled|steamed|plain|fresh|homemade|simple)\s+/i, '').trim();
+  if (strippedLeading && strippedLeading !== name && KnowledgeBase[strippedLeading]) {
+    return KnowledgeBase[strippedLeading];
+  }
+
+  if (name.endsWith('s') && name.length > 1) {
+    const singular = name.slice(0, -1);
+    if (KnowledgeBase[singular]) return KnowledgeBase[singular];
+  }
+
+  return null;
+}
+
 function calculateMultiplier(food: KnowledgeFood, quantity: number, unit: QuantityUnit | undefined, quantityProvided: boolean): number | null {
   if (!quantityProvided) {
     if (!food.defaultUnit || !food.unitWeights?.[food.defaultUnit]) return null;
@@ -427,11 +469,33 @@ class KnowledgeBaseParser implements MealParser {
     for (const part of parts) {
       const match = part.match(/^(?:(\d+(?:\.\d+)?)\s*(g|ml|bowl|cup|piece|slice|scoop|tbsp|tsp)?(?=\s|$)\s*(?:of\s+)?)?(.+)$/);
       if (!match) return null;
-      const quantityProvided = Boolean(match[1]);
-      const quantity = quantityProvided ? Number.parseFloat(match[1]) : 1;
-      const unit = (match[2] === "tbsp" || match[2] === "tsp" ? "scoop" : match[2]) as QuantityUnit | undefined;
-      const foodName = match[3].trim();
-      const food = KnowledgeBase[foodName];
+      let quantityProvided = Boolean(match[1]);
+      let quantity = quantityProvided ? Number.parseFloat(match[1]) : 1;
+      let unit = (match[2] === "tbsp" || match[2] === "tsp" ? "scoop" : match[2]) as QuantityUnit | undefined;
+      let foodName = match[3].trim();
+      let food = lookupFood(foodName);
+
+      // Quantity-after fallback: "rice 50g", "dal 1 bowl". Only tried when
+      // the quantity-first form did not produce a KB hit — this preserves
+      // the existing behaviour for every input that already worked and
+      // adds the trailing-quantity form as a strict superset. Without this,
+      // "rice cooked 50g" (after modifier stripping → "rice 50g") would
+      // leave "rice 50g" as the food name and miss the KB.
+      if (!food) {
+        const tail = part.match(/^(.+?)\s+(\d+(?:\.\d+)?)\s*(g|ml|bowl|cup|piece|slice|scoop|tbsp|tsp)$/);
+        if (tail) {
+          const candidateName = tail[1].trim();
+          const candidateFood = lookupFood(candidateName);
+          if (candidateFood) {
+            food = candidateFood;
+            foodName = candidateName;
+            quantityProvided = true;
+            quantity = Number.parseFloat(tail[2]);
+            unit = (tail[3] === "tbsp" || tail[3] === "tsp" ? "scoop" : tail[3]) as QuantityUnit;
+          }
+        }
+      }
+
       if (!food || !Number.isFinite(quantity) || quantity <= 0) return null;
       const multiplier = calculateMultiplier(food, quantity, unit, quantityProvided);
       if (!multiplier || multiplier > 50) return null;
