@@ -210,6 +210,20 @@ function normalizeInput(input: string): string {
   return normalized.replace(/\s+/g, " ").trim();
 }
 
+/**
+ * Sort the " and "-separated parts of a normalized meal text alphabetically.
+ * Used only for the AI prompt and the AI-cache key. Both make the same meal
+ * deterministic regardless of user word order — "2 roti + 1 thekua" and
+ * "1 thekua + 2 roti" hit the AI with identical input.
+ *
+ * Does NOT affect the KB path (KnowledgeBaseParser runs on the original
+ * normalized text) or the response — applyModifiers re-sorts items by
+ * food_name before building the assumptions array.
+ */
+function sortMealParts(text: string): string {
+  const parts = text.split(/\s+and\s+/).filter(Boolean);
+  return parts.sort().join(' and ');
+}
 interface KnowledgeFood {
   calories: number;
   protein: number;
@@ -991,60 +1005,65 @@ function isRawProfile(foodName: string): boolean {
   return RAW_PROFILE_NAMES.has(foodName) || foodName.startsWith('raw ');
 }
 
+// applyModifiers runs ONLY on AI-parsed meals. Every other source — KB,
+// memory cache, DB cache — returns from `parse-meal` before reaching this
+// function. Therefore this function MUST NOT reference any KB profile or
+// emit any raw/cooked mismatch warning: there is no KB profile in play.
+//
+// It has exactly two jobs:
+//   1. Describe each item's AI interpretation as one clean assumption bullet.
+//   2. Fold explicit added-oil grams into the macros as a separate contribution.
+//
+// Item order is sorted by food_name so the assumptions block is
+// order-independent for the same meal (e.g. "1 thekua + 2 roti" and
+// "2 roti + 1 thekua" both produce the same bullets in the same order).
 function applyModifiers(data: MealResult): MealResult & {
   oil_review_needed?: boolean;
   weight_basis_review_needed?: boolean;
 } {
   if (!data.items || data.items.length === 0) return data;
 
-  const assumptions: string[] = [...(data.assumptions ?? [])];
+  // Drop any legacy KB-mismatch string that may have leaked in from the AI's
+  // own `assumptions` array (defensive — the AI shouldn't generate them, but
+  // older deployments may have carried them in cached responses).
+  const isLegacyKbMismatch = (s: string) =>
+    /raw profile|raw weight|cooking oil|verify fat|may be off by/i.test(s);
+  const assumptions: string[] = (data.assumptions ?? []).filter((s) => !isLegacyKbMismatch(s));
+
   let extraKcal = 0, extraProtein = 0, extraFat = 0, extraCarbs = 0, extraFiber = 0;
-  let oilReviewNeeded = false;
-        const isRawBasis = item.weight_basis === 'raw';
-        let profile: KnowledgeFood | undefined;
 
-        if (isRawBasis) {
-          profile = KnowledgeBase['raw ' + item.food_name] || KnowledgeBase[item.food_name];
-        } else if (item.weight_basis === 'cooked') {
-          profile = KnowledgeBase['cooked ' + item.food_name] || 
-                    KnowledgeBase['boiled ' + item.food_name] || 
-                    KnowledgeBase[item.food_name];
-        } else {
-          profile = KnowledgeBase[item.food_name];
-        }
+  const sortedItems = [...data.items].sort((a, b) =>
+    a.food_name.localeCompare(b.food_name),
+  );
 
-        if (!profile) {
-          // No KB match. Trust AI estimate, don't flag as raw/cooked mismatch.
-          continue;
-        }
+  for (const item of sortedItems) {
+    const qty = item.quantity;
+    const unit = item.unit ?? null;
+    const basisPrefix =
+      item.weight_basis === 'cooked'   ? 'cooked '    :
+      item.weight_basis === 'raw'      ? 'raw '       :
+      item.weight_basis === 'finished' ? 'as served ' :
+      '';
 
-        // Smart detection: If user didn't specify raw/cooked, add a single clean assumption.
-        if (item.weight_basis === 'unknown') {
-          assumptions.push(
-            `Assumed raw weight for "${item.food_name}" — add 'cooked' if you measured after cooking.`
-          );
-        }
+    const prep = item.preparation_method
+      ? `, ${item.preparation_method.replace(/_/g, ' ')}`
+      : '';
 
-    // User said no oil but the profile already includes oil.
-    // We CANNOT subtract — we don't know how much. Flag for review.
-    if (
-      profile.oil_included &&
-      data.added_oil?.status === 'explicitly_none'
-    ) {
-      oilReviewNeeded = true;
-      assumptions.push(
-        `"${item.food_name}" profile includes cooking oil; you said none — verify fat`,
-      );
+    if (qty != null && unit) {
+      assumptions.push(`${basisPrefix}${item.food_name}, ${qty} ${unit}${prep}`);
+    } else if (qty != null) {
+      assumptions.push(`${basisPrefix}${item.food_name} (${qty} serving${prep})`);
+    } else {
+      assumptions.push(`${basisPrefix}${item.food_name} (AI-estimated portion${prep})`);
     }
   }
 
-  // Explicit added oil — add as a separate contribution, never double-count.
   if (
     data.added_oil?.status === 'explicit_quantity' &&
     data.added_oil.quantity_g != null &&
     data.added_oil.quantity_g > 0
   ) {
-    const oil = KnowledgeBase['ghee']; // 900 kcal, 99.5 fat per 100g
+    const oil = KnowledgeBase['ghee'];
     if (oil) {
       const scale = data.added_oil.quantity_g / 100;
       extraKcal    += Math.round(oil.calories * scale);
@@ -1058,13 +1077,15 @@ function applyModifiers(data: MealResult): MealResult & {
 
   return {
     ...data,
+    items: sortedItems,
     calories: data.calories + extraKcal,
     protein: Math.round((data.protein + extraProtein) * 10) / 10,
     fat:     Math.round((data.fat     + extraFat)     * 10) / 10,
     carbs:   Math.round((data.carbs   + extraCarbs)   * 10) / 10,
     fiber:   Math.round((data.fiber   + extraFiber)   * 10) / 10,
     assumptions: assumptions.length > 0 ? assumptions : undefined,
-    oil_review_needed: oilReviewNeeded || undefined,
+    oil_review_needed: undefined,
+    weight_basis_review_needed: undefined,
   };
 }
 
@@ -1179,8 +1200,12 @@ function scaleMealResult(data: MealResult, ratio: number): MealResult {
 }
 
 function cacheKeyFor(context: ParseContext): string {
-  const identity = mealIdentityFor(context.normalizedText);
-  return `${context.mealType}:${identity ?? context.normalizedText}`;
+  // Normalize order before deriving the cache key, so "2 roti + 1 thekua"
+  // and "1 thekua + 2 roti" share one cache entry. Falls back to a sorted
+  // version of the raw text when mealIdentityFor can't parse quantities.
+  const identity = mealIdentityFor(context.normalizedText)
+    ?? sortMealParts(context.normalizedText);
+  return `${context.mealType}:${identity}`;
 }
 
 function responseFor(data: MealResult, corsHeaders: Record<string, string>): Response {
@@ -1443,7 +1468,12 @@ serve(async (req) => {
     ]);
     let data: MealResult;
     try {
-      data = applyModifiers(validator.validate(await chain.parse(context)));
+      // Sort parts so the AI sees the same text regardless of user order.
+      const sortedContext: ParseContext = {
+        ...context,
+        normalizedText: sortMealParts(context.normalizedText),
+      };
+      data = applyModifiers(validator.validate(await chain.parse(sortedContext)));
     } catch (chainErr) {
       // Chain failed after quota was reserved — refund the credit
       // so a server-side error doesn't consume the user's daily parse.
