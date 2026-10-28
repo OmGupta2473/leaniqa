@@ -8,6 +8,8 @@ import { profileService } from "@/features/profile/services/profileService";
 import {
   AWARD_CATALOG,
   evaluateAwards,
+  nextClosestAward,
+  AWARD_BY_ID,
   type AwardCategory,
   type AwardProgress,
 } from "@/shared/utils/awardsEngine";
@@ -149,6 +151,15 @@ export function AwardsPage() {
     [progressById, dbUserAwards],
   );
 
+  const nextThree = useMemo(() => {
+    const closest = nextClosestAward(evaluation);
+    const primaryId = closest?.id ?? 'streak_1';
+    return evaluation.progress
+      .filter((p) => !p.eligible && !p.unlocked && p.id !== primaryId)
+      .sort((a, b) => b.percentage - a.percentage)
+      .slice(0, 3);
+  }, [evaluation]);
+
   // Acknowledge exactly the unacknowledged awards this render is showing.
   // Requires that the awards query already returned (awards are rendered)
   // and that we have a DB row for each. Never acknowledges blind.
@@ -270,68 +281,110 @@ export function AwardsPage() {
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-2 gap-3 md:gap-4 mb-8 items-stretch">
-      {/* Premium Hero Streak Card */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20, scale: 0.95 }} 
-        animate={{ opacity: 1, y: 0, scale: 1 }} 
-        transition={{ type: 'spring', stiffness: 300, damping: 25, delay: 0.05 }}
-        className="relative rounded-[20px] md:rounded-[24px] p-4 md:p-5 flex flex-col overflow-hidden border border-[rgba(255,255,255,0.05)] h-full"
-        style={{
-          background: 'linear-gradient(180deg, rgba(20,20,22,1) 0%, rgba(10,10,12,1) 100%)',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)'
-        }}
-      >
-        <div className="text-[12px] md:text-[13px] font-semibold text-white">Current Streak</div>
-
-        <div className="flex justify-between items-start mt-3">
-          <div>
-            <div className="text-[36px] md:text-[44px] font-bold text-white tracking-tighter leading-none">{currentStreak}</div>
-            <div className="text-[14px] md:text-[16px] text-zinc-500 font-medium mt-0.5">days</div>
-          </div>
-          <div
-            className="w-11 h-11 md:w-14 md:h-14 rounded-full flex items-center justify-center shrink-0"
-            style={{ background: 'rgba(255,77,28,0.08)', border: '1px solid rgba(255,77,28,0.15)', boxShadow: '0 0 32px rgba(255,77,28,0.15)' }}
-          >
-            <Flame className="text-[#FF4D1C] w-5 h-5 md:w-7 md:h-7" strokeWidth={1.8} />
-          </div>
-        </div>
-
-        <div className="flex justify-between mt-4">
-          {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
-            <div key={i} className="flex flex-col items-center gap-2">
-              <div className={`w-2 md:w-2.5 h-2 md:h-2.5 rounded-full ${activeDays[i] ? 'bg-[#FF4D1C] shadow-[0_0_8px_rgba(255,77,28,0.5)]' : 'bg-[rgba(255,255,255,0.12)]'}`} />
-              <span className="text-[9px] md:text-[10px] text-zinc-500 font-medium">{d}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="h-px bg-[rgba(255,255,255,0.06)] my-3 md:my-4" />
-
-        <button
-          onClick={() => navigate('/awards')}
-          className="w-full flex items-center gap-2 md:gap-3 rounded-[16px] px-2.5 md:px-3 py-2.5 md:py-3 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] text-left transition-colors hover:bg-[rgba(255,255,255,0.05)]"
+      <div className="grid grid-cols-2 gap-3 md:gap-4 mb-4 items-stretch">
+        {/* Premium Hero Streak Card */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20, scale: 0.95 }} 
+          animate={{ opacity: 1, y: 0, scale: 1 }} 
+          transition={{ type: 'spring', stiffness: 300, damping: 25, delay: 0.05 }}
+          className="relative rounded-[24px] p-4 flex flex-col justify-between overflow-hidden border border-[rgba(255,255,255,0.05)] h-full"
+          style={{
+            background: 'linear-gradient(180deg, rgba(20,20,22,1) 0%, rgba(10,10,12,1) 100%)',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)'
+          }}
         >
-          <div
-            className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center shrink-0"
-            style={{ background: 'rgba(212,255,0,0.10)' }}
-          >
-            <Trophy className="w-4 h-4 md:w-5 md:h-5 text-[#D4FF00]" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[10px] md:text-[11px] text-zinc-500 font-medium">Personal Best</div>
-            <div className="text-[14px] md:text-[16px] font-bold text-white tracking-tight leading-tight">{bestStreak} days</div>
-          </div>
-          <ChevronRight className="w-4 h-4 md:w-5 md:h-5 text-zinc-500 shrink-0" />
-        </button>
+          <div>
+            <div className="text-[13px] font-semibold text-white mb-3">Current Streak</div>
 
-        <p className="text-[10px] md:text-[11px] text-center text-zinc-500 leading-snug mt-3 md:mt-4">
-          Keep logging your meals to build a stronger you.
-        </p>
-      </motion.div>
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <div className="text-[36px] font-bold text-white tracking-tighter leading-none">{currentStreak}</div>
+                <div className="text-[13px] text-zinc-500 font-medium mt-1">days</div>
+              </div>
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                style={{ background: 'rgba(255,77,28,0.08)', border: '1px solid rgba(255,77,28,0.15)' }}
+              >
+                <Flame className="text-[#FF4D1C] w-5 h-5" strokeWidth={2} />
+              </div>
+            </div>
 
-      <NextMilestoneHero evaluation={evaluation} />
+            <div className="flex justify-between mb-4">
+              {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+                <div key={i} className="flex flex-col items-center gap-1.5">
+                  <div className={`w-2 h-2 rounded-full ${activeDays[i] ? 'bg-[#FF4D1C]' : 'bg-[rgba(255,255,255,0.12)]'}`} />
+                  <span className="text-[9px] text-zinc-500 font-medium">{d}</span>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => navigate('/awards')}
+              className="w-full flex items-center gap-2 rounded-[16px] px-3 py-2.5 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] text-left transition-colors hover:bg-[rgba(255,255,255,0.05)] mb-3"
+            >
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                style={{ background: 'rgba(212,255,0,0.10)' }}
+              >
+                <Trophy className="w-4 h-4 text-[#D4FF00]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[12px] text-zinc-500 font-medium">Personal Best</div>
+                <div className="text-[14px] font-bold text-white tracking-tight leading-tight mt-0.5">{bestStreak} days</div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-zinc-500 shrink-0" />
+            </button>
+          </div>
+
+          <p className="text-[11px] text-zinc-500 leading-snug">
+            Keep logging your meals to build a stronger you.
+          </p>
+        </motion.div>
+
+        <NextMilestoneHero evaluation={evaluation} />
       </div>
+
+      {nextThree.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+          className="mb-8"
+        >
+          <div className="rounded-[24px] border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-4">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Coming Up</span>
+              <ChevronRight size={16} className="text-zinc-500" />
+            </div>
+            <div className="flex justify-around items-center">
+              {nextThree.map((p) => {
+                const d = AWARD_BY_ID[p.id];
+                if (!d) return null;
+                return (
+                  <div
+                    key={p.id}
+                    className="flex flex-col items-center gap-2"
+                    title={d.name}
+                  >
+                    <div
+                      className="w-12 h-12 rounded-full flex items-center justify-center text-[20px]"
+                      style={{
+                        background: `radial-gradient(circle at 30% 30%, ${d.primaryColor}22, ${d.primaryColor}06)`,
+                        border: `1px solid ${d.primaryColor}30`,
+                      }}
+                    >
+                      {d.symbol}
+                    </div>
+                    <span className="text-[12px] font-semibold text-zinc-300 tabular-nums">
+                      {Math.round(p.percentage)}%
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Awards Grid Section — grouped by category */}
       <motion.div variants={containerVariants} initial="hidden" animate="show">
