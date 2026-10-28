@@ -17,6 +17,8 @@ interface LogCalendarProps {
   onSelectDate: (dateStr: string) => void;
   goalType: GoalType;
   todayStatus?: MetricStatus | null;
+  /** Legacy prop passed by MealLoggerPage; unused internally. */
+  floorDate?: string;
   metrics: Array<{
     date: string;
     actual_calories: number;
