@@ -3,13 +3,16 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { springTap } from '../components/motion';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Lock } from 'lucide-react';
+import { useEntitlements } from '@/features/pricing/hooks/useEntitlements';
+import { shiftWeek } from '@/shared/utils/weekKey';
 
 import { weeklyReportService } from '../services/weeklyReportService';
 import { useLiveWeekReport } from '../hooks/useLiveWeekReport';
 import { useTrendData } from '../hooks/useTrendData';
 import { TrendChart } from '../components/TrendChart';
 import { WeekSelector } from '../components/WeekSelector';
+import { WeekPickerSheet } from '../components/WeekPickerSheet';
 import { HeroCard } from '../components/HeroCard';
 import { ComparisonStrip } from '../components/ComparisonStrip';
 import { CoachSummaryCard } from '../components/CoachSummaryCard';
@@ -34,6 +37,16 @@ export function WeeklyReportPage() {
 
   const [selectedWeekStart, setSelectedWeekStart] = useState(currentWeekStart);
   const [selectedDayDate, setSelectedDayDate] = useState<string | null>(null);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+
+  const { entitlements, plan } = useEntitlements();
+  
+  // Calculate the earliest week allowed by the user's plan
+  const entitlementWeeks = entitlements.historyDays === null ? null : Math.floor(entitlements.historyDays / 7);
+  const earliestEntitledWeekStart = entitlementWeeks === null ? null : shiftWeek(currentWeekStart, -(entitlementWeeks - 1));
+  
+  // If the selected week is older than the plan allows, lock it
+  const isHistoryLocked = earliestEntitledWeekStart !== null && selectedWeekStart < earliestEntitledWeekStart;
 
   const { data: reportsList = [] } = useQuery({
     queryKey: ['weeklyReports', 'list'],
@@ -117,9 +130,43 @@ export function WeeklyReportPage() {
             analytics.trackEvent('Weekly Report Week Changed', { direction: 'next' });
           }
         }}
+        onOpenPicker={() => setIsPickerOpen(true)}
+      />
+
+      <WeekPickerSheet
+        isOpen={isPickerOpen}
+        onClose={() => setIsPickerOpen(false)}
+        currentWeekStart={currentWeekStart}
+        earliestWeekStart={earliestWeekStart}
+        selectedWeekStart={selectedWeekStart}
+        onSelect={(week) => {
+          setSelectedWeekStart(week);
+          analytics.trackEvent('Weekly Report Week Changed', { direction: 'jump' });
+        }}
       />
 
       <div className="mt-8">
+        {isHistoryLocked ? (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-[24px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] p-8 text-center"
+          >
+            <div className="w-16 h-16 rounded-full bg-[rgba(212,255,0,0.1)] flex items-center justify-center mx-auto mb-5 border border-[rgba(212,255,0,0.2)]">
+              <Lock size={28} className="text-[#D4FF00]" />
+            </div>
+            <h2 className="text-[20px] font-semibold text-white mb-2">History locked</h2>
+            <p className="text-[14px] text-zinc-400 mb-6 max-w-[280px] mx-auto">
+              Your detailed history beyond {entitlements.historyDays} days is available with {plan === 'free' ? 'Discipline' : 'Premium'}.
+            </p>
+            <button
+              onClick={() => navigate('/pricing')}
+              className="bg-[#D4FF00] text-black px-8 py-3 rounded-full font-semibold text-[15px]"
+            >
+              Upgrade Plan
+            </button>
+          </motion.div>
+        ) : (
         <AnimatePresence mode="wait">
           {!isOnline && !report ? (
             <motion.div
@@ -242,7 +289,23 @@ export function WeeklyReportPage() {
               <CoachSummaryCard report={report} />
               <BestDayCard report={report} />
               <InsightsSection report={report} />
-              <MacroBalance report={report} />
+              
+              {entitlements.macroBalance ? (
+                <MacroBalance report={report} />
+              ) : (
+                <div className="mt-6 rounded-[20px] border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-5 py-6 text-center">
+                  <Lock size={20} className="text-zinc-500 mx-auto mb-3" />
+                  <div className="text-[14px] font-semibold text-white mb-1">Macro Balance</div>
+                  <div className="text-[12px] text-zinc-500 mb-4">Unlock weekly macro distribution with Discipline.</div>
+                  <button
+                    onClick={() => navigate('/pricing')}
+                    className="text-[13px] font-semibold text-[#D4FF00] hover:underline"
+                  >
+                    Upgrade ›
+                  </button>
+                </div>
+              )}
+
               <PlanValueFooter />
             </motion.div>
           ) : (
@@ -260,6 +323,7 @@ export function WeeklyReportPage() {
             </motion.div>
           )}
         </AnimatePresence>
+        )}
       </div>
     </div>
   );
