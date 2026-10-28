@@ -422,24 +422,7 @@ export function MealLoggerPage() {
     return () => { cancelled = true; };
   }, [profile?.id]);
 
-  // Initial scroll-to-bottom once, after the first non-loading render with
-  // meals present. The setTimeout defers past ScrollHandler's useLayoutEffect
-  // (which sets scrollTop = 0 on route change) and past the first paint of
-  // the meal rows.
-  useEffect(() => {
-    if (isLoading) return;
-    if (hasInitialScrolledRef.current) return;
-    hasInitialScrolledRef.current = true;
-    if (meals.length === 0) return;
 
-    const scroller = document.querySelector('.app-scroll');
-    if (!scroller) return;
-
-    const t = setTimeout(() => {
-      scroller.scrollTo({ top: scroller.scrollHeight, behavior: 'smooth' });
-    }, 200);
-    return () => clearTimeout(t);
-  }, [isLoading, meals.length]);
 
   type MealSource = 'manual' | 'kb' | 'memory_cache' | 'db_cache' | 'ai';
 
@@ -710,6 +693,27 @@ export function MealLoggerPage() {
   } = useDailyNutrition(selectedDateStr);
 
   const isViewingToday = selectedDateStr === todayStr;
+
+  // Initial scroll-to-bottom once, after the first non-loading render with
+  // meals present. Placed AFTER the useDailyNutrition destructuring because
+  // `isLoading` and `meals` are declared there — referencing them earlier is
+  // a temporal dead zone ReferenceError. The setTimeout defers past
+  // ScrollHandler's useLayoutEffect (scrollTop = 0 on route change) and past
+  // the first paint of the meal rows.
+  useEffect(() => {
+    if (isLoading) return;
+    if (hasInitialScrolledRef.current) return;
+    hasInitialScrolledRef.current = true;
+    if (meals.length === 0) return;
+
+    const scroller = document.querySelector('.app-scroll');
+    if (!scroller) return;
+
+    const t = setTimeout(() => {
+      scroller.scrollTo({ top: scroller.scrollHeight, behavior: 'smooth' });
+    }, 200);
+    return () => clearTimeout(t);
+  }, [isLoading, meals.length]);
 
   const todayStatus: MetricStatus | null =
     isViewingToday && dailyTargetKcal > 0
