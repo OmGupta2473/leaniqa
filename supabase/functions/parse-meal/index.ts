@@ -318,6 +318,14 @@ const KnowledgeBase: Record<string, KnowledgeFood> = {
   // NON-VEGETARIAN — cooked, per 100g
   // ============================================================
   "egg":                { calories: 155, protein: 13.0, fat: 11.0, carbs: 1.1,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 50 }, defaultUnit: "piece" },
+  "egg white":          { calories: 52,  protein: 11.0, fat: 0.0,  carbs: 0.7,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 33 }, defaultUnit: "piece" },
+  "egg whites":         { calories: 52,  protein: 11.0, fat: 0.0,  carbs: 0.7,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 33 }, defaultUnit: "piece" },
+  "white":              { calories: 52,  protein: 11.0, fat: 0.0,  carbs: 0.7,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 33 }, defaultUnit: "piece" },
+  "boiled egg":         { calories: 155, protein: 13.0, fat: 11.0, carbs: 1.1,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 50 }, defaultUnit: "piece" },
+  "boiled eggs":        { calories: 155, protein: 13.0, fat: 11.0, carbs: 1.1,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 50 }, defaultUnit: "piece" },
+  "whole egg":          { calories: 155, protein: 13.0, fat: 11.0, carbs: 1.1,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 50 }, defaultUnit: "piece" },
+  "whole eggs":         { calories: 155, protein: 13.0, fat: 11.0, carbs: 1.1,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 50 }, defaultUnit: "piece" },
+  "whole boiled eggs":  { calories: 155, protein: 13.0, fat: 11.0, carbs: 1.1,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 50 }, defaultUnit: "piece" },
   "chicken":            { calories: 165, protein: 31.0, fat: 3.6,  carbs: 0.0,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g" },
   "chicken curry":      { calories: 140, protein: 14.0, fat: 8.0,  carbs: 3.0,  fiber: 0.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
   "chicken breast":     { calories: 165, protein: 31.0, fat: 3.6,  carbs: 0.0,  fiber: 0.0,  referenceAmount: 100, referenceUnit: "g" },
@@ -928,9 +936,6 @@ function applyModifiers(data: MealResult): MealResult & {
   const assumptions: string[] = [...(data.assumptions ?? [])];
   let extraKcal = 0, extraProtein = 0, extraFat = 0, extraCarbs = 0, extraFiber = 0;
   let oilReviewNeeded = false;
-  let weightBasisReviewNeeded = false;
-
-      for (const item of data.items) {
         const isRawBasis = item.weight_basis === 'raw';
         let profile: KnowledgeFood | undefined;
 
@@ -949,13 +954,11 @@ function applyModifiers(data: MealResult): MealResult & {
           continue;
         }
 
-        // Mismatch: user said cooked, but the only profile available is raw.
-        if (item.weight_basis === 'cooked' && isRawProfile(item.food_name)) {
-          weightBasisReviewNeeded = true;
+        // Smart detection: If user didn't specify raw/cooked, add a single clean assumption.
+        if (item.weight_basis === 'unknown') {
           assumptions.push(
-            `Only a raw profile exists for "${item.food_name}" but you said cooked — values may be off by ~30%`,
+            `Assumed raw weight for "${item.food_name}" — add 'cooked' if you measured after cooking.`
           );
-          continue;
         }
 
     // User said no oil but the profile already includes oil.
@@ -998,7 +1001,6 @@ function applyModifiers(data: MealResult): MealResult & {
     fiber:   Math.round((data.fiber   + extraFiber)   * 10) / 10,
     assumptions: assumptions.length > 0 ? assumptions : undefined,
     oil_review_needed: oilReviewNeeded || undefined,
-    weight_basis_review_needed: weightBasisReviewNeeded || undefined,
   };
 }
 
