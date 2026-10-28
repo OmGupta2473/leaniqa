@@ -17,7 +17,7 @@
  */
 
 export const CUT_PACES = [22, 16, 10, 6] as const;
-type CutPace = typeof CUT_PACES[number];
+export type CutPace = typeof CUT_PACES[number];
 
 export const GAIN_PACES = [8, 10, 12] as const;
 export type GainPace = typeof GAIN_PACES[number];

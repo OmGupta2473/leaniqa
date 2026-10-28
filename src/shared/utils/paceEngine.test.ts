@@ -38,51 +38,51 @@ describe('computeMaintenancePlan', () => {
 describe('computePacePlan', () => {
   const paceTests: Array<{ pace: CutPace; expected: ReturnType<typeof computePacePlan> }> = [
     {
-      pace: 26,
-      expected: {
-        pace: 26,
-        targetKcal: 1581,
-        proteinG: 140,
-        fatG: 55,
-        carbsG: 132,
-        deficitKcal: 555,
-        deficitPct: 26,
-      },
-    },
-    {
       pace: 22,
       expected: {
         pace: 22,
         targetKcal: 1666,
-        proteinG: 140,
+        proteinG: 172,
         fatG: 55,
-        carbsG: 153,
+        carbsG: 121,
         deficitKcal: 470,
         deficitPct: 22,
       },
     },
     {
-      pace: 18,
+      pace: 16,
       expected: {
-        pace: 18,
-        targetKcal: 1752,
-        proteinG: 125,
+        pace: 16,
+        targetKcal: 1794,
+        proteinG: 172,
         fatG: 55,
-        carbsG: 189,
-        deficitKcal: 384,
-        deficitPct: 18,
+        carbsG: 153,
+        deficitKcal: 342,
+        deficitPct: 16,
       },
     },
     {
-      pace: 14,
+      pace: 10,
       expected: {
-        pace: 14,
-        targetKcal: 1837,
-        proteinG: 125,
+        pace: 10,
+        targetKcal: 1922,
+        proteinG: 156,
         fatG: 55,
-        carbsG: 211,
-        deficitKcal: 299,
-        deficitPct: 14,
+        carbsG: 201,
+        deficitKcal: 214,
+        deficitPct: 10,
+      },
+    },
+    {
+      pace: 6,
+      expected: {
+        pace: 6,
+        targetKcal: 2008,
+        proteinG: 156,
+        fatG: 56,
+        carbsG: 220,
+        deficitKcal: 128,
+        deficitPct: 6,
       },
     },
   ];
@@ -130,6 +130,6 @@ describe('computePacePlan', () => {
 
   it('T-VALID-1: throws when pace is not in [14, 18, 22, 26]', () => {
     // @ts-expect-error testing runtime validation
-    expect(() => computePacePlan({ ...base, pace: 17 })).toThrow('pace must be one of 26, 22, 18, 14');
+    expect(() => computePacePlan({ ...base, pace: 17 })).toThrow('pace must be one of 22, 16, 10, 6');
   });
 });

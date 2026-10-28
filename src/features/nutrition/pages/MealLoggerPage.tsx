@@ -171,9 +171,10 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete, onEdit, on
                     transition={{ delay: i * 0.05 }}
                     key={m.id || i}
                     draggable={!!m.id}
-                    onDragStart={(e: React.DragEvent) => {
-                      e.dataTransfer.setData('text/plain', m.id);
-                      e.dataTransfer.effectAllowed = 'move';
+                    onDragStart={(e) => {
+                      const de = e as unknown as React.DragEvent<HTMLDivElement>;
+                      de.dataTransfer.setData('text/plain', m.id);
+                      de.dataTransfer.effectAllowed = 'move';
                       setDraggingId(m.id);
                     }}
                     onDragEnd={() => setDraggingId(null)}
