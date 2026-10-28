@@ -1631,7 +1631,7 @@ export function MealLoggerPage() {
                           {/* Phase 1 modifier review — single highest-severity banner */}
                           {(() => {
                             const maxSeverity: 'high' | 'medium' | null =
-                              pendingMeal.arithmetic_review_needed || pendingMeal.weight_basis_review_needed ? 'high'
+                              pendingMeal.arithmetic_review_needed ? 'high'
                                 : pendingMeal.oil_review_needed || pendingMeal.plausibility_review_needed ? 'medium'
                                   : null;
 
@@ -1639,7 +1639,7 @@ export function MealLoggerPage() {
                               const message =
                                 pendingMeal.arithmetic_review_needed
                                   ? "Calories don't match the macros. Please verify before logging."
-                                  : 'Raw / cooked weight mismatch. Please verify.';
+                                  : '';
                               return (
                                 <div className="mb-3 flex items-start gap-2 rounded-xl border border-[rgba(255,77,28,0.25)] bg-[rgba(255,77,28,0.08)] p-2.5 text-[12px] leading-relaxed text-[#FF4D1C]">
                                   <AlertTriangle size={14} className="mt-0.5 shrink-0" />

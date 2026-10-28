@@ -191,15 +191,16 @@ function ConsentRow({
           </p>
         </div>
       </button>
-      {onOpen && (
-        <button
-          onClick={onOpen}
-          aria-label={`Open ${title}`}
-          className="p-1.5 -mr-1 -mt-0.5 text-zinc-500 hover:text-zinc-300 transition-colors shrink-0"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
-      )}
+              {onOpen && (
+                <button
+                  onClick={onOpen}
+                  type="button"
+                  aria-label={`Read ${title}`}
+                  className="flex items-center gap-1 text-[11px] font-semibold text-[#D4FF00] hover:text-white px-3 py-1.5 rounded-full bg-[#D4FF00]/10 hover:bg-[#D4FF00]/20 transition-colors shrink-0 mt-0.5 border border-[#D4FF00]/30 shadow-[0_0_12px_rgba(212,255,0,0.1)] active:scale-95"
+                >
+                  Read <ChevronRight className="w-3 h-3" />
+                </button>
+              )}
     </div>
   );
 }
