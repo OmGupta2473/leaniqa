@@ -176,7 +176,9 @@ export const mealService = {
     if (typeof payload.fat === 'number') payload.fat = round1(payload.fat);
     if (typeof payload.carbs === 'number') payload.carbs = round1(payload.carbs);
     if (typeof payload.fiber === 'number') payload.fiber = round1(payload.fiber);
-    if (payload.meal_slot === 'snack') delete payload.meal_slot;  // matches addMeal behaviour
+    // Do NOT strip meal_slot='snack' here. The old workaround was for a DB
+    // ENUM that lacked 'snack'; updateMeal must be able to move a meal to
+    // snack (drag-and-drop). addMeal still strips it (no behavioral change).
     const { data, error } = await supabase
       .from('meal_logs')
       .update(payload)
