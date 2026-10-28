@@ -96,9 +96,23 @@ export const mealService = {
     if (restMealData.meal_slot === 'snack') {
       delete restMealData.meal_slot; // snack is not in DB ENUM yet
     }
+    // Persisted source: how was this meal logged?
+    // 'legacy' is the safe fallback for old offline queue items and any
+    // caller that hasn't been updated. All real write paths pass one of the
+    // whitelisted values explicitly.
+    const ALLOWED_MEAL_SOURCES = new Set([
+      'manual', 'kb', 'memory_cache', 'db_cache', 'ai', 'legacy',
+    ]);
+    const rawSource = (mealData as { meal_source?: unknown }).meal_source;
+    const meal_source =
+      typeof rawSource === 'string' && ALLOWED_MEAL_SOURCES.has(rawSource)
+        ? rawSource
+        : 'legacy';
+
     const payload = {
       ...restMealData,
       user_id: userId,
+      meal_source,
     };
     
       // Ensure numeric fields are finite, non-negative, and rounded to 1

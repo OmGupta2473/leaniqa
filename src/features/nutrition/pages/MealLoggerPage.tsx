@@ -10,7 +10,7 @@ import { useChatStore } from "@/app/store";
 import { useNutritionStore } from "../store/nutritionStore";
 import {
   Send, Loader2, Dumbbell, Lightbulb, Sun, Sunrise, Moon, Coffee, Plus, X, ChevronLeft, ChevronRight, ArrowRight, ChevronDown,
-  Zap, AlertTriangle, Pencil, Lock, GripVertical
+  Zap, AlertTriangle, Pencil, Lock, GripVertical, BookOpen
 } from "lucide-react";
 import { EmptyState } from '@/shared/components/EmptyState';
 import { CustomMealModal } from '../components/CustomMealModal';
@@ -192,7 +192,7 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete, onEdit, on
                       className="flex-1 min-w-0 pr-1 flex flex-col justify-center items-start gap-1 text-left cursor-pointer"
                     >
                       <div className="text-[13px] leading-tight font-medium text-[rgba(255,255,255,0.9)] capitalize break-words whitespace-normal break-all sm:break-normal">{m.meal_text}</div>
-                      <div className="flex gap-1.5 mt-0.5">
+                      <div className="flex flex-wrap gap-1.5 mt-0.5">
                         {m._localOnly && (
                           <span className="text-[9px] bg-[rgba(255,255,255,0.1)] text-white px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 shrink-0">
                             Offline
@@ -201,6 +201,26 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete, onEdit, on
                         {(m.meal_source === 'manual' || m.tip === 'Manually logged meal.') && (
                           <span className="text-[9px] bg-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.5)] px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wider flex items-center gap-1 shrink-0">
                             Manual
+                          </span>
+                        )}
+                        {(m.meal_source === 'kb' || m.meal_source === 'memory_cache' || m.meal_source === 'db_cache') && (
+                          <span
+                            title="Found in Knowledge Base — no AI credits used"
+                            aria-label="Found in Knowledge Base — no AI credits used"
+                            className="text-[9px] bg-[rgba(255,255,255,0.04)] text-[rgba(255,255,255,0.65)] border border-[rgba(255,255,255,0.08)] px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wider flex items-center gap-1 shrink-0"
+                          >
+                            <BookOpen size={10} strokeWidth={2.5} />
+                            No AI credits
+                          </span>
+                        )}
+                        {m.meal_source === 'ai' && (
+                          <span
+                            title="AI credits used for this meal"
+                            aria-label="AI credits used for this meal"
+                            className="text-[9px] bg-[rgba(212,255,0,0.08)] text-[#D4FF00] border border-[rgba(212,255,0,0.25)] px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wider flex items-center gap-1 shrink-0"
+                          >
+                            <Zap size={10} strokeWidth={2.5} />
+                            AI credits used
                           </span>
                         )}
                       </div>
@@ -372,11 +392,15 @@ export function MealLoggerPage() {
     return () => { cancelled = true; };
   }, [profile?.id]);
 
+  type MealSource = 'manual' | 'kb' | 'memory_cache' | 'db_cache' | 'ai';
+
   type PendingMeal = {
     text: string;
     data: any;
     request_id?: string;
     source?: string;
+    /** Persisted meal_logs.meal_source. Set when the pending card is created. */
+    meal_source?: MealSource;
     creditsConsumed?: boolean;   // true when source === 'llm'
     lowConfidence?: boolean;     // true when the parse came back with confidence < 80
     assumptions?: string[];
@@ -1001,6 +1025,9 @@ export function MealLoggerPage() {
             text,
             data,
             source: 'ai',
+            // Inside isHighConfidence, data.source is one of
+            // 'kb' | 'memory_cache' | 'db_cache'. Persist it verbatim.
+            meal_source: (source ?? 'kb') as MealSource,
             client_token: crypto.randomUUID(),
           });
           refetchCredits();
@@ -1011,6 +1038,9 @@ export function MealLoggerPage() {
             data,
             request_id: data.request_id,
             source: data.source,
+            // Persisted source: parse-meal only reaches this branch when
+            // source !== kb/memory_cache/db_cache, i.e. 'llm'. Guard anyway.
+            meal_source: data.source === 'llm' ? 'ai' : ((data.source as MealSource | undefined) ?? 'ai'),
             creditsConsumed: data.source === 'llm',
             lowConfidence: typeof data.confidence === 'number' && data.confidence < 80,
             assumptions: Array.isArray(data.assumptions) ? data.assumptions : undefined,
@@ -1093,14 +1123,16 @@ export function MealLoggerPage() {
         parseMealMutation.mutate(text);
         return;
       }
-      // Terminal path — v2 resolved fully.
+      // Terminal path — v2 resolved fully. v2 is KB-primary (ai_used=false)
+      // so this meal is a KB match: no credits, tag as 'kb'.
       isSubmittingRef.current = false;
       setLoading(false);
       setPendingMeal({
         text,
         data: resolvedV2ToPendingData(data) as PendingMeal['data'],
         request_id: data.request_id,
-        source: 'ai',
+        source: 'kb',
+        meal_source: 'kb',
         creditsConsumed: false,
         lowConfidence: data.meal_confidence < 0.8,
         was_ambiguous: data.was_ambiguous === true,
@@ -1125,12 +1157,23 @@ export function MealLoggerPage() {
   });
 
   const confirmMealMutation = useMutation({
-    mutationFn: async ({ text, data, source, client_token }: { text: string, data: any, source?: 'manual' | 'ai', client_token: string }) => {
+    mutationFn: async ({ text, data, source, meal_source, client_token }: {
+      text: string;
+      data: any;
+      source?: 'manual' | 'ai';
+      meal_source?: MealSource;
+      client_token: string;
+    }) => {
       let finalSlot = data.meal_slot || selectedMealSlot || undefined;
       if (typeof finalSlot === 'string') {
         finalSlot = finalSlot.toLowerCase();
         if (finalSlot === 'snacks') finalSlot = 'snack';
       }
+
+      // Resolve persisted source: explicit meal_source wins; otherwise
+      // derive from the historical `source` hint; else default to 'manual'.
+      const resolvedMealSource: MealSource =
+        meal_source ?? (source === 'manual' ? 'manual' : 'ai');
 
       const mealData = {
         meal_text: text,
@@ -1138,7 +1181,8 @@ export function MealLoggerPage() {
         meal_time: getMealTime().toISOString(),
         tip: data.tip || data.foods_detected?.join(', ') || text,
         meal_slot: finalSlot,
-        client_token
+        client_token,
+        meal_source: resolvedMealSource,
       };
 
       if (typeof window !== 'undefined' && !navigator.onLine) {
@@ -1151,7 +1195,7 @@ export function MealLoggerPage() {
       await mealService.addMeal(mealData as any);
       return { text, data, source };
     },
-    onMutate: async ({ text, data, source }) => {
+    onMutate: async ({ text, data, source, meal_source }) => {
       await queryClient.cancelQueries({ queryKey: ["meals", "date", dateKeyStr] });
 
       const previousMeals = queryClient.getQueryData<any[]>(["meals", "date", dateKeyStr]);
@@ -1167,7 +1211,9 @@ export function MealLoggerPage() {
         meal_text: text,
         ...getMealNutritionValues(data),
         meal_slot: finalSlot,
-        meal_source: source || 'ai',
+        // Optimistic row must carry the same source the DB row will get,
+        // or the indicator flickers on refetch.
+        meal_source: meal_source ?? (source === 'manual' ? 'manual' : 'ai'),
         _localOnly: true
       };
 
@@ -1742,7 +1788,7 @@ export function MealLoggerPage() {
                           )}
                           <div className="flex gap-2">
                             <button
-                              onClick={() => confirmMealMutation.mutate({ ...pendingMeal, source: 'ai', client_token: crypto.randomUUID() })}
+                              onClick={() => confirmMealMutation.mutate({ ...pendingMeal, source: 'ai', meal_source: pendingMeal.meal_source ?? 'ai', client_token: crypto.randomUUID() })}
                               disabled={confirmMealMutation.isPending}
                               className="flex-1 bg-[#D4FF00] text-black font-bold py-2 rounded-[12px] text-[13px]"
                             >
@@ -1938,6 +1984,7 @@ export function MealLoggerPage() {
               text: updates.meal_text,
               request_id: pendingMeal.request_id,
               source: pendingMeal.source,
+              meal_source: pendingMeal.meal_source,
               creditsConsumed: pendingMeal.creditsConsumed,
               data: {
                 ...pendingMeal.data,
