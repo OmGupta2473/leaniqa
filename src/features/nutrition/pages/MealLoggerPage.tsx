@@ -2151,7 +2151,8 @@ export function MealLoggerPage() {
         <LogCalendar
           isOpen={calendarOpen}
           onClose={() => setCalendarOpen(false)}
-          floorDate={floorDate}
+          floorDate={baseFloorDate}
+          historyDays={entitlements.historyDays}
           selectedDate={selectedDateStr}
           onSelectDate={setSelectedDateStr}
           goalType={goalType}
