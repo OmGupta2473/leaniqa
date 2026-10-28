@@ -10,6 +10,7 @@ import { deriveCarbsFromKcal } from '@/shared/utils/macroReconciliation';
 import { cn } from '@/shared/utils/utils';
 import { haptics } from '@/shared/utils/haptics';
 import { syncCurrentWeekReport } from "@/features/reports/utils/syncCurrentWeek";
+import { ScalePicker } from '@/shared/components/ScalePicker';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -24,12 +25,18 @@ const INPUT_CLASS =
 const GROUP_LABEL_CLASS =
   'text-[12px] font-medium uppercase tracking-wider text-zinc-400 mb-2';
 
-const ACTIVITY_OPTIONS: { id: ActivityLevel; dbLabel: string; label: string; Icon: any }[] = [
-  { id: 'sedentary', dbLabel: 'Sedentary', label: 'Sedentary', Icon: Armchair },
-  { id: 'light', dbLabel: 'Light', label: 'Light', Icon: Footprints },
-  { id: 'moderate', dbLabel: 'Moderate', label: 'Moderate', Icon: Dumbbell },
-  { id: 'active', dbLabel: 'Active', label: 'Active', Icon: Zap },
-  { id: 'athlete', dbLabel: 'Very active', label: 'Very active', Icon: Flame },
+const ACTIVITY_OPTIONS: {
+  id: ActivityLevel;
+  dbLabel: string;
+  label: string;
+  description: string;
+  Icon: any;
+}[] = [
+  { id: 'sedentary', dbLabel: 'Sedentary', label: 'Sedentary', description: 'Desk job, little or no exercise', Icon: Armchair },
+  { id: 'light',     dbLabel: 'Light',     label: 'Light',     description: 'Light exercise 1-3 days/week', Icon: Footprints },
+  { id: 'moderate',  dbLabel: 'Moderate',  label: 'Moderate',  description: 'Moderate exercise 3-5 days/week', Icon: Dumbbell },
+  { id: 'active',    dbLabel: 'Active',    label: 'Active',    description: 'Hard exercise 6-7 days/week', Icon: Zap },
+  { id: 'athlete',   dbLabel: 'Very active', label: 'Very Active', description: 'Intense daily training or physical job', Icon: Flame },
 ];
 
 const DB_LABEL_TO_ENUM: Record<string, ActivityLevel> = {
@@ -53,10 +60,6 @@ function cmToFtIn(cm: number): { ft: number; inch: number } {
   return inch === 12 ? { ft: ft + 1, inch: 0 } : { ft, inch };
 }
 
-function ftInToCm(ft: number, inch: number): number {
-  return Math.round((ft * 12 + inch) * 2.54 * 10) / 10;
-}
-
 export function EditProfileModal({ isOpen, onClose, profileData, goalData }: EditProfileModalProps) {
   if (typeof document === 'undefined') return null;
 
@@ -75,11 +78,16 @@ function EditProfileModalInner({ onClose, profileData, goalData }: Omit<EditProf
 
   const [name, setName] = useState(String(profileData?.name ?? ''));
   const [age, setAge] = useState(String(profileData?.age ?? ''));
-  const [heightCm, setHeightCm] = useState<number | null>(profileData?.height ?? null);
-  const [heightMode, setHeightMode] = useState<'cm' | 'ftin'>('cm');
-  const [ft, setFt] = useState<number | null>(null);
-  const [inch, setInch] = useState<number | null>(null);
-  const [weight, setWeight] = useState(String(profileData?.weight ?? ''));
+  const [heightCm, setHeightCm] = useState<number>(() => {
+    const n = Number(profileData?.height);
+    const safe = Number.isFinite(n) && n > 0 ? n : 172;
+    return Math.min(220, Math.max(120, Math.round(safe)));
+  });
+  const [weight, setWeight] = useState<number>(() => {
+    const n = Number(profileData?.weight);
+    const safe = Number.isFinite(n) && n > 0 ? n : 65;
+    return Math.min(200, Math.max(30, Math.round(safe)));
+  });
   const [activity, setActivity] = useState<ActivityLevel>(
     DB_LABEL_TO_ENUM[profileData?.activity_level] ?? 'moderate',
   );
@@ -101,21 +109,7 @@ function EditProfileModalInner({ onClose, profileData, goalData }: Omit<EditProf
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  const switchHeightMode = (next: 'cm' | 'ftin') => {
-    if (next === heightMode) return;
-    if (next === 'ftin' && heightCm) {
-      const c = cmToFtIn(heightCm);
-      setFt(c.ft);
-      setInch(c.inch);
-    } else if (next === 'cm' && (ft !== null || inch !== null)) {
-      setHeightCm(ftInToCm(ft ?? 0, inch ?? 0));
-    }
-    setHeightMode(next);
-  };
-
   const parsedAge = parseInt(age, 10) || 0;
-  const parsedWeight = parseFloat(weight) || 0;
-  const parsedHeight = heightMode === 'cm' ? (heightCm ?? 0) : ftInToCm(ft ?? 0, inch ?? 0);
   const parsedTargetWeight =
     targetWeight.trim() !== '' && !Number.isNaN(Number(targetWeight))
       ? Number(targetWeight)
@@ -124,20 +118,18 @@ function EditProfileModalInner({ onClose, profileData, goalData }: Omit<EditProf
   const isValid =
     name.trim().length > 0 &&
     parsedAge >= 13 && parsedAge <= 120 &&
-    parsedHeight > 0 &&
-    parsedWeight > 0 &&
     diet !== null;
 
   const goalType = (goalData?.goal_type ?? 'cut') as 'cut' | 'recomp' | 'bulk';
 
   const recalculatedPlan =
-    parsedAge >= 13 && parsedAge <= 120 && parsedHeight > 0 && parsedWeight > 0
+    parsedAge >= 13 && parsedAge <= 120
       ? calculatePlan(
           {
             sex: (profileData?.gender ?? 'Male') as 'Male' | 'Female',
             age: parsedAge,
-            heightCm: parsedHeight,
-            weightKg: parsedWeight,
+            heightCm,
+            weightKg: weight,
             activity,
           },
           goalType,
@@ -171,7 +163,7 @@ function EditProfileModalInner({ onClose, profileData, goalData }: Omit<EditProf
 
       const pacePlan = goalType === 'cut'
         ? computePacePlan({
-            weightKg: parsedWeight,
+            weightKg: weight,
             maintenanceKcal: recalculatedPlan.maintenance,
             pace: currentPace,
           })
@@ -181,8 +173,8 @@ function EditProfileModalInner({ onClose, profileData, goalData }: Omit<EditProf
         name: name.trim(),
         age: parsedAge,
         gender: (profileData?.gender ?? 'Male') as 'Male' | 'Female',
-        height: parsedHeight,
-        weight: parsedWeight,
+        height: heightCm,
+        weight: weight,
         activity_level: (ACTIVITY_OPTIONS.find((o) => o.id === activity)?.dbLabel ?? 'Moderate') as any,
         maintenance_kcal: recalculatedPlan.maintenance,
         protein_target: recalculatedPlan.proteinG,
@@ -257,13 +249,16 @@ function EditProfileModalInner({ onClose, profileData, goalData }: Omit<EditProf
           {/* Identity Section */}
           <section className="space-y-3">
             <div className={GROUP_LABEL_CLASS}>Identity</div>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Your name"
-              className={INPUT_CLASS}
-            />
             <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[12px] font-medium text-zinc-400 mb-1.5 block">Name</label>
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your name"
+                  className={INPUT_CLASS}
+                />
+              </div>
               <div>
                 <label className="text-[12px] font-medium text-zinc-400 mb-1.5 block">Age</label>
                 <input
@@ -274,74 +269,49 @@ function EditProfileModalInner({ onClose, profileData, goalData }: Omit<EditProf
                   className={INPUT_CLASS}
                 />
               </div>
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[12px] font-medium text-zinc-400">Height</label>
-                  <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-0.5 flex gap-0.5">
-                    {(['cm', 'ftin'] as const).map((m) => (
-                      <button
-                        key={m}
-                        type="button"
-                        onClick={() => switchHeightMode(m)}
-                        className={cn(
-                          'px-2.5 py-0.5 rounded-md text-[10px] font-medium transition-colors',
-                          heightMode === m
-                            ? 'bg-[#D4FF00] text-black'
-                            : 'text-zinc-400 hover:text-white',
-                        )}
-                      >
-                        {m === 'cm' ? 'cm' : 'ft/in'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                {heightMode === 'cm' ? (
-                  <input
-                    value={heightCm ?? ''}
-                    onChange={(e) => setHeightCm(parseFloat(e.target.value) || null)}
-                    placeholder="e.g. 175"
-                    inputMode="numeric"
-                    className={INPUT_CLASS}
-                  />
-                ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      value={ft ?? ''}
-                      onChange={(e) => setFt(parseInt(e.target.value, 10) || 0)}
-                      placeholder="ft"
-                      inputMode="numeric"
-                      className={INPUT_CLASS}
-                    />
-                    <input
-                      value={inch ?? ''}
-                      onChange={(e) => setInch(parseInt(e.target.value, 10) || 0)}
-                      placeholder="in"
-                      inputMode="numeric"
-                      className={INPUT_CLASS}
-                    />
-                  </div>
-                )}
-              </div>
             </div>
           </section>
 
           {/* Body Section */}
-          <section className="space-y-3">
+          <section className="space-y-4">
             <div className={GROUP_LABEL_CLASS}>Body</div>
+
             <div>
-              <label className="text-[12px] font-medium text-zinc-400 mb-1.5 block">Weight (kg)</label>
-              <input
-                value={weight}
-                onChange={(e) => setWeight(e.target.value.replace(/[^0-9.]/g, ''))}
-                placeholder="e.g. 70"
-                inputMode="decimal"
-                className={INPUT_CLASS}
+              <div className="flex items-center justify-between mb-2 px-1">
+                <span className="text-[13px] font-medium text-zinc-400">Height</span>
+              </div>
+              <ScalePicker
+                value={heightCm}
+                min={120}
+                max={220}
+                step={1}
+                onChange={setHeightCm}
+                formatLabel={(v) => `${v} cm`}
+                formatSubLabel={(v) => {
+                  const { ft, inch } = cmToFtIn(v);
+                  return `${ft}' ${inch}"`;
+                }}
               />
             </div>
-            
+
+            <div>
+              <div className="flex items-center justify-between mb-2 px-1">
+                <span className="text-[13px] font-medium text-zinc-400">Weight</span>
+              </div>
+              <ScalePicker
+                value={weight}
+                min={30}
+                max={200}
+                step={1}
+                onChange={setWeight}
+                formatLabel={(v) => `${v} kg`}
+                formatSubLabel={(v) => `${Math.round(v * 2.20462)} lbs`}
+              />
+            </div>
+
             <div className="pt-2">
               <label className="text-[12px] font-medium text-zinc-400 mb-2 block">Activity Level</label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="flex flex-col gap-2">
                 {ACTIVITY_OPTIONS.map((opt) => {
                   const active = activity === opt.id;
                   return (
@@ -350,7 +320,7 @@ function EditProfileModalInner({ onClose, profileData, goalData }: Omit<EditProf
                       type="button"
                       onClick={() => setActivity(opt.id)}
                       className={cn(
-                        'relative flex items-center gap-2 rounded-xl border py-2.5 px-3 transition-colors',
+                        'relative flex items-center gap-3 rounded-xl border p-3 text-left transition-colors',
                         active
                           ? 'border-[#D4FF00]/60 bg-[#D4FF00]/8'
                           : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
@@ -361,10 +331,20 @@ function EditProfileModalInner({ onClose, profileData, goalData }: Omit<EditProf
                           <Check size={10} className="text-black" strokeWidth={3} />
                         </div>
                       )}
-                      <opt.Icon className={cn('w-4 h-4 shrink-0', active ? 'text-[#D4FF00]' : 'text-zinc-400')} />
-                      <span className={cn('text-[13px] font-semibold tracking-tight', active ? 'text-white' : 'text-zinc-300')}>
-                        {opt.label}
-                      </span>
+                      <div className={cn(
+                        'w-9 h-9 rounded-lg flex items-center justify-center shrink-0',
+                        active ? 'bg-[#D4FF00]/15' : 'bg-zinc-800/60'
+                      )}>
+                        <opt.Icon className={cn('w-4 h-4', active ? 'text-[#D4FF00]' : 'text-zinc-400')} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className={cn('text-[14px] font-semibold leading-tight', active ? 'text-white' : 'text-zinc-200')}>
+                          {opt.label}
+                        </div>
+                        <div className="text-[12px] text-zinc-500 mt-0.5 leading-snug">
+                          {opt.description}
+                        </div>
+                      </div>
                     </button>
                   );
                 })}

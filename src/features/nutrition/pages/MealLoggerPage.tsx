@@ -361,13 +361,6 @@ export function MealLoggerPage() {
   const isKeyboardOpen = useKeyboardOpen();
   const isSubmittingRef = React.useRef(false);
 
-  // ---- Page auto-scroll ---------------------------------------------------
-  // The page scrolls through AppLayout's `.app-scroll` container. We track
-  // whether the user is near the bottom so we never yank the view when
-  // they've scrolled up to read older meals.
-  const isNearBottomRef = React.useRef(true);
-  const hasInitialScrolledRef = React.useRef(false);
-
   // Live visual-viewport height, used to bound the modal's max-height so
   // it fits above the keyboard. Re-evaluated on every render; the hooks
   // above re-render us whenever the viewport changes.
@@ -381,21 +374,6 @@ export function MealLoggerPage() {
       initializeSession(profile.id);
     }
   }, [profile?.id, initializeSession]);
-
-  // Track "near bottom" on the page's scroll container. Initialised to
-  // the current position so the first confirm is not gated incorrectly.
-  useEffect(() => {
-    const scroller = document.querySelector('.app-scroll');
-    if (!scroller) return;
-    const update = () => {
-      const distance =
-        scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight;
-      isNearBottomRef.current = distance < 150;
-    };
-    scroller.addEventListener('scroll', update, { passive: true });
-    update();
-    return () => scroller.removeEventListener('scroll', update);
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -684,27 +662,6 @@ export function MealLoggerPage() {
 
   const isViewingToday = selectedDateStr === todayStr;
 
-  // Initial scroll-to-bottom once, after the first non-loading render with
-  // meals present. Placed AFTER the useDailyNutrition destructuring because
-  // `isLoading` and `meals` are declared there — referencing them earlier is
-  // a temporal dead zone ReferenceError. The setTimeout defers past
-  // ScrollHandler's useLayoutEffect (scrollTop = 0 on route change) and past
-  // the first paint of the meal rows.
-  useEffect(() => {
-    if (isLoading) return;
-    if (hasInitialScrolledRef.current) return;
-    hasInitialScrolledRef.current = true;
-    if (meals.length === 0) return;
-
-    const scroller = document.querySelector('.app-scroll');
-    if (!scroller) return;
-
-    const t = setTimeout(() => {
-      scroller.scrollTo({ top: scroller.scrollHeight, behavior: 'smooth' });
-    }, 200);
-    return () => clearTimeout(t);
-  }, [isLoading, meals.length]);
-
   const todayStatus: MetricStatus | null =
     isViewingToday && dailyTargetKcal > 0
       ? classifyDay(goalType, {
@@ -741,16 +698,13 @@ export function MealLoggerPage() {
     });
   }, [modalOpen]);
 
-  // On new message, scroll to bottom.
+  // On new message, scroll the CHAT to bottom.
   //
-  // Rules:
-  //   - If the newly added message(s) include an AI message, ALWAYS scroll
-  //     to bottom. AI responses are the thing the user is waiting for, so
-  //     the near-bottom gate must not suppress the scroll (this was the bug:
-  //     if the user was scrolled up reading older meals when the AI
-  //     responded, they'd miss the reply entirely).
-  //   - If the new message(s) are only user messages, keep the existing
-  //     near-bottom gate: don't yank the view if the user has scrolled up.
+  // Both user messages and AI replies always scroll: a user message is an
+  // intentional action that should be seen, and an AI reply is the answer
+  // the user is waiting for. Pending-meal cards and error cards are handled
+  // by a separate effect below. The page itself (`.app-scroll`) does not
+  // auto-scroll anywhere — only this chat container does.
   const prevChatLenRef = React.useRef(0);
   useEffect(() => {
     if (!modalOpen || !chatRef.current) return;
@@ -758,17 +712,10 @@ export function MealLoggerPage() {
       prevChatLenRef.current = chatHistory.length;
       return;
     }
-    const prevLen = prevChatLenRef.current;
     prevChatLenRef.current = chatHistory.length;
 
-    const newMessages = chatHistory.slice(prevLen);
-    const hasAiMessage = newMessages.some((m) => m.role === 'ai');
-
     const el = chatRef.current;
-    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
-    if (hasAiMessage || distance < 150) {
-      el.scrollTop = el.scrollHeight;
-    }
+    el.scrollTop = el.scrollHeight;
   }, [chatHistory.length, modalOpen]);
 
   // Force-scroll when the AI shows a pending-meal card or a failure card.
@@ -1347,16 +1294,6 @@ export function MealLoggerPage() {
       setPendingMeal(null);
       haptics.success();
       haptics.success();
-
-      // Auto-scroll the meal list to the newest entry, but only if the user
-      // is already near the bottom. If they scrolled up to read older meals,
-      // leave them where they are.
-      if (isNearBottomRef.current) {
-        requestAnimationFrame(() => {
-          const scroller = document.querySelector('.app-scroll');
-          scroller?.scrollTo({ top: scroller.scrollHeight, behavior: 'smooth' });
-        });
-      }
 
       if (source === 'manual') {
         analytics.trackEvent('Custom Meal Logged', { calories: data.calories } as any);
