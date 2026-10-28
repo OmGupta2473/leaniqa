@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useScrollLock } from '@/shared/hooks/useScrollLock';
 import { slideUpVariants } from '@/features/reports/components/motion';
@@ -22,7 +23,9 @@ export function BottomSheet({ isOpen, onClose, children, maxHeight = '90dvh' }: 
     }
   }, [isOpen]);
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
 <motion.div
@@ -56,7 +59,7 @@ export function BottomSheet({ isOpen, onClose, children, maxHeight = '90dvh' }: 
               WebkitBackdropFilter: 'blur(48px) saturate(180%)',
               borderRadius: '24px',
               border: '0.5px solid rgba(255,255,255,0.08)',
-              maxHeight: 'calc(100dvh - 120px)',
+              maxHeight,
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
@@ -88,6 +91,7 @@ export function BottomSheet({ isOpen, onClose, children, maxHeight = '90dvh' }: 
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
