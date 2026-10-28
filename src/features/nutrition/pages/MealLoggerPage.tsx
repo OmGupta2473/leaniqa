@@ -371,11 +371,41 @@ export function MealLoggerPage() {
   const isKeyboardOpen = useKeyboardOpen();
   const isSubmittingRef = React.useRef(false);
 
+  // ---- Page auto-scroll ---------------------------------------------------
+  // The page scrolls through AppLayout's `.app-scroll` container. We track
+  // whether the user is near the bottom so we never yank the view when
+  // they've scrolled up to read older meals.
+  const isNearBottomRef = React.useRef(true);
+  const hasInitialScrolledRef = React.useRef(false);
+
+  // Live visual-viewport height, used to bound the modal's max-height so
+  // it fits above the keyboard. Re-evaluated on every render; the hooks
+  // above re-render us whenever the viewport changes.
+  const vvHeight =
+    typeof window !== 'undefined'
+      ? (window.visualViewport?.height ?? window.innerHeight)
+      : 0;
+
   useEffect(() => {
     if (profile?.id) {
       initializeSession(profile.id);
     }
   }, [profile?.id, initializeSession]);
+
+  // Track "near bottom" on the page's scroll container. Initialised to
+  // the current position so the first confirm is not gated incorrectly.
+  useEffect(() => {
+    const scroller = document.querySelector('.app-scroll');
+    if (!scroller) return;
+    const update = () => {
+      const distance =
+        scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight;
+      isNearBottomRef.current = distance < 150;
+    };
+    scroller.addEventListener('scroll', update, { passive: true });
+    update();
+    return () => scroller.removeEventListener('scroll', update);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -391,6 +421,25 @@ export function MealLoggerPage() {
     })();
     return () => { cancelled = true; };
   }, [profile?.id]);
+
+  // Initial scroll-to-bottom once, after the first non-loading render with
+  // meals present. The setTimeout defers past ScrollHandler's useLayoutEffect
+  // (which sets scrollTop = 0 on route change) and past the first paint of
+  // the meal rows.
+  useEffect(() => {
+    if (isLoading) return;
+    if (hasInitialScrolledRef.current) return;
+    hasInitialScrolledRef.current = true;
+    if (meals.length === 0) return;
+
+    const scroller = document.querySelector('.app-scroll');
+    if (!scroller) return;
+
+    const t = setTimeout(() => {
+      scroller.scrollTo({ top: scroller.scrollHeight, behavior: 'smooth' });
+    }, 200);
+    return () => clearTimeout(t);
+  }, [isLoading, meals.length]);
 
   type MealSource = 'manual' | 'kb' | 'memory_cache' | 'db_cache' | 'ai';
 
@@ -686,11 +735,47 @@ export function MealLoggerPage() {
   const chatRef = useRef<HTMLDivElement>(null);
   const chat = chatHistory.length > 0 ? chatHistory : [{ role: "ai" as const, text: "What did you eat? I'll calculate the macros and give you coaching advice." }];
 
+  // On modal open, always scroll chat to bottom: opening the modal is an
+  // intentional act and the newest message is what the user wants to see.
   useEffect(() => {
-    if (chatRef.current && modalOpen) {
-      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    if (!modalOpen) return;
+    if (!chatRef.current) return;
+    requestAnimationFrame(() => {
+      if (chatRef.current) {
+        chatRef.current.scrollTop = chatRef.current.scrollHeight;
+      }
+    });
+  }, [modalOpen]);
+
+  // On new message, scroll to bottom only when the user is already near it.
+  const prevChatLenRef = React.useRef(0);
+  useEffect(() => {
+    if (!modalOpen || !chatRef.current) return;
+    if (chatHistory.length <= prevChatLenRef.current) {
+      prevChatLenRef.current = chatHistory.length;
+      return;
     }
-  }, [chat, modalOpen]);
+    prevChatLenRef.current = chatHistory.length;
+
+    const el = chatRef.current;
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distance < 150) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [chatHistory.length, modalOpen]);
+
+  // When the keyboard opens while the modal is showing, the modal shrinks
+  // vertically (max-height override below) so the chat area becomes smaller.
+  // Scroll to the newest message so it stays visible above the keyboard.
+  useEffect(() => {
+    if (!modalOpen || !isKeyboardOpen) return;
+    if (!chatRef.current) return;
+    requestAnimationFrame(() => {
+      if (chatRef.current) {
+        chatRef.current.scrollTop = chatRef.current.scrollHeight;
+      }
+    });
+  }, [isKeyboardOpen, modalOpen]);
 
   const deleteMealMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -1227,6 +1312,16 @@ export function MealLoggerPage() {
       haptics.success();
       haptics.success();
 
+      // Auto-scroll the meal list to the newest entry, but only if the user
+      // is already near the bottom. If they scrolled up to read older meals,
+      // leave them where they are.
+      if (isNearBottomRef.current) {
+        requestAnimationFrame(() => {
+          const scroller = document.querySelector('.app-scroll');
+          scroller?.scrollTo({ top: scroller.scrollHeight, behavior: 'smooth' });
+        });
+      }
+
       if (source === 'manual') {
         analytics.trackEvent('Custom Meal Logged', { calories: data.calories } as any);
         setIsCustomMealModalOpen(false);
@@ -1534,8 +1629,20 @@ export function MealLoggerPage() {
                   onClick={e => e.stopPropagation()}
                   className="meal-modal-content"
                   style={{
-                    marginBottom: isKeyboardOpen ? `${keyboardOffset + 16}px` : undefined,
-                    paddingBottom: isKeyboardOpen ? '16px' : undefined
+                    // Lift the modal above the keyboard (iOS); on Android
+                    // with interactive-widget=resizes-content this is ~0 and
+                    // the browser reflows natively.
+                    marginBottom: isKeyboardOpen
+                      ? `${keyboardOffset + 16}px`
+                      : undefined,
+                    // Cap the modal height at the visual viewport height so
+                    // the header stays on screen while the keyboard is open.
+                    // Without this, the CSS `max-height: calc(100dvh - 80px)`
+                    // (mobile) keeps the modal taller than the visible area
+                    // and the header is clipped above the top edge.
+                    maxHeight: isKeyboardOpen
+                      ? `${Math.max(240, vvHeight - 32)}px`
+                      : undefined,
                   }}
                 >
 
