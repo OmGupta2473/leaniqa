@@ -213,16 +213,6 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete, onEdit, on
                             No AI credits
                           </span>
                         )}
-                        {m.meal_source === 'ai' && (
-                          <span
-                            title="AI credits used for this meal"
-                            aria-label="AI credits used for this meal"
-                            className="text-[9px] bg-[rgba(212,255,0,0.08)] text-[#D4FF00] border border-[rgba(212,255,0,0.25)] px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wider flex items-center gap-1 shrink-0"
-                          >
-                            <Zap size={10} strokeWidth={2.5} />
-                            AI credits used
-                          </span>
-                        )}
                       </div>
                     </button>
 <div className="flex items-center gap-1 shrink-0">
@@ -751,7 +741,16 @@ export function MealLoggerPage() {
     });
   }, [modalOpen]);
 
-  // On new message, scroll to bottom only when the user is already near it.
+  // On new message, scroll to bottom.
+  //
+  // Rules:
+  //   - If the newly added message(s) include an AI message, ALWAYS scroll
+  //     to bottom. AI responses are the thing the user is waiting for, so
+  //     the near-bottom gate must not suppress the scroll (this was the bug:
+  //     if the user was scrolled up reading older meals when the AI
+  //     responded, they'd miss the reply entirely).
+  //   - If the new message(s) are only user messages, keep the existing
+  //     near-bottom gate: don't yank the view if the user has scrolled up.
   const prevChatLenRef = React.useRef(0);
   useEffect(() => {
     if (!modalOpen || !chatRef.current) return;
@@ -759,14 +758,47 @@ export function MealLoggerPage() {
       prevChatLenRef.current = chatHistory.length;
       return;
     }
+    const prevLen = prevChatLenRef.current;
     prevChatLenRef.current = chatHistory.length;
+
+    const newMessages = chatHistory.slice(prevLen);
+    const hasAiMessage = newMessages.some((m) => m.role === 'ai');
 
     const el = chatRef.current;
     const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
-    if (distance < 150) {
+    if (hasAiMessage || distance < 150) {
       el.scrollTop = el.scrollHeight;
     }
   }, [chatHistory.length, modalOpen]);
+
+  // Force-scroll when the AI shows a pending-meal card or a failure card.
+  //
+  // Neither of these add a chatHistory entry, so the effect above doesn't
+  // fire on them. Without this effect the user misses the "Here is the
+  // estimated nutrition…" card or the "Error: …" card when they were
+  // scrolled up when the AI finished. Fires only on the null → non-null
+  // transition of pendingMeal, so re-renders from in-progress edits to the
+  // pending card (EditEstimate, etc.) don't keep yanking the view.
+  const prevPendingMealRef = React.useRef<PendingMeal | null>(null);
+  useEffect(() => {
+    if (!modalOpen || !chatRef.current) {
+      prevPendingMealRef.current = pendingMeal;
+      return;
+    }
+    const wasNull = prevPendingMealRef.current === null;
+    const nowNotNull = pendingMeal !== null;
+    prevPendingMealRef.current = pendingMeal;
+
+    const hasNewFailure = failedMealError !== null || failedMealText !== null;
+    const shouldForce = (wasNull && nowNotNull) || hasNewFailure;
+    if (!shouldForce) return;
+
+    requestAnimationFrame(() => {
+      if (chatRef.current) {
+        chatRef.current.scrollTop = chatRef.current.scrollHeight;
+      }
+    });
+  }, [pendingMeal, failedMealError, failedMealText, modalOpen]);
 
   // When the keyboard opens while the modal is showing, the modal shrinks
   // vertically (max-height override below) so the chat area becomes smaller.
