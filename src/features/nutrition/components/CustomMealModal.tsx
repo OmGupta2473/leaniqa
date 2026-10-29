@@ -270,35 +270,6 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot, initialB
                 </div>
               </section>
 
-              {initialBarcode && (
-                <section className="mb-4 sm:mb-6">
-                  <SectionLabel>Serving Size (required)</SectionLabel>
-                  <label className="group flex flex-col gap-2 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-3.5 py-3 transition-colors focus-within:border-[rgba(212,255,0,0.4)] focus-within:bg-[rgba(255,255,255,0.03)] sm:px-4 sm:py-3.5">
-                    <span className="flex items-center gap-2 text-[10.5px] font-medium uppercase tracking-[0.08em] text-[rgba(255,255,255,0.4)] sm:text-[11px]">
-                      <Flame size={12} className="text-[rgba(255,255,255,0.35)]" />
-                      Grams per serving
-                    </span>
-                    <div className="flex items-baseline justify-between">
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={servingSizeG}
-                        onChange={(e) => setServingSizeG((() => {
-                          const v = e.target.value.replace(/[^0-9.]/g, '');
-                          const parts = v.split('.');
-                          return parts.length > 1 ? parts[0] + '.' + parts.slice(1).join('') : v;
-                        })())}
-                        placeholder="e.g. 30"
-                        className="w-full bg-transparent text-[16px] font-semibold text-white placeholder:text-[rgba(255,255,255,0.25)] outline-none tabular-nums sm:text-[17px]"
-                      />
-                      <span className="ml-2 shrink-0 text-[12px] font-medium text-[rgba(255,255,255,0.4)]">g</span>
-                    </div>
-                  </label>
-                  <div className="mt-2 text-[11.5px] leading-snug text-[rgba(255,255,255,0.45)]">
-                    Enter the macros below for ONE serving of this many grams. We&apos;ll convert to per-100g so the next scan of this barcode gets an instant match.
-                  </div>
-                </section>
-              )}
 
               {initialBarcode && (
                 <section className="mb-4 sm:mb-6">
