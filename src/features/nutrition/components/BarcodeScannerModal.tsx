@@ -37,13 +37,20 @@ interface BarcodeScannerModalProps {
    * opening the manual entry modal.
    */
   onManualAdd?: (barcode: string) => void;
+  /**
+   * Optional: called after the modal's exit animation completes and the
+   * component has fully unmounted. Used by MealLoggerPage to open the
+   * CustomMealModal only after the scanner overlay is gone, so the modal
+   * can never mount behind a still-exiting scanner (z-120 > modal z-110).
+   */
+  onExitComplete?: () => void;
 }
 
 type Phase = 'scanning' | 'loading' | 'result' | 'not_found' | 'permission_denied';
 
 const SCAN_DEBOUNCE_MS = 300;
 
-export function BarcodeScannerModal({ isOpen, onClose, onConfirm, onManualAdd }: BarcodeScannerModalProps) {
+export function BarcodeScannerModal({ isOpen, onClose, onConfirm, onManualAdd, onExitComplete }: BarcodeScannerModalProps) {
   const [phase, setPhase] = useState<Phase>('scanning');
   const [barcode, setBarcode] = useState<string>('');
   const [product, setProduct] = useState<BarcodeProduct | null>(null);
@@ -236,7 +243,7 @@ export function BarcodeScannerModal({ isOpen, onClose, onConfirm, onManualAdd }:
   if (typeof document === 'undefined') return null;
 
   return createPortal(
-    <AnimatePresence>
+    <AnimatePresence onExitComplete={onExitComplete}>
       {isOpen && (
         <motion.div
           key="barcode-modal"
@@ -367,7 +374,16 @@ export function BarcodeScannerModal({ isOpen, onClose, onConfirm, onManualAdd }:
                 {onManualAdd && (
                   <button
                     type="button"
-                    onClick={() => { haptics.tap(); onManualAdd(barcode); onClose(); }}
+                    onClick={() => {
+                      try { haptics.tap(); } catch { /* non-fatal */ }
+                      try { onManualAdd(barcode); } catch (err) {
+                        console.error('[BarcodeScanner] onManualAdd threw', err);
+                      }
+                      // Always close, even if onManualAdd threw. The parent's
+                      // onExitComplete handler opens the CustomMealModal once
+                      // this overlay has fully unmounted — never behind it.
+                      onClose();
+                    }}
                     className="w-full max-w-[240px] px-6 py-3 rounded-full bg-[#D4FF00] text-black font-semibold text-[14px]"
                   >
                     Add manually
