@@ -1248,6 +1248,23 @@ export function MealLoggerPage() {
             message: `Logged ✓ ${Math.round(data.calories)} kcal · ${Math.round(data.protein)}g pro`,
             duration: 3000,
           });
+          // KB can emit assumptions (e.g. the raw-soya note). Auto-logged
+          // KB meals skip the pending card, so surface the first assumption
+          // as a separate warning toast — additive, the success toast above
+          // still fires.
+          const kbAssumptions: string[] = Array.isArray(data.assumptions)
+            ? data.assumptions.filter(
+                (a: unknown): a is string =>
+                  typeof a === 'string' && a.trim().length > 0,
+              )
+            : [];
+          if (kbAssumptions.length > 0) {
+            toast({
+              type: 'warning',
+              message: kbAssumptions[0],
+              duration: 6000,
+            });
+          }
           confirmMealMutation.mutate({
             text,
             data,
