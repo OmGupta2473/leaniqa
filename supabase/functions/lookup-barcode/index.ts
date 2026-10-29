@@ -347,46 +347,102 @@ async function handleContribute(
   };
 
   // Manual contributions OVERWRITE any existing row for this barcode.
+  // See the previous version for why `ignoreDuplicates` is deliberately off:
+  // a stale/partial row from an earlier bug must be fixable, otherwise the
+  // same barcode returns "not found" forever.
   //
-  // Why no `ignoreDuplicates: true`:
-  //   - The manual flow only fires from the "not found" screen, which means
-  //     either no row exists OR a stale/partial row exists that failed to
-  //     normalize earlier. We must be able to fix that row, otherwise the
-  //     same barcode keeps returning "not found" forever.
-  //   - A parallel first-time contribution race is theoretically possible but
-  //     harmless: whichever write lands last wins, both are user-supplied
-  //     nutrition for the same product.
-  //
-  // The .select() lets us distinguish "row written" from "silently dropped"
-  // and log both the response and the persisted row for observability.
+  // Two-step verification:
+  //   1. upsert with .select() → confirms the write landed and returns the
+  //      persisted row.
+  //   2. follow-up SELECT → confirms the row is actually readable by the
+  //      service role. If (1) reported a row but (2) sees nothing, the write
+  //      is being silently reverted by something (trigger, deferred
+  //      constraint, connection-pool anomaly). The follow-up is cheap and
+  //      turns a silent failure into a loud one.
+  const upsertPayload = {
+    barcode,
+    product_name: productName,
+    brand,
+    image_url: null,
+    nutrition_per_100g,
+    serving_size: servingSizeG,
+    serving_size_unit: "g",
+    detected_default_unit: "serving",
+    unit_weights: { g: 1, serving: servingSizeG },
+    source: "manual",
+  };
+
   const { data: upsertedRows, error: insertError } = await admin
     .from("barcode_cache")
-    .upsert(
-      {
-        barcode,
-        product_name: productName,
-        brand,
-        image_url: null,
-        nutrition_per_100g,
-        serving_size: servingSizeG,
-        serving_size_unit: "g",
-        detected_default_unit: "serving",
-        unit_weights: { g: 1, serving: servingSizeG },
-        source: "manual",
-      },
-      { onConflict: "barcode" },
-    )
+    .upsert(upsertPayload, { onConflict: "barcode" })
     .select("barcode, source, serving_size");
 
   if (insertError) {
-    console.error("Failed to write manual barcode", {
+    console.error(JSON.stringify({
+      level: "error",
+      stage: "BarcodeContribute",
+      event: "upsert_failed",
       barcode,
-      error: insertError.message,
-      code: insertError.code,
-      details: insertError.details,
-      hint: insertError.hint,
-    });
-    return json({ error: "db_error", details: insertError.message }, 500);
+      error_message: insertError.message,
+      error_code: insertError.code,
+      error_details: insertError.details,
+      error_hint: insertError.hint,
+      payload_keys: Object.keys(upsertPayload),
+    }));
+    return json(
+      {
+        error: "db_error",
+        details: insertError.message,
+        code: insertError.code ?? null,
+      },
+      500,
+    );
+  }
+
+  // Read-after-write verification.
+  const { data: confirmedRow, error: confirmError } = await admin
+    .from("barcode_cache")
+    .select("barcode, source, serving_size, nutrition_per_100g, product_name")
+    .eq("barcode", barcode)
+    .maybeSingle();
+
+  if (confirmError) {
+    console.error(JSON.stringify({
+      level: "error",
+      stage: "BarcodeContribute",
+      event: "confirm_read_failed",
+      barcode,
+      error_message: confirmError.message,
+      error_code: confirmError.code,
+    }));
+    return json(
+      {
+        error: "db_read_back_failed",
+        details: confirmError.message,
+        code: confirmError.code ?? null,
+      },
+      500,
+    );
+  }
+
+  if (!confirmedRow) {
+    console.error(JSON.stringify({
+      level: "error",
+      stage: "BarcodeContribute",
+      event: "row_missing_after_write",
+      barcode,
+      upsert_returned_rows: Array.isArray(upsertedRows) ? upsertedRows.length : 0,
+      attempted_payload: upsertPayload,
+    }));
+    return json(
+      {
+        ok: false,
+        error: "write_not_persisted",
+        barcode,
+        persisted: 0,
+      },
+      500,
+    );
   }
 
   console.log(JSON.stringify({
@@ -394,15 +450,17 @@ async function handleContribute(
     stage: "BarcodeContribute",
     event: "manual_write",
     barcode,
-    persisted: Array.isArray(upsertedRows) ? upsertedRows.length : 0,
-    source: "manual",
+    persisted: 1,
+    source: confirmedRow.source,
+    serving_size: confirmedRow.serving_size,
+    kcal_per_100g: (confirmedRow.nutrition_per_100g as { kcal?: number } | null)?.kcal ?? null,
   }));
 
   return json({
     ok: true,
     barcode,
-    source: "manual",
-    persisted: Array.isArray(upsertedRows) ? upsertedRows.length : 0,
+    source: confirmedRow.source,
+    persisted: 1,
   });
 }
 

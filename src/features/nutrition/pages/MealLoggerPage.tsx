@@ -169,6 +169,9 @@ async function contributeBarcode(
     }
 
     if (!data || (data as { ok?: boolean }).ok !== true) {
+      // Server responded 2xx but with ok=false, or with a shape we don't
+      // recognise. Either way, the row is not guaranteed to be in
+      // barcode_cache — surface it loudly, don't swallow.
       console.warn('[barcode] contribute returned unexpected response', {
         data,
         barcode,
@@ -176,10 +179,25 @@ async function contributeBarcode(
       return;
     }
 
+    const persisted = (data as { persisted?: number }).persisted ?? null;
+
     console.log('[barcode] contribute success', {
       barcode,
-      persisted: (data as { persisted?: number }).persisted ?? null,
+      persisted,
+      source: (data as { source?: string }).source ?? null,
     });
+
+    // persisted === 1 is the only state where we can promise the next scan
+    // will be a cache hit. Anything else — including 0 — must not silently
+    // pass as success, because the user will re-scan and see "not found".
+    if (persisted !== 1) {
+      console.warn(
+        '[barcode] contribute reported success but nothing persisted — re-scan will miss',
+        { barcode, persisted, data },
+      );
+      return;
+    }
+
     analytics.trackEvent('Barcode Manual Contribution', { barcode });
   } catch (err) {
     console.warn('[barcode] contribute threw', err);
