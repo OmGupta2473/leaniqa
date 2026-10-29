@@ -101,7 +101,7 @@ export const mealService = {
     // caller that hasn't been updated. All real write paths pass one of the
     // whitelisted values explicitly.
     const ALLOWED_MEAL_SOURCES = new Set([
-      'manual', 'kb', 'memory_cache', 'db_cache', 'ai', 'legacy',
+      'manual', 'kb', 'memory_cache', 'db_cache', 'ai', 'legacy', 'barcode',
     ]);
     const rawSource = (mealData as { meal_source?: unknown }).meal_source;
     const meal_source =

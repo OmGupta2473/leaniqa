@@ -10,13 +10,14 @@ import { useChatStore } from "@/app/store";
 import { useNutritionStore } from "../store/nutritionStore";
 import {
   Send, Loader2, Dumbbell, Lightbulb, Sun, Sunrise, Moon, Coffee, Plus, X, ChevronLeft, ChevronRight, ArrowRight, ChevronDown,
-  Zap, AlertTriangle, Pencil, Lock, GripVertical, BookOpen
+  Zap, AlertTriangle, Pencil, Lock, GripVertical, BookOpen, ScanLine
 } from "lucide-react";
 import { EmptyState } from '@/shared/components/EmptyState';
 import { CustomMealModal } from '../components/CustomMealModal';
 import { AiLimitNudge } from '../components/AiLimitNudge';
 import { PreCommitEditModal } from '../components/PreCommitEditModal';
 import { EditMealModal } from '../components/EditMealModal';
+import { BarcodeScannerModal } from '../components/BarcodeScannerModal';
 import { DbMealLog } from '@/shared/types/supabase';
 import { cn } from "@/shared/utils/utils";
 import { SmoothInput } from "@/shared/components/SmoothInput";
@@ -202,6 +203,16 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete, onEdit, on
                         {(m.meal_source === 'manual' || m.tip === 'Manually logged meal.') && (
                           <span className="text-[9px] bg-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.5)] px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wider flex items-center gap-1 shrink-0">
                             Manual
+                          </span>
+                        )}
+                        {m.meal_source === 'barcode' && (
+                          <span
+                            title="Scanned barcode"
+                            aria-label="Scanned barcode"
+                            className="text-[9px] bg-[rgba(55,138,221,0.12)] text-[#378ADD] border border-[rgba(55,138,221,0.25)] px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wider flex items-center gap-1 shrink-0"
+                          >
+                            <ScanLine size={10} strokeWidth={2.5} />
+                            Scanned
                           </span>
                         )}
                         {(m.meal_source === 'kb' || m.meal_source === 'memory_cache' || m.meal_source === 'db_cache') && (
@@ -393,7 +404,7 @@ export function MealLoggerPage() {
 
 
 
-  type MealSource = 'manual' | 'kb' | 'memory_cache' | 'db_cache' | 'ai';
+  type MealSource = 'manual' | 'kb' | 'memory_cache' | 'db_cache' | 'ai' | 'barcode';
 
   type PendingMeal = {
     text: string;
@@ -479,6 +490,7 @@ export function MealLoggerPage() {
   const [failedMealText, setFailedMealText] = useState<string | null>(null);
   const [failedMealError, setFailedMealError] = useState<string | null>(null);
   const [isCustomMealModalOpen, setIsCustomMealModalOpen] = useState(false);
+  const [isBarcodeScannerOpen, setIsBarcodeScannerOpen] = useState(false);
   const [retryCount, setRetryCount] = useState<number>(0);
   const autoRetryAttemptRef = React.useRef<number>(0);
   const [editingMeal, setEditingMeal] = useState<(DbMealLog & { id: string }) | null>(null);
@@ -855,6 +867,29 @@ export function MealLoggerPage() {
         tip: mealData.tip
       },
       source: 'manual',
+      client_token: crypto.randomUUID(),
+    });
+  };
+
+  const handleBarcodeSave = (payload: {
+    text: string;
+    calories: number;
+    protein: number;
+    fat: number;
+    carbs: number;
+    fiber: number;
+  }) => {
+    confirmMealMutation.mutate({
+      text: payload.text,
+      data: {
+        calories: payload.calories,
+        protein: payload.protein,
+        fat: payload.fat,
+        carbs: payload.carbs,
+        fiber: payload.fiber,
+      },
+      source: 'manual',
+      meal_source: 'barcode',
       client_token: crypto.randomUUID(),
     });
   };
@@ -2005,6 +2040,25 @@ export function MealLoggerPage() {
                       <div className="flex-1 h-px bg-[rgba(255,255,255,0.06)]" />
                     </div>
 
+                    {/* Scan barcode row */}
+                    <button
+                      onClick={() => { setModalOpen(false); setTimeout(() => setIsBarcodeScannerOpen(true), 300); }}
+                      className="w-full flex items-center gap-3 px-3 py-1.5 rounded-full border border-dashed border-[#378ADD]/30 bg-[#378ADD]/[0.02] transition-colors hover:bg-[#378ADD]/[0.05] text-left"
+                    >
+                      <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 bg-[#378ADD]/10">
+                        <ScanLine size={12} className="text-[#378ADD]" strokeWidth={3} />
+                      </span>
+                      <span className="flex-1 min-w-0 flex items-center gap-2">
+                        <span className="text-[13px] font-semibold text-zinc-300">
+                          Scan barcode
+                        </span>
+                        <span className="text-[11px] text-zinc-500 hidden sm:inline">
+                          (Packaged products)
+                        </span>
+                      </span>
+                      <ChevronRight size={14} className="text-zinc-500 shrink-0" />
+                    </button>
+
                     {/* Custom meal row */}
                     <button
                       onClick={() => { setModalOpen(false); setTimeout(() => setIsCustomMealModalOpen(true), 300); }}
@@ -2037,6 +2091,12 @@ export function MealLoggerPage() {
           onClose={() => setIsCustomMealModalOpen(false)}
           onSave={handleCustomMealSave}
           defaultSlot={selectedMealSlot || undefined}
+        />
+
+        <BarcodeScannerModal
+          isOpen={isBarcodeScannerOpen}
+          onClose={() => setIsBarcodeScannerOpen(false)}
+          onConfirm={handleBarcodeSave}
         />
 
         <EditMealModal
