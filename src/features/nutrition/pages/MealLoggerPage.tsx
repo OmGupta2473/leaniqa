@@ -127,7 +127,14 @@ async function contributeBarcode(
   servingSizeGrams: number,
 ): Promise<void> {
   try {
-    const { error } = await supabase.functions.invoke('lookup-barcode', {
+    console.log('[barcode] contribute sending', {
+      barcode,
+      servingSizeGrams,
+      kcal: meal.calories,
+      protein: meal.protein,
+    });
+
+    const { data, error } = await supabase.functions.invoke('lookup-barcode', {
       body: {
         action: 'contribute',
         barcode,
@@ -142,10 +149,37 @@ async function contributeBarcode(
         },
       },
     });
+
     if (error) {
-      console.warn('[barcode] contribute failed', error);
+      // Surface the real status so a stale-deployment 404 is obvious in DevTools.
+      const ctx = (error as { context?: Response }).context;
+      let status: number | null = null;
+      let errorBody: unknown = null;
+      if (ctx) {
+        status = ctx.status;
+        try { errorBody = await ctx.clone().json(); } catch { /* ignore */ }
+      }
+      console.warn('[barcode] contribute failed', {
+        status,
+        errorBody,
+        message: (error as { message?: string }).message,
+        barcode,
+      });
       return;
     }
+
+    if (!data || (data as { ok?: boolean }).ok !== true) {
+      console.warn('[barcode] contribute returned unexpected response', {
+        data,
+        barcode,
+      });
+      return;
+    }
+
+    console.log('[barcode] contribute success', {
+      barcode,
+      persisted: (data as { persisted?: number }).persisted ?? null,
+    });
     analytics.trackEvent('Barcode Manual Contribution', { barcode });
   } catch (err) {
     console.warn('[barcode] contribute threw', err);

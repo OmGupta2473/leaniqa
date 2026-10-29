@@ -346,30 +346,47 @@ async function handleContribute(
     fiber: round1(fiber),
   };
 
-  // Ignore duplicates: if the barcode was added in parallel by another user
-  // (or exists from a real source), don't stomp it.
-  const { error: insertError } = await admin.from("barcode_cache").upsert(
-    {
-      barcode,
-      product_name: productName,
-      brand,
-      image_url: null,
-      nutrition_per_100g,
-      serving_size: servingSizeG,
-      serving_size_unit: "g",
-      detected_default_unit: "serving",
-      unit_weights: { g: 1, serving: servingSizeG },
-      source: "manual",
-    },
-    { onConflict: "barcode", ignoreDuplicates: true },
-  );
+  // Manual contributions OVERWRITE any existing row for this barcode.
+  //
+  // Why no `ignoreDuplicates: true`:
+  //   - The manual flow only fires from the "not found" screen, which means
+  //     either no row exists OR a stale/partial row exists that failed to
+  //     normalize earlier. We must be able to fix that row, otherwise the
+  //     same barcode keeps returning "not found" forever.
+  //   - A parallel first-time contribution race is theoretically possible but
+  //     harmless: whichever write lands last wins, both are user-supplied
+  //     nutrition for the same product.
+  //
+  // The .select() lets us distinguish "row written" from "silently dropped"
+  // and log both the response and the persisted row for observability.
+  const { data: upsertedRows, error: insertError } = await admin
+    .from("barcode_cache")
+    .upsert(
+      {
+        barcode,
+        product_name: productName,
+        brand,
+        image_url: null,
+        nutrition_per_100g,
+        serving_size: servingSizeG,
+        serving_size_unit: "g",
+        detected_default_unit: "serving",
+        unit_weights: { g: 1, serving: servingSizeG },
+        source: "manual",
+      },
+      { onConflict: "barcode" },
+    )
+    .select("barcode, source, serving_size");
 
   if (insertError) {
     console.error("Failed to write manual barcode", {
       barcode,
       error: insertError.message,
+      code: insertError.code,
+      details: insertError.details,
+      hint: insertError.hint,
     });
-    return json({ error: "db_error" }, 500);
+    return json({ error: "db_error", details: insertError.message }, 500);
   }
 
   console.log(JSON.stringify({
@@ -377,9 +394,16 @@ async function handleContribute(
     stage: "BarcodeContribute",
     event: "manual_write",
     barcode,
+    persisted: Array.isArray(upsertedRows) ? upsertedRows.length : 0,
+    source: "manual",
   }));
 
-  return json({ ok: true, barcode, source: "manual" });
+  return json({
+    ok: true,
+    barcode,
+    source: "manual",
+    persisted: Array.isArray(upsertedRows) ? upsertedRows.length : 0,
+  });
 }
 
 serve(async (req) => {
