@@ -108,6 +108,50 @@ function sentenceCaseAssumption(assumption: string): string {
     assumption.slice(firstLetter + 1);
 }
 
+/**
+ * Fire-and-forget write-back for manually-entered barcode nutrition.
+ * On success, the NEXT user who scans this barcode gets a cache hit.
+ * On any failure, the meal itself is still saved — only the cache write
+ * is lost. Offline users lose the cache write (no retry queue).
+ */
+async function contributeBarcode(
+  barcode: string,
+  meal: {
+    meal_text: string;
+    calories: number;
+    protein: number;
+    fat: number;
+    carbs: number;
+    fiber?: number;
+  },
+  servingSizeGrams: number,
+): Promise<void> {
+  try {
+    const { error } = await supabase.functions.invoke('lookup-barcode', {
+      body: {
+        action: 'contribute',
+        barcode,
+        product_name: meal.meal_text,
+        serving_size_g: servingSizeGrams,
+        nutrition_per_serving: {
+          kcal: meal.calories,
+          protein: meal.protein,
+          fat: meal.fat,
+          carbs: meal.carbs,
+          fiber: meal.fiber ?? 0,
+        },
+      },
+    });
+    if (error) {
+      console.warn('[barcode] contribute failed', error);
+      return;
+    }
+    analytics.trackEvent('Barcode Manual Contribution', { barcode });
+  } catch (err) {
+    console.warn('[barcode] contribute threw', err);
+  }
+}
+
 // ── SLOT ROW — used in the persistent summary ─────────────────────────────
 function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete, onEdit, onDropMeal }: { slot: string; icon: React.ReactNode; label: string; timeRange: string; meals: any[], onDelete: (id: string) => void; onEdit: (meal: any) => void; onDropMeal: (mealId: string, newSlot: string) => void }) {
   const [expanded, setExpanded] = useState(false);
@@ -491,6 +535,10 @@ export function MealLoggerPage() {
   const [failedMealError, setFailedMealError] = useState<string | null>(null);
   const [isCustomMealModalOpen, setIsCustomMealModalOpen] = useState(false);
   const [isBarcodeScannerOpen, setIsBarcodeScannerOpen] = useState(false);
+  // Barcode currently being manually contributed. Set when the scanner
+  // returns "not found" and the user taps "Add manually". Cleared on
+  // either save or cancel of the CustomMealModal.
+  const [pendingBarcode, setPendingBarcode] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState<number>(0);
   const autoRetryAttemptRef = React.useRef<number>(0);
   const [editingMeal, setEditingMeal] = useState<(DbMealLog & { id: string }) | null>(null);
@@ -854,7 +902,13 @@ export function MealLoggerPage() {
     },
   });
 
-  const handleCustomMealSave = (mealData: any) => {
+  const handleCustomMealSave = (
+    mealData: any,
+    meta?: { barcode?: string; servingSizeGrams?: number },
+  ) => {
+    const isBarcodeContribution =
+      !!(meta?.barcode && meta.servingSizeGrams && meta.servingSizeGrams > 0);
+
     confirmMealMutation.mutate({
       text: mealData.meal_text,
       data: {
@@ -867,8 +921,26 @@ export function MealLoggerPage() {
         tip: mealData.tip
       },
       source: 'manual',
+      // Preserve the Scanned chip in the meal list when the meal arrived via
+      // a barcode contribution; otherwise it's a plain custom meal.
+      meal_source: isBarcodeContribution ? 'barcode' : 'manual',
       client_token: crypto.randomUUID(),
     });
+
+    if (isBarcodeContribution) {
+      void contributeBarcode(
+        meta!.barcode!,
+        {
+          meal_text: mealData.meal_text,
+          calories: mealData.calories,
+          protein: mealData.protein,
+          fat: mealData.fat,
+          carbs: mealData.carbs,
+          fiber: mealData.fiber,
+        },
+        meta!.servingSizeGrams!,
+      );
+    }
   };
 
   const handleBarcodeSave = (payload: {
@@ -2088,15 +2160,25 @@ export function MealLoggerPage() {
 
         <CustomMealModal
           isOpen={isCustomMealModalOpen}
-          onClose={() => setIsCustomMealModalOpen(false)}
+          onClose={() => {
+            setIsCustomMealModalOpen(false);
+            setPendingBarcode(null);
+          }}
           onSave={handleCustomMealSave}
           defaultSlot={selectedMealSlot || undefined}
+          initialBarcode={pendingBarcode ?? undefined}
         />
 
         <BarcodeScannerModal
           isOpen={isBarcodeScannerOpen}
           onClose={() => setIsBarcodeScannerOpen(false)}
           onConfirm={handleBarcodeSave}
+          onManualAdd={(barcode) => {
+            setPendingBarcode(barcode);
+            // 300ms matches the scan→custom-meal transition used elsewhere:
+            // scanner exit animation is 200ms; custom modal needs a clean frame.
+            setTimeout(() => setIsCustomMealModalOpen(true), 300);
+          }}
         />
 
         <EditMealModal

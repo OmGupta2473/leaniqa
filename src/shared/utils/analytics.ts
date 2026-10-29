@@ -18,6 +18,7 @@ export type EventName =
   | 'Barcode Scan Attempted'
   | 'Barcode Scan Success'
   | 'Barcode Scan Not Found'
+  | 'Barcode Manual Contribution'
   | 'Weekly Report Viewed'
   | 'Weekly Report Week Changed'
   | 'Pricing Viewed'

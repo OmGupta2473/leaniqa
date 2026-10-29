@@ -30,13 +30,20 @@ interface BarcodeScannerModalProps {
     carbs: number;
     fiber: number;
   }) => void;
+  /**
+   * Optional: called when a scan returns "not found" and the user taps
+   * "Add manually". If provided, a full "Add manually" CTA appears on the
+   * not-found screen. Caller is responsible for closing the scanner and
+   * opening the manual entry modal.
+   */
+  onManualAdd?: (barcode: string) => void;
 }
 
 type Phase = 'scanning' | 'loading' | 'result' | 'not_found' | 'permission_denied';
 
 const SCAN_DEBOUNCE_MS = 300;
 
-export function BarcodeScannerModal({ isOpen, onClose, onConfirm }: BarcodeScannerModalProps) {
+export function BarcodeScannerModal({ isOpen, onClose, onConfirm, onManualAdd }: BarcodeScannerModalProps) {
   const [phase, setPhase] = useState<Phase>('scanning');
   const [barcode, setBarcode] = useState<string>('');
   const [product, setProduct] = useState<BarcodeProduct | null>(null);
@@ -157,12 +164,17 @@ export function BarcodeScannerModal({ isOpen, onClose, onConfirm }: BarcodeScann
       });
       if (error) {
         const ctx = (error as { context?: Response }).context;
-        let body: { error?: string } | null = null;
+        let body: { error?: string; attempted_sources?: string[] } | null = null;
         if (ctx && typeof ctx.json === 'function') {
           try { body = await ctx.json(); } catch { /* ignore */ }
         }
         if (body?.error === 'not_found' || body?.error === 'no_nutrition_data') {
-          analytics.trackEvent('Barcode Scan Not Found', { barcode: code });
+          analytics.trackEvent('Barcode Scan Not Found', {
+            barcode: code,
+            attempted_sources: Array.isArray((body as { attempted_sources?: string[] }).attempted_sources)
+              ? (body as { attempted_sources: string[] }).attempted_sources.join(',')
+              : 'unknown',
+          });
           setPhase('not_found');
           return;
         }
@@ -352,6 +364,15 @@ export function BarcodeScannerModal({ isOpen, onClose, onConfirm }: BarcodeScann
                 <div className="text-[13px] text-zinc-400 max-w-[300px]">
                   {errorMsg || `We couldn't find nutrition data for ${barcode}. You can add it manually.`}
                 </div>
+                {onManualAdd && (
+                  <button
+                    type="button"
+                    onClick={() => { haptics.tap(); onManualAdd(barcode); onClose(); }}
+                    className="w-full max-w-[240px] px-6 py-3 rounded-full bg-[#D4FF00] text-black font-semibold text-[14px]"
+                  >
+                    Add manually
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => { setPhase('scanning'); setProduct(null); setErrorMsg(''); }}
@@ -364,7 +385,7 @@ export function BarcodeScannerModal({ isOpen, onClose, onConfirm }: BarcodeScann
                   onClick={onClose}
                   className="text-[13px] text-zinc-400"
                 >
-                  Add manually from meal logger
+                  Close
                 </button>
               </div>
             )}
