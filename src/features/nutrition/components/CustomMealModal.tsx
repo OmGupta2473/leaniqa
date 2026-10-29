@@ -14,8 +14,15 @@ type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 interface CustomMealModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (meal: Omit<DbMealLog, 'id' | 'user_id'>) => void;
+  onSave: (
+    meal: Omit<DbMealLog, 'id' | 'user_id'>,
+    meta?: { barcode?: string; servingSizeGrams?: number },
+  ) => void;
   defaultSlot?: 'breakfast' | 'lunch' | 'dinner' | 'snack' | '';
+  /** When set, the modal shows a required "serving size in grams" input and
+   *  passes { barcode, servingSizeGrams } as the second arg of onSave. Used
+   *  for the "Add manually" barcode contribution flow. */
+  initialBarcode?: string;
 }
 
 const SLOTS: { id: MealSlot; label: string; Icon: typeof Sunrise }[] = [
@@ -68,7 +75,7 @@ const NumField = ({
   </label>
 );
 
-export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: CustomMealModalProps) {
+export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot, initialBarcode }: CustomMealModalProps) {
   // SSR guard (restored) — no hooks run when there is no DOM.
   if (typeof document === 'undefined') return null;
 
@@ -80,11 +87,13 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: Custom
   const [fiber, setFiber] = useState('');
   const [slot, setSlot] = useState<MealSlot>(defaultSlot || 'dinner');
   const [nameFocused, setNameFocused] = useState(false);
+  const [servingSizeG, setServingSizeG] = useState('');
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       setSlot(defaultSlot || 'dinner');
+      setServingSizeG('');
       const t = setTimeout(() => nameInputRef.current?.focus(), 260);
       return () => clearTimeout(t);
     }
@@ -94,8 +103,9 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: Custom
     setCarbs('');
     setFat('');
     setFiber('');
+    setServingSizeG('');
     return undefined;
-  }, [isOpen, defaultSlot]);
+  }, [isOpen, defaultSlot, initialBarcode]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -121,13 +131,14 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: Custom
     isValidMacro(calories) &&
     isValidMacro(protein) &&
     isValidMacro(carbs) &&
-    isValidMacro(fat);
+    isValidMacro(fat) &&
+    (!initialBarcode || (isValidMacro(servingSizeG) && Number(servingSizeG) > 0));
 
   const numberValue = (v: string) => Math.round(Number(v) || 0);
 
   const handleSave = () => {
     if (!isValid) return;
-    onSave({
+    const meal = {
       meal_text: name.trim(),
       calories: numberValue(calories),
       protein: numberValue(protein),
@@ -137,7 +148,15 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: Custom
       meal_slot: slot,
       meal_time: new Date().toISOString(),
       tip: 'Manually logged meal.',
-    });
+    };
+    if (initialBarcode) {
+      onSave(meal, {
+        barcode: initialBarcode,
+        servingSizeGrams: Number(servingSizeG),
+      });
+    } else {
+      onSave(meal);
+    }
     onClose();
   };
 
@@ -250,6 +269,66 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot }: Custom
                   })}
                 </div>
               </section>
+
+              {initialBarcode && (
+                <section className="mb-4 sm:mb-6">
+                  <SectionLabel>Serving Size (required)</SectionLabel>
+                  <label className="group flex flex-col gap-2 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-3.5 py-3 transition-colors focus-within:border-[rgba(212,255,0,0.4)] focus-within:bg-[rgba(255,255,255,0.03)] sm:px-4 sm:py-3.5">
+                    <span className="flex items-center gap-2 text-[10.5px] font-medium uppercase tracking-[0.08em] text-[rgba(255,255,255,0.4)] sm:text-[11px]">
+                      <Flame size={12} className="text-[rgba(255,255,255,0.35)]" />
+                      Grams per serving
+                    </span>
+                    <div className="flex items-baseline justify-between">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={servingSizeG}
+                        onChange={(e) => setServingSizeG((() => {
+                          const v = e.target.value.replace(/[^0-9.]/g, '');
+                          const parts = v.split('.');
+                          return parts.length > 1 ? parts[0] + '.' + parts.slice(1).join('') : v;
+                        })())}
+                        placeholder="e.g. 30"
+                        className="w-full bg-transparent text-[16px] font-semibold text-white placeholder:text-[rgba(255,255,255,0.25)] outline-none tabular-nums sm:text-[17px]"
+                      />
+                      <span className="ml-2 shrink-0 text-[12px] font-medium text-[rgba(255,255,255,0.4)]">g</span>
+                    </div>
+                  </label>
+                  <div className="mt-2 text-[11.5px] leading-snug text-[rgba(255,255,255,0.45)]">
+                    Enter the macros below for ONE serving of this many grams. We&apos;ll convert to per-100g so the next scan of this barcode gets an instant match.
+                  </div>
+                </section>
+              )}
+
+              {initialBarcode && (
+                <section className="mb-4 sm:mb-6">
+                  <SectionLabel>Serving Size (required)</SectionLabel>
+                  <label className="group flex flex-col gap-2 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-3.5 py-3 transition-colors focus-within:border-[rgba(212,255,0,0.4)] focus-within:bg-[rgba(255,255,255,0.03)] sm:px-4 sm:py-3.5">
+                    <span className="flex items-center gap-2 text-[10.5px] font-medium uppercase tracking-[0.08em] text-[rgba(255,255,255,0.4)] sm:text-[11px]">
+                      <Flame size={12} className="text-[rgba(255,255,255,0.35)]" />
+                      Grams per serving
+                    </span>
+                    <div className="flex items-baseline justify-between">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={servingSizeG}
+                        onChange={(e) => setServingSizeG((() => {
+                          const v = e.target.value.replace(/[^0-9.]/g, '');
+                          const parts = v.split('.');
+                          return parts.length > 1 ? parts[0] + '.' + parts.slice(1).join('') : v;
+                        })())}
+                        placeholder="e.g. 30"
+                        className="w-full bg-transparent text-[16px] font-semibold text-white placeholder:text-[rgba(255,255,255,0.25)] outline-none tabular-nums sm:text-[17px]"
+                      />
+                      <span className="ml-2 shrink-0 text-[12px] font-medium text-[rgba(255,255,255,0.4)]">g</span>
+                    </div>
+                  </label>
+                  <div className="mt-2 text-[11.5px] leading-snug text-[rgba(255,255,255,0.45)]">
+                    Enter the macros below for ONE serving of this many grams. We&apos;ll convert to per-100g so the next scan of this barcode gets an instant match.
+                  </div>
+                </section>
+              )}
 
               <section className="mb-2">
                 <SectionLabel>Nutrition Info</SectionLabel>

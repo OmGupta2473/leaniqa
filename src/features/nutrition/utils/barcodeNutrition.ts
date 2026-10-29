@@ -29,7 +29,7 @@ export interface BarcodeProduct {
   serving_size_unit: 'g' | 'ml' | null;
   detected_default_unit: BarcodeUnit;
   unit_weights: Partial<Record<BarcodeUnit, number>>;
-  source: 'openfoodfacts' | 'fatsecret' | 'nutritionix' | 'manual';
+  source: 'openfoodfacts' | 'edamam' | 'fatsecret' | 'nutritionix' | 'manual';
 }
 
 export interface BarcodeMacros {
