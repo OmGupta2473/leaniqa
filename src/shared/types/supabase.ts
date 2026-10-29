@@ -54,7 +54,7 @@ export interface DbMealLog {
   meal_slot?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   client_token?: string;
   /** Optional on write (service defaults to 'legacy'). Always present on read post-migration. */
-  meal_source?: 'legacy' | 'manual' | 'kb' | 'memory_cache' | 'db_cache' | 'ai';
+  meal_source?: 'legacy' | 'manual' | 'kb' | 'memory_cache' | 'db_cache' | 'ai' | 'barcode';
 }
 
 export interface DbWeightLog {
