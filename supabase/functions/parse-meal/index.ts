@@ -1,6 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  FDC_FOODS,
+  FDC_ALIAS_INDEX,
+} from "../_shared/fdc-foods.ts";
+import { diceSimilarity } from "../_shared/similarity.ts";
 
 function getCorsHeaders(req: Request) {
   return {
@@ -64,6 +69,13 @@ const MealSchema = z.object({
 });
 
 type MealResult = z.infer<typeof MealSchema>;
+type ResolutionLayer =
+  | "curated"
+  | "fdc_alias"
+  | "fdc_fuzzy"
+  | "mixed_curated_fdc_alias"
+  | "mixed_curated_fdc_fuzzy"
+  | "ai";
 type QuantityUnit = "g" | "ml" | "piece" | "slice" | "bowl" | "cup" | "scoop" | "tbsp" | "tsp";
 type ServingUnit = Exclude<QuantityUnit, "g" | "ml">;
 
@@ -621,6 +633,204 @@ class KnowledgeBaseParser implements MealParser {
       assumptions: assumptions.length > 0 ? assumptions : undefined,
     };
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// FDC Layers 2+3
+// Layer 2: exact Indian alias → FDC food (confidence 1.0 or 0.85 + note).
+// Layer 3: Dice ≥ 0.85 fuzzy match against FDC descriptions (generic names).
+// Curated KB (Layer 1) ALWAYS wins per part. If ANY part fails to resolve
+// here, the whole meal returns null and falls through to memory cache → AI.
+//
+// No cache write, no applyModifiers — the FDC path is fully local and
+// deterministic. Response carries source: "kb" (client auto-logs) plus
+// resolution_layer for server-side observability.
+// ─────────────────────────────────────────────────────────────────────────
+
+type ResolvedFdcPart = {
+  layer: "curated" | "alias" | "fuzzy";
+  kcal: number;
+  protein: number;
+  fat: number;
+  carbs: number;
+  fiber: number;
+  displayName: string;
+  approxNote?: string;
+  confidence: number;
+};
+
+function resolveFdcPart(part: string): ResolvedFdcPart | null {
+  const match = part.match(/^(?:(\d+(?:\.\d+)?)\s*(g|ml|bowl|cup|piece|slice|scoop|tbsp|tsp)?(?=\s|$)\s*(?:of\s+)?)?(.+)$/);
+  if (!match) return null;
+  let quantityProvided = Boolean(match[1]);
+  let quantity = quantityProvided ? Number.parseFloat(match[1]) : 1;
+  let unit = match[2] as QuantityUnit | undefined;
+  let foodName = match[3].trim();
+  let gramOverride: number | undefined;
+
+  // ── Layer 1 (per part): curated KB ────────────────────────────────
+  let curatedFood = lookupFood(foodName);
+  if (!curatedFood) {
+    const tail = foodName.match(/^(.+?)\s+(\d+(?:\.\d+)?)\s*(g|ml|bowl|cup|piece|slice|scoop|tbsp|tsp)$/);
+    if (tail) {
+      const candName = tail[1].trim();
+      const candFood = lookupFood(candName);
+      if (candFood) {
+        curatedFood = candFood;
+        foodName = candName;
+        const tailQty = Number.parseFloat(tail[2]);
+        const tailUnit = tail[3];
+        if (quantityProvided && (tailUnit === "g" || tailUnit === "ml")) {
+          gramOverride = tailQty;
+        } else {
+          quantityProvided = true;
+          quantity = tailQty;
+          unit = (tailUnit === "tbsp" || tailUnit === "tsp" ? "scoop" : tailUnit) as QuantityUnit;
+        }
+      }
+    }
+  }
+  if (curatedFood) {
+    if (!Number.isFinite(quantity) || quantity <= 0) return null;
+    const multiplier = calculateMultiplier(curatedFood, quantity, unit, quantityProvided, gramOverride);
+    if (!multiplier || multiplier > 50) return null;
+    const scale = multiplier;
+    return {
+      layer: "curated",
+      kcal: curatedFood.calories * scale,
+      protein: curatedFood.protein * scale,
+      fat: curatedFood.fat * scale,
+      carbs: curatedFood.carbs * scale,
+      fiber: curatedFood.fiber * scale,
+      displayName: foodName,
+      confidence: 99,
+    };
+  }
+
+  // Strip prep modifiers for FDC alias/fuzzy lookup. normalizeInput does this
+  // only for a fixed curated list, so FDC names ("quinoa cooked") need it here.
+  const stripped = foodName
+    .replace(/\s+(cooked|boiled|steamed|plain|raw|uncooked)$/i, "")
+    .replace(/^(cooked|boiled|steamed|plain|raw|uncooked)\s+/i, "")
+    .trim();
+  const searchName = (stripped || foodName).toLowerCase().replace(/\s+/g, " ");
+
+  // ── Layer 2: exact Indian alias ───────────────────────────────────
+  const aliasHit = FDC_ALIAS_INDEX.get(searchName);
+  if (aliasHit) {
+    let grams: number | null = null;
+    if (gramOverride != null && gramOverride > 0) {
+      grams = quantity * gramOverride;
+    } else if (unit === "g" || unit === "ml") {
+      grams = quantity;
+    } else if (aliasHit.portion != null) {
+      grams = (quantityProvided ? quantity : 1) * aliasHit.portion;
+    }
+    if (grams == null || grams <= 0) return null; // no way to resolve portion → AI
+    const scale = grams / 100;
+    const f = aliasHit.food;
+    const approxNote = aliasHit.approx
+      ? (aliasHit.note ?? `Approximated from USDA ${f.desc} — macros may differ from your homemade version`)
+      : undefined;
+    return {
+      layer: "alias",
+      kcal: f.kcal * scale,
+      protein: f.p * scale,
+      fat: f.f * scale,
+      carbs: f.c * scale,
+      fiber: f.fb * scale,
+      displayName: foodName,
+      approxNote,
+      confidence: aliasHit.approx ? 85 : 100,
+    };
+  }
+
+  // ── Layer 3: fuzzy (explicit grams/ml only) ──────────────────────
+  if (unit === "g" || unit === "ml") {
+    let best: { food: typeof FDC_FOODS[number]; score: number } | null = null;
+    for (const f of FDC_FOODS) {
+      const score = diceSimilarity(searchName, f.desc.toLowerCase().replace(/\s+/g, " "));
+      if (score >= 0.85 && (!best || score > best.score)) {
+        best = { food: f, score };
+      }
+    }
+    if (best) {
+      const grams = quantity;
+      const scale = grams / 100;
+      const f = best.food;
+      return {
+        layer: "fuzzy",
+        kcal: f.kcal * scale,
+        protein: f.p * scale,
+        fat: f.f * scale,
+        carbs: f.c * scale,
+        fiber: f.fb * scale,
+        displayName: foodName,
+        approxNote: `Fuzzy-matched "${searchName}" to USDA "${f.desc}" (score ${best.score.toFixed(2)}).`,
+        confidence: 85,
+      };
+    }
+  }
+
+  return null;
+}
+
+function resolveFdcMeal(
+  context: ParseContext,
+): (MealResult & { resolution_layer: ResolutionLayer }) | null {
+  const parts = context.normalizedText.split(/\s+and\s+/).filter(Boolean);
+  if (!parts.length) return null;
+
+  const resolved: ResolvedFdcPart[] = [];
+  for (const part of parts) {
+    const rp = resolveFdcPart(part);
+    if (!rp) return null; // any miss → whole meal falls to AI
+    resolved.push(rp);
+  }
+
+  const layers = resolved.map((r) => r.layer);
+  const distinct = new Set(layers);
+  const rank: Record<ResolvedFdcPart["layer"], number> = { curated: 0, alias: 1, fuzzy: 2 };
+  const worstRank = Math.max(...layers.map((l) => rank[l]));
+
+  let resolution_layer: ResolutionLayer;
+  if (distinct.size === 1) {
+    const only = layers[0];
+    if (only === "curated") return null; // defensive: KB should have caught this
+    resolution_layer = only === "alias" ? "fdc_alias" : "fdc_fuzzy";
+  } else {
+    resolution_layer = worstRank === 2
+      ? "mixed_curated_fdc_fuzzy"
+      : "mixed_curated_fdc_alias";
+  }
+
+  let cal = 0, pro = 0, fat = 0, carb = 0, fib = 0;
+  const foodsDetected: string[] = [];
+  const assumptions: string[] = [];
+  let minConfidence = 100;
+  for (const rp of resolved) {
+    cal += rp.kcal;
+    pro += rp.protein;
+    fat += rp.fat;
+    carb += rp.carbs;
+    fib += rp.fiber;
+    foodsDetected.push(rp.displayName);
+    if (rp.approxNote) assumptions.push(rp.approxNote);
+    if (rp.confidence < minConfidence) minConfidence = rp.confidence;
+  }
+
+  return {
+    calories: Math.round(cal),
+    protein: Math.round(pro * 10) / 10,
+    fat: Math.round(fat * 10) / 10,
+    carbs: Math.round(carb * 10) / 10,
+    fiber: Math.round(fib * 10) / 10,
+    confidence: minConfidence,
+    foods_detected: foodsDetected,
+    coaching_tip: "Tracked from USDA FoodData Central. No AI credits used.",
+    assumptions: assumptions.length > 0 ? assumptions : undefined,
+    resolution_layer,
+  };
 }
 
 const GEMINI_MODEL = "gemini-flash-latest";
@@ -1425,6 +1635,38 @@ serve(async (req) => {
     }
     console.log(JSON.stringify({ level: "info", stage: "KnowledgeBase", event: "miss", request_id: requestId, latency_ms: Date.now() - knowledgeBaseStartedAt }));
 
+    // ── FDC Layers 2+3 ───────────────────────────────────────────────
+    // Runs BEFORE memory cache / DB cache. Curated wins wherever it hits.
+    // If any part fails to resolve here, returns null and falls through.
+    const fdcStartedAt = Date.now();
+    const fdcResult = resolveFdcMeal(context);
+    if (fdcResult) {
+      const validated = validator.validate(fdcResult);
+      console.log(JSON.stringify({
+        level: "info",
+        stage: "FDC",
+        event: "hit",
+        request_id: requestId,
+        resolution_layer: fdcResult.resolution_layer,
+        latency_ms: Date.now() - fdcStartedAt,
+      }));
+      const fdcUsed = await fetchUsageCount(supabase, user.id, endpoint, today);
+      return responseFor({
+        ...validated,
+        source: "kb",
+        resolution_layer: fdcResult.resolution_layer,
+        request_id: requestId,
+        credits: { used: fdcUsed, limit, remaining: Math.max(0, limit - fdcUsed) },
+      }, corsHeaders);
+    }
+    console.log(JSON.stringify({
+      level: "info",
+      stage: "FDC",
+      event: "miss",
+      request_id: requestId,
+      latency_ms: Date.now() - fdcStartedAt,
+    }));
+
     const cacheKey = cacheKeyFor(context);
     const cacheStartedAt = Date.now();
     const queryQuantities = parseMealQuantities(context.normalizedText) ?? [];
@@ -1641,6 +1883,7 @@ serve(async (req) => {
     return responseFor({
       ...data,
       source: "llm",
+      resolution_layer: "ai",
       request_id: requestId,
       credits: { used: usedAfter, limit, remaining: Math.max(0, limit - usedAfter) },
     }, corsHeaders);
