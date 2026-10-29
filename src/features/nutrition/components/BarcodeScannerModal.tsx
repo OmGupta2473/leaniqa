@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { BrowserMultiFormatReader, type IScannerControls } from '@zxing/browser';
+import { BarcodeFormat, DecodeHintType } from '@zxing/library';
 import {
   X, Camera, AlertTriangle, Loader2, ScanLine, Check, Keyboard,
   Minus, Plus,
@@ -50,6 +51,26 @@ type Phase = 'scanning' | 'loading' | 'result' | 'not_found' | 'permission_denie
 
 const SCAN_DEBOUNCE_MS = 300;
 
+// Only product barcode formats. Packages commonly carry a QR code,
+// DataMatrix, or Code 128 (marketing / lot / recycling) in addition to the
+// EAN-13 product barcode. Without this restriction, @zxing's
+// BrowserMultiFormatReader accepts the first decodable format it sees —
+// almost always the QR — and hands back a URL or promo text instead of the
+// EAN-13. The lookup then fails as invalid_barcode / not_found even though
+// the user is scanning the correct product.
+//
+// UPC-E is included because it is the compressed form of UPC-A and appears
+// on some imported products. EAN-8 appears on very small packaging.
+const PRODUCT_BARCODE_FORMATS: readonly BarcodeFormat[] = [
+  BarcodeFormat.EAN_13,
+  BarcodeFormat.EAN_8,
+  BarcodeFormat.UPC_A,
+  BarcodeFormat.UPC_E,
+];
+
+const isProductBarcodeFormat = (format: BarcodeFormat): boolean =>
+  (PRODUCT_BARCODE_FORMATS as readonly BarcodeFormat[]).includes(format);
+
 export function BarcodeScannerModal({ isOpen, onClose, onConfirm, onManualAdd, onExitComplete }: BarcodeScannerModalProps) {
   const [phase, setPhase] = useState<Phase>('scanning');
   const [barcode, setBarcode] = useState<string>('');
@@ -73,7 +94,12 @@ export function BarcodeScannerModal({ isOpen, onClose, onConfirm, onManualAdd, o
     let cancelled = false;
     const start = async () => {
       try {
-        const reader = new BrowserMultiFormatReader();
+        // POSSIBLE_FORMATS narrows the reader itself. The callback also
+        // re-checks the format — belt and braces against @zxing versions
+        // that ignore the hint or mis-tag the result.
+        const hints = new Map<DecodeHintType, unknown>();
+        hints.set(DecodeHintType.POSSIBLE_FORMATS, PRODUCT_BARCODE_FORMATS);
+        const reader = new BrowserMultiFormatReader(hints);
         if (!videoRef.current) return;
 
         // decodeFromConstraints resolves to IScannerControls once the
@@ -92,13 +118,28 @@ export function BarcodeScannerModal({ isOpen, onClose, onConfirm, onManualAdd, o
           videoRef.current,
           (result) => {
             if (cancelled || !result) return;
-            const text = result.getText();
+
+            // Ignore non-product formats BEFORE the debounce. A QR /
+            // DataMatrix / Code-128 on the same package would otherwise
+            // fire first and shadow the EAN-13 the user actually wants.
+            const format = result.getBarcodeFormat();
+            if (!isProductBarcodeFormat(format)) return;
+
+            // Trim so the scanned string always matches what the user
+            // would type in the manual field. Some Android Chrome builds
+            // append a trailing NUL or a stray space to the decoded text.
+            const text = result.getText().trim();
+            if (text.length === 0) return;
+
             const now = Date.now();
             const last = lastScanRef.current;
             if (last && last.code === text && now - last.at < SCAN_DEBOUNCE_MS) return;
             lastScanRef.current = { code: text, at: now };
             haptics.success();
-            analytics.trackEvent('Barcode Scan Attempted', { barcode_length: text.length });
+            analytics.trackEvent('Barcode Scan Attempted', {
+              barcode_length: text.length,
+              barcode_format: BarcodeFormat[format],
+            });
             void lookupBarcode(text);
           },
         );
@@ -341,7 +382,10 @@ export function BarcodeScannerModal({ isOpen, onClose, onConfirm, onManualAdd, o
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <Loader2 size={36} className="text-[#378ADD] animate-spin mb-4" />
                 <div className="text-[16px] font-semibold text-white mb-1">Looking up product…</div>
-                <div className="text-[13px] text-zinc-400">{barcode}</div>
+                <div className="text-[13px] text-zinc-400">
+                  Scanned:{' '}
+                  <span className="font-mono tabular-nums text-zinc-300">{barcode}</span>
+                </div>
               </div>
             )}
 
@@ -369,7 +413,11 @@ export function BarcodeScannerModal({ isOpen, onClose, onConfirm, onManualAdd, o
                 </div>
                 <div className="text-[16px] font-semibold text-white">Product not found</div>
                 <div className="text-[13px] text-zinc-400 max-w-[300px]">
-                  {errorMsg || `We couldn't find nutrition data for ${barcode}. You can add it manually.`}
+                  {errorMsg || `We couldn't find nutrition data for this product. You can add it manually.`}
+                </div>
+                <div className="text-[11px] text-zinc-500">
+                  Scanned:{' '}
+                  <span className="font-mono tabular-nums text-zinc-400">{barcode}</span>
                 </div>
                 {onManualAdd && (
                   <button
