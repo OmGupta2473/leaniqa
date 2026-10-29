@@ -12,7 +12,7 @@ import { motion } from "motion/react";
 import { cn } from "@/shared/utils/utils";
 import { EmptyState } from '@/shared/components/EmptyState';
 import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
-import { NutritionDetailSkeleton } from '@/shared/components/Skeletons';
+import { ProteinDetailSkeleton } from '@/shared/components/Skeletons';
 
 const AnimatedNumber = memo(function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: number }) {
   const [displayValue, setDisplayValue] = useState(0);
@@ -180,7 +180,7 @@ export function ProteinDetailPage() {
         </div>
       );
     }
-    return <NutritionDetailSkeleton />;
+    return <ProteinDetailSkeleton />;
   }
 
   return (

@@ -14,44 +14,50 @@ export interface ErrorContext {
  */
 export const initCrashReporting = () => {
   const dsn = import.meta.env.VITE_SENTRY_DSN;
-  const isDev = import.meta.env.MODE === 'development';
+
+  // Sentry is only initialised when a DSN is configured. Running Sentry
+  // with `enabled: true` and no DSN still installs every integration's
+  // `setupOnce` side effects (replay/browser-tracing patch MessageChannel,
+  // fetch, XHR, EventTarget, etc.) without ever sending an event. Those
+  // side effects are what caused `TypeError: Illegal constructor` on
+  // cold-load of /profile in Microsoft Edge: the React scheduler's
+  // MessageChannel work-flush was being invoked through a patched
+  // MessageChannel whose subclass no longer satisfied Edge's intrinsic
+  // %MessageChannel% check. When no DSN is set we skip Sentry entirely —
+  // there is nothing to report and nothing to instrument.
+  if (!dsn) {
+    if (import.meta.env.MODE === 'development') {
+      console.log('[Crashlytics/Sentry] VITE_SENTRY_DSN is empty. Skipping Sentry init.');
+    }
+    return;
+  }
 
   Sentry.init({
-    dsn: dsn || undefined, // Set undefined if empty to disable sending
+    dsn,
     environment: import.meta.env.MODE || 'development',
-    
-    // Set tracesSampleRate to 1.0 to capture 100%
-    // of transactions for performance monitoring.
     tracesSampleRate: 1.0,
-
-    // Set `tracePropagationTargets` to control for which URLs distributed tracing should be enabled
     tracePropagationTargets: ['localhost', /^\/(?!\/)/],
 
-    // Capture React routing navigation, console logs, etc.
+    // Replay is intentionally omitted. Two reasons:
+    //   1. rrweb-based replay patches window.MessageChannel and
+    //      MessagePort.prototype.postMessage for cross-origin tracking,
+    //      which is the source of the Edge `Illegal constructor` crash.
+    //   2. Every field is masked (maskAllText/maskAllInputs/blockAllMedia),
+    //      so replay captures an empty DOM anyway. The cost is not repaid
+    //      by the (non-)signal.
     integrations: [
       Sentry.browserTracingIntegration(),
-      Sentry.replayIntegration({
-        maskAllText: true,
-        maskAllInputs: true,
-        blockAllMedia: true,
-      }),
       Sentry.breadcrumbsIntegration({ console: false }),
     ],
-    
-    // Capture Replay for sessions with errors
-    replaysSessionSampleRate: 0.1,
-    replaysOnErrorSampleRate: 1.0,
 
-    // Ignore benign errors
     ignoreErrors: [
       /ResizeObserver loop limit exceeded/i,
       /Network request failed/i,
     ],
-    
+
     beforeSend(event) {
-      // Global scrub for sensitive fields in request data or breadcrumbs
       const sensitiveKeys = ['password', 'token', 'secret', 'apikey', 'authorization', 'meal', 'meal_text', 'text', 'message', 'chat', 'weight', 'email', 'body'];
-      
+
       const scrubObject = (obj: any) => {
         if (!obj || typeof obj !== 'object') return;
         for (const key of Object.keys(obj)) {
@@ -75,15 +81,9 @@ export const initCrashReporting = () => {
       return event;
     },
 
-    // Enabled if DSN is set, or if it's production.
-    enabled: !!dsn || !isDev,
-    
-    debug: false, // Turn off noisy Sentry debug logs
+    enabled: true,
+    debug: false,
   });
-  
-  if (isDev && !dsn) {
-    console.log('[Crashlytics/Sentry] Developer mode: Sentry SDK loaded but mock/disabled because VITE_SENTRY_DSN is empty.');
-  }
 };
 
 /**

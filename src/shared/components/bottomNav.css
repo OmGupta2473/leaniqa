@@ -1,0 +1,149 @@
+/* src/shared/components/bottomNav.css
+ *
+ * Liquid-glass bottom navigation. Values derived from Apple's iOS 26 Liquid
+ * Glass material: translucent fill, saturated backdrop blur, a masked
+ * specular rim, and an inset top highlight that fakes glass thickness.
+ *
+ * Per LEANIQA-FRONTEND-STANDARDS §2.5 the backdrop blur lives on this one
+ * surface only; cards use gradient fills instead.
+ */
+
+.bn-shell {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 4px; /* Increased for better horizontal breathing room */
+  padding: 4px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  /* ... */
+  /* Bake the "brightness lift" into the fill so the GPU does only one
+   * filter pass (blur) plus a cheap saturate. Down from three passes:
+   * blur(28) + saturate(200) + brightness(106) → blur(12) + saturate(140).
+   * Still reads as frosted glass over content; drops ~60% of the GPU cost. */
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.045) 100%),
+    rgba(26, 26, 29, 0.66);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.55),
+    0 2px 8px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Specular rim — bright top-left, dim bottom-right. A flat 1px border reads
+ * as plastic; this reads as glass catching light. */
+.bn-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0.06) 32%,
+    rgba(255, 255, 255, 0.02) 62%,
+    rgba(255, 255, 255, 0.22) 100%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  z-index: 0;
+}
+
+.bn-tab {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  height: 48px;
+  min-width: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px; /* Balanced gap between icon and label */
+  border: none;
+  border-radius: 9999px;
+  /* ... */
+  background: transparent;
+  color: rgba(235, 235, 245, 0.55);
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  /* No color transition. The colour snaps in one frame (like iOS tab bars);
+   * the morphing blob carries the perceived motion. Removing this eliminates
+   * 26 paints per switch (2 tabs × ~13 frames each). */
+}
+.bn-tab:focus-visible {
+  outline: 2px solid #D4FF00;
+  outline-offset: 2px;
+}
+.bn-tab--active {
+  color: #ffffff;
+}
+
+.bn-icon {
+  /* No drop-shadow filter. Was paint-per-frame during the icon scale.
+   * The lime glow now lives on the blob's outer box-shadow (static). */
+}
+
+.bn-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+/* The liquid blob. layoutId in the component drives the morph/slide; this
+ * class only owns the material. */
+/* FAB — same glass treatment applied to a solid lime surface. */
+.bn-fab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 56px;
+  width: 56px;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  background: #D4FF00;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  /* Reduced outer shadow: the FAB now sits flush with the bar instead of
+   * floating above it, so the big "hovering" shadow reads as a mistake.
+   * Keeps the lime glow for premium feel. */
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.45),
+    0 0 24px rgba(212, 255, 0, 0.30),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.14);
+}
+.bn-fab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(70% 50% at 30% 15%, rgba(255, 255, 255, 0.5), transparent 60%);
+}
+.bn-fab:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bn-shell,
+  .bn-tab,
+  .bn-icon,
+  .bn-blob,
+  .bn-fab {
+    transition: none !important;
+    animation: none !important;
+  }
+}

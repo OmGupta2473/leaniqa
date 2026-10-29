@@ -7,6 +7,7 @@ import {
   ProfileSkeleton,
   AwardsSkeleton,
   NutritionDetailSkeleton,
+  ProteinDetailSkeleton,
 } from './Skeletons';
 import { ScreenSkeleton } from './ScreenSkeleton';
 
@@ -23,7 +24,7 @@ const SKELETON_MAP: Record<RouteKey, React.ComponentType> = {
   profile: ProfileSkeleton,
   awards: AwardsSkeleton,
   calorie: NutritionDetailSkeleton,
-  protein: NutritionDetailSkeleton,
+  protein: ProteinDetailSkeleton,
   pricing: ScreenSkeleton,
   science: ScreenSkeleton,
   onboarding: ScreenSkeleton,
