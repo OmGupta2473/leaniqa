@@ -184,11 +184,8 @@ function loadFile(
 
 const INDIAN_ALIASES: AliasEntry[] = [
   // ── Indian approximations (conf 0.85 + note) ─────────────────────
-  { name: 'khichdi',   targets: ['Rice and lentils, cooked'],           approximate: true, portionGrams: 200 },
-  { name: 'poha',      targets: ['Rice, white, short-grain, cooked'],    approximate: true, portionGrams: 150 },
-  { name: 'upma',      targets: ['Semolina, unenriched, cooked'],        approximate: true, portionGrams: 150 },
-  { name: 'idli',      targets: ['Rice and lentils, steamed'],           approximate: true, portionGrams: 40 },
-  { name: 'dosa',      targets: ['Rice and lentils, fermented, cooked'], approximate: true, portionGrams: 100 },
+  // (khichdi / poha / upma / idli / dosa are handled by Layer 1 curated KB.
+  //  FDC aliases for them were dead code — curated always wins first.)
 
   // ── Dairy / cheese approximations ────────────────────────────────
   { name: 'paneer',    targets: ['Cheese, cottage, creamed, large or small curd', 'Cheese, cottage, lowfat, 2% milkfat', 'Cheese, cottage, nonfat, uncreamed, dry, large or small curd'], approximate: true, portionGrams: 30 },
@@ -212,14 +209,14 @@ const INDIAN_ALIASES: AliasEntry[] = [
   { name: 'moong dal',  targets: ['Mung beans, mature seeds, cooked, boiled, without salt'],                approximate: false, portionGrams: 150 },
   { name: 'masoor dal', targets: ['Lentils, pink or red, mature seeds, cooked, boiled, without salt', 'Lentils, mature seeds, cooked, boiled, without salt'], approximate: false, portionGrams: 150 },
   { name: 'chana dal',  targets: ['Chickpeas (garbanzo beans, bengal gram), mature seeds, cooked, boiled, without salt'], approximate: false, portionGrams: 150 },
-  { name: 'rajma',      targets: ['Kidney beans, all types, mature seeds, cooked, boiled, without salt'],    approximate: false, portionGrams: 150 },
+  { name: 'rajma',      targets: ['Beans, kidney, all types, mature seeds, cooked, boiled, without salt'],  approximate: false, portionGrams: 150 },
   { name: 'chole',      targets: ['Chickpeas (garbanzo beans, bengal gram), mature seeds, cooked, boiled, without salt'], approximate: false, portionGrams: 150 },
   { name: 'lobia',      targets: ['Cowpeas, catjang, mature seeds, cooked, boiled, without salt'],           approximate: false, portionGrams: 150 },
-  { name: 'soya chunks', targets: ['Soy protein concentrate'],                                              approximate: true, portionGrams: 50 },
+  { name: 'soya chunks', targets: ['Soy protein concentrate, produced by acid wash'],                       approximate: true, portionGrams: 50 },
   { name: 'sprouts',    targets: ['Mung beans, mature seeds, sprouted, raw'],                               approximate: false, portionGrams: 100 },
 
   // ── Cereals / grains ─────────────────────────────────────────────
-  { name: 'oats',       targets: ['Oats'],                                                                  approximate: false },
+  { name: 'oats',       targets: ["Oats (Includes foods for USDA's Food Distribution Program)"],           approximate: false },
   { name: 'quinoa',     targets: ['Quinoa, uncooked', 'Quinoa, cooked'],                                    approximate: false, portionGrams: 100 },
   { name: 'rice',       targets: ['Rice, white, short-grain, cooked, unenriched'],                          approximate: false, portionGrams: 150 },
   { name: 'brown rice', targets: ['Rice, brown, long-grain, cooked, unenriched'],                           approximate: false, portionGrams: 150 },
@@ -232,13 +229,13 @@ const INDIAN_ALIASES: AliasEntry[] = [
   // ── Millets ──────────────────────────────────────────────────────
   { name: 'bajra',      targets: ['Millet, cooked'],                                                        approximate: false, portionGrams: 150 },
   { name: 'jowar',      targets: ['Sorghum grain', 'Sorghum flour, whole-grain'],                           approximate: true, portionGrams: 150 },
-  { name: 'ragi',       targets: ['Finger millet'],                                                         approximate: true, portionGrams: 150 },
+  { name: 'ragi',       targets: ['Millet, cooked'],                                                        approximate: true, portionGrams: 150 },
   { name: 'sabudana',   targets: ['Tapioca, pearl, dry'],                                                   approximate: false, portionGrams: 50 },
 
   // ── Non-veg ──────────────────────────────────────────────────────
   { name: 'chicken breast', targets: ['Chicken, broilers or fryers, breast, meat only, cooked, roasted', 'Chicken, broilers or fryers, breast, meat only, cooked, grilled', 'Chicken, broilers or fryers, breast, meat only, raw'], approximate: false, portionGrams: 100 },
   { name: 'chicken',    targets: ['Chicken, broilers or fryers, meat and skin, cooked, roasted', 'Chicken, broilers or fryers, meat only, cooked, roasted'], approximate: false, portionGrams: 100 },
-  { name: 'mutton',     targets: ['Lamb, domestic, composite of trimmed retail cuts, separable lean and fat, trimmed to 1/8" fat, choice, cooked', 'Lamb, domestic, leg, whole (shank and sirloin), separable lean and fat, trimmed to 1/4" fat, choice, cooked, roasted'], approximate: false, portionGrams: 100 },
+  { name: 'mutton',     targets: ['Lamb, composite of trimmed retail cuts, separable lean and fat, trimmed to 1/4" fat, choice, cooked'], approximate: false, portionGrams: 100 },
   { name: 'fish',       targets: ['Fish, salmon, Atlantic, farmed, cooked, dry heat', 'Fish, tilapia, cooked, dry heat'], approximate: false, portionGrams: 100 },
   { name: 'egg',        targets: ['Egg, whole, raw, fresh', 'Egg, whole, cooked, hard-boiled'],             approximate: false, portionGrams: 50 },
   { name: 'egg white',  targets: ['Egg, white, raw, fresh'],                                                approximate: false, portionGrams: 33 },
@@ -251,9 +248,9 @@ const INDIAN_ALIASES: AliasEntry[] = [
   { name: 'walnut',     targets: ['Nuts, walnuts, english'],                                                approximate: false, portionGrams: 4 },
 
   // ── Fruit ────────────────────────────────────────────────────────
-  { name: 'apple',      targets: ['Apples, raw, with skin'],                                                approximate: false, portionGrams: 180 },
+  { name: 'apple',      targets: ["Apples, raw, gala, with skin (Includes foods for USDA's Food Distribution Program)"], approximate: false, portionGrams: 180 },
   { name: 'banana',     targets: ['Bananas, raw'],                                                          approximate: false, portionGrams: 120 },
-  { name: 'mango',      targets: ['Mangoes, raw'],                                                          approximate: false, portionGrams: 200 },
+  { name: 'mango',      targets: ['Mangos, raw'],                                                           approximate: false, portionGrams: 200 },
   { name: 'orange',     targets: ['Oranges, raw, all commercial varieties'],                                approximate: false, portionGrams: 140 },
   { name: 'guava',      targets: ['Guavas, common, raw'],                                                   approximate: false, portionGrams: 150 },
   { name: 'grapes',     targets: ['Grapes, red or green (European type, such as Thompson seedless), raw'],   approximate: false, portionGrams: 150 },
