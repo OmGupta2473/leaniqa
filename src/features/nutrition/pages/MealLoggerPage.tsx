@@ -539,6 +539,10 @@ export function MealLoggerPage() {
   // returns "not found" and the user taps "Add manually". Cleared on
   // either save or cancel of the CustomMealModal.
   const [pendingBarcode, setPendingBarcode] = useState<string | null>(null);
+  // Synchronous mirror of pendingBarcode for use inside the scanner's
+  // onExitComplete callback. State captured in a closure reads the render
+  // that created the callback; the ref is always current.
+  const pendingBarcodeRef = useRef<string | null>(null);
   const [retryCount, setRetryCount] = useState<number>(0);
   const autoRetryAttemptRef = React.useRef<number>(0);
   const [editingMeal, setEditingMeal] = useState<(DbMealLog & { id: string }) | null>(null);
@@ -942,6 +946,19 @@ export function MealLoggerPage() {
       );
     }
   };
+
+  // Called when the scanner's exit animation completes and the overlay has
+  // fully unmounted. If a manual barcode was staged via "Add manually", we
+  // open the CustomMealModal NOW — never behind the scanner's still-exiting
+  // overlay (z-120 > modal z-110). Consuming the ref immediately prevents
+  // a subsequent exit (e.g. re-opened scanner then closed via X) from
+  // re-opening the modal.
+  const handleScannerClosed = useCallback(() => {
+    if (pendingBarcodeRef.current) {
+      pendingBarcodeRef.current = null;
+      setIsCustomMealModalOpen(true);
+    }
+  }, []);
 
   const handleBarcodeSave = (payload: {
     text: string;
@@ -2163,6 +2180,7 @@ export function MealLoggerPage() {
           onClose={() => {
             setIsCustomMealModalOpen(false);
             setPendingBarcode(null);
+            pendingBarcodeRef.current = null;
           }}
           onSave={handleCustomMealSave}
           defaultSlot={selectedMealSlot || undefined}
@@ -2175,10 +2193,14 @@ export function MealLoggerPage() {
           onConfirm={handleBarcodeSave}
           onManualAdd={(barcode) => {
             setPendingBarcode(barcode);
-            // 300ms matches the scan→custom-meal transition used elsewhere:
-            // scanner exit animation is 200ms; custom modal needs a clean frame.
-            setTimeout(() => setIsCustomMealModalOpen(true), 300);
+            pendingBarcodeRef.current = barcode;
+            // Do NOT open CustomMealModal here. Opening it while the scanner
+            // overlay is still fading (z-120 > modal z-110) made the click
+            // appear to "do nothing" on devices where the 200ms exit was
+            // throttled. onExitComplete fires only after the scanner is
+            // fully unmounted, so the modal is guaranteed visible.
           }}
+          onExitComplete={handleScannerClosed}
         />
 
         <EditMealModal
