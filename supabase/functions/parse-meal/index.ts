@@ -64,7 +64,7 @@ const MealSchema = z.object({
 });
 
 type MealResult = z.infer<typeof MealSchema>;
-type QuantityUnit = "g" | "ml" | "piece" | "slice" | "bowl" | "cup" | "scoop";
+type QuantityUnit = "g" | "ml" | "piece" | "slice" | "bowl" | "cup" | "scoop" | "tbsp" | "tsp";
 type ServingUnit = Exclude<QuantityUnit, "g" | "ml">;
 
 interface ParseContext {
@@ -417,6 +417,16 @@ const KnowledgeBase: Record<string, KnowledgeFood> = {
   "gulab jamun":        { calories: 300, protein: 4.0,  fat: 12.0, carbs: 45.0, fiber: 0.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { piece: 40 }, defaultUnit: "piece" },
   "shrikhand":          { calories: 250, protein: 5.0,  fat: 10.0, carbs: 35.0, fiber: 0.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
   "rabri":              { calories: 280, protein: 7.0,  fat: 15.0, carbs: 30.0, fiber: 0.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 100 }, defaultUnit: "bowl" },
+
+  // ============================================================
+  // SWEETENERS & CONDIMENTS — per 100g
+  // ============================================================
+  // Honey: USDA per-100g values. tsp/tbsp weights come from kitchen
+  // standard (1 tsp = 7g, 1 tbsp = 21g). The `g: 1` entry mirrors the
+  // implicit 1g=1g assumption and is explicit for clarity; `ml: 1.4`
+  // captures honey's density (~1.42 g/ml) so "1 ml honey" no longer
+  // silently misses the KB.
+  "honey":              { calories: 304, protein: 0.3,  fat: 0.0,  carbs: 82.4, fiber: 0.2,  referenceAmount: 100, referenceUnit: "g", unitWeights: { tbsp: 21, tsp: 7, g: 1, ml: 1.4 }, defaultUnit: "tbsp" },
 };
 
 function formatAmount(amount: number): string {
@@ -463,10 +473,26 @@ function calculateMultiplier(food: KnowledgeFood, quantity: number, unit: Quanti
     if (!food.defaultUnit || !food.unitWeights?.[food.defaultUnit]) return null;
     return food.unitWeights[food.defaultUnit] / food.referenceAmount;
   }
-  if (unit === "g" || unit === "ml") return unit === food.referenceUnit ? quantity / food.referenceAmount : null;
+  // g/ml: honour an explicit unitWeights entry first (needed for foods whose
+  // density differs from 1, e.g. honey ml=1.4), otherwise fall back to the
+  // 1:1 referenceAmount assumption.
+  if (unit === "g" || unit === "ml") {
+    const explicit = food.unitWeights?.[unit];
+    if (explicit != null) {
+      return (quantity * explicit) / food.referenceAmount;
+    }
+    return unit === food.referenceUnit ? quantity / food.referenceAmount : null;
+  }
   const servingUnit = unit ?? "piece";
-  const unitWeight = food.unitWeights?.[servingUnit];
-  return unitWeight ? (quantity * unitWeight) / food.referenceAmount : null;
+  // Prefer the exact unit the user specified. If they said tbsp/tsp and the
+  // food only declares `scoop` (mix seeds, whey protein), fall back to
+  // `scoop` — preserves the pre-change behaviour for those foods while
+  // letting honey declare tbsp and tsp separately.
+  let unitWeight = food.unitWeights?.[servingUnit];
+  if (unitWeight == null && (servingUnit === "tbsp" || servingUnit === "tsp")) {
+    unitWeight = food.unitWeights?.scoop;
+  }
+  return unitWeight != null ? (quantity * unitWeight) / food.referenceAmount : null;
 }
 
 class KnowledgeBaseParser implements MealParser {
@@ -485,7 +511,12 @@ class KnowledgeBaseParser implements MealParser {
       if (!match) return null;
       let quantityProvided = Boolean(match[1]);
       let quantity = quantityProvided ? Number.parseFloat(match[1]) : 1;
-      let unit = (match[2] === "tbsp" || match[2] === "tsp" ? "scoop" : match[2]) as QuantityUnit | undefined;
+      // tbsp and tsp are kept as their own units so foods that declare
+      // different weights for each (e.g. honey: tbsp=21, tsp=7) resolve
+      // correctly. Foods that only declare `scoop` (mix seeds, whey protein)
+      // still work — calculateMultiplier falls back to `scoop` for tbsp/tsp
+      // when the specific unit is not declared.
+      let unit = match[2] as QuantityUnit | undefined;
       let foodName = match[3].trim();
       let food = lookupFood(foodName);
 
@@ -1151,7 +1182,7 @@ function parseMealQuantities(normalizedText: string): Array<{ foodName: string; 
     if (!match) return null;
     const quantityProvided = Boolean(match[1]);
     const quantity = quantityProvided ? Number.parseFloat(match[1]) : 1;
-    const unit = (match[2] === "tbsp" || match[2] === "tsp" ? "scoop" : match[2]) as QuantityUnit | undefined;
+    const unit = match[2] as QuantityUnit | undefined;
     const foodName = match[3].trim();
     const food = KnowledgeBase[foodName];
     if (!food || !Number.isFinite(quantity) || quantity <= 0) return null;
