@@ -10,6 +10,7 @@ import { deriveCarbsFromKcal } from '@/shared/utils/macroReconciliation';
 import { cn } from '@/shared/utils/utils';
 import { haptics } from '@/shared/utils/haptics';
 import { syncCurrentWeekReport } from "@/features/reports/utils/syncCurrentWeek";
+import { ScalePicker } from '@/shared/components/ScalePicker';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -146,6 +147,31 @@ function EditProfileModalInner({ onClose, profileData, goalData }: Omit<EditProf
     ? (parseFloat(weight) || 0)
     : lbsToKg(parseFloat(weightLbs) || 0);
   const parsedHeight = heightMode === 'cm' ? (heightCm ?? 0) : ftInToCm(ft ?? 0, inch ?? 0);
+
+  // Derived values for the shared ScalePicker.
+  // Both `heightCm` (number | null) and `weight` (string) can be empty on
+  // the first render (cold load of /profile, or a fresh account). The
+  // picker requires a `number` and a value inside [min, max]; we clamp and
+  // fall back to sensible defaults so the initial UI matches OnboardingPage
+  // (172 cm / 65 kg) without changing the underlying state. The state is
+  // only updated when the user actually drags a picker and `onChange` fires.
+
+
+  // Derived values for the shared ScalePicker.
+  // Both `heightCm` (number | null) and `weight` (string) can be empty on
+  // the first render (cold load of /profile, or a fresh account). The
+  // picker requires a `number` and a value inside [min, max]; we clamp and
+  // fall back to sensible defaults so the initial UI matches OnboardingPage
+  // (172 cm / 65 kg) without changing the underlying state. The state is
+  // only updated when the user actually drags a picker and `onChange` fires.
+  const heightForPicker = heightCm == null
+    ? 172
+    : Math.max(120, Math.min(220, Math.round(heightCm)));
+  const weightForPicker = (() => {
+    const n = parseFloat(weight);
+    if (!Number.isFinite(n)) return 65;
+    return Math.max(30, Math.min(200, Math.round(n)));
+  })();
   const parsedTargetWeight =
     targetWeight.trim() !== '' && !Number.isNaN(Number(targetWeight))
       ? Number(targetWeight)
@@ -314,93 +340,37 @@ function EditProfileModalInner({ onClose, profileData, goalData }: Omit<EditProf
           <section className="space-y-3">
             <div className={GROUP_LABEL_CLASS}>Body</div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-[12px] font-medium text-zinc-400">Height</label>
-                  <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-0.5 flex gap-0.5">
-                    {(['cm', 'ftin'] as const).map((m) => (
-                      <button
-                        key={m}
-                        type="button"
-                        onClick={() => switchHeightMode(m)}
-                        className={cn(
-                          'px-2.5 py-0.5 rounded-md text-[10px] font-medium transition-colors',
-                          heightMode === m
-                            ? 'bg-[#D4FF00] text-black'
-                            : 'text-zinc-400 hover:text-white',
-                        )}
-                      >
-                        {m === 'cm' ? 'cm' : 'ft/in'}
-                      </button>
-                    ))}
-                  </div>
                 </div>
-                {heightMode === 'cm' ? (
-                  <input
-                    value={heightCm ?? ''}
-                    onChange={(e) => setHeightCm(parseFloat(e.target.value) || null)}
-                    placeholder="e.g. 175"
-                    inputMode="numeric"
-                    className={INPUT_CLASS}
-                  />
-                ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      value={ft ?? ''}
-                      onChange={(e) => setFt(parseInt(e.target.value, 10) || 0)}
-                      placeholder="ft"
-                      inputMode="numeric"
-                      className={INPUT_CLASS}
-                    />
-                    <input
-                      value={inch ?? ''}
-                      onChange={(e) => setInch(parseInt(e.target.value, 10) || 0)}
-                      placeholder="in"
-                      inputMode="numeric"
-                      className={INPUT_CLASS}
-                    />
-                  </div>
-                )}
+                <ScalePicker
+                  value={heightForPicker}
+                  min={120}
+                  max={220}
+                  step={1}
+                  onChange={(v) => setHeightCm(v)}
+                  formatLabel={(v) => `${v} cm`}
+                  formatSubLabel={(v) => {
+                    const c = cmToFtIn(v);
+                    return `${c.ft}' ${c.inch}"`;
+                  }}
+                />
               </div>
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-[12px] font-medium text-zinc-400">Weight</label>
-                  <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-0.5 flex gap-0.5">
-                    {(['kg', 'lbs'] as const).map((m) => (
-                      <button
-                        key={m}
-                        type="button"
-                        onClick={() => switchWeightMode(m)}
-                        className={cn(
-                          'px-2.5 py-0.5 rounded-md text-[10px] font-medium transition-colors',
-                          weightMode === m
-                            ? 'bg-[#D4FF00] text-black'
-                            : 'text-zinc-400 hover:text-white',
-                        )}
-                      >
-                        {m}
-                      </button>
-                    ))}
-                  </div>
                 </div>
-                {weightMode === 'kg' ? (
-                  <input
-                    value={weight}
-                    onChange={(e) => setWeight(e.target.value.replace(/[^0-9.]/g, ''))}
-                    placeholder="e.g. 70"
-                    inputMode="decimal"
-                    className={INPUT_CLASS}
-                  />
-                ) : (
-                  <input
-                    value={weightLbs}
-                    onChange={(e) => setWeightLbs(e.target.value.replace(/[^0-9.]/g, ''))}
-                    placeholder="e.g. 154"
-                    inputMode="decimal"
-                    className={INPUT_CLASS}
-                  />
-                )}
+                <ScalePicker
+                  value={weightForPicker}
+                  min={30}
+                  max={200}
+                  step={1}
+                  onChange={(v) => setWeight(String(v))}
+                  formatLabel={(v) => `${v} kg`}
+                  formatSubLabel={(v) => `${Math.round(v * 2.20462)} lbs`}
+                />
               </div>
             </div>
 
