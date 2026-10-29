@@ -207,6 +207,15 @@ function normalizeInput(input: string): string {
   normalized = normalized.replace(/\b(peanuts?|moongfali|groundnut)\b/g, "peanut");
   normalized = normalized.replace(/\b(walnuts?|akhrot)\b/g, "walnut");
   normalized = normalized.replace(/\b(kaapi)\b/g, "coffee");
+  // Soya chunks: canonicalize both word orders to a single KB key so a
+  // "cooked" request never silently falls through to the raw entry. Placed
+  // at the very end of normalization so the earlier "nutrela"/"meal maker"
+  // → "soya chunks" alias above has already fired.
+  normalized = normalized.replace(/\b(cooked|boiled|steamed)\s+(soya chunks)\b/g, "cooked soya chunks");
+  normalized = normalized.replace(/\b(soya chunks)\s+(cooked|boiled|steamed)\b/g, "cooked soya chunks");
+  // Strip "each" so "1 roti each 30g" parses identically to "1 roti 30g".
+  // \b protects substrings like "beach".
+  normalized = normalized.replace(/\beach\b\s*/g, "");
   return normalized.replace(/\s+/g, " ").trim();
 }
 
@@ -300,6 +309,7 @@ const KnowledgeBase: Record<string, KnowledgeFood> = {
   "sambar":             { calories: 81,  protein: 4.0,  fat: 2.1,  carbs: 12.0, fiber: 2.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 160, cup: 240 }, defaultUnit: "bowl" },
   "rasam":              { calories: 40,  protein: 2.0,  fat: 1.0,  carbs: 6.0,  fiber: 1.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150, cup: 240 }, defaultUnit: "bowl" },
   "soya chunks":        { calories: 345, protein: 52.0, fat: 0.5,  carbs: 33.0, fiber: 13.0, referenceAmount: 100, referenceUnit: "g" },
+  "cooked soya chunks": { calories: 140, protein: 14.0, fat: 4.0,  carbs: 12.0, fiber: 4.0,  referenceAmount: 100, referenceUnit: "g" },
   "sprouts":            { calories: 30,  protein: 3.8,  fat: 0.2,  carbs: 6.0,  fiber: 1.8,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150, cup: 100 }, defaultUnit: "bowl" },
 
   // ============================================================
@@ -468,10 +478,22 @@ function lookupFood(name: string): KnowledgeFood | null {
   return null;
 }
 
-function calculateMultiplier(food: KnowledgeFood, quantity: number, unit: QuantityUnit | undefined, quantityProvided: boolean): number | null {
+function calculateMultiplier(
+  food: KnowledgeFood,
+  quantity: number,
+  unit: QuantityUnit | undefined,
+  quantityProvided: boolean,
+  gramOverride?: number,
+): number | null {
   if (!quantityProvided) {
     if (!food.defaultUnit || !food.unitWeights?.[food.defaultUnit]) return null;
     return food.unitWeights[food.defaultUnit] / food.referenceAmount;
+  }
+  // Per-piece gram override from "{N} {food} {G}g" — e.g. "2 roti 40g"
+  // means 2 pieces at 40g each = 80g total. Without this, the tail
+  // fallback would compute 40g total and under-count by 2×.
+  if (gramOverride != null && gramOverride > 0) {
+    return (quantity * gramOverride) / food.referenceAmount;
   }
   // g/ml: honour an explicit unitWeights entry first (needed for foods whose
   // density differs from 1, e.g. honey ml=1.4), otherwise fall back to the
@@ -505,6 +527,7 @@ class KnowledgeBaseParser implements MealParser {
     let totalCarbs = 0;
     let totalFiber = 0;
     const foodsDetected: string[] = [];
+    const assumptions: string[] = [];
 
     for (const part of parts) {
       const match = part.match(/^(?:(\d+(?:\.\d+)?)\s*(g|ml|bowl|cup|piece|slice|scoop|tbsp|tsp)?(?=\s|$)\s*(?:of\s+)?)?(.+)$/);
@@ -523,26 +546,42 @@ class KnowledgeBaseParser implements MealParser {
       // Quantity-after fallback: "rice 50g", "dal 1 bowl". Only tried when
       // the quantity-first form did not produce a KB hit — this preserves
       // the existing behaviour for every input that already worked and
-      // adds the trailing-quantity form as a strict superset. Without this,
-      // "rice cooked 50g" (after modifier stripping → "rice 50g") would
-      // leave "rice 50g" as the food name and miss the KB.
+      // adds the trailing-quantity form as a strict superset.
+      //
+      // Runs against `foodName` (the remainder after the quantity-first
+      // regex), NOT `part`. For "1 roti 30g" the leading "1" was already
+      // consumed, so `part` would yield candidate "1 roti" → miss, while
+      // `foodName = "roti 30g"` yields candidate "roti" → hit. Inputs with
+      // no leading quantity ("rice 50g") have foodName === part, so their
+      // behaviour is unchanged.
+      //
+      // When BOTH a leading count and a trailing gram are present, the
+      // trailing gram is per-piece: "2 roti 40g" = 2 × 40g = 80g total.
+      // `gramOverride` carries this; calculateMultiplier applies it.
+      let gramOverride: number | undefined;
       if (!food) {
-        const tail = part.match(/^(.+?)\s+(\d+(?:\.\d+)?)\s*(g|ml|bowl|cup|piece|slice|scoop|tbsp|tsp)$/);
+        const tail = foodName.match(/^(.+?)\s+(\d+(?:\.\d+)?)\s*(g|ml|bowl|cup|piece|slice|scoop|tbsp|tsp)$/);
         if (tail) {
           const candidateName = tail[1].trim();
           const candidateFood = lookupFood(candidateName);
           if (candidateFood) {
             food = candidateFood;
             foodName = candidateName;
-            quantityProvided = true;
-            quantity = Number.parseFloat(tail[2]);
-            unit = (tail[3] === "tbsp" || tail[3] === "tsp" ? "scoop" : tail[3]) as QuantityUnit;
+            const tailQty = Number.parseFloat(tail[2]);
+            const tailUnit = tail[3];
+            if (quantityProvided && (tailUnit === "g" || tailUnit === "ml")) {
+              gramOverride = tailQty;
+            } else {
+              quantityProvided = true;
+              quantity = tailQty;
+              unit = (tailUnit === "tbsp" || tailUnit === "tsp" ? "scoop" : tailUnit) as QuantityUnit;
+            }
           }
         }
       }
 
       if (!food || !Number.isFinite(quantity) || quantity <= 0) return null;
-      const multiplier = calculateMultiplier(food, quantity, unit, quantityProvided);
+      const multiplier = calculateMultiplier(food, quantity, unit, quantityProvided, gramOverride);
       if (!multiplier || multiplier > 50) return null;
 
       totalCalories += food.calories * multiplier;
@@ -550,8 +589,24 @@ class KnowledgeBaseParser implements MealParser {
       totalFat += food.fat * multiplier;
       totalCarbs += food.carbs * multiplier;
       totalFiber += food.fiber * multiplier;
-      const detectedUnit = unit ?? food.defaultUnit ?? "serving";
-      foodsDetected.push(`${formatAmount(quantityProvided ? quantity : 1)} ${detectedUnit} ${foodName}`);
+
+      // Raw/cooked disambiguation: "soya chunks" is the RAW entry
+      // (345 kcal / 100 g). If the user didn't say cooked/boiled/steamed
+      // (which would have normalized to "cooked soya chunks" above and
+      // hit the cooked entry), surface the assumption so raw macros are
+      // never served silently.
+      if (foodName === "soya chunks") {
+        assumptions.push(
+          "Assuming raw weight for soya chunks — if you weighed after cooking, add 'cooked' for cooked-weight macros."
+        );
+      }
+
+      if (gramOverride != null) {
+        foodsDetected.push(`${formatAmount(quantity)} ${foodName} (${formatAmount(gramOverride)}g each)`);
+      } else {
+        const detectedUnit = unit ?? food.defaultUnit ?? "serving";
+        foodsDetected.push(`${formatAmount(quantityProvided ? quantity : 1)} ${detectedUnit} ${foodName}`);
+      }
     }
 
     return {
@@ -563,6 +618,7 @@ class KnowledgeBaseParser implements MealParser {
       confidence: 99,
       foods_detected: foodsDetected,
       coaching_tip: "Great, simple and tracked accurately!",
+      assumptions: assumptions.length > 0 ? assumptions : undefined,
     };
   }
 }
