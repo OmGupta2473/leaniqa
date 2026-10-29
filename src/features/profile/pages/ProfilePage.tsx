@@ -7,7 +7,7 @@ import { profileService } from '../services/profileService';
 import { useToast } from '@/shared/components/Toast';
 import { useAuthSession } from '@/router/useAuthSession';
 import { useState, useMemo, useEffect } from 'react';
-import { ChevronLeft, LogOut, AlertTriangle, TrendingDown, TrendingUp, Target } from 'lucide-react';
+import { ChevronLeft, LogOut, AlertTriangle, TrendingDown, TrendingUp, Target, Lock } from 'lucide-react';
 import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
 import { computeProjection } from '@/shared/utils/projectionEngine';
 import { computeMaintenancePlan } from '@/shared/utils/paceEngine';
