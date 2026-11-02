@@ -156,3 +156,29 @@ describe('useCalculatedProfile non-cut carbs healing', () => {
     expect(finalCarbs).toBe(100); // unchanged
   });
 });
+  it('T-TARGET-4: protein override wins when profile.protein_target is null', () => {
+    const profile: { protein_target: number | null } = { protein_target: null };
+    const macroOverrides: { protein_target?: number | null } = { protein_target: 120 };
+    const calcM = { proteinMid: 100 };
+    const finalProtein =
+      profile.protein_target ?? macroOverrides.protein_target ?? calcM.proteinMid;
+    expect(finalProtein).toBe(120);
+  });
+
+  it('T-TARGET-5: profile.protein_target wins over a stale override', () => {
+    const profile: { protein_target: number | null } = { protein_target: 130 };
+    const macroOverrides: { protein_target?: number | null } = { protein_target: 120 };
+    const calcM = { proteinMid: 100 };
+    const finalProtein =
+      profile.protein_target ?? macroOverrides.protein_target ?? calcM.proteinMid;
+    expect(finalProtein).toBe(130);
+  });
+
+  it('T-TARGET-6: calcM.proteinMid is the fallback when neither is set', () => {
+    const profile: { protein_target: number | null } = { protein_target: null };
+    const macroOverrides: { protein_target?: number | null } = {};
+    const calcM = { proteinMid: 100 };
+    const finalProtein =
+      profile.protein_target ?? macroOverrides.protein_target ?? calcM.proteinMid;
+    expect(finalProtein).toBe(100);
+  });

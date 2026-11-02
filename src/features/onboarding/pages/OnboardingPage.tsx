@@ -19,6 +19,7 @@ import {
   calculatePlan,
   estimateTimeline,
   suggestGoal,
+  applyMacroOverrides,
   type ActivityLevel,
   type GoalType,
   type OnboardingInput,
@@ -37,6 +38,8 @@ import { ConsentScreen } from './ConsentScreen';
 import { cn } from '@/shared/utils/utils';
 import { haptics } from '@/shared/utils/haptics';
 import { syncCurrentWeekReport } from "@/features/reports/utils/syncCurrentWeek";
+import { useAppStore } from "@/app/store";
+import { useUserStore } from "@/features/profile/store/userStore";
 
 type DraftProps = {
   draft: OnboardingDraft;
@@ -658,9 +661,12 @@ function PlanScreen({ draft, setDraft, onConsent }: DraftProps & {
     if (saving) return;
     setSaving(true);
     try {
-      const protein = plan.proteinG;
-      const fat = plan.fatG;
-      const carbs = plan.carbsG;
+      // Honour the Adjust-sheet edits. If the user opened MacrosSheet and
+      // hit Apply, those values win over the freshly computed plan. Null
+      // draft.macroOverrides means "user never touched Adjust" and the
+      // plan values flow through unchanged.
+      const { proteinG: protein, fatG: fat, carbsG: carbs } =
+        applyMacroOverrides(plan, draft.macroOverrides);
       const calories = plan.targetCalories;
 
       const currentBf = bmi < 20 ? 15 : bmi < 25 ? 20 : bmi < 30 ? 25 : 30;
@@ -683,6 +689,24 @@ function PlanScreen({ draft, setDraft, onConsent }: DraftProps & {
         dietary_preference: draft.dietaryPreference!,
         onboarding_completed: true,
       });
+
+      // Mirror the effective values into the store. Three downstream
+      // consumers depend on this:
+      //   - useCalculatedProfile's hasExplicitUserCarbsOverride guard
+      //     (2.6) reads macroOverrides.carbs_target to suppress the
+      //     non-cut carbs auto-heal.
+      //   - The protein override path added in this same change reads
+      //     macroOverrides.protein_target.
+      //   - Offline reads of targetMacros before the DB refetch settles.
+      //
+      // When the user did NOT touch Adjust, we null the override fields
+      // so a leftover override from a prior session cannot mask the fresh
+      // plan values now written to the DB.
+      useUserStore.getState().setMacroOverrides(
+        draft.macroOverrides
+          ? { protein_target: protein, fat_target: fat, carbs_target: carbs }
+          : { protein_target: null, fat_target: null, carbs_target: null },
+      );
 
       const goalRow = await profileService.upsertGoal({
         goal_type: goal,

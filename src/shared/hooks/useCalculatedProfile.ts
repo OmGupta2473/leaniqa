@@ -64,6 +64,13 @@ export function useCalculatedProfile() {
 
         const isCarbsOverridden = (profile.carbs_target != null) || (macroOverrides.carbs_target != null);
         const isFatOverridden = (profile.fat_target != null) || (macroOverrides.fat_target != null);
+        // Profile wins (DB truth written at commit or via EditNutritionModal);
+        // macroOverrides.protein_target is the fallback for cases where the
+        // profile row predates the protein column, or where 2.13's commit
+        // mirrored an override but the refetch hasn't landed yet.
+        // calcM.proteinMid is the last-resort default matching data.proteinMid.
+        const finalProtein =
+          profile.protein_target ?? macroOverrides.protein_target ?? calcM.proteinMid;
         let finalFat = isFatOverridden ? (profile.fat_target ?? macroOverrides.fat_target) : null;
         let finalCarbs = isCarbsOverridden ? (profile.carbs_target ?? macroOverrides.carbs_target) : null;
 
@@ -86,7 +93,7 @@ export function useCalculatedProfile() {
         ) {
           const derived = deriveCarbsFromKcal(
             profile.target_kcal,
-            profile.protein_target,
+            finalProtein,
             profile.fat_target,
           );
           if (derived.feasible) {
@@ -99,15 +106,15 @@ export function useCalculatedProfile() {
 
         if (finalFat == null && finalCarbs == null) {
           finalFat = Math.round((calcG.dailyCalorieGoal * fatPercentageMid) / 9);
-          finalCarbs = Math.max(0, Math.round((calcG.dailyCalorieGoal - (profile.protein_target * 4) - (finalFat * 9)) / 4));
+          finalCarbs = Math.max(0, Math.round((calcG.dailyCalorieGoal - (finalProtein * 4) - (finalFat * 9)) / 4));
         } else if (finalFat != null && finalCarbs == null) {
-          finalCarbs = Math.max(0, Math.round((calcG.dailyCalorieGoal - (profile.protein_target * 4) - (finalFat * 9)) / 4));
+          finalCarbs = Math.max(0, Math.round((calcG.dailyCalorieGoal - (finalProtein * 4) - (finalFat * 9)) / 4));
         } else if (finalFat == null && finalCarbs != null) {
-          finalFat = Math.max(0, Math.round((calcG.dailyCalorieGoal - (profile.protein_target * 4) - (finalCarbs * 4)) / 9));
+          finalFat = Math.max(0, Math.round((calcG.dailyCalorieGoal - (finalProtein * 4) - (finalCarbs * 4)) / 9));
         }
 
         data.targetMacros = {
-          protein: profile.protein_target,
+          protein: finalProtein,
           fat: finalFat,
           carbs: finalCarbs
         };

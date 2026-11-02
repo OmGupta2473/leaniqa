@@ -35,10 +35,15 @@ export interface UserState {
   setProfileEditState: (state: 'summary' | 'form' | 'reset') => void;
 
   macroOverrides?: {
+    protein_target?: number | null;
     carbs_target?: number | null;
     fat_target?: number | null;
   };
-  setMacroOverrides: (overrides: { carbs_target?: number | null, fat_target?: number | null }) => void;
+  setMacroOverrides: (overrides: {
+    protein_target?: number | null;
+    carbs_target?: number | null;
+    fat_target?: number | null;
+  }) => void;
 
   clearUserStore: () => void;
 }

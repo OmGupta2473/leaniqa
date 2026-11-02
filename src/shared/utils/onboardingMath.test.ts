@@ -6,6 +6,7 @@ import {
   suggestGoal,
   calculatePlan,
   estimateTimeline,
+  applyMacroOverrides,
   ACTIVITY_MULTIPLIERS,
   GOAL_ADJUSTMENTS,
   type OnboardingInput,
@@ -178,3 +179,27 @@ describe('onboardingMath', () => {
     expect(() => calculateBMI(180, -5)).toThrow(/weight/i);
   });
 });
+  it('T-EM-1: applyMacroOverrides returns overrides verbatim when all are set', () => {
+    const plan = { proteinG: 104, fatG: 52, carbsG: 204 };
+    const overrides = { proteinG: 120, fatG: 50, carbsG: 190 };
+    expect(applyMacroOverrides(plan, overrides)).toEqual({
+      proteinG: 120,
+      fatG: 50,
+      carbsG: 190,
+    });
+  });
+
+  it('T-EM-2: applyMacroOverrides returns plan values when overrides is null', () => {
+    const plan = { proteinG: 104, fatG: 52, carbsG: 204 };
+    expect(applyMacroOverrides(plan, null)).toEqual(plan);
+    expect(applyMacroOverrides(plan, undefined)).toEqual(plan);
+  });
+
+  it('T-EM-3: applyMacroOverrides falls back per-field on partial overrides', () => {
+    const plan = { proteinG: 104, fatG: 52, carbsG: 204 };
+    expect(applyMacroOverrides(plan, { proteinG: 120 })).toEqual({
+      proteinG: 120,
+      fatG: 52,
+      carbsG: 204,
+    });
+  });

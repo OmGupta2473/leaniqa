@@ -220,3 +220,29 @@ function toLocalIsoDate(date: Date): string {
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
+
+/**
+ * Applies user-tweaked macro overrides (from the onboarding "Adjust" sheet)
+ * on top of the computed plan. Per-field: an override wins when present,
+ * otherwise the plan's value is used. Never returns null fields — the
+ * fallback is the plan value, which calculatePlan guarantees is a number.
+ *
+ * Extracted so the commit path in PlanScreen can be unit-tested without
+ * rendering the component. Keep the semantics identical to the inline
+ * pattern in `resolveProtein` inside useCalculatedProfile (profile wins,
+ * override is the fallback) — that one is a read-time concern on stored
+ * values, whereas this is a write-time concern on freshly computed ones.
+ */
+export function applyMacroOverrides(
+  plan: { proteinG: number; fatG: number; carbsG: number },
+  overrides:
+    | { proteinG?: number; fatG?: number; carbsG?: number }
+    | null
+    | undefined,
+): { proteinG: number; fatG: number; carbsG: number } {
+  return {
+    proteinG: overrides?.proteinG ?? plan.proteinG,
+    fatG: overrides?.fatG ?? plan.fatG,
+    carbsG: overrides?.carbsG ?? plan.carbsG,
+  };
+}
