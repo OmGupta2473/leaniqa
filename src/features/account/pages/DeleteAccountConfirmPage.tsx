@@ -75,6 +75,51 @@ export function DeleteAccountConfirmPage() {
     );
   }
 
+   // User is authenticated and not a guest
+  if (requested) {
+    return (
+      <div className="bg-[#080809] min-h-dvh flex items-center justify-center px-6 text-white w-full" role="status" aria-live="polite">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-[420px] mx-auto py-12 text-center"
+        >
+          <div className="flex justify-center mb-10">
+            <Logo className="w-10 h-10" />
+          </div>
+
+          <div className="w-16 h-16 rounded-full bg-[rgba(212,255,0,0.1)] flex items-center justify-center mx-auto mb-6 border border-[rgba(212,255,0,0.2)]">
+            <Loader2 size={28} className="text-[#D4FF00]" />
+          </div>
+
+          <h1 className="text-[22px] font-semibold text-white tracking-tight mb-2">
+            Deletion scheduled
+          </h1>
+
+          <p className="text-[14px] text-[rgba(255,255,255,0.55)] leading-relaxed mb-8">
+            Your account will be permanently deleted in 24 hours.
+            <br />
+            Sign back into the app within that window to cancel.
+          </p>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate('/')}
+            className="btn-primary w-full min-h-[48px]"
+          >
+            Done
+          </motion.button>
+
+          <div className="flex justify-center gap-6 text-[12px] font-medium text-[rgba(255,255,255,0.3)] mt-10">
+            <button onClick={() => navigate('/')} type="button" className="hover:text-[rgba(255,255,255,0.6)] transition-colors cursor-pointer min-h-[44px] min-w-[44px]">Back to LeanIQA</button>
+            <a href="/privacy" className="hover:text-[rgba(255,255,255,0.6)] transition-colors cursor-pointer min-h-[44px] min-w-[44px]">Privacy Policy</a>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
   if (!session) {
     // No session after magic link processing = invalid/expired link
     return (
@@ -161,50 +206,7 @@ export function DeleteAccountConfirmPage() {
     );
   }
 
-  // User is authenticated and not a guest
-  if (requested) {
-    return (
-      <div className="bg-[#080809] min-h-dvh flex items-center justify-center px-6 text-white w-full" role="status" aria-live="polite">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-[420px] mx-auto py-12 text-center"
-        >
-          <div className="flex justify-center mb-10">
-            <Logo className="w-10 h-10" />
-          </div>
-
-          <div className="w-16 h-16 rounded-full bg-[rgba(212,255,0,0.1)] flex items-center justify-center mx-auto mb-6 border border-[rgba(212,255,0,0.2)]">
-            <Loader2 size={28} className="text-[#D4FF00]" />
-          </div>
-
-          <h1 className="text-[22px] font-semibold text-white tracking-tight mb-2">
-            Deletion scheduled
-          </h1>
-
-          <p className="text-[14px] text-[rgba(255,255,255,0.55)] leading-relaxed mb-8">
-            Your account will be permanently deleted in 24 hours.
-            <br />
-            Sign back into the app within that window to cancel.
-          </p>
-
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => navigate('/')}
-            className="btn-primary w-full min-h-[48px]"
-          >
-            Done
-          </motion.button>
-
-          <div className="flex justify-center gap-6 text-[12px] font-medium text-[rgba(255,255,255,0.3)] mt-10">
-            <button onClick={() => navigate('/')} type="button" className="hover:text-[rgba(255,255,255,0.6)] transition-colors cursor-pointer min-h-[44px] min-w-[44px]">Back to LeanIQA</button>
-            <a href="/privacy" className="hover:text-[rgba(255,255,255,0.6)] transition-colors cursor-pointer min-h-[44px] min-w-[44px]">Privacy Policy</a>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
+ 
 
   const handleConfirm = async () => {
     setConfirmLoading(true);

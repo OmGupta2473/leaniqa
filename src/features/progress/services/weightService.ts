@@ -22,15 +22,37 @@ export const weightService = {
     return data || [];
   },
 
-  async addWeightLog(logData: Omit<DbWeightLog, 'id' | 'user_id' | 'body_fat'>, measurementsUpdated: boolean = false): Promise<DbWeightLog | null> {
-    const [userId, profile] = await Promise.all([
-      authService.getUserId(),
-      queryClient.getQueryData<any>(['profile']) || queryClient.fetchQuery({ queryKey: ['profile'], queryFn: () => profileService.getProfile() })
-    ]);
-    
+    async addWeightLog(
+    logData: Omit<DbWeightLog, 'id' | 'user_id' | 'body_fat'>,
+    measurementsUpdated: boolean = false
+  ): Promise<DbWeightLog | null> {
+    const userId = await authService.getUserId();
+
+    // When measurementsUpdated is true, the caller has just written new
+    // waist / neck / hip / height via updateProfile. But the ['profile']
+    // cache still holds pre-update values. Reading from cache here would
+    // compute body_fat from stale data on the very log that was supposed to
+    // use the new measurements. Read directly from the DB to guarantee
+    // freshness. This also fixes the offline-flush caller
+    // (offlineSyncService), which does the same updateProfile → addWeightLog
+    // sequence.
+    let profile: any;
+    if (measurementsUpdated) {
+      const { data: freshProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+      profile = freshProfile;
+    } else {
+      profile = queryClient.getQueryData<any>(['profile'])
+        || await queryClient.fetchQuery({
+          queryKey: ['profile'],
+          queryFn: () => profileService.getProfile(),
+        });
+    }
+
     let bodyFatEstimate = undefined;
-    
-    // Auto-calculate body fat if measurements exist
     if (measurementsUpdated && profile && profile.height && profile.waist && profile.neck) {
       const rawEstimate = calculateBodyFat(
         profile.gender,
@@ -43,7 +65,7 @@ export const weightService = {
         bodyFatEstimate = Math.max(3, Math.min(60, Math.round(rawEstimate * 10) / 10));
       }
     }
-    
+
     const payload = {
       ...logData,
       body_fat: bodyFatEstimate,
@@ -69,7 +91,6 @@ export const weightService = {
 
     const returnedData = data || payload;
 
-    // Update profile weight and goal body fat if calculated
     if (profile) {
       const promises: Promise<any>[] = [
         profileService.updateProfile({ weight: logData.weight })
@@ -79,7 +100,7 @@ export const weightService = {
       }
       await Promise.all(promises);
     }
-    
+
     return returnedData;
   }
 };

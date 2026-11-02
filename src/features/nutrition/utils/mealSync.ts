@@ -29,6 +29,19 @@ export const onMealSaved = async (dateKeyStr: string) => {
     queryClient.invalidateQueries({ queryKey: ["complianceScore"] }),
     queryClient.invalidateQueries({ queryKey: ["complianceScores"] }),
     queryClient.invalidateQueries({ queryKey: ["userStreak"] }),
-    queryClient.invalidateQueries({ queryKey: ["userAwards"] })
+    queryClient.invalidateQueries({ queryKey: ["userAwards"] }),
+    // Weekly Report page reads from weekly_reports (persisted), the live
+    // week engine, and the raw meal rows. All three sources just changed.
+    // Prefix invalidation covers:
+    //   ['weeklyReport', <weekStart>]
+    //   ['weeklyReport', 'previous', <weekStart>]
+    //   ['weeklyReports', 'list']
+    //   ['liveWeekReport', <weekStart>]
+    //   ['trendData', 7] and ['trendData', 30]
+    queryClient.invalidateQueries({ queryKey: ["weeklyReport"] }),
+    queryClient.invalidateQueries({ queryKey: ["weeklyReports"] }),
+    queryClient.invalidateQueries({ queryKey: ["liveWeekReport"] }),
+    queryClient.invalidateQueries({ queryKey: ["trendData"] }),
+    queryClient.invalidateQueries({ queryKey: ["mealCount"] }),
   ]);
 };

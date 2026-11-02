@@ -85,11 +85,10 @@ describe('onboardingMath', () => {
     expect(calculateMaintenance(baseInput)).toBe(2136); // 1780 * ACTIVITY_MULTIPLIERS.sedentary
     expect(plan.maintenance).toBe(2136);
     expect(plan.targetCalories).toBe(1666); // 2136 * (1 + GOAL_ADJUSTMENTS.cut)
-    // Updated to match evidence-based factors (2026-10-11)
-    // cut pace 22%: proteinFactor=1.8, fatFactor=0.7
-    expect(plan.proteinG).toBe(144); // min(round(80*1.8), round(80*2.2)) = min(144, 176)
+    // cut pace 22%: proteinFactor=2.2, fatFactor=0.7
+    expect(plan.proteinG).toBe(176); // min(round(80*2.2), round(80*2.2)) = min(176, 176)
     expect(plan.fatG).toBe(56); // max(round(80*0.7), round(1666*0.25/9)) = max(56, 46)
-    expect(plan.carbsG).toBe(147); // (1666 - 144*4 - 56*9) / 4 = 146.5 -> 147
+    expect(plan.carbsG).toBe(115); // (1666 - 176*4 - 56*9) / 4 = 114.5 -> 115
     expect(plan.bmi).toBe(24.69);
     expect(plan.goalType).toBe('cut');
     expect(plan.goalAdjustmentPct).toBe(-22);
@@ -111,10 +110,10 @@ describe('onboardingMath', () => {
     const plan = calculatePlan(baseInput, 'bulk');
 
     expect(plan.targetCalories).toBe(2307); // 2136 * (1 + GOAL_ADJUSTMENTS.bulk)
-    // bulk pace 8%: proteinFactor=1.6, fatFactor=0.9
-    expect(plan.proteinG).toBe(128); // min(round(80*1.6), round(80*2.2)) = min(128, 176)
+    // bulk pace 8%: proteinFactor=1.8, fatFactor=0.9
+    expect(plan.proteinG).toBe(144); // min(round(80*1.8), round(80*2.2)) = min(144, 176)
     expect(plan.fatG).toBe(72); // max(round(80*0.9), round(2307*0.25/9)) = max(72, 64)
-    expect(plan.carbsG).toBe(287); // (2307 - 128*4 - 72*9) / 4 = 286.75 -> 287
+    expect(plan.carbsG).toBe(271); // (2307 - 144*4 - 72*9) / 4 = 270.75 -> 271
     expect(plan.goalType).toBe('bulk');
     expect(plan.goalAdjustmentPct).toBe(8);
   });
