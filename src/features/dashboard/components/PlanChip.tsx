@@ -27,14 +27,15 @@ export function PlanChip() {
       type="button"
       onClick={() => navigate('/pricing')}
       className="flex items-center gap-1.5 rounded-full border border-[#D4FF00]/30 bg-[#D4FF00]/10 px-2.5 py-1.5 transition-colors hover:bg-[#D4FF00]/15 active:scale-95"
-      aria-label={`${label} plan. ${credits.remaining} of ${credits.limit} AI parses left today.`}
+      aria-label={`${label} plan. ${credits.remaining} of ${credits.limit} AI credits left today. Leaniqa Knowledge Base parsing is unlimited.`}
+      title={`${credits.remaining} of ${credits.limit} AI credits left today. KB parsing is unlimited.`}
     >
       <Zap size={11} className="text-[#D4FF00]" strokeWidth={2.5} />
       <span className="text-[11px] font-semibold text-[#D4FF00] tracking-tight">
         {label}
       </span>
       <span className="text-[11px] text-[rgba(212,255,0,0.7)] tabular-nums">
-        · {credits.remaining}/{credits.limit}
+        · AI {credits.remaining}/{credits.limit}
       </span>
     </button>
   );

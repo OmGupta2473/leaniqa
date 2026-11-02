@@ -34,7 +34,6 @@ import {
 import { useOnboardingDraft } from '../useOnboardingDraft';
 import type { OnboardingDraft } from '../types';
 import { ConsentScreen } from './ConsentScreen';
-import { useViewport } from '@/shared/styles/responsive';
 import { cn } from '@/shared/utils/utils';
 import { haptics } from '@/shared/utils/haptics';
 import { syncCurrentWeekReport } from "@/features/reports/utils/syncCurrentWeek";

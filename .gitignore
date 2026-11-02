@@ -10,3 +10,6 @@ supabase/.temp/
 project-export.md
 
 supabase/.temp/
+all_test_output.txt
+test_output*.txt
+test_verbose.txt

@@ -32,7 +32,12 @@ async function loadService(userId: string | null) {
 }
 
 describe('offlineSyncService user scoping', () => {
-  it('T1: ignores enqueue without a session user', async () => {
+  // Cold-start here re-evaluates the full module graph after vi.resetModules()
+  // in beforeEach (authStore -> offlineSyncService -> mealService, profileService,
+  // weightService, queryClient, and their deps). On slower machines or under
+  // CI load this can exceed the 5s default timeout. The logic is instant; the
+  // import is slow. Timeout is scoped to this test only.
+  it('T1: ignores enqueue without a session user', { timeout: 15000 }, async () => {
     const { supabase } = await import('@/shared/utils/supabase');
     vi.spyOn(supabase.auth, 'getSession').mockResolvedValue({ data: { session: null }, error: null });
     const { offlineSyncService } = await loadService(null);

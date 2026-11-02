@@ -4,7 +4,7 @@ import { PerfProfiler } from '@/shared/utils/perfDebug';
 import { authService } from '@/features/auth/services/authService';
 import { useAppStore } from '@/app/store';
 import { useNetworkStatus } from '@/shared/utils/utils';
-import { WifiOff, ChevronLeft } from 'lucide-react';
+import { WifiOff, ChevronLeft, Trophy } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useHasCompletedOnboarding } from '@/shared/hooks/useHasCompletedOnboarding';
@@ -107,7 +107,7 @@ export function Header() {
           }}
           title="Awards Hall"
         >
-          <i className="ti ti-trophy text-[18px] text-[#D4FF00]"></i>
+          <Trophy size={18} className="text-[#D4FF00]" />
           {hasNewAwards && (
             <div 
               style={{

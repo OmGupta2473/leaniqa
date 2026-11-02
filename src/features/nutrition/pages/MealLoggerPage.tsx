@@ -10,7 +10,7 @@ import { useChatStore } from "@/app/store";
 import { useNutritionStore } from "../store/nutritionStore";
 import {
   Send, Loader2, Dumbbell, Lightbulb, Sun, Sunrise, Moon, Coffee, Plus, X, ChevronLeft, ChevronRight, ArrowRight, ChevronDown,
-  Zap, AlertTriangle, Pencil, Lock, GripVertical, BookOpen, ScanLine
+  Zap, AlertTriangle, Pencil, Lock, GripVertical, BookOpen, ScanLine, Sparkles
 } from "lucide-react";
 import { EmptyState } from '@/shared/components/EmptyState';
 import { CustomMealModal } from '../components/CustomMealModal';
@@ -55,34 +55,7 @@ import { useEntitlements } from '@/features/pricing/hooks/useEntitlements';
 // Display formatter: max 1 decimal place, strips trailing ".0"
 const formatMacro = (v: number) => Number(v.toFixed(1)).toString();
 
-const getDeterministicFallback = (text: string) => {
-  const normalizedText = text.toLowerCase();
-  let calories = 300, protein = 10, fat = 10, carbs = 40;
-  let detected = [text];
-  const foodDb: Record<string, { calories: number; protein: number; fat: number; carbs: number }> = {
-    chicken: { calories: 250, protein: 30, fat: 10, carbs: 0 },
-    dal: { calories: 200, protein: 12, fat: 4, carbs: 30 },
-    chawal: { calories: 240, protein: 4, fat: 0, carbs: 53 },
-    rice: { calories: 240, protein: 4, fat: 0, carbs: 53 },
-    paneer: { calories: 350, protein: 20, fat: 28, carbs: 4 },
-    fish: { calories: 200, protein: 25, fat: 10, carbs: 0 },
-    idli: { calories: 150, protein: 4, fat: 0, carbs: 30 },
-    roti: { calories: 120, protein: 4, fat: 1, carbs: 25 },
-    egg: { calories: 140, protein: 12, fat: 10, carbs: 1 },
-    salad: { calories: 50, protein: 2, fat: 0, carbs: 10 },
-    chai: { calories: 100, protein: 2, fat: 3, carbs: 15 },
-    biscuit: { calories: 150, protein: 2, fat: 5, carbs: 20 },
-  };
-  let foundMatch = false;
-  for (const [key, macros] of Object.entries(foodDb)) {
-    if (normalizedText.includes(key)) {
-      if (!foundMatch) { calories = 0; protein = 0; fat = 0; carbs = 0; detected = []; foundMatch = true; }
-      calories += macros.calories; protein += macros.protein; fat += macros.fat; carbs += macros.carbs;
-      detected.push(key);
-    }
-  }
-  return { calories, protein, fat, carbs, confidence: foundMatch ? 80 : 30, foods_detected: detected, coaching_tip: "Stay consistent with your portions to hit your goals." };
-};
+
 
 function getMealNutritionValues(data: {
   calories: number;
@@ -313,12 +286,22 @@ function MealSlotRow({ slot, icon, label, timeRange, meals, onDelete, onEdit, on
                         )}
                         {(m.meal_source === 'kb' || m.meal_source === 'memory_cache' || m.meal_source === 'db_cache') && (
                           <span
-                            title="Found in Knowledge Base — no AI credits used"
-                            aria-label="Found in Knowledge Base — no AI credits used"
-                            className="text-[9px] bg-[rgba(255,255,255,0.04)] text-[rgba(255,255,255,0.65)] border border-[rgba(255,255,255,0.08)] px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wider flex items-center gap-1 shrink-0"
+                            title="Resolved via Leaniqa Knowledge Base — free, unlimited, no AI credits used"
+                            aria-label="Resolved via Leaniqa Knowledge Base"
+                            className="text-[9px] bg-[rgba(212,255,0,0.06)] text-[#D4FF00] border border-[rgba(212,255,0,0.18)] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-1 shrink-0"
                           >
                             <BookOpen size={10} strokeWidth={2.5} />
-                            No AI credits
+                            Knowledge Base
+                          </span>
+                        )}
+                        {m.meal_source === 'ai' && (
+                          <span
+                            title="Resolved via AI meal parsing — 1 credit used"
+                            aria-label="Resolved via AI meal parsing"
+                            className="text-[9px] bg-[rgba(55,138,221,0.12)] text-[#378ADD] border border-[rgba(55,138,221,0.25)] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-1 shrink-0"
+                          >
+                            <Sparkles size={10} strokeWidth={2.5} />
+                            AI
                           </span>
                         )}
                       </div>
@@ -597,10 +580,20 @@ export function MealLoggerPage() {
   const pendingBarcodeRef = useRef<string | null>(null);
   const [retryCount, setRetryCount] = useState<number>(0);
   const autoRetryAttemptRef = React.useRef<number>(0);
+  // True when parse-meal was invoked as a v2 fallback (transport error or
+  // partial resolution). Used to suppress the automatic retry in
+  // parseMealMutation.onSuccess so a single user message cannot silently
+  // burn two AI credits.
+  const fromV2FallbackRef = React.useRef<boolean>(false);
   const [editingMeal, setEditingMeal] = useState<(DbMealLog & { id: string }) | null>(null);
   const [editingPending, setEditingPending] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [protectOpen, setProtectOpen] = useState(false);
+  // Filled when the AI-limit path needs to hand the raw input to the Custom
+  // Meal modal. Both are consumed on the modal's next open, then cleared on
+  // close so the next open starts fresh.
+  const [pendingCustomMealName, setPendingCustomMealName] = useState<string>('');
+  const [pendingCustomMealReason, setPendingCustomMealReason] = useState<'ai_limit' | null>(null);
 
   const { session } = useAuthSession();
   const isGuest = session?.user?.is_anonymous === true;
@@ -1178,6 +1171,12 @@ const refundParseCredit = useCallback(async (pm: PendingMeal | null) => {
       isSubmittingRef.current = false;
       setLoading(false);
 
+      // Whether this parse-meal call was reached via a v2 fallback. Read
+      // before any early return so the flag is always cleared when this
+      // handler completes.
+      const cameFromV2 = fromV2FallbackRef.current;
+      fromV2FallbackRef.current = false;
+
       // Calculate costs
       let cost = 0;
       if (data.provider === 'gemini') cost = 0.0001;
@@ -1196,21 +1195,26 @@ const refundParseCredit = useCallback(async (pm: PendingMeal | null) => {
 
       if (data._errorMessage) {
         analytics.trackEvent('AI Parse Failure', { error: data._errorMessage, input: text });
+        refetchCredits();
+
+        // AI credit limit hit — close the AI modal and hand the raw input to
+        // the Custom Meal modal so the user can log it without AI. The banner
+        // inside the Custom Meal modal explains why it opened.
+        if (typeof data._errorMessage === 'string' && data._errorMessage.includes('Daily AI limit reached')) {
+          setPendingCustomMealName(text);
+          setPendingCustomMealReason('ai_limit');
+          setModalOpen(false);
+          window.setTimeout(() => setIsCustomMealModalOpen(true), 300);
+          return;
+        }
+
         setFailedMealError(data._errorMessage);
         setFailedMealText(null);
-        refetchCredits();
         if (data._refunded) {
           toast({
             type: 'info',
             message: 'No credit used — parse failed',
             duration: 3000,
-          });
-        }
-        if (typeof data._errorMessage === 'string' && data._errorMessage.includes('Daily AI limit reached')) {
-          toast({
-            type: 'warning',
-            message: 'Daily AI parses used up. Use the Custom meal button to keep logging.',
-            duration: 5000,
           });
         }
       } else {
@@ -1222,6 +1226,17 @@ const refundParseCredit = useCallback(async (pm: PendingMeal | null) => {
           data.unresolved_items?.length > 0 &&
           !isQualifierOnly(data.unresolved_items)
         ) {
+          if (cameFromV2) {
+            // Do not auto-retry when this call was a v2 fallback — the user
+            // already paid one AI credit for the fallback; a second silent
+            // credit for the retry is not acceptable. Surface the manual
+            // retry button instead.
+            autoRetryAttemptRef.current = 0;
+            setFailedMealText(text);
+            setFailedMealError(null);
+            refetchCredits();
+            return;
+          }
           if (autoRetryAttemptRef.current < 1) {
             autoRetryAttemptRef.current += 1;
             analytics.trackEvent('AI Parse Failure', {
@@ -1320,6 +1335,7 @@ const refundParseCredit = useCallback(async (pm: PendingMeal | null) => {
     onError: (err: any, variables) => {
       isSubmittingRef.current = false;
       autoRetryAttemptRef.current = 0;
+      fromV2FallbackRef.current = false;
       console.error('[parseMealMutation] onError fired:', err);
       let errorMessage = 'An unexpected error occurred';
       if (err instanceof Error) errorMessage = err.message;
@@ -1377,6 +1393,7 @@ const refundParseCredit = useCallback(async (pm: PendingMeal | null) => {
       const unresolved = data.unresolved_items ?? [];
       const allQualifierOnly = isQualifierOnly(unresolved);
       if (unresolved.length > 0 && !allQualifierOnly) {
+        fromV2FallbackRef.current = true;
         parseMealMutation.mutate(text);
         return;
       }
@@ -1409,6 +1426,7 @@ const refundParseCredit = useCallback(async (pm: PendingMeal | null) => {
     onError: (_err, text) => {
       // Transport/auth error → transparent fall-through to parse-meal.
       // Loading and submitting-ref stay true — parseMealMutation handles them.
+      fromV2FallbackRef.current = true;
       parseMealMutation.mutate(text);
     },
   });
@@ -1543,6 +1561,7 @@ const refundParseCredit = useCallback(async (pm: PendingMeal | null) => {
     if (!text || loading || isSubmittingRef.current || !selectedMealSlot) return;
     isSubmittingRef.current = true;
     autoRetryAttemptRef.current = 0;
+    fromV2FallbackRef.current = false;
     if (import.meta.env.DEV) console.time('[PERF] MealLogger handleSend');
     setInput("");
     setPendingMeal(null);
@@ -1700,10 +1719,15 @@ const refundParseCredit = useCallback(async (pm: PendingMeal | null) => {
             <div className="flex items-center justify-between mb-3 px-1">
               <div className="text-[12px] font-semibold uppercase tracking-widest text-[rgba(235,235,245,0.5)]">Meal Log</div>
               {credits && (
-                <div className="flex items-center gap-1 rounded-full border border-[rgba(212,255,0,0.3)] bg-[rgba(212,255,0,0.08)] px-2.5 py-1">
-                  <Zap size={11} className="text-[#D4FF00]" strokeWidth={2.5} />
-                  <span className="text-[11px] font-semibold text-[#D4FF00] tabular-nums">
-                    {credits.remaining} / {credits.limit}
+                <div className="flex flex-col items-end gap-0.5">
+                  <div className="flex items-center gap-1 rounded-full border border-[rgba(212,255,0,0.3)] bg-[rgba(212,255,0,0.08)] px-2.5 py-1">
+                    <Zap size={11} className="text-[#D4FF00]" strokeWidth={2.5} />
+                    <span className="text-[11px] font-semibold text-[#D4FF00] whitespace-nowrap">
+                      AI Credits · {credits.remaining}/{credits.limit}
+                    </span>
+                  </div>
+                  <span className="text-[9px] text-[rgba(255,255,255,0.35)] tracking-tight pr-1">
+                    KB parsing is unlimited
                   </span>
                 </div>
               )}
@@ -1714,6 +1738,8 @@ const refundParseCredit = useCallback(async (pm: PendingMeal | null) => {
                 remaining={credits.remaining}
                 plan={plan}
                 onOpenCustomMeal={() => {
+                  setPendingCustomMealName(input.trim());
+                  setPendingCustomMealReason(null);
                   setModalOpen(false);
                   setTimeout(() => setIsCustomMealModalOpen(true), 300);
                 }}
@@ -1858,22 +1884,27 @@ const refundParseCredit = useCallback(async (pm: PendingMeal | null) => {
                       </div>
                     )}
                     {aiStatus === 'online' && (
-                      <div className="flex items-center gap-2 text-[13px] text-[rgba(235,235,245,0.5)]">
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#D4FF00] shadow-[0_0_6px_#D4FF00] animate-pulse-glow" style={{ animation: 'pulseGlow 2s infinite ease-in-out' }} />
-                        <style>{'@keyframes pulseGlow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }'}</style>
-                        <span>Groq AI Active</span>
-                        {credits && (
-                          <div className="flex items-center gap-1 text-[11px] font-medium text-[rgba(255,255,255,0.45)]">
-                            <span className={cn(
-                              'tabular-nums',
-                              credits.remaining === 0 && 'text-[#FF4D1C]',
-                              credits.remaining > 0 && credits.remaining <= 3 && 'text-[#D4FF00]',
-                            )}>
-                              {credits.remaining}
-                            </span>
-                            <span>/ {credits.limit} AI parses left</span>
-                          </div>
-                        )}
+                      <div className="flex flex-col items-center gap-0.5 text-[13px] text-[rgba(235,235,245,0.5)]">
+                        <div className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-[#D4FF00] shadow-[0_0_6px_#D4FF00] animate-pulse-glow" style={{ animation: 'pulseGlow 2s infinite ease-in-out' }} />
+                          <style>{'@keyframes pulseGlow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }'}</style>
+                          <span>Groq AI Active</span>
+                          {credits && (
+                            <div className="flex items-center gap-1 text-[11px] font-medium text-[rgba(255,255,255,0.45)]">
+                              <span className={cn(
+                                'tabular-nums',
+                                credits.remaining === 0 && 'text-[#FF4D1C]',
+                                credits.remaining > 0 && credits.remaining <= 3 && 'text-[#D4FF00]',
+                              )}>
+                                {credits.remaining}
+                              </span>
+                              <span>/ {credits.limit} AI Credits</span>
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-[9px] text-[rgba(255,255,255,0.3)] tracking-tight">
+                          Used only for AI parsing · KB is unlimited
+                        </span>
                       </div>
                     )}
                   </div>
@@ -2245,10 +2276,14 @@ const refundParseCredit = useCallback(async (pm: PendingMeal | null) => {
             setIsCustomMealModalOpen(false);
             setPendingBarcode(null);
             pendingBarcodeRef.current = null;
+            setPendingCustomMealName('');
+            setPendingCustomMealReason(null);
           }}
           onSave={handleCustomMealSave}
           defaultSlot={selectedMealSlot || undefined}
           initialBarcode={pendingBarcode ?? undefined}
+          initialName={pendingCustomMealName || undefined}
+          limitReachedBanner={pendingCustomMealReason === 'ai_limit'}
         />
 
         <BarcodeScannerModal

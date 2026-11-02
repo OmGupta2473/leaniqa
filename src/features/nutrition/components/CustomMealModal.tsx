@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   X, Utensils, Plus, Sunrise, Sun, Moon, Coffee,
-  Flame, Beef, Wheat, Droplet, Leaf, Info,
+  Flame, Beef, Wheat, Droplet, Leaf, Info, AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/shared/utils/utils';
 import { haptics } from '@/shared/utils/haptics';
@@ -23,6 +23,13 @@ interface CustomMealModalProps {
    *  passes { barcode, servingSizeGrams } as the second arg of onSave. Used
    *  for the "Add manually" barcode contribution flow. */
   initialBarcode?: string;
+  /** Pre-fills the meal name input when the modal opens. Used when the
+   *  caller already knows what the user was trying to log (e.g. the AI
+   *  credit limit was hit mid-parse). */
+  initialName?: string;
+  /** Renders a top banner explaining why the modal opened. Currently only
+   *  used to surface "AI limit reached — log it manually below". */
+  limitReachedBanner?: boolean;
 }
 
 const SLOTS: { id: MealSlot; label: string; Icon: typeof Sunrise }[] = [
@@ -75,7 +82,7 @@ const NumField = ({
   </label>
 );
 
-export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot, initialBarcode }: CustomMealModalProps) {
+export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot, initialBarcode, initialName, limitReachedBanner }: CustomMealModalProps) {
   // SSR guard (restored) — no hooks run when there is no DOM.
   if (typeof document === 'undefined') return null;
 
@@ -94,6 +101,9 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot, initialB
     if (isOpen) {
       setSlot(defaultSlot || 'dinner');
       setServingSizeG('');
+      if (initialName) {
+        setName(initialName);
+      }
       const t = setTimeout(() => nameInputRef.current?.focus(), 260);
       return () => clearTimeout(t);
     }
@@ -105,7 +115,7 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot, initialB
     setFiber('');
     setServingSizeG('');
     return undefined;
-  }, [isOpen, defaultSlot, initialBarcode]);
+  }, [isOpen, defaultSlot, initialBarcode, initialName]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -185,6 +195,13 @@ export function CustomMealModal({ isOpen, onClose, onSave, defaultSlot, initialB
             aria-label="Create custom meal"
           >
             <div className="mx-auto mt-3 h-1 w-9 rounded-full bg-[rgba(255,255,255,0.15)] sm:hidden" />
+
+            {limitReachedBanner && (
+              <div className="mx-5 mt-3 sm:mx-6 sm:mt-4 rounded-xl border border-[rgba(255,179,71,0.25)] bg-[rgba(255,179,71,0.08)] p-3 flex items-start gap-2 text-[12px] leading-relaxed text-[#FFB347]">
+                <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+                <span>AI limit reached — log it manually below (takes 20 seconds).</span>
+              </div>
+            )}
 
             <div className="flex shrink-0 items-start justify-between px-5 pb-3.5 pt-5 sm:px-6 sm:pb-4 sm:pt-6">
               <div className="min-w-0 pr-4">

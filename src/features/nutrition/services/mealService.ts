@@ -93,9 +93,12 @@ export const mealService = {
   async addMeal(mealData: Omit<DbMealLog, 'id' | 'user_id' | 'client_token'> & { client_token: string }): Promise<DbMealLog | null> {
     const userId = await authService.getUserId();
     const { fiber, ...restMealData } = mealData as any;
-    if (restMealData.meal_slot === 'snack') {
-      delete restMealData.meal_slot; // snack is not in DB ENUM yet
-    }
+    // meal_logs.meal_slot is a TEXT column, not an enum. 'snack' is a valid
+    // stored value (confirmed against live data) and is written by updateMeal
+    // on drag-and-drop. This strip was legacy cruft from before that was
+    // established and produced a create-vs-update asymmetry: snacks created
+    // via addMeal landed with meal_slot = null and hit the "Snacks / Other"
+    // catch-all bucket. Removed to match updateMeal's behaviour.
     // Persisted source: how was this meal logged?
     // 'legacy' is the safe fallback for old offline queue items and any
     // caller that hasn't been updated. All real write paths pass one of the

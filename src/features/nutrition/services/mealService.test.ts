@@ -68,10 +68,10 @@ describe('mealService.addMeal meal_slot handling', () => {
     expect(result).toMatchObject({ meal_slot: 'lunch' });
   });
 
-  it('T-D6-3: strips snack from the insert payload', async () => {
+  it('T-D6-3: preserves snack in the insert payload (enum now supports it)', async () => {
     await mealService.addMeal({ ...validMeal, meal_slot: 'snack' });
 
-    expect(mocks.insert).toHaveBeenCalledWith(expect.not.objectContaining({ meal_slot: 'snack' }));
+    expect(mocks.insert).toHaveBeenCalledWith(expect.objectContaining({ meal_slot: 'snack' }));
   });
 
   it('T-D9-1: upserts the same client_token on retries and returns the same row', async () => {
@@ -97,10 +97,10 @@ describe('mealService.addMeal meal_slot handling', () => {
     expect(mocks.upsert.mock.calls[1][0].client_token).toBe('tok-b');
   });
 
-  it('T-D9-3: strips snack from the upsert payload', async () => {
+  it('T-D9-3: preserves snack in the upsert payload (enum now supports it)', async () => {
     await mealService.addMeal({ ...validMeal, meal_slot: 'snack' });
 
-    expect(mocks.upsert.mock.calls[0][0]).not.toHaveProperty('meal_slot');
+    expect(mocks.upsert.mock.calls[0][0].meal_slot).toBe('snack');
   });
 
   it('T-D9-4: preserves decimal precision in the upsert payload', async () => {

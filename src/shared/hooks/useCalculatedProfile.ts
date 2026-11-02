@@ -68,12 +68,18 @@ export function useCalculatedProfile() {
         let finalCarbs = isCarbsOverridden ? (profile.carbs_target ?? macroOverrides.carbs_target) : null;
 
         // Non-cut goals with an explicit target_kcal: target_kcal is authoritative
-        // and carbs are derived from it plus the user's protein/fat. This silently
-        // overrides any stored carbs_target that conflicts — those rows were
-        // written by a pre-fix EditNutritionModal and are treated as stale.
+        // and carbs are derived from it plus the user's protein/fat. Auto-heal a
+        // stored carbs_target that conflicts with that derived value — such rows
+        // were written by a pre-fix EditNutritionModal and are treated as stale.
+        //
+        // Do NOT heal when the user has set an explicit override in
+        // macroOverrides.carbs_target. That is the only signal we have of
+        // deliberate user intent, and silently overwriting it was the bug.
         const isNonCut = goal.goal_type !== 'cut';
+        const hasExplicitUserCarbsOverride = macroOverrides.carbs_target != null;
         if (
           isNonCut &&
+          !hasExplicitUserCarbsOverride &&
           profile.target_kcal != null &&
           profile.protein_target != null &&
           profile.fat_target != null

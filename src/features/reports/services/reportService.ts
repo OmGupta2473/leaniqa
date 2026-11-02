@@ -20,11 +20,17 @@ export const reportService = {
   
   async getDailyMetrics(): Promise<DbDailyMetric[]> {
     const userId = await authService.getUserId();
+    // 2000 rows ≈ 5.5 years of daily data. Every current consumer caps its
+    // own window to 90 days (streaks, awards) or the last N weeks (reports),
+    // so this limit is a safety ceiling against unbounded history growth, not
+    // a semantic cap. If a user exceeds it, they are an outlier and the data
+    // can be fetched in a targeted follow-up query.
     const { data, error } = await supabase
       .from('daily_metrics')
       .select('*')
       .eq('user_id', userId)
-      .order('date', { ascending: true });
+      .order('date', { ascending: true })
+      .limit(2000);
       
     if (error) {
       console.error('Error fetching daily metrics:', error);

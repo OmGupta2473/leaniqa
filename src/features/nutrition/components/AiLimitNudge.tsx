@@ -28,14 +28,16 @@ export function AiLimitNudge({ remaining, plan, onOpenCustomMeal }: AiLimitNudge
   const canUpgrade = plan !== 'premium';
 
   const headline = isExhausted
-    ? 'Out of AI parses for today'
-    : '1 AI parse left today';
+    ? 'AI limit reached — Leaniqa Knowledge Base tracking is still unlimited'
+    : '1 AI credit left today';
 
-  const body = canUpgrade
-    ? isExhausted
-      ? 'Upgrade to Premium for 25/day, or log a custom meal below.'
-      : 'Premium gives you 25/day. Or log a custom meal below.'
-    : 'Resets at midnight IST. Log a custom meal in the meantime.';
+  const body = isExhausted
+    ? canUpgrade
+      ? 'AI credits are used only for AI meal parsing. Upgrade to Premium for more credits, or log this meal manually below.'
+      : 'AI credits reset at midnight IST. You can still log meals manually below.'
+    : canUpgrade
+      ? 'AI credits are used only for AI meal parsing. Premium gives you more credits per day.'
+      : 'AI credits reset at midnight IST. Leaniqa Knowledge Base tracking is unlimited.';
 
   return (
     <motion.div
@@ -70,7 +72,7 @@ export function AiLimitNudge({ remaining, plan, onOpenCustomMeal }: AiLimitNudge
           className="flex-1 flex items-center justify-center gap-1.5 rounded-full bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.08)] py-2 text-[12.5px] font-semibold text-white transition-colors hover:bg-[rgba(255,255,255,0.12)] active:scale-[0.98]"
         >
           <Plus size={13} strokeWidth={2.5} />
-          Custom meal
+          Log manually
         </button>
         {canUpgrade && (
           <button
