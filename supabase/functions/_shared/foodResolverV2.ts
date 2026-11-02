@@ -285,7 +285,7 @@ const NUMBER_WORDS: Record<string, number> = {
   half: 0.5, a: 1, an: 1,
 };
 
-const UNIT_ALT = '(glass|tbsp|tsp|scoop|piece|slice|bowl|katori|cup|ml|g)\\b';
+const UNIT_ALT = '(glass|tbsp|tsp|scoop|spray|piece|slice|bowl|katori|cup|ml|g)\\b';
 
 interface ModifierContext {
   clause: string;
@@ -373,9 +373,17 @@ function inferWeightBasis(
   hint: WeightBasis | undefined,
   inputTerm: string,
 ): { basis: WeightBasis; assumption: string | null } {
-  if (hint && hint !== 'unknown') {
-    return { basis: hint, assumption: null };
+  if (hint === 'raw') {
+    return { basis: 'raw', assumption: null };
   }
+  if (hint === 'cooked' || hint === 'finished') {
+    return {
+      basis: hint,
+      assumption:
+        "Assumed weight is after cooking. Add 'raw' if you weighed it before cooking.",
+    };
+  }
+  // hint undefined or 'unknown' — preserve existing behavior.
   return {
     basis: 'unknown',
     assumption: `Assumed cooked weight for ${inputTerm}.`,
@@ -519,6 +527,12 @@ function stripNonFoodContextClauses(s: string): string {
 
 export function normalizeInput(input: string): string {
   let s = input.toLowerCase().trim();
+  s = s.replace(/(\d+)\s*\/\s*(\d+)/g, (match, n, d) => {
+  const num = Number(n);
+  const den = Number(d);
+  if (!den) return match;
+  return String(Number((num / den).toFixed(4)));
+});
   s = s.replace(
     /\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|half|a|an)\b/g,
     (w) => String(NUMBER_WORDS[w] ?? w),
@@ -580,11 +594,31 @@ function splitIntoItems(normalized: string): ParsedItem[] {
     const foodRaw = m[3].trim();
     if (!foodRaw) continue;
     const foodStripped = stripPreparationWords(foodRaw);
+    let quantity = qtyStr ? Number(qtyStr) : 1;
+    let resolvedUnit: string | null = unit;
+    let resolvedFood = foodStripped.length > 0 ? foodStripped : foodRaw;
+
+    // Tail-quantity fallback: only when NO leading quantity was present.
+    // e.g. "rohu fish raw 250g cooked" -> stripPrep -> "rohu fish 250g"
+    //      -> qty=250, unit=g, food="rohu fish".
+    // Applied to the *stripped* food so trailing "cooked"/"raw" don't hide the
+    // quantity. Items with a leading qty ("2 chapati 100g") skip this entirely.
+    if (!qtyStr) {
+      const tail = resolvedFood.match(
+        new RegExp(`^(.*?)\\s*(\\d+(?:\\.\\d+)?)\\s*(?:${UNIT_ALT})$`),
+      );
+      if (tail && tail[1].trim().length > 0) {
+        resolvedFood = tail[1].trim();
+        quantity = Number(tail[2]);
+        resolvedUnit = tail[3];
+      }
+    }
+
     items.push({
       raw_text: part.trim(),
-      quantity: qtyStr ? Number(qtyStr) : 1,
-      unit,
-      food_name: foodStripped.length > 0 ? foodStripped : foodRaw,
+      quantity,
+      unit: resolvedUnit,
+      food_name: resolvedFood,
       raw_food_name: foodRaw,
     });
   }
@@ -794,7 +828,13 @@ async function resolveOneItem(
     : null;
   const exact = rawExact ?? await tryExact(parsed.food_name, db);
   if (exact) {
-    return buildResolvedItem(parsed, exact.food, null, 'exact', 0.95, config, db, oilContext);
+    const resolved = await buildResolvedItem(
+      parsed, exact.food, null, 'exact', 0.95, config, db, oilContext,
+    );
+    if (resolved) return resolved;
+    // Unit unresolvable against the exact food (e.g. "5 spray oil" -> food
+    // "oil" has no "spray" portion). Fall through so an alias ("spray oil")
+    // that carries a spray portion can win.
   }
 
   const alias = await tryAlias(parsed.food_name, parsed.unit, db);

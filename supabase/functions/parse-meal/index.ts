@@ -122,13 +122,21 @@ function normalizeInput(input: string): string {
   // ("rice cooked") forms — users write it both ways, and the KB needs the
   // same canonical base key either way. Egg / paneer / roti are included
   // because their base KB entry is already the cooked form.
-  normalized = normalized.replace(/\b(raw|uncooked|dry)\s+(rice|oats|dal|moong dal|masoor dal|chicken( breast)?|mutton|fish|egg|paneer|roti)\b/g, "raw $2");
-  normalized = normalized.replace(/\b(cooked|boiled|steamed|plain)\s+(rice|oats|dal|moong dal|masoor dal|chicken( breast)?|mutton|fish|egg|paneer|roti)\b/g, "$2");
-  normalized = normalized.replace(/\b(rice|oats|dal|moong dal|masoor dal|chicken( breast)?|mutton|fish|egg|paneer|roti)\s+(cooked|boiled|steamed|plain)\b/g, "$1");
-  normalized = normalized.replace(/\b(rice|oats|dal|moong dal|masoor dal|chicken( breast)?|mutton|fish|egg|paneer|roti)\s+(raw|uncooked|dry)\b/g, "$2 $1");
+  normalized = normalized.replace(/\b(raw|uncooked|dry)\s+(rice|oats|toor dal|chana dal|urad dal|moong dal|masoor dal|rajma|chole|dal|chicken( breast)?|mutton|fish|egg|paneer|roti)\b/g, "raw $2");
+  normalized = normalized.replace(/\b(cooked|boiled|steamed|plain)\s+(rice|oats|toor dal|chana dal|urad dal|moong dal|masoor dal|rajma|chole|dal|chicken( breast)?|mutton|fish|egg|paneer|roti)\b/g, "$2");
+  normalized = normalized.replace(/\b(rice|oats|toor dal|chana dal|urad dal|moong dal|masoor dal|rajma|chole|dal|chicken( breast)?|mutton|fish|egg|paneer|roti)\s+(cooked|boiled|steamed|plain)\b/g, "$1");
+  normalized = normalized.replace(/\b(rice|oats|toor dal|chana dal|urad dal|moong dal|masoor dal|rajma|chole|dal|chicken( breast)?|mutton|fish|egg|paneer|roti)\s+(raw|uncooked|dry)\b/g, "$2 $1");
   normalized = normalized.replace(/[,+&]/g, " and ");
   normalized = normalized.replace(/\s+with\s+/g, " and ");
   normalized = normalized.replace(/\s+and\s+and\s+/g, " and ");
+  // N/M fractions: "3/4" → "0.75". MUST run before the punctuation strip
+  // below (which removes "/") and before number-words replacement.
+  normalized = normalized.replace(/(\d+)\s*\/\s*(\d+)/g, (match, n, d) => {
+    const num = Number(n);
+    const den = Number(d);
+    if (!den) return match;
+    return String(Number((num / den).toFixed(4)));
+  });
   normalized = normalized.replace(/[^a-z0-9\s.]/g, " ");
   normalized = normalized.replace(/\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|half)\b/g, (word) => numberWords[word]);
   normalized = normalized.replace(/\s+/g, " ").trim();
@@ -383,6 +391,12 @@ const KnowledgeBase: Record<string, KnowledgeFood> = {
   "chicken biryani":    { calories: 163, protein: 9.2,  fat: 5.1,  carbs: 20.1, fiber: 1.0,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 200 }, defaultUnit: "bowl" },
   "mutton biryani":     { calories: 175, protein: 9.5,  fat: 7.0,  carbs: 20.0, fiber: 0.8,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 200 }, defaultUnit: "bowl" },
   "egg curry":          { calories: 120, protein: 8.0,  fat: 8.0,  carbs: 4.0,  fiber: 0.5,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 150 }, defaultUnit: "bowl" },
+  "potato":             { calories: 87,  protein: 1.9,  fat: 0.1,  carbs: 20.1, fiber: 1.8,  referenceAmount: 100, referenceUnit: "g" },
+  "spray oil":          { calories: 884, protein: 0.0,  fat: 100.0, carbs: 0.0, fiber: 0.0,  referenceAmount: 100, referenceUnit: "g" },
+  "rohu fish":          { calories: 97,  protein: 17.0, fat: 2.0,  carbs: 0.0, fiber: 0.0,  referenceAmount: 100, referenceUnit: "g" },
+  "raw rohu fish":      { calories: 97,  protein: 17.0, fat: 2.0,  carbs: 0.0, fiber: 0.0,  referenceAmount: 100, referenceUnit: "g" },
+  "rohu fish raw":      { calories: 97,  protein: 17.0, fat: 2.0,  carbs: 0.0, fiber: 0.0,  referenceAmount: 100, referenceUnit: "g" },
+  "long beans":         { calories: 85,  protein: 3.0,  fat: 5.5,  carbs: 7.5,  fiber: 1.8,  referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 130 }, defaultUnit: "bowl" },
   "whey protein": { calories: 400, protein: 80.0, fat: 3.3, carbs: 10.0, fiber: 0.0, referenceAmount: 100, referenceUnit: "g", unitWeights: { scoop: 30 }, defaultUnit: "scoop" },
   "chicken tikka masala": { calories: 150, protein: 12.0, fat: 9.0,  carbs: 5.0,  fiber: 0.8, referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 200 }, defaultUnit: "bowl" },
   "butter chicken":        { calories: 190, protein: 13.0, fat: 13.0, carbs: 6.0,  fiber: 0.5, referenceAmount: 100, referenceUnit: "g", unitWeights: { bowl: 200 }, defaultUnit: "bowl" },
@@ -1843,7 +1857,7 @@ serve(async (req) => {
           error: isTimeout ? "Meal analysis took too long. Please try again." : "Unable to parse this meal right now. Please try again.",
           request_id: requestId,
           error_code: chainErr instanceof MealAiError ? chainErr.code : "unknown",
-          _refunded: true,
+          _refunded: !refundError,
         }),
         { status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );

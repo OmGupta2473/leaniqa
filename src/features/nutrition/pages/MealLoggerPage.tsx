@@ -605,50 +605,45 @@ export function MealLoggerPage() {
   const { session } = useAuthSession();
   const isGuest = session?.user?.is_anonymous === true;
 
-  const refundParseCredit = useCallback(async (pm: PendingMeal | null) => {
-    if (!pm || pm.source !== 'llm' || !pm.request_id) {
-      console.log('[credits] refund skipped', {
-        reason: !pm ? 'no pm' : pm.source !== 'llm' ? 'not llm' : 'no request_id',
-        pm,
+const refundParseCredit = useCallback(async (pm: PendingMeal | null) => {
+  if (!pm || pm.source !== 'llm' || !pm.request_id) {
+    console.log('[credits] refund skipped', {
+      reason: !pm ? 'no pm' : pm.source !== 'llm' ? 'not llm' : 'no request_id',
+      pm,
+    });
+    return;
+  }
+  try {
+    console.log('[credits] refund calling', { request_id: pm.request_id });
+    const { data, error } = await supabase.functions.invoke('refund-parse-credit', {
+      body: { request_id: pm.request_id },
+    });
+    if (error) {
+      console.error('[credits] refund FAILED', {
+        request_id: pm.request_id,
+        message: error.message,
       });
       return;
     }
-    try {
-      const userId = await authService.getUserId();
-      const p_date = getKolkataDateString();
-      console.log('[credits] refund calling', {
+    if (!data || (data as { ok?: boolean }).ok !== true) {
+      console.error('[credits] refund returned unexpected response', {
         request_id: pm.request_id,
-        p_user_id: userId,
-        p_date,
+        data,
       });
-      const { data, error } = await supabase.rpc('refund_api_usage', {
-        p_user_id: userId,
-        p_endpoint: 'parse-meal',
-        p_date,
-        p_request_id: pm.request_id,
-      });
-      if (error) {
-        console.error('[credits] refund FAILED', {
-          request_id: pm.request_id,
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint,
-        });
-        return;
-      }
-      console.log('[credits] refund succeeded', {
-        request_id: pm.request_id,
-        result: data,
-      });
-      toast({ type: 'success', message: 'Credit refunded', duration: 2000 });
-    } catch (thrown) {
-      console.error('[credits] refund threw', {
-        request_id: pm.request_id,
-        error: thrown instanceof Error ? thrown.message : String(thrown),
-      });
+      return;
     }
-  }, [toast]);
+    console.log('[credits] refund succeeded', {
+      request_id: pm.request_id,
+      result: data,
+    });
+    toast({ type: 'success', message: 'Credit refunded', duration: 2000 });
+  } catch (thrown) {
+    console.error('[credits] refund threw', {
+      request_id: pm.request_id,
+      error: thrown instanceof Error ? thrown.message : String(thrown),
+    });
+  }
+}, [toast]);
 
   // Deterministic ordering: close the card first (blocks double-tap), then let
   // the refund RPC fully commit, then read the true post-refund count.
