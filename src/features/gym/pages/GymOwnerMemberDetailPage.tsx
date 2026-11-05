@@ -10,7 +10,7 @@ import {
   Utensils,
   WifiOff,
 } from 'lucide-react';
-import { gymOwnerService, type RedemptionSummary } from '../services/gymOwnerService';
+import { gymOwnerService, type GymMember } from '../services/gymOwnerService';
 import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
 import { haptics } from '@/shared/utils/haptics';
 import { cn } from '@/shared/utils/utils';
@@ -20,7 +20,9 @@ import {
 } from '@/features/reports/components/motion';
 import '../styles/gymOwner.css';
 
+
 type Tab = 'meals' | 'reports';
+
 
 export function GymOwnerMemberDetailPage() {
   const navigate = useNavigate();
@@ -28,16 +30,19 @@ export function GymOwnerMemberDetailPage() {
   const isOnline = useNetworkConnectivity();
   const [tab, setTab] = useState<Tab>('meals');
 
-  const redemptionsQuery = useQuery({
-    queryKey: ['gymRedemptions', gymId],
-    queryFn: () => gymOwnerService.listRedemptions(gymId!),
+
+  const membersQuery = useQuery({
+    queryKey: ['gymMembers', gymId],
+    queryFn: () => gymOwnerService.listGymMembers(gymId!),
     enabled: !!gymId,
   });
 
-  const redemption: RedemptionSummary | null = useMemo(() => {
-    if (!redemptionsQuery.data || !memberId) return null;
-    return redemptionsQuery.data.find((r) => r.memberUserId === memberId) ?? null;
-  }, [redemptionsQuery.data, memberId]);
+
+  const member: GymMember | null = useMemo(() => {
+    if (!membersQuery.data || !memberId) return null;
+    return membersQuery.data.find((m) => m.userId === memberId) ?? null;
+  }, [membersQuery.data, memberId]);
+
 
   // Last 30 days for meals, last 12 weeks for reports. Fixed windows for
   // the pilot — a range picker is a follow-up.
@@ -53,7 +58,9 @@ export function GymOwnerMemberDetailPage() {
     };
   }, []);
 
-  const hasAccess = redemption?.hasMealAccess === true;
+
+  const hasAccess = member?.hasMealAccess === true;
+
 
   const mealsQuery = useQuery({
     queryKey: ['gymMemberMeals', gymId, memberId],
@@ -61,12 +68,14 @@ export function GymOwnerMemberDetailPage() {
     enabled: !!gymId && !!memberId && hasAccess && tab === 'meals',
   });
 
+
   const reportsQuery = useQuery({
     queryKey: ['gymMemberReports', gymId, memberId],
     queryFn: () =>
       gymOwnerService.getMemberWeeklyReports(gymId!, sinceDate, untilDate),
     enabled: !!gymId && !!memberId && hasAccess && tab === 'reports',
   });
+
 
   // ── Loading ─────────────────────────────────────────────────────────
   if (!gymId || !memberId) {
@@ -82,23 +91,26 @@ export function GymOwnerMemberDetailPage() {
     );
   }
 
-  if (redemptionsQuery.isLoading) {
+
+  if (membersQuery.isLoading) {
     return <DetailSkeleton onBack={() => navigate('/gym')} />;
   }
 
-  if (redemptionsQuery.error) {
+
+  if (membersQuery.error) {
     return (
       <PageShell onBack={() => navigate('/gym')}>
         <ErrorBlock
           title="Couldn't load member"
           body={isOnline ? 'Try again in a moment.' : 'You are offline.'}
-          onRetry={() => redemptionsQuery.refetch()}
+          onRetry={() => membersQuery.refetch()}
         />
       </PageShell>
     );
   }
 
-  if (!redemption) {
+
+  if (!member) {
     return (
       <PageShell onBack={() => navigate('/gym')}>
         <ErrorBlock
@@ -111,38 +123,41 @@ export function GymOwnerMemberDetailPage() {
     );
   }
 
-  const shortId = redemption.memberUserId.slice(0, 8);
+
+  const displayName = member.name ?? member.userId.slice(0, 8);
+
 
   return (
     <MotionConfig reducedMotion="user">
       <PageShell onBack={() => navigate('/gym')}>
         <div>
-          <h1 className="gym-title gym-mono">{shortId}</h1>
+          <h1 className="gym-title">{displayName}</h1>
           <div className="gym-row-pills mt-2">
-            <span className={cn('gym-pill', redemption.isActive ? 'gym-pill-active' : 'gym-pill-ended')}>
-              {redemption.isActive ? 'Premium' : 'Ended'}
+            <span className={cn('gym-pill', member.isActive ? 'gym-pill-active' : 'gym-pill-ended')}>
+              {member.isActive ? 'Premium' : 'Ended'}
             </span>
-            {redemption.shareMealData && (
+            {member.shareMealData && (
               <span className="gym-pill gym-pill-share">Sharing enabled</span>
             )}
-            {!redemption.hasMealAccess && (
+            {!member.hasMealAccess && (
               <span className="gym-pill gym-pill-ended">
                 <Lock size={10} strokeWidth={2.5} /> No data access
               </span>
             )}
           </div>
           <p className="gym-caption mt-2">
-            {redemption.isActive
-              ? `Premium until ${formatDate(redemption.premiumUntil)}`
-              : `Access ended ${formatDate(redemption.premiumUntil)}`}
+            {member.isActive
+              ? `Premium until ${formatDate(member.premiumUntil)}`
+              : `Access ended ${formatDate(member.premiumUntil)}`}
             {' · '}
-            Joined {formatDate(redemption.redeemedAt)}
+            Joined {formatDate(member.redeemedAt)}
           </p>
         </div>
 
+
         {/* ── Locked state (hasMealAccess=false) ──────────────────────── */}
         {!hasAccess ? (
-          <LockedState redemption={redemption} />
+          <LockedState member={member} />
         ) : (
           <>
             <div className="gym-segmented" role="tablist" aria-label="Member data">
@@ -153,6 +168,7 @@ export function GymOwnerMemberDetailPage() {
                 Reports · 12 weeks
               </TabButton>
             </div>
+
 
             <AnimatePresence mode="wait">
               {tab === 'meals' ? (
@@ -180,6 +196,7 @@ export function GymOwnerMemberDetailPage() {
           </>
         )}
 
+
         <p className="gym-caption mt-2">
           Every time you open this member's data, an entry is written to the
           access log. Members can revoke sharing from their Profile at any time.
@@ -189,7 +206,9 @@ export function GymOwnerMemberDetailPage() {
   );
 }
 
+
 // ── Tabs ──────────────────────────────────────────────────────────────────
+
 
 function TabButton({
   tab,
@@ -224,7 +243,9 @@ function TabButton({
   );
 }
 
+
 // ── Meals tab ────────────────────────────────────────────────────────────
+
 
 function MealsTab({
   query,
@@ -270,6 +291,7 @@ function MealsTab({
     );
   }
 
+
   return (
     <div className="gym-glass">
       {rows.map((row, i) => (
@@ -310,7 +332,9 @@ function MealsTab({
   );
 }
 
+
 // ── Reports tab ───────────────────────────────────────────────────────────
+
 
 function ReportsTab({
   query,
@@ -357,6 +381,7 @@ function ReportsTab({
     );
   }
 
+
   return (
     <div className="gym-glass">
       {rows.map((row, i) => (
@@ -393,27 +418,32 @@ function ReportsTab({
   );
 }
 
+
 // ── Locked state ──────────────────────────────────────────────────────────
 
-function LockedState({ redemption }: { redemption: RedemptionSummary }) {
+
+function LockedState({ member }: { member: GymMember }) {
   const reason =
-    !redemption.isActive && !redemption.shareMealData
+    !member.isActive && !member.shareMealData
       ? 'access_ended_and_no_consent'
-      : !redemption.isActive
+      : !member.isActive
       ? 'access_ended'
       : 'no_consent';
+
 
   const title =
     reason === 'no_consent'
       ? 'Member has not consented'
       : 'Member access has ended';
 
+
   const body =
     reason === 'no_consent'
       ? 'You can see this member redeemed a code, but meal data is only visible when they enable gym sharing from their Profile.'
       : reason === 'access_ended'
-      ? `This member's gym access ended on ${formatDate(redemption.premiumUntil)}. Meal data is not available.`
-      : `This member's gym access ended on ${formatDate(redemption.premiumUntil)} and they have not consented to share meal data.`;
+      ? `This member's gym access ended on ${formatDate(member.premiumUntil)}. Meal data is not available.`
+      : `This member's gym access ended on ${formatDate(member.premiumUntil)} and they have not consented to share meal data.`;
+
 
   return (
     <motion.div
@@ -438,7 +468,9 @@ function LockedState({ redemption }: { redemption: RedemptionSummary }) {
   );
 }
 
+
 // ── Small blocks ──────────────────────────────────────────────────────────
+
 
 function PageShell({
   children,
@@ -468,6 +500,7 @@ function PageShell({
   );
 }
 
+
 function ErrorBlock({
   title,
   body,
@@ -495,6 +528,7 @@ function ErrorBlock({
   );
 }
 
+
 function TabSkeleton() {
   return (
     <div className="gym-glass" aria-busy="true">
@@ -511,6 +545,7 @@ function TabSkeleton() {
   );
 }
 
+
 function DetailSkeleton({ onBack }: { onBack: () => void }) {
   return (
     <MotionConfig reducedMotion="user">
@@ -526,13 +561,16 @@ function DetailSkeleton({ onBack }: { onBack: () => void }) {
   );
 }
 
+
 // ── Helpers ───────────────────────────────────────────────────────────────
+
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
+
 
 function formatDateTime(iso: string): string {
   const d = new Date(iso);
@@ -545,12 +583,14 @@ function formatDateTime(iso: string): string {
   });
 }
 
+
 function toIsoDate(d: Date): string {
   const y = d.getUTCFullYear();
   const m = String(d.getUTCMonth() + 1).padStart(2, '0');
   const day = String(d.getUTCDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
+
 
 function capitalize(s: string): string {
   if (!s) return s;

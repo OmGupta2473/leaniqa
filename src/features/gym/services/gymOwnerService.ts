@@ -19,8 +19,10 @@ export interface PromoCodeRow {
   createdAt: string;
 }
 
-export interface RedemptionSummary {
-  memberUserId: string;
+export interface GymMember {
+  userId: string;
+  /** null when the member's profile row is missing or name is unset. */
+  name: string | null;
   redeemedAt: string;
   premiumUntil: string;
   shareMealData: boolean;
@@ -62,10 +64,9 @@ export type GymOwnerErrorCode =
   | 'not_authenticated'
   | 'not_gym_owner'
   | 'invalid_range'
-  | 'invalid_duration'
-  | 'invalid_max_redemptions'
-  | 'invalid_code_length'
-  | 'code_exists'
+  | 'invalid_duration_v1'
+  | 'invalid_max_redemptions_v1'
+  | 'custom_code_not_allowed_v1'
   | 'code_generation_failed'
   | 'network'
   | 'unknown';
@@ -77,15 +78,10 @@ export interface GymOwnerResult<T> {
   error?: string;
 }
 
-const ZERO: [number, number] = [0, 0];
-
 // ─── Implementation ────────────────────────────────────────────────────────
 
 export const gymOwnerService = {
-  /**
-   * Gym list for the current owner. RPC-enforced (list_my_gyms filters by
-   * owner_id server-side); the client never sees gyms it doesn't own.
-   */
+  /** Gym list for the current owner. RPC-enforced (list_my_gyms). */
   async listOwnedGyms(): Promise<OwnedGym[]> {
     const { data, error } = await supabase.rpc('list_my_gyms');
     if (error) {
@@ -119,45 +115,49 @@ export const gymOwnerService = {
     }));
   },
 
-  /** Server-side code generation via the generate_promo_code RPC. */
-  async generatePromoCode(
-    gymId: string,
-    durationDays: number,
-    maxRedemptions: number | null,
-    customCode?: string,
-  ): Promise<GymOwnerResult<{ id: string; code: string }>> {
+  /**
+   * v1 policy: server-side generation only. The RPC enforces 30-day duration,
+   * 5-redemption cap, and no custom code. The client has no params to pass —
+   * this is intentional so the sheet has one button and no configurable input.
+   */
+  async generatePromoCode(gymId: string): Promise<GymOwnerResult<{ id: string; code: string }>> {
     const { data, error } = await supabase.rpc('generate_promo_code', {
       p_gym_id: gymId,
-      p_duration_days: durationDays,
-      p_max_redemptions: maxRedemptions,
-      p_custom_code: customCode?.trim() || null,
     });
-    if (error) {
-      return mapRpcError(error);
-    }
+    if (error) return mapRpcError(error);
     const row = Array.isArray(data) ? data[0] : data;
     if (!row) return { ok: false, errorCode: 'unknown', error: 'Empty response.' };
     return { ok: true, data: { id: row.promo_code_id, code: row.code } };
   },
 
-  /** Redemptions for one owned gym, with R1-derived flags. */
-  async listRedemptions(gymId: string): Promise<RedemptionSummary[]> {
-    const { data, error } = await supabase
-      .from('promo_redemptions')
-      .select(
-        'user_id, redeemed_at, premium_until, share_meal_data, consent_granted_at, consent_revoked_at',
-      )
-      .eq('gym_id', gymId)
-      .order('redeemed_at', { ascending: false });
+  /**
+   * Member list for one owned gym, with display names from profiles.
+   * Owner gate + profiles join happen server-side inside the RPC; no
+   * profiles SELECT policy is opened to gym owners.
+   */
+  async listGymMembers(gymId: string): Promise<GymMember[]> {
+    const { data, error } = await supabase.rpc('list_gym_members', {
+      p_gym_id: gymId,
+    });
     if (error) {
-      console.error('[gymOwnerService] listRedemptions', error.code, error.message);
+      console.error('[gymOwnerService] listGymMembers', error.code, error.message);
       return [];
     }
     const now = Date.now();
-    return (data ?? []).map((r) => {
+    const rows = (data ?? []) as Array<{
+      user_id: string;
+      name: string | null;
+      redeemed_at: string;
+      premium_until: string;
+      share_meal_data: boolean;
+      consent_granted_at: string | null;
+      consent_revoked_at: string | null;
+    }>;
+    return rows.map((r) => {
       const isActive = new Date(r.premium_until).getTime() > now;
       return {
-        memberUserId: r.user_id,
+        userId: r.user_id,
+        name: r.name,
         redeemedAt: r.redeemed_at,
         premiumUntil: r.premium_until,
         shareMealData: r.share_meal_data,
@@ -169,12 +169,7 @@ export const gymOwnerService = {
     });
   },
 
-  /**
-   * Meal activity for one gym, filtered server-side by R1. The RPC writes
-   * one audit row per member whose data is included. Caller is expected to
-   * have already gated on `hasMealAccess` in the UI — this call will still
-   * succeed even for members without consent, but return zero rows.
-   */
+  /** Meal activity for one gym, filtered server-side by R1. Audited. */
   async getMemberActivity(
     gymId: string,
     sinceIso: string,
@@ -215,11 +210,11 @@ export const gymOwnerService = {
     };
   },
 
-  /** Weekly reports for one gym, filtered server-side by R1. */
+  /** Weekly reports for one gym, filtered server-side by R1. Audited. */
   async getMemberWeeklyReports(
     gymId: string,
-    sinceDate: string, // YYYY-MM-DD
-    untilDate: string, // YYYY-MM-DD
+    sinceDate: string,
+    untilDate: string,
   ): Promise<GymOwnerResult<MemberWeeklyReportRow[]>> {
     const { data, error } = await supabase.rpc('get_gym_member_weekly_reports', {
       p_gym_id: gymId,
@@ -265,10 +260,9 @@ function mapRpcError(error: { message?: string; code?: string }): GymOwnerResult
     'not_authenticated',
     'not_gym_owner',
     'invalid_range',
-    'invalid_duration',
-    'invalid_max_redemptions',
-    'invalid_code_length',
-    'code_exists',
+    'invalid_duration_v1',
+    'invalid_max_redemptions_v1',
+    'custom_code_not_allowed_v1',
     'code_generation_failed',
   ];
   for (const code of known) {
@@ -283,10 +277,9 @@ function friendly(code: GymOwnerErrorCode): string {
     case 'not_authenticated': return 'Please sign in again.';
     case 'not_gym_owner': return 'You do not own this gym.';
     case 'invalid_range': return 'The selected date range is invalid.';
-    case 'invalid_duration': return 'Duration must be between 1 and 365 days.';
-    case 'invalid_max_redemptions': return 'Max redemptions must be at least 1.';
-    case 'invalid_code_length': return 'Code must be 4–40 characters.';
-    case 'code_exists': return 'That code is already in use.';
+    case 'invalid_duration_v1': return 'Duration is fixed to 30 days in this version.';
+    case 'invalid_max_redemptions_v1': return 'Redemption limit is fixed to 5 in this version.';
+    case 'custom_code_not_allowed_v1': return 'Custom codes are not available in this version.';
     case 'code_generation_failed': return 'Could not generate a unique code. Try again.';
     case 'network': return 'Check your connection and try again.';
     default: return 'Something went wrong.';

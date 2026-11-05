@@ -14,12 +14,7 @@ import {
   Users,
   WifiOff,
 } from 'lucide-react';
-import {
-  gymOwnerService,
-  type OwnedGym,
-  type PromoCodeRow,
-  type RedemptionSummary,
-} from '../services/gymOwnerService';
+import { gymOwnerService, type OwnedGym, type PromoCodeRow, type GymMember } from '../services/gymOwnerService';
 import { useToast } from '@/shared/components/Toast';
 import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
 import { BottomSheet } from '@/shared/components/BottomSheet';
@@ -55,12 +50,12 @@ export function GymOwnerDashboardPage() {
   });
   const codes: PromoCodeRow[] = codesQuery.data ?? [];
 
-  const redemptionsQuery = useQuery({
-    queryKey: ['gymRedemptions', gym?.id],
-    queryFn: () => gymOwnerService.listRedemptions(gym!.id),
+  const membersQuery = useQuery({
+    queryKey: ['gymMembers', gym?.id],
+    queryFn: () => gymOwnerService.listGymMembers(gym!.id),
     enabled: !!gym,
   });
-  const redemptions: RedemptionSummary[] = redemptionsQuery.data ?? [];
+  const members: GymMember[] = membersQuery.data ?? [];
 
   const [isCodeSheetOpen, setCodeSheetOpen] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
@@ -86,35 +81,34 @@ export function GymOwnerDashboardPage() {
     [toast],
   );
 
-  const handleLockedTap = useCallback(
-    (redemption: RedemptionSummary) => {
-      haptics.tap();
-      if (!redemption.isActive && !redemption.shareMealData) {
-        toast({
-          type: 'info',
-          message: "This member's gym access has ended and they have not consented to share data.",
-        });
-        return;
-      }
-      if (!redemption.isActive) {
-        toast({ type: 'info', message: "This member's gym access has ended." });
-        return;
-      }
+const handleLockedTap = useCallback(
+  (member: GymMember) => {
+    haptics.tap();
+    if (!member.isActive && !member.shareMealData) {
       toast({
         type: 'info',
-        message: 'This member has not consented to share meal data. Ask them to enable gym sharing in their Profile.',
+        message: "This member's gym access has ended and they have not consented to share data.",
       });
-    },
-    [toast],
-  );
-
+      return;
+    }
+    if (!member.isActive) {
+      toast({ type: 'info', message: "This member's gym access has ended." });
+      return;
+    }
+    toast({
+      type: 'info',
+      message: 'This member has not consented to share meal data. Ask them to enable gym sharing in their Profile.',
+    });
+  },
+  [toast],
+);
   const activeMemberCount = useMemo(
-    () => redemptions.filter((r) => r.hasMealAccess).length,
-    [redemptions],
+    () => members.filter((m) => m.hasMealAccess).length,
+    [members],
   );
 
   // ── Loading (initial only) ────────────────────────────────────────────
-  if (gymsQuery.isLoading || (gym && codesQuery.isLoading && redemptionsQuery.isLoading)) {
+if (gymsQuery.isLoading || (gym && codesQuery.isLoading && membersQuery.isLoading)) {
     return <DashboardSkeleton />;
   }
 
@@ -133,7 +127,7 @@ export function GymOwnerDashboardPage() {
   }
 
   const codesError = codesQuery.error as Error | null;
-  const redemptionsError = redemptionsQuery.error as Error | null;
+const membersError = membersQuery.error as Error | null;
 
   return (
     <MotionConfig reducedMotion="user">
@@ -159,9 +153,9 @@ export function GymOwnerDashboardPage() {
         <div>
           <h1 className="gym-title">{gym.name}</h1>
           <p className="gym-caption mt-1">
-            {redemptions.length === 0
-              ? 'No members yet.'
-              : `${redemptions.length} ${redemptions.length === 1 ? 'member' : 'members'} · ${activeMemberCount} ${activeMemberCount === 1 ? 'shares' : 'share'} data`}
+            {members.length === 0
+  ? 'No members yet.'
+  : `${members.length} ${members.length === 1 ? 'member' : 'members'} · ${activeMemberCount} ${activeMemberCount === 1 ? 'shares' : 'share'} data`}
           </p>
         </div>
 
@@ -247,33 +241,31 @@ export function GymOwnerDashboardPage() {
         </motion.section>
 
         {/* ── Members section ──────────────────────────────────────────── */}
-        <motion.section
+                <motion.section
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...transitionFadeSlide, delay: 0.08 }}
         >
           <div className="flex items-center justify-between mb-2 px-1">
             <h2 className="gym-label">Members</h2>
-            <span className="gym-caption tabular-nums">
-              {redemptions.length}
-            </span>
+            <span className="gym-caption tabular-nums">{members.length}</span>
           </div>
 
-          {redemptionsQuery.isLoading ? (
+          {membersQuery.isLoading ? (
             <div className="gym-glass">
               <SkeletonRow />
               <SkeletonRow />
               <SkeletonRow />
             </div>
-          ) : redemptionsError ? (
+          ) : membersQuery.error ? (
             <div className="gym-glass">
               <ErrorState
                 title="Couldn't load members"
                 body={isOnline ? 'Try again in a moment.' : 'You are offline.'}
-                onRetry={() => redemptionsQuery.refetch()}
+                onRetry={() => membersQuery.refetch()}
               />
             </div>
-          ) : redemptions.length === 0 ? (
+          ) : members.length === 0 ? (
             <div className="gym-glass">
               <EmptyState
                 icon={<Users size={18} />}
@@ -283,9 +275,9 @@ export function GymOwnerDashboardPage() {
             </div>
           ) : (
             <div className="gym-glass">
-              {redemptions.map((redemption, i) => (
+              {members.map((member, i) => (
                 <motion.div
-                  key={redemption.memberUserId}
+                  key={member.userId}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{
@@ -294,12 +286,12 @@ export function GymOwnerDashboardPage() {
                   }}
                 >
                   <MemberRow
-                    redemption={redemption}
+                    member={member}
                     onOpen={() => {
                       haptics.tap();
-                      navigate(`/gym/${gym.id}/member/${redemption.memberUserId}`);
+                      navigate(`/gym/${gym.id}/member/${member.userId}`);
                     }}
-                    onLockedTap={() => handleLockedTap(redemption)}
+                    onLockedTap={() => handleLockedTap(member)}
                   />
                 </motion.div>
               ))}
@@ -376,16 +368,16 @@ function CodeRow({
 }
 
 function MemberRow({
-  redemption,
+  member,
   onOpen,
   onLockedTap,
 }: {
-  redemption: RedemptionSummary;
+  member: GymMember;
   onOpen: () => void;
   onLockedTap: () => void;
 }) {
-  const shortId = redemption.memberUserId.slice(0, 8);
-  const unlocked = redemption.hasMealAccess;
+  const displayName = member.name ?? member.userId.slice(0, 8);
+  const unlocked = member.hasMealAccess;
 
   return (
     <button
@@ -394,18 +386,18 @@ function MemberRow({
       className="gym-row"
       aria-label={
         unlocked
-          ? `Open activity for member ${shortId}`
-          : `Member ${shortId} — data not available`
+          ? `Open activity for ${displayName}`
+          : `${displayName} — data not available`
       }
       aria-disabled={unlocked ? undefined : 'true'}
     >
       <div className="gym-row-main">
-        <div className="gym-row-title gym-mono">{shortId}</div>
+        <div className="gym-row-title">{displayName}</div>
         <div className="gym-row-pills">
-          <span className={cn('gym-pill', redemption.isActive ? 'gym-pill-active' : 'gym-pill-ended')}>
-            {redemption.isActive ? 'Premium' : 'Ended'}
+          <span className={cn('gym-pill', member.isActive ? 'gym-pill-active' : 'gym-pill-ended')}>
+            {member.isActive ? 'Premium' : 'Ended'}
           </span>
-          {redemption.shareMealData && (
+          {member.shareMealData && (
             <span className="gym-pill gym-pill-share">Sharing</span>
           )}
           {!unlocked && (
@@ -416,9 +408,9 @@ function MemberRow({
           )}
         </div>
         <div className="gym-row-sub">
-          {redemption.isActive
-            ? `Until ${formatDate(redemption.premiumUntil)}`
-            : `Ended ${formatDate(redemption.premiumUntil)}`}
+          {member.isActive
+            ? `Until ${formatDate(member.premiumUntil)}`
+            : `Ended ${formatDate(member.premiumUntil)}`}
         </div>
       </div>
       <div className="gym-row-end">
@@ -526,29 +518,10 @@ function NewCodeSheet({
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [duration, setDuration] = useState('30');
-  const [maxUses, setMaxUses] = useState('');
-  const [limitUses, setLimitUses] = useState(false);
-  const [customCode, setCustomCode] = useState('');
   const [inlineError, setInlineError] = useState<string | null>(null);
 
-  const durationNum = Number(duration);
-  const maxUsesNum = limitUses ? Number(maxUses) : null;
-
-  const isValid =
-    Number.isInteger(durationNum) && durationNum >= 1 && durationNum <= 365 &&
-    (!limitUses || (Number.isInteger(maxUsesNum) && (maxUsesNum ?? 0) >= 1)) &&
-    (customCode.trim().length === 0 ||
-      (customCode.trim().length >= 4 && customCode.trim().length <= 40));
-
   const mutation = useMutation({
-    mutationFn: () =>
-      gymOwnerService.generatePromoCode(
-        gymId,
-        durationNum,
-        maxUsesNum,
-        customCode.trim() || undefined,
-      ),
+    mutationFn: () => gymOwnerService.generatePromoCode(gymId),
     onSuccess: (result) => {
       if (!result.ok || !result.data) {
         setInlineError(result.error ?? 'Could not create the code.');
@@ -561,11 +534,6 @@ function NewCodeSheet({
         duration: 3000,
       });
       queryClient.invalidateQueries({ queryKey: ['gymCodes', gymId] });
-      // reset form for next open
-      setDuration('30');
-      setMaxUses('');
-      setLimitUses(false);
-      setCustomCode('');
       setInlineError(null);
       onClose();
     },
@@ -573,116 +541,48 @@ function NewCodeSheet({
   });
 
   const handleSubmit = () => {
-    if (!isValid || mutation.isPending) return;
+    if (mutation.isPending) return;
     setInlineError(null);
     mutation.mutate();
   };
 
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="90dvh">
+    <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="auto">
       <div className="px-5 pt-4 pb-6">
         <h2 className="gym-card-title mb-1">New promo code</h2>
-        <p className="gym-caption mb-5">
-          Members redeem this to get premium access for the chosen duration.
+        <p className="gym-caption mb-4">
+          Generates one month of free premium for up to five members. Members
+          redeem it from their Profile.
         </p>
 
-        <div className="flex flex-col gap-4">
-          <div className="gym-field">
-            <label htmlFor="gym-duration" className="gym-field-label">
-              Duration (days)
-            </label>
-            <input
-              id="gym-duration"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={365}
-              value={duration}
-              onChange={(e) => setDuration(e.target.value.replace(/[^0-9]/g, ''))}
-              className="gym-field-input"
-              disabled={mutation.isPending}
-            />
-            <span className="gym-field-hint">1–365 days. Default 30.</span>
-          </div>
+        <div className="gym-row-pills mb-5">
+          <span className="gym-pill gym-pill-active">30 days premium</span>
+          <span className="gym-pill gym-pill-ended">5 members per code</span>
+        </div>
 
-          <div className="gym-field">
-            <label className="gym-field-label">Redemption limit</label>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={limitUses}
-              onClick={() => setLimitUses((v) => !v)}
-              className="flex items-center justify-between gym-field-input"
-              style={{ justifyContent: 'space-between' }}
-            >
-              <span className="gym-body" style={{ color: 'rgba(255,255,255,0.92)' }}>
-                {limitUses ? 'Limited' : 'Unlimited'}
-              </span>
-              <span
-                className={cn('gym-pill', limitUses ? 'gym-pill-active' : 'gym-pill-ended')}
-              >
-                {limitUses ? 'On' : 'Off'}
-              </span>
-            </button>
-            {limitUses && (
-              <input
-                type="number"
-                inputMode="numeric"
-                min={1}
-                value={maxUses}
-                onChange={(e) => setMaxUses(e.target.value.replace(/[^0-9]/g, ''))}
-                placeholder="e.g. 50"
-                className="gym-field-input mt-2"
-                disabled={mutation.isPending}
-              />
-            )}
+        {inlineError && (
+          <div role="alert" className="gym-field-error mb-3">
+            {inlineError}
           </div>
+        )}
 
-          <div className="gym-field">
-            <label htmlFor="gym-custom-code" className="gym-field-label">
-              Custom code (optional)
-            </label>
-            <input
-              id="gym-custom-code"
-              type="text"
-              value={customCode}
-              onChange={(e) => setCustomCode(e.target.value.toUpperCase())}
-              placeholder="Leave blank to auto-generate"
-              autoComplete="off"
-              autoCapitalize="characters"
-              autoCorrect="off"
-              spellCheck={false}
-              maxLength={40}
-              className="gym-field-input gym-mono"
-              disabled={mutation.isPending}
-            />
-            <span className="gym-field-hint">4–40 characters. Uppercased on save.</span>
-          </div>
-
-          {inlineError && (
-            <div role="alert" className="gym-field-error">
-              {inlineError}
-            </div>
-          )}
-
-          <div className="flex gap-2 mt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={mutation.isPending}
-              className="gym-secondary-btn flex-1"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={!isValid || mutation.isPending}
-              className="gym-primary-btn flex-1"
-            >
-              {mutation.isPending ? 'Creating…' : 'Create code'}
-            </button>
-          </div>
+        <div className="flex gap-2 mt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={mutation.isPending}
+            className="gym-secondary-btn flex-1"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={mutation.isPending}
+            className="gym-primary-btn flex-1"
+          >
+            {mutation.isPending ? 'Creating…' : 'Create code'}
+          </button>
         </div>
       </div>
     </BottomSheet>

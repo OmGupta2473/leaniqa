@@ -655,11 +655,6 @@ export function ProfilePage() {
           <PromoRedemptionSection />
         </div>
 
-                {/* Gym membership — redeem / active / expired states (Session 1d) */}
-        <div className="md:col-span-2">
-          <PromoRedemptionSection />
-        </div>
-
         {/* ── INSERT THIS BLOCK HERE ── */}
         {isGymOwner === true && (
           <div className="md:col-span-2">
