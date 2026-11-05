@@ -121,6 +121,47 @@ describe('subscriptionService.getSubscriptionStatus', () => {
     expect(result.hasAccess).toBe(false);
   });
 
+  it('promo_active (gym premium, no sub row) → tier premium, hasAccess true', async () => {
+    // resolve_user_access returns this shape when a user has no active
+    // subscription but promo_redemptions.premium_until > now().
+    wireRpc({
+      row: {
+        plan: 'free',
+        status: 'active',
+        access_type: 'subscription',
+        current_period_end: null,
+        billing_cycle: null,
+        razorpay_subscription_id: null,
+      },
+      access: { has_access: true, tier: 'premium', reason: 'promo_active' },
+    });
+
+    const result = await subscriptionService.getSubscriptionStatus();
+    expect(result.plan).toBe('premium');
+    expect(result.hasAccess).toBe(true);
+    expect(result.isPremium).toBe(true);
+    expect(result.accessReason).toBe('promo_active');
+  });
+
+  it('promo_expired (gym access ended, no sub row) → free', async () => {
+    wireRpc({
+      row: {
+        plan: 'free',
+        status: 'active',
+        access_type: 'subscription',
+        current_period_end: null,
+        billing_cycle: null,
+        razorpay_subscription_id: null,
+      },
+      access: { has_access: false, tier: 'free', reason: 'promo_expired' },
+    });
+
+    const result = await subscriptionService.getSubscriptionStatus();
+    expect(result.plan).toBe('free');
+    expect(result.hasAccess).toBe(false);
+    expect(result.accessReason).toBe('promo_expired');
+  });
+
   it('RPC error → returns safe fallback', async () => {
     mocks.getUserId.mockResolvedValue('user-1');
     mocks.rpc.mockRejectedValue(new Error('network down'));

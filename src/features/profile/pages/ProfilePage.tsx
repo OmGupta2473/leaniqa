@@ -20,6 +20,7 @@ import { EditProfileModal } from '../components/EditProfileModal';
 import { EditNutritionModal } from '../components/EditNutritionModal';
 import { CancelRenewalSheet } from '@/features/pricing/components/CancelRenewalSheet';
 import { DeleteAccountSheet } from '../components/DeleteAccountSheet';
+import { PromoRedemptionSection } from '../components/PromoRedemptionSection';
 import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
 import { ProfileSkeleton } from '@/shared/components/Skeletons';
 import { Logo } from '@/shared/components/Logo';
@@ -646,7 +647,12 @@ export function ProfilePage() {
             </div>
           )}
         </section>
-{/* Card 5 — Danger zone (Sign Out + dev crash preserved) */}
+        {/* Gym membership — redeem / active / expired states (Session 1d) */}
+        <div className="md:col-span-2">
+          <PromoRedemptionSection />
+        </div>
+
+        {/* Card 5 — Danger zone (Sign Out + dev crash preserved) */}
         <section className="flex flex-col gap-3 pt-[clamp(0.3rem,0.8dvh,0.5rem)] md:col-span-2">
           {import.meta.env.MODE === 'development' && (
             <button
