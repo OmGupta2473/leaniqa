@@ -1,0 +1,264 @@
+/* Gym owner dashboard — feature CSS. Prefix: .gym-
+ * Standards refs: §2.5 (glass), §2.2 (type roles), §2.1 (colour), §2.6 (icons).
+ * Imported by both pages so it code-splits with the /gym routes.
+ */
+
+.gym-glass {
+  position: relative;
+  border-radius: 20px;
+  padding: 16px;
+  background: linear-gradient(155deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.03) 46%, rgba(255,255,255,0.045) 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.09), 0 16px 36px -22px rgba(0,0,0,0.9);
+}
+.gym-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: linear-gradient(145deg, rgba(255,255,255,0.30), rgba(255,255,255,0.06) 30%, rgba(255,255,255,0.02) 62%, rgba(255,255,255,0.12));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* Type roles — no text-[Npx] anywhere (§0 rule 1). */
+.gym-title       { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; color: rgba(255,255,255,0.92); }
+.gym-card-title  { font-size: 17px; font-weight: 650; letter-spacing: -0.01em; line-height: 1.25; color: rgba(255,255,255,0.92); }
+.gym-headline    { font-size: 15px; font-weight: 600; line-height: 1.3; color: rgba(255,255,255,0.92); }
+.gym-body        { font-size: 15px; font-weight: 400; line-height: 1.45; color: rgba(255,255,255,0.55); }
+.gym-caption     { font-size: 12.5px; font-weight: 500; line-height: 1.4; color: rgba(255,255,255,0.55); }
+.gym-label       { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.32); }
+.gym-mono        { font-variant-numeric: tabular-nums; font-family: "SF Mono", "Fira Code", "JetBrains Mono", monospace; }
+
+/* Section spacing — vertical rhythm for the dashboard stack. */
+.gym-stack { display: flex; flex-direction: column; gap: 14px; }
+
+/* Pills — used for status, consent, count. */
+.gym-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.gym-pill-active { background: rgba(212,255,0,0.13); border: 0.5px solid rgba(212,255,0,0.30); color: #D4FF00; }
+.gym-pill-ended  { background: rgba(255,255,255,0.06); border: 0.5px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.55); }
+.gym-pill-share  { background: rgba(55,138,221,0.14); border: 0.5px solid rgba(55,138,221,0.30); color: #7AB8FF; }
+
+/* Member + code rows — §4 list rows (44px min). */
+.gym-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.02);
+  border: 0.5px solid rgba(255,255,255,0.06);
+  width: 100%;
+  text-align: left;
+  color: rgba(255,255,255,0.92);
+  transition: background 200ms cubic-bezier(0.4,0,0.2,1), border-color 200ms cubic-bezier(0.4,0,0.2,1);
+}
+button.gym-row:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.10); }
+button.gym-row:focus-visible { outline: 2px solid #D4FF00; outline-offset: 2px; }
+.gym-row + .gym-row { margin-top: 8px; }
+
+.gym-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.gym-row-title { font-size: 15px; font-weight: 600; line-height: 1.2; color: rgba(255,255,255,0.92); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gym-row-sub   { font-size: 12.5px; font-weight: 500; line-height: 1.3; color: rgba(255,255,255,0.55); }
+.gym-row-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+.gym-row-end   { display: flex; align-items: center; gap: 8px; flex-shrink: 0; color: rgba(255,255,255,0.32); }
+
+/* Copy button inside the code row — 44×44 tap target even though visually compact. */
+.gym-copy-btn {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 0.5px solid rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.55);
+  cursor: pointer;
+  transition: background 200ms cubic-bezier(0.4,0,0.2,1);
+}
+.gym-copy-btn:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.92); }
+.gym-copy-btn:focus-visible { outline: 2px solid #D4FF00; outline-offset: 2px; }
+.gym-copy-btn[data-copied="true"] { color: #D4FF00; border-color: rgba(212,255,0,0.30); background: rgba(212,255,0,0.10); }
+
+/* New-code button — primary (§4). */
+.gym-primary-btn {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: #D4FF00;
+  color: #0A0A0A;
+  border: none;
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: transform 200ms cubic-bezier(0.16,1,0.3,1), opacity 200ms cubic-bezier(0.4,0,0.2,1);
+}
+.gym-primary-btn:hover { opacity: 0.92; }
+.gym-primary-btn:active { transform: scale(0.97); }
+.gym-primary-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.gym-primary-btn:focus-visible { outline: 2px solid #D4FF00; outline-offset: 2px; }
+
+.gym-secondary-btn {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.92);
+  border: 0.5px solid rgba(255,255,255,0.10);
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 200ms cubic-bezier(0.4,0,0.2,1);
+}
+.gym-secondary-btn:hover { background: rgba(255,255,255,0.10); }
+.gym-secondary-btn:focus-visible { outline: 2px solid #D4FF00; outline-offset: 2px; }
+
+/* Inline empty card — icon well + title + body + optional CTA (§4 empty state). */
+.gym-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 16px;
+}
+.gym-empty-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.06);
+  border: 0.5px solid rgba(255,255,255,0.10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.55);
+  margin-bottom: 4px;
+}
+.gym-empty-title { font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.92); line-height: 1.3; }
+.gym-empty-body  { font-size: 13px; font-weight: 400; color: rgba(255,255,255,0.55); line-height: 1.45; max-width: 320px; }
+
+/* Error state — warn icon well + heading + body + retry (§4). */
+.gym-error { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 16px; }
+.gym-error-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(255,176,32,0.13);
+  border: 0.5px solid rgba(255,176,32,0.30);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFB020;
+  margin-bottom: 2px;
+}
+
+/* Skeleton pulse — one looping animation per screen (§0 rule 4). */
+.gym-skeleton {
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+  animation: gym-pulse 1.4s ease-in-out infinite;
+}
+@keyframes gym-pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+/* Locked state on member detail — distinct from error, distinct from empty. */
+.gym-locked {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 20px;
+}
+.gym-locked-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(255,176,32,0.10);
+  border: 0.5px solid rgba(255,176,32,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFB020;
+}
+
+/* Segmented control for meals/reports tabs (§4). */
+.gym-segmented {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 9999px;
+  background: rgba(255,255,255,0.04);
+  border: 0.5px solid rgba(255,255,255,0.06);
+}
+.gym-segmented button {
+  flex: 1;
+  min-height: 40px;
+  border: none;
+  background: transparent;
+  border-radius: 9999px;
+  color: rgba(255,255,255,0.55);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  transition: color 200ms cubic-bezier(0.4,0,0.2,1);
+}
+.gym-segmented button[aria-selected="true"] { color: #0A0A0A; }
+.gym-segmented button:focus-visible { outline: 2px solid #D4FF00; outline-offset: 2px; }
+.gym-segmented-pill {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: #D4FF00;
+  z-index: 0;
+}
+.gym-segmented-label { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 6px; }
+
+/* Sheet form — form fields with visible labels (§7). */
+.gym-field { display: flex; flex-direction: column; gap: 6px; }
+.gym-field-label { font-size: 12.5px; font-weight: 600; color: rgba(255,255,255,0.55); }
+.gym-field-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.04);
+  border: 0.5px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  color: rgba(255,255,255,0.92);
+  font-size: 16px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 200ms cubic-bezier(0.4,0,0.2,1), background 200ms cubic-bezier(0.4,0,0.2,1);
+}
+.gym-field-input:focus { border-color: rgba(212,255,0,0.45); background: rgba(255,255,255,0.06); }
+.gym-field-input::placeholder { color: rgba(255,255,255,0.32); }
+.gym-field-hint { font-size: 11.5px; font-weight: 500; color: rgba(255,255,255,0.32); }
+.gym-field-error { font-size: 12.5px; font-weight: 500; color: #FF5C4D; margin-top: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gym-skeleton { animation: none; }
+  .gym-row, .gym-copy-btn, .gym-primary-btn, .gym-secondary-btn, .gym-field-input,
+  .gym-segmented button { transition: none; }
+}

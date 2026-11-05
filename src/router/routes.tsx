@@ -13,6 +13,7 @@ import { AnalyticsObserver } from '@/shared/components/AnalyticsObserver';
 import { DashboardSkeleton, MealLoggerSkeleton, ProgressSkeleton, WeeklyReportSkeleton, ProfileSkeleton, NutritionDetailSkeleton, AwardsSkeleton } from '@/shared/components/Skeletons';
 import { PageSkeleton } from '@/shared/components/PageSkeleton';
 
+
 const DashboardPage = lazy(() => import('@/features/dashboard/pages/DashboardPage').then(module => ({ default: module.DashboardPage })));
 const MealLoggerPage = lazy(() => import('@/features/nutrition/pages/MealLoggerPage').then(module => ({ default: module.MealLoggerPage })));
 const ProgressPage = lazy(() => import('@/features/progress/pages/ProgressPage').then(module => ({ default: module.ProgressPage })));
@@ -30,6 +31,19 @@ const LandingPage = lazy(() => import('@/LandingPage').then(module => ({ default
 const NotFoundPage = lazy(() => import('@/shared/components/NotFoundPage').then(module => ({ default: module.NotFoundPage })));
 const AwardsGallery = lazy(() => import('@/features/awards/dev/AwardsGallery').then(module => ({ default: module.AwardsGallery })));
 
+import { GymOwnerRoute } from '@/features/gym/routes/GymOwnerRoute';
+
+const GymOwnerDashboardPage = lazy(() =>
+  import('@/features/gym/pages/GymOwnerDashboardPage').then((m) => ({
+    default: m.GymOwnerDashboardPage,
+  })),
+);
+const GymOwnerMemberDetailPage = lazy(() =>
+  import('@/features/gym/pages/GymOwnerMemberDetailPage').then((m) => ({
+    default: m.GymOwnerMemberDetailPage,
+  })),
+);
+
 
 const PrivacyPage = lazy(() => import('@/features/legal/pages/PrivacyPage').then(module => ({ default: module.PrivacyPage })));
 const TermsPage = lazy(() => import('@/features/legal/pages/TermsPage').then(module => ({ default: module.TermsPage })));
@@ -40,6 +54,7 @@ import { PublicLayout } from './layouts/PublicLayout';
 import { useAwardsSync } from '@/features/awards/hooks/useAwardsSync';
 import { AwardCelebrationSheet } from '@/features/awards/components/AwardCelebrationSheet';
 import { AppLoadingScreen } from '@/shared/components/AppLoadingScreen';
+
 
 function RootLayout() {
   useAwardsSync();
@@ -56,6 +71,7 @@ function RootLayout() {
   );
 }
 
+
 const devRoutes: RouteObject[] = import.meta.env.DEV
   ? [
       {
@@ -64,6 +80,7 @@ const devRoutes: RouteObject[] = import.meta.env.DEV
       },
     ]
   : [];
+
 
 export const routes: RouteObject[] = [
   {
@@ -115,11 +132,35 @@ export const routes: RouteObject[] = [
               { path: '/subscription/success', element: <Suspense fallback={<PageSkeleton route="pricing" />}><SubscriptionSuccessPage /></Suspense>, handle: { title: 'Subscription Confirmed', description: 'Confirming your plan.' } },
               { path: '/awards', element: <Suspense fallback={<PageSkeleton route="awards" />}><AwardsPage /></Suspense>, handle: { title: 'Awards', description: 'View your earned achievements.' } },
               { path: '/calorie', element: <Suspense fallback={<PageSkeleton route="calorie" />}><CalorieDetailPage /></Suspense>, handle: { title: 'Calorie Detail', description: 'Detailed breakdown of your calorie intake.' } },
-              { path: '/protein', element: <Suspense fallback={<PageSkeleton route="protein" />}><ProteinDetailPage /></Suspense>, handle: { title: 'Protein Detail', description: 'Detailed breakdown of your protein intake.' } }
+              { path: '/protein', element: <Suspense fallback={<PageSkeleton route="protein" />}><ProteinDetailPage /></Suspense>, handle: { title: 'Protein Detail', description: 'Detailed breakdown of your protein intake.' } },
+              {
+                element: <GymOwnerRoute />,
+                children: [
+                  {
+                    path: '/gym',
+                    element: (
+                      <Suspense fallback={<PageSkeleton route="dashboard" />}>
+                        <GymOwnerDashboardPage />
+                      </Suspense>
+                    ),
+                    handle: { title: 'Gym Dashboard', description: 'Manage promo codes and members.' },
+                  },
+                  {
+                    path: '/gym/:gymId/member/:memberId',
+                    element: (
+                      <Suspense fallback={<PageSkeleton route="reports" />}>
+                        <GymOwnerMemberDetailPage />
+                      </Suspense>
+                    ),
+                    handle: { title: 'Member Activity' },
+                  },
+                ],
+              },
             ]
           }
         ]
       },
+
 
       {
         element: <PublicLayout />,
