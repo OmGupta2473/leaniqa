@@ -52,12 +52,6 @@ function rpcErrorMessage(code: string): string {
   }
 }
 
-// plpgsql RAISE EXCEPTION surfaces verbatim in the PostgREST error.message.
-// The RPC in migration 20261105000000 raises one of five strings. The unique
-// index on (user_id) in promo_redemptions is a defence-in-depth backstop —
-// if the pre-check in the RPC is ever bypassed, Postgres emits 23505 with
-// 'promo_redemptions_one_per_user' in the constraint name; treat that as
-// already_redeemed too so the client contract stays stable.
 function mapRpcError(
   message: string,
   code: string | undefined,
@@ -132,10 +126,6 @@ serve(async (req) => {
 
     // 5 attempts/min per user, 20/min per IP. Reuses the same helper the
     // checkout endpoints use, with "redeem-promo" as the action key.
-    // NOTE (5.1.14 filed below): this is UX, not security — the RPC itself
-    // is granted to `authenticated` and can be called directly, bypassing
-    // this limit. Acceptable for v1 because promo codes are private
-    // distribution; revisit if abuse is observed.
     const rl = await checkPaymentRateLimit(
       admin,
       user.id,
@@ -162,6 +152,7 @@ serve(async (req) => {
       );
     }
 
+    // The RPC handles the insert and timestamps internally based on the boolean
     const { data: rows, error: rpcError } = await supabase.rpc("redeem_promo_code", {
       p_code: parsed.code,
       p_share_meal_data: parsed.share_meal_data,

@@ -50,7 +50,10 @@ describe('promoService.redeem', () => {
       premiumUntil: '2026-12-05T12:00:00Z',
       shareMealData: true,
     });
-    expect(result.redemption?.consentGrantedAt).not.toBeNull();
+    
+    // NEW CONTRACT: Client-side timestamps are null. The authoritative
+    // values are fetched from the DB via getRedemption() on refetch.
+    expect(result.redemption?.consentGrantedAt).toBeNull();
     expect(result.redemption?.consentRevokedAt).toBeNull();
   });
 

@@ -45,6 +45,8 @@ export const promoService = {
       if (!data?.ok) {
         return { ok: false, errorCode: 'unknown', error: 'Unexpected response from server.' };
       }
+// src/features/profile/services/promoService.ts
+
       return {
         ok: true,
         redemption: {
@@ -53,8 +55,13 @@ export const promoService = {
           premiumUntil: data.premium_until,
           redeemedAt: new Date().toISOString(),
           shareMealData: data.share_meal_data === true,
-          consentGrantedAt: data.share_meal_data ? new Date().toISOString() : null,
-          consentRevokedAt: data.share_meal_data ? null : new Date().toISOString(),
+          // REMOVED fake timestamps here:
+          // consentGrantedAt: data.share_meal_data ? new Date().toISOString() : null,
+          // consentRevokedAt: data.share_meal_data ? null : new Date().toISOString(),
+          
+          // Just return null; the query invalidation will fetch the real ones
+          consentGrantedAt: null,
+          consentRevokedAt: null,
         },
       };
     } catch (err) {
