@@ -1,6 +1,16 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { AlertTriangle, ChevronLeft, ChevronRight, Sunrise, Sun, Moon, Coffee, Utensils, Lock } from 'lucide-react';
+import {
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+  Sunrise,
+  Sun,
+  Moon,
+  Coffee,
+  Utensils,
+  Lock,
+} from 'lucide-react';
 import { gymOwnerService, type GymMember, type MemberActivityRow } from '../../services/gymOwnerService';
 import { MealSlotRow, formatMacro } from '@/features/nutrition/components/MealSlotRow';
 import {
@@ -10,6 +20,7 @@ import {
 } from '@/shared/utils/timezone';
 import { haptics } from '@/shared/utils/haptics';
 import { useNetworkConnectivity } from '@/shared/hooks/useNetworkConnectivity';
+import { cn } from '@/shared/utils/utils';
 import '../../styles/gymOwner.css';
 
 interface MemberMealsViewProps {
@@ -24,16 +35,6 @@ const SLOTS = [
   { id: 'snack', label: 'Snack', timeRange: 'Anytime', icon: <Coffee size={20} /> },
 ] as const;
 
-/**
- * Owner-side read-only view of a member's daily meals. Data is scoped to
- * one day (matching the member's /meals) and every fetch calls the audited
- * RPC, which fires exactly one gym_member_access_log row per view (Session
- * 3 migration).
- *
- * Not used by the member's own MealLoggerPage — that page stays self-scoped
- * via auth.uid(). This component is the only caller of the owner-facing
- * member activity RPC.
- */
 export function MemberMealsView({ gymId, member }: MemberMealsViewProps) {
   const isOnline = useNetworkConnectivity();
   const today = getKolkataDateString();
@@ -69,7 +70,10 @@ export function MemberMealsView({ gymId, member }: MemberMealsViewProps) {
 
   const rowsBySlot = useMemo(() => {
     const grouped: Record<string, MemberActivityRow[]> = {
-      breakfast: [], lunch: [], dinner: [], snack: [],
+      breakfast: [],
+      lunch: [],
+      dinner: [],
+      snack: [],
     };
     for (const row of rows) {
       const slot = (row.mealSlot ?? '').toLowerCase();
@@ -79,43 +83,77 @@ export function MemberMealsView({ gymId, member }: MemberMealsViewProps) {
     return grouped;
   }, [rows]);
 
+  // Targets come from the RPC payload (first row).
+  // If a day is empty, we cannot render the summary card (no targets returned),
+  // but the member's /meals page falls back to profile targets. We fall back
+  // to 0 here to keep the summary hidden when empty, matching the "no data" state.
   const firstRow = rows[0];
   const targetKcal = firstRow?.targetKcal ?? 0;
   const targetProtein = firstRow?.proteinTarget ?? 0;
   const targetCarbs = firstRow?.carbsTarget ?? 0;
   const targetFat = firstRow?.fatTarget ?? 0;
+
   const eatenKcal = Math.round(rows.reduce((s, r) => s + r.calories, 0));
   const eatenProtein = Math.round(rows.reduce((s, r) => s + r.protein, 0) * 10) / 10;
   const eatenCarbs = Math.round(rows.reduce((s, r) => s + r.carbs, 0) * 10) / 10;
   const eatenFat = Math.round(rows.reduce((s, r) => s + r.fat, 0) * 10) / 10;
 
+  const remainingKcal = targetKcal - eatenKcal;
+  const remainingProtein = targetProtein - eatenProtein;
+
+  const calPct = targetKcal > 0 ? Math.min(eatenKcal / targetKcal, 1) : 0;
+  const proPct = targetProtein > 0 ? Math.min(eatenProtein / targetProtein, 1) : 0;
+
   const isToday = selectedDate === today;
-  const labels = dateLabels(selectedDate);
+
+  const handlePrevDay = () => {
+    haptics.tap();
+    setSelectedDate(shiftKolkataDateString(selectedDate, -1));
+  };
+
+  const handleNextDay = () => {
+    if (isToday) return;
+    haptics.tap();
+    setSelectedDate(shiftKolkataDateString(selectedDate, 1));
+  };
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={() => { haptics.tap(); setSelectedDate(shiftKolkataDateString(selectedDate, -1)); }}
-          aria-label="Previous day"
-          className="gym-copy-btn"
-        >
-          <ChevronLeft size={18} />
-        </button>
-        <div className="text-center">
-          <div className="gym-card-title">{labels.primary}</div>
-          <div className="gym-caption">{labels.secondary}</div>
+      {/* Header: Meal Log + Date Nav */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex flex-col">
+          <h2 className="text-[28px] font-semibold text-white tracking-tight">Meal Log</h2>
+          <div className="text-[14px] font-medium text-[rgba(235,235,245,0.5)] mt-0.5">
+            {formatDateLabel(selectedDate)}
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={() => { haptics.tap(); setSelectedDate(shiftKolkataDateString(selectedDate, 1)); }}
-          disabled={isToday}
-          aria-label="Next day"
-          className="gym-copy-btn"
-        >
-          <ChevronRight size={18} />
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handlePrevDay}
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] cursor-pointer active:scale-95 transition-all duration-200"
+            aria-label="Previous Day"
+          >
+            <ChevronLeft size={18} className="text-white" />
+          </button>
+          <span className="text-[15px] font-semibold text-white min-w-[85px] text-center tracking-tight">
+            {formatDateLabel(selectedDate)}
+          </span>
+          <button
+            type="button"
+            onClick={handleNextDay}
+            disabled={isToday}
+            className={cn(
+              'min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full transition-all duration-200',
+              isToday
+                ? 'opacity-30 cursor-not-allowed'
+                : 'bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] cursor-pointer active:scale-95',
+            )}
+            aria-label="Next Day"
+          >
+            <ChevronRight size={18} className="text-white" />
+          </button>
+        </div>
       </div>
 
       {query.isLoading ? (
@@ -136,51 +174,154 @@ export function MemberMealsView({ gymId, member }: MemberMealsViewProps) {
             onRetry={() => query.refetch()}
           />
         )
-      ) : rows.length === 0 ? (
-        <div className="gym-glass">
-          <div className="gym-empty">
-            <div className="gym-empty-icon"><Utensils size={18} /></div>
-            <div className="gym-empty-title">No meals logged on this day</div>
-            <div className="gym-empty-body">
-              Navigate to another day to see {member.name ?? 'this member'}'s meals.
-            </div>
-          </div>
-        </div>
       ) : (
         <>
-          <DailySummaryCard
-            eatenKcal={eatenKcal}
-            eatenProtein={eatenProtein}
-            eatenCarbs={eatenCarbs}
-            eatenFat={eatenFat}
-            targetKcal={targetKcal}
-            targetProtein={targetProtein}
-            targetCarbs={targetCarbs}
-            targetFat={targetFat}
-          />
+          {/* Daily Summary Card (Only if there are meals, otherwise targets are unknown) */}
+          {rows.length > 0 && (
+            <div className="mb-2 rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] p-5 shadow-sm backdrop-blur-xl relative overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-5">
+                <div className="text-[12px] font-semibold uppercase tracking-widest text-[rgba(235,235,245,0.5)]">
+                  Daily Summary
+                </div>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div
+                      className="text-[16px] font-bold"
+                      style={{
+                        color:
+                          remainingKcal > 0
+                            ? remainingKcal / targetKcal > 0.2
+                              ? '#D4FF00'
+                              : remainingKcal / targetKcal > 0.05
+                              ? '#FFB347'
+                              : '#FF4D1C'
+                            : '#FF4D1C',
+                      }}
+                    >
+                      {remainingKcal > 0
+                        ? `${formatMacro(remainingKcal)} kcal`
+                        : `Over budget by ${formatMacro(Math.abs(remainingKcal))} kcal`}
+                    </div>
+                    {remainingProtein <= 0 ? (
+                      <span className="text-[13px] text-[rgba(255,255,255,0.4)]">
+                        Protein target met
+                      </span>
+                    ) : (
+                      <span className="text-[13px] text-[rgba(255,255,255,0.6)]">
+                        {formatMacro(remainingProtein)}g protein left today
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
 
+              {/* Calories bar */}
+              <div className="mb-4">
+                <div className="flex justify-between mb-1.5 items-end">
+                  <span className="text-[13px] font-medium text-[rgba(235,235,245,0.5)]">Calories</span>
+                  <span className="text-[14px] font-bold text-white tracking-tight">
+                    {eatenKcal}{' '}
+                    <span className="text-[11px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">
+                      / {targetKcal}
+                    </span>
+                  </span>
+                </div>
+                <div className="h-2 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden shadow-inner">
+                  <div
+                    className="h-full w-full rounded-full origin-left transition-transform duration-1000 ease-out will-change-transform"
+                    style={{
+                      transform: `translateX(-${100 - calPct * 100}%)`,
+                      background: eatenKcal > targetKcal ? '#FF4D1C' : '#D4FF00',
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Protein bar */}
+              <div>
+                <div className="flex justify-between mb-1.5 items-end">
+                  <span className="text-[13px] font-medium text-[rgba(235,235,245,0.5)]">Protein</span>
+                  <span className="text-[14px] font-bold text-white tracking-tight">
+                    {eatenProtein}g{' '}
+                    <span className="text-[11px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">
+                      / {targetProtein}g
+                    </span>
+                  </span>
+                </div>
+                <div className="h-2 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden shadow-inner">
+                  <div
+                    className="h-full w-full rounded-full bg-[#378ADD] origin-left transition-transform duration-1000 ease-out will-change-transform"
+                    style={{ transform: `translateX(-${100 - proPct * 100}%)` }}
+                  />
+                </div>
+              </div>
+
+              {/* Macros row */}
+              <div className="grid grid-cols-4 gap-2 mt-5 pt-4 border-t border-[rgba(255,255,255,0.06)]">
+                {[
+                  { label: 'Kcal', val: eatenKcal, target: targetKcal, unit: '', color: '#FF4D1C' },
+                  { label: 'Protein', val: eatenProtein, target: targetProtein, unit: 'g', color: '#378ADD' },
+                  { label: 'Fat', val: eatenFat, target: targetFat, unit: 'g', color: 'white' },
+                  { label: 'Carbs', val: eatenCarbs, target: targetCarbs, unit: 'g', color: 'white' },
+                ].map((item) => (
+                  <div key={item.label} className="text-center flex flex-col items-center">
+                    <div className="text-[16px] font-bold tracking-tight" style={{ color: item.color }}>
+                      {formatMacro(item.val)}
+                      <span className="text-[12px]">{item.unit}</span>
+                    </div>
+                    <div className="text-[10px] text-[rgba(235,235,245,0.5)] uppercase tracking-widest mt-0.5 font-medium">
+                      {item.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Meal Slots */}
           <div>
-            {SLOTS.map((slot) => (
-              <MealSlotRow
-                key={slot.id}
-                slot={slot.id}
-                icon={slot.icon}
-                label={slot.label}
-                timeRange={slot.timeRange}
-                meals={rowsBySlot[slot.id].map((r) => ({
-                  id: r.mealId,
-                  meal_text: r.mealText,
-                  calories: r.calories,
-                  protein: r.protein,
-                  fat: r.fat,
-                  carbs: r.carbs,
-                  fiber: r.fiber,
-                  meal_time: r.mealTime,
-                  meal_source: 'owner_read_only' as any,
-                }))}
-                readOnly
-              />
-            ))}
+            <div className="flex items-center justify-between mb-3 px-1">
+              <div className="text-[12px] font-semibold uppercase tracking-widest text-[rgba(235,235,245,0.5)]">
+                Meal Log
+              </div>
+            </div>
+
+            {rows.length === 0 && (
+              <div className="gym-glass mb-4">
+                <div className="gym-empty">
+                  <div className="gym-empty-icon">
+                    <Utensils size={18} />
+                  </div>
+                  <div className="gym-empty-title">No meals logged on this day</div>
+                  <div className="gym-empty-body">
+                    Navigate to another day to see {member.name ?? 'this member'}'s meals.
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {rows.length > 0 &&
+              SLOTS.map((slot) => (
+                <MealSlotRow
+                  key={slot.id}
+                  slot={slot.id}
+                  icon={slot.icon}
+                  label={slot.label}
+                  timeRange={slot.timeRange}
+                  meals={rowsBySlot[slot.id].map((r) => ({
+                    id: r.mealId,
+                    meal_text: r.mealText,
+                    calories: r.calories,
+                    protein: r.protein,
+                    fat: r.fat,
+                    carbs: r.carbs,
+                    fiber: r.fiber,
+                    meal_time: r.mealTime,
+                    meal_source: 'owner_read_only' as any,
+                  }))}
+                  readOnly
+                />
+              ))}
           </div>
         </>
       )}
@@ -188,83 +329,23 @@ export function MemberMealsView({ gymId, member }: MemberMealsViewProps) {
   );
 }
 
-// ── Daily summary card (eaten vs target) ──────────────────────────────────
-
-function DailySummaryCard({
-  eatenKcal, eatenProtein, eatenCarbs, eatenFat,
-  targetKcal, targetProtein, targetCarbs, targetFat,
-}: {
-  eatenKcal: number; eatenProtein: number; eatenCarbs: number; eatenFat: number;
-  targetKcal: number; targetProtein: number; targetCarbs: number; targetFat: number;
-}) {
-  return (
-    <div className="rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] p-5">
-      <div className="flex justify-between items-center mb-4">
-        <span className="gym-label">Daily summary</span>
-        <span className="gym-caption tabular-nums">
-          {formatMacro(eatenKcal)} / {targetKcal} kcal
-        </span>
-      </div>
-
-      <MacroBar label="Calories" value={eatenKcal} target={targetKcal} color={eatenKcal > targetKcal ? '#FF4D1C' : '#D4FF00'} />
-      <MacroBar label="Protein" value={eatenProtein} target={targetProtein} color="#378ADD" />
-      <MacroBar label="Carbs" value={eatenCarbs} target={targetCarbs} color="#FFFFFF" />
-      <MacroBar label="Fat" value={eatenFat} target={targetFat} color="#FFFFFF" />
-
-      <div className="grid grid-cols-4 gap-2 mt-5 pt-4 border-t border-[rgba(255,255,255,0.06)]">
-        {[
-          { label: 'Kcal', val: eatenKcal, color: '#FF4D1C' },
-          { label: 'Protein', val: eatenProtein, color: '#378ADD' },
-          { label: 'Fat', val: eatenFat, color: '#FFFFFF' },
-          { label: 'Carbs', val: eatenCarbs, color: '#FFFFFF' },
-        ].map((item) => (
-          <div key={item.label} className="text-center flex flex-col items-center">
-            <div className="gym-headline tabular-nums" style={{ color: item.color }}>
-              {formatMacro(item.val)}
-            </div>
-            <div className="gym-label mt-1">{item.label}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function MacroBar({
-  label, value, target, color,
-}: {
-  label: string; value: number; target: number; color: string;
-}) {
-  const pct = target > 0 ? Math.min(100, (value / target) * 100) : 0;
-  return (
-    <div className="mb-3">
-      <div className="flex justify-between items-baseline mb-1.5">
-        <span className="gym-caption">{label}</span>
-        <span className="gym-caption tabular-nums">
-          {formatMacro(value)} / {target}
-        </span>
-      </div>
-      <div className="h-2 rounded-full bg-[rgba(255,255,255,0.05)] overflow-hidden">
-        <div
-          className="h-full rounded-full origin-left"
-          style={{ width: `${pct}%`, backgroundColor: color }}
-        />
-      </div>
-    </div>
-  );
-}
-
-// ── Empty / error / revoked blocks ────────────────────────────────────────
+// ── Helper components ─────────────────────────────────────────────────────
 
 function ErrorBlock({
-  title, body, onRetry,
+  title,
+  body,
+  onRetry,
 }: {
-  title: string; body: string; onRetry: () => void;
+  title: string;
+  body: string;
+  onRetry: () => void;
 }) {
   return (
     <div className="gym-glass">
       <div className="gym-error">
-        <div className="gym-error-icon"><AlertTriangle size={18} /></div>
+        <div className="gym-error-icon">
+          <AlertTriangle size={18} />
+        </div>
         <div className="gym-empty-title">{title}</div>
         <div className="gym-empty-body">{body}</div>
         <button type="button" onClick={onRetry} className="gym-secondary-btn mt-1">
@@ -279,7 +360,9 @@ function RevokedBlock({ memberName }: { memberName: string | null }) {
   return (
     <div className="gym-glass">
       <div className="gym-locked">
-        <div className="gym-locked-icon"><Lock size={20} /></div>
+        <div className="gym-locked-icon">
+          <Lock size={20} />
+        </div>
         <div className="gym-empty-title">Sharing was turned off</div>
         <div className="gym-empty-body">
           {memberName ?? 'This member'} has revoked gym sharing. Meals are no
@@ -308,17 +391,15 @@ function LoadingSkeleton() {
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
-function dateLabels(dateStr: string): { primary: string; secondary: string } {
+function formatDateLabel(dateStr: string): string {
   const today = getKolkataDateString();
   const yesterday = shiftKolkataDateString(today, -1);
+  if (dateStr === today) return 'Today';
+  if (dateStr === yesterday) return 'Yesterday';
   const [y, m, d] = dateStr.split('-').map(Number);
-  const dObj = new Date(y, m - 1, d);
-  const primary =
-    dateStr === today ? 'Today'
-    : dateStr === yesterday ? 'Yesterday'
-    : dObj.toLocaleDateString('en-GB', { weekday: 'long' });
-  const secondary = dObj.toLocaleDateString('en-GB', {
-    day: 'numeric', month: 'short', year: 'numeric',
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
   });
-  return { primary, secondary };
 }
