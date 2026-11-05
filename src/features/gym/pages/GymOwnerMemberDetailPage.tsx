@@ -64,7 +64,8 @@ export function GymOwnerMemberDetailPage() {
 
   const mealsQuery = useQuery({
     queryKey: ['gymMemberMeals', gymId, memberId],
-    queryFn: () => gymOwnerService.getMemberActivity(gymId!, sinceIso, untilIso),
+    queryFn: () =>
+      gymOwnerService.getMemberActivity(gymId!, memberId!, sinceIso, untilIso),
     enabled: !!gymId && !!memberId && hasAccess && tab === 'meals',
   });
 
@@ -72,7 +73,7 @@ export function GymOwnerMemberDetailPage() {
   const reportsQuery = useQuery({
     queryKey: ['gymMemberReports', gymId, memberId],
     queryFn: () =>
-      gymOwnerService.getMemberWeeklyReports(gymId!, sinceDate, untilDate),
+      gymOwnerService.getMemberWeeklyReports(gymId!, memberId!, sinceDate, untilDate),
     enabled: !!gymId && !!memberId && hasAccess && tab === 'reports',
   });
 

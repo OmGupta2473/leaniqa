@@ -45,6 +45,10 @@ export interface MemberActivityRow {
   carbs: number;
   fiber: number;
   mealSlot: string | null;
+  targetKcal: number | null;
+  proteinTarget: number | null;
+  carbsTarget: number | null;
+  fatTarget: number | null;
 }
 
 export interface MemberWeeklyReportRow {
@@ -64,6 +68,7 @@ export type GymOwnerErrorCode =
   | 'not_authenticated'
   | 'not_gym_owner'
   | 'invalid_range'
+  | 'member_not_shareable'
   | 'invalid_duration_v1'
   | 'invalid_max_redemptions_v1'
   | 'custom_code_not_allowed_v1'
@@ -172,11 +177,13 @@ export const gymOwnerService = {
   /** Meal activity for one gym, filtered server-side by R1. Audited. */
   async getMemberActivity(
     gymId: string,
+    memberId: string,
     sinceIso: string,
     untilIso: string,
   ): Promise<GymOwnerResult<MemberActivityRow[]>> {
     const { data, error } = await supabase.rpc('get_gym_member_activity', {
       p_gym_id: gymId,
+      p_member_user_id: memberId,
       p_since: sinceIso,
       p_until: untilIso,
     });
@@ -192,7 +199,13 @@ export const gymOwnerService = {
       carbs: number | string;
       fiber: number | string;
       meal_slot: string | null;
+      target_kcal: number | string | null;
+      protein_target: number | string | null;
+      carbs_target: number | string | null;
+      fat_target: number | string | null;
     }>;
+    const toNum = (v: number | string | null): number | null =>
+      v == null ? null : Number(v);
     return {
       ok: true,
       data: rows.map((r) => ({
@@ -206,6 +219,10 @@ export const gymOwnerService = {
         carbs: Number(r.carbs),
         fiber: Number(r.fiber),
         mealSlot: r.meal_slot,
+        targetKcal: toNum(r.target_kcal),
+        proteinTarget: toNum(r.protein_target),
+        carbsTarget: toNum(r.carbs_target),
+        fatTarget: toNum(r.fat_target),
       })),
     };
   },
@@ -213,11 +230,13 @@ export const gymOwnerService = {
   /** Weekly reports for one gym, filtered server-side by R1. Audited. */
   async getMemberWeeklyReports(
     gymId: string,
+    memberId: string,
     sinceDate: string,
     untilDate: string,
   ): Promise<GymOwnerResult<MemberWeeklyReportRow[]>> {
     const { data, error } = await supabase.rpc('get_gym_member_weekly_reports', {
       p_gym_id: gymId,
+      p_member_user_id: memberId,
       p_since_date: sinceDate,
       p_until_date: untilDate,
     });
@@ -260,6 +279,7 @@ function mapRpcError(error: { message?: string; code?: string }): GymOwnerResult
     'not_authenticated',
     'not_gym_owner',
     'invalid_range',
+    'member_not_shareable',
     'invalid_duration_v1',
     'invalid_max_redemptions_v1',
     'custom_code_not_allowed_v1',
@@ -282,6 +302,7 @@ function friendly(code: GymOwnerErrorCode): string {
     case 'custom_code_not_allowed_v1': return 'Custom codes are not available in this version.';
     case 'code_generation_failed': return 'Could not generate a unique code. Try again.';
     case 'network': return 'Check your connection and try again.';
+        case 'member_not_shareable': return 'This member has not consented to share data, or their access has ended.';
     default: return 'Something went wrong.';
   }
 }
