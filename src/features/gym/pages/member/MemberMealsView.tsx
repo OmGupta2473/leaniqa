@@ -49,7 +49,6 @@ export function MemberMealsView({ gymId, member }: MemberMealsViewProps) {
     }),
     [selectedDate],
   );
-
   const query = useQuery({
     queryKey: ['gymMemberMeals', gymId, member.userId, selectedDate],
     queryFn: () =>
@@ -59,12 +58,9 @@ export function MemberMealsView({ gymId, member }: MemberMealsViewProps) {
         dayBounds.sinceIso,
         dayBounds.untilIso,
       ),
-    // 0 so that navigating days or remounting tabs always re-evaluates the
-    // R1 gate. If the member revokes consent mid-session, the RPC raises
-    // member_not_shareable and we render the revoked block below.
     staleTime: 0,
+    refetchOnWindowFocus: true, // FIX #4
   });
-
   const result = query.data;
   const rows: MemberActivityRow[] = result?.ok ? result.data ?? [] : [];
 
@@ -92,6 +88,8 @@ export function MemberMealsView({ gymId, member }: MemberMealsViewProps) {
   const targetProtein = firstRow?.proteinTarget ?? 0;
   const targetCarbs = firstRow?.carbsTarget ?? 0;
   const targetFat = firstRow?.fatTarget ?? 0;
+
+  const hasTargets = targetKcal > 0; // FIX #1 condition
 
   const eatenKcal = Math.round(rows.reduce((s, r) => s + r.calories, 0));
   const eatenProtein = Math.round(rows.reduce((s, r) => s + r.protein, 0) * 10) / 10;
@@ -174,90 +172,100 @@ export function MemberMealsView({ gymId, member }: MemberMealsViewProps) {
             onRetry={() => query.refetch()}
           />
         )
-      ) : (
+) : (
         <>
-          {/* Daily Summary Card (Only if there are meals, otherwise targets are unknown) */}
           {rows.length > 0 && (
             <div className="mb-2 rounded-[24px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] p-5 shadow-sm backdrop-blur-xl relative overflow-hidden">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-5">
                 <div className="text-[12px] font-semibold uppercase tracking-widest text-[rgba(235,235,245,0.5)]">
                   Daily Summary
                 </div>
-                <div className="flex items-center gap-3 flex-wrap">
+                {hasTargets && (
                   <div className="flex items-center gap-3 flex-wrap">
-                    <div
-                      className="text-[16px] font-bold"
-                      style={{
-                        color:
-                          remainingKcal > 0
-                            ? remainingKcal / targetKcal > 0.2
-                              ? '#D4FF00'
-                              : remainingKcal / targetKcal > 0.05
-                              ? '#FFB347'
-                              : '#FF4D1C'
-                            : '#FF4D1C',
-                      }}
-                    >
-                      {remainingKcal > 0
-                        ? `${formatMacro(remainingKcal)} kcal`
-                        : `Over budget by ${formatMacro(Math.abs(remainingKcal))} kcal`}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div
+                        className="text-[16px] font-bold"
+                        style={{
+                          color:
+                            remainingKcal > 0
+                              ? remainingKcal / targetKcal > 0.2
+                                ? '#D4FF00'
+                                : remainingKcal / targetKcal > 0.05
+                                ? '#FFB347'
+                                : '#FF4D1C'
+                              : '#FF4D1C',
+                        }}
+                      >
+                        {remainingKcal > 0
+                          ? `${formatMacro(remainingKcal)} kcal`
+                          : `Over budget by ${formatMacro(Math.abs(remainingKcal))} kcal`}
+                      </div>
+                      {remainingProtein <= 0 ? (
+                        <span className="text-[13px] text-[rgba(255,255,255,0.4)]">
+                          Protein target met
+                        </span>
+                      ) : (
+                        <span className="text-[13px] text-[rgba(255,255,255,0.6)]">
+                          {formatMacro(remainingProtein)}g protein left today
+                        </span>
+                      )}
                     </div>
-                    {remainingProtein <= 0 ? (
-                      <span className="text-[13px] text-[rgba(255,255,255,0.4)]">
-                        Protein target met
-                      </span>
-                    ) : (
-                      <span className="text-[13px] text-[rgba(255,255,255,0.6)]">
-                        {formatMacro(remainingProtein)}g protein left today
-                      </span>
-                    )}
                   </div>
-                </div>
+                )}
+                {!hasTargets && (
+                  <div className="text-[13px] font-medium text-[rgba(255,255,255,0.5)]">
+                    No targets set
+                  </div>
+                )}
               </div>
 
-              {/* Calories bar */}
-              <div className="mb-4">
-                <div className="flex justify-between mb-1.5 items-end">
-                  <span className="text-[13px] font-medium text-[rgba(235,235,245,0.5)]">Calories</span>
-                  <span className="text-[14px] font-bold text-white tracking-tight">
-                    {eatenKcal}{' '}
-                    <span className="text-[11px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">
-                      / {targetKcal}
-                    </span>
-                  </span>
-                </div>
-                <div className="h-2 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden shadow-inner">
-                  <div
-                    className="h-full w-full rounded-full origin-left transition-transform duration-1000 ease-out will-change-transform"
-                    style={{
-                      transform: `translateX(-${100 - calPct * 100}%)`,
-                      background: eatenKcal > targetKcal ? '#FF4D1C' : '#D4FF00',
-                    }}
-                  />
-                </div>
-              </div>
+              {hasTargets ? (
+                <>
+                  {/* Calories bar */}
+                  <div className="mb-4">
+                    <div className="flex justify-between mb-1.5 items-end">
+                      <span className="text-[13px] font-medium text-[rgba(235,235,245,0.5)]">Calories</span>
+                      <span className="text-[14px] font-bold text-white tracking-tight">
+                        {eatenKcal}{' '}
+                        <span className="text-[11px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">
+                          / {targetKcal}
+                        </span>
+                      </span>
+                    </div>
+                    <div className="h-2 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden shadow-inner">
+                      <div
+                        className="h-full w-full rounded-full origin-left transition-transform duration-1000 ease-out will-change-transform"
+                        style={{
+                          transform: `translateX(-${100 - calPct * 100}%)`,
+                          background: eatenKcal > targetKcal ? '#FF4D1C' : '#D4FF00',
+                        }}
+                      />
+                    </div>
+                  </div>
 
-              {/* Protein bar */}
-              <div>
-                <div className="flex justify-between mb-1.5 items-end">
-                  <span className="text-[13px] font-medium text-[rgba(235,235,245,0.5)]">Protein</span>
-                  <span className="text-[14px] font-bold text-white tracking-tight">
-                    {eatenProtein}g{' '}
-                    <span className="text-[11px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">
-                      / {targetProtein}g
-                    </span>
-                  </span>
-                </div>
-                <div className="h-2 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden shadow-inner">
-                  <div
-                    className="h-full w-full rounded-full bg-[#378ADD] origin-left transition-transform duration-1000 ease-out will-change-transform"
-                    style={{ transform: `translateX(-${100 - proPct * 100}%)` }}
-                  />
-                </div>
-              </div>
+                  {/* Protein bar */}
+                  <div>
+                    <div className="flex justify-between mb-1.5 items-end">
+                      <span className="text-[13px] font-medium text-[rgba(235,235,245,0.5)]">Protein</span>
+                      <span className="text-[14px] font-bold text-white tracking-tight">
+                        {eatenProtein}g{' '}
+                        <span className="text-[11px] font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider">
+                          / {targetProtein}g
+                        </span>
+                      </span>
+                    </div>
+                    <div className="h-2 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden shadow-inner">
+                      <div
+                        className="h-full w-full rounded-full bg-[#378ADD] origin-left transition-transform duration-1000 ease-out will-change-transform"
+                        style={{ transform: `translateX(-${100 - proPct * 100}%)` }}
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : null}
 
               {/* Macros row */}
-              <div className="grid grid-cols-4 gap-2 mt-5 pt-4 border-t border-[rgba(255,255,255,0.06)]">
+              <div className={cn("grid grid-cols-4 gap-2", hasTargets ? "mt-5 pt-4 border-t border-[rgba(255,255,255,0.06)]" : "mt-2")}>
                 {[
                   { label: 'Kcal', val: eatenKcal, target: targetKcal, unit: '', color: '#FF4D1C' },
                   { label: 'Protein', val: eatenProtein, target: targetProtein, unit: 'g', color: '#378ADD' },

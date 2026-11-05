@@ -43,7 +43,9 @@ export function MemberWeeklyView({ gymId, member }: MemberWeeklyViewProps) {
         weekEnd,
       ),
     staleTime: 0,
+    refetchOnWindowFocus: true, // FIX #4
   });
+
 
   const result = query.data;
   const rows: MemberWeeklyReportRow[] = result?.ok ? result.data ?? [] : [];
