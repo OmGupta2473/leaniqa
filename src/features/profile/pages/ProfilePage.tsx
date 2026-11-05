@@ -7,7 +7,9 @@ import { profileService } from '../services/profileService';
 import { useToast } from '@/shared/components/Toast';
 import { useAuthSession } from '@/router/useAuthSession';
 import { useState, useMemo, useEffect } from 'react';
-import { ChevronLeft, LogOut, AlertTriangle, TrendingDown, TrendingUp, Target, Lock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LogOut, AlertTriangle, TrendingDown, TrendingUp, Target, Lock, Building2 } from 'lucide-react';
+import { useIsGymOwner } from '@/features/gym/hooks/useIsGymOwner';
+import '@/features/gym/styles/gymOwner.css';
 import { useCalculatedProfile } from '@/shared/hooks/useCalculatedProfile';
 import { computeProjection } from '@/shared/utils/projectionEngine';
 import { computeMaintenancePlan } from '@/shared/utils/paceEngine';
@@ -60,6 +62,7 @@ export function ProfilePage() {
   const [showDeleteSheet, setShowDeleteSheet] = useState(false);
   const { session } = useAuthSession();
   const isGuest = session?.user?.is_anonymous === true;
+  const isGymOwner = useIsGymOwner();
   const { toast } = useToast();
   const [linking, setLinking] = useState(false);
 
@@ -651,6 +654,40 @@ export function ProfilePage() {
         <div className="md:col-span-2">
           <PromoRedemptionSection />
         </div>
+
+                {/* Gym membership — redeem / active / expired states (Session 1d) */}
+        <div className="md:col-span-2">
+          <PromoRedemptionSection />
+        </div>
+
+        {/* ── INSERT THIS BLOCK HERE ── */}
+        {isGymOwner === true && (
+          <div className="md:col-span-2">
+            <button
+              type="button"
+              onClick={() => navigate('/gym')}
+              className="gym-owner-nav"
+              aria-label="Open gym dashboard"
+            >
+              <div className="gym-owner-nav-body">
+                <div className="gym-owner-nav-icon">
+                  <Building2 size={18} strokeWidth={2} aria-hidden="true" />
+                </div>
+                <div className="gym-owner-nav-text">
+                  <span className="gym-owner-nav-title">Gym dashboard</span>
+                  <span className="gym-owner-nav-sub">Manage codes and members</span>
+                </div>
+              </div>
+              <span className="gym-owner-nav-end" aria-hidden="true">
+                <ChevronRight size={16} />
+              </span>
+            </button>
+          </div>
+        )}
+        {/* ── END INSERT ── */}
+
+        {/* Card 5 — Danger zone (Sign Out + dev crash preserved) */}
+        <section className="flex flex-col gap-3 pt-[clamp(0.3rem,0.8dvh,0.5rem)] md:col-span-2"></section>
 
         {/* Card 5 — Danger zone (Sign Out + dev crash preserved) */}
         <section className="flex flex-col gap-3 pt-[clamp(0.3rem,0.8dvh,0.5rem)] md:col-span-2">
