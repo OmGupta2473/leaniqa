@@ -616,7 +616,7 @@ const DIET_OPTIONS: { id: 'veg' | 'egg' | 'nonveg'; label: string; Icon: typeof 
   { id: 'nonveg', label: 'Non-veg', Icon: Drumstick },
 ];
 
-function PlanScreen({ draft, setDraft, onConsent }: DraftProps & {
+export function PlanScreen({ draft, setDraft, onConsent }: DraftProps & {
   onConsent: (commitFn: () => Promise<void>) => void;
 }) {
   const { toast } = useToast();

@@ -13,3 +13,5 @@ supabase/.temp/
 all_test_output.txt
 test_output*.txt
 test_verbose.txt
+
+scripts/import/data/fdc/*.json

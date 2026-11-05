@@ -511,7 +511,7 @@ export function MealLoggerPage() {
   // Vite bakes VITE_* env vars at build time, so this is a compile-time
   // constant. Default false: parse-meal remains the default path unless
   // the environment explicitly opts in.
-  const USE_V2_RESOLVER = import.meta.env.VITE_RESOLVE_V2_ENABLED === 'true';
+  const useV2Resolver = () => import.meta.env.VITE_RESOLVE_V2_ENABLED === 'true';
   const RESOLVE_MEAL_ENDPOINT = 'resolve-meal-v2';
 
   type ResolverV2Result = {
@@ -1574,7 +1574,7 @@ const refundParseCredit = useCallback(async (pm: PendingMeal | null) => {
         console.error('Failed to persist chat message', err));
     }
     setLoading(true);
-    if (USE_V2_RESOLVER) {
+    if (useV2Resolver()) {
       resolveMealV2Mutation.mutate(text);
     } else {
       parseMealMutation.mutate(text);
