@@ -55,7 +55,7 @@ export const promoService = {
           premiumUntil: data.premium_until,
           redeemedAt: new Date().toISOString(),
           shareMealData: data.share_meal_data === true,
-          shareName: data.share_meal_data === true, // At redeem time, both are bound to the checkbox
+          shareName: data.share_name === true,
           consentGrantedAt: null,
           consentRevokedAt: null,
         },

@@ -47,6 +47,8 @@ export function GymOwnerDashboardPage() {
     queryKey: ['gymCodes', gym?.id],
     queryFn: () => gymOwnerService.listPromoCodes(gym!.id),
     enabled: !!gym,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
   const codes: PromoCodeRow[] = codesQuery.data ?? [];
 

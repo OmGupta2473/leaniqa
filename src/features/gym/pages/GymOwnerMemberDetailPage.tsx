@@ -31,6 +31,8 @@ export function GymOwnerMemberDetailPage() {
     queryKey: ['gymMembers', gymId],
     queryFn: () => gymOwnerService.listGymMembers(gymId!),
     enabled: !!gymId,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const member: GymMember | null = useMemo(() => {

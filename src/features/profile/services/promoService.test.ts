@@ -34,6 +34,7 @@ describe('promoService.redeem', () => {
         gym_name: 'Test Gym',
         premium_until: '2026-12-05T12:00:00Z',
         share_meal_data: true,
+        share_name: true,
       },
       error: null,
     });
@@ -49,12 +50,35 @@ expect(m.invoke).toHaveBeenCalledWith('redeem-promo', {
       gymName: 'Test Gym',
       premiumUntil: '2026-12-05T12:00:00Z',
       shareMealData: true,
+      shareName: true,
     });
     
     // NEW CONTRACT: Client-side timestamps are null. The authoritative
     // values are fetched from the DB via getRedemption() on refetch.
     expect(result.redemption?.consentGrantedAt).toBeNull();
     expect(result.redemption?.consentRevokedAt).toBeNull();
+  });
+    it('T-PROMO-1b: shareName maps from data.share_name, not data.share_meal_data', async () => {
+    // Edge function supports divergent p_share_meal_data / p_share_name.
+    // The old `shareName: data.share_meal_data === true` shortcut would
+    // return shareName=false here. This asserts the fix.
+    m.invoke.mockResolvedValue({
+      data: {
+        ok: true,
+        gym_id: 'gym-1',
+        gym_name: 'Test Gym',
+        premium_until: '2026-12-05T12:00:00Z',
+        share_meal_data: false,
+        share_name: true,
+      },
+      error: null,
+    });
+
+    const result = await promoService.redeem('TESTGYM30', false, true);
+
+    expect(result.ok).toBe(true);
+    expect(result.redemption?.shareMealData).toBe(false);
+    expect(result.redemption?.shareName).toBe(true);
   });
 
   it('T-PROMO-2: 409 already_redeemed → mapped error', async () => {
