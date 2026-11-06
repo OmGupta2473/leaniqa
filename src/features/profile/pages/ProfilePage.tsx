@@ -650,10 +650,15 @@ export function ProfilePage() {
             </div>
           )}
         </section>
-        {/* Gym membership — redeem / active / expired states (Session 1d) */}
-        <div className="md:col-span-2">
-          <PromoRedemptionSection />
-        </div>
+        {/* Gym membership — redeem / active / expired states (Session 1d).
+            Hidden for gym owners: owners issue codes, they don't redeem them.
+            `isGymOwner === false` avoids a flash of member-only UI during the
+            ownership check (undefined) and at owners (true). */}
+        {isGymOwner === false && (
+          <div className="md:col-span-2">
+            <PromoRedemptionSection />
+          </div>
+        )}
 
         {/* ── INSERT THIS BLOCK HERE ── */}
         {isGymOwner === true && (

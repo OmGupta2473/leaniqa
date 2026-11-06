@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'motion/react';
-import { Check, Gift, AlertTriangle, ChevronDown } from 'lucide-react';
+import { Gift, AlertTriangle } from 'lucide-react';
 import { promoService, type PromoRedemption } from '../services/promoService';
 import { useToast } from '@/shared/components/Toast';
 import { haptics } from '@/shared/utils/haptics';
@@ -22,78 +22,7 @@ function formatDate(iso: string): string {
     year: 'numeric',
   });
 }
-const KIND_LABEL: Record<string, string> = {
-  member_viewed: 'Viewed your profile',
-  meal_logs: 'Viewed your meals',
-  weekly_reports: 'Viewed your weekly reports',
-};
 
-function labelForKind(kind: string): string {
-  return KIND_LABEL[kind] ?? 'Viewed your data';
-}
-
-function relativeTime(iso: string): string {
-  const diffMs = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diffMs / 60_000);
-  if (mins < 1) return 'Just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-  });
-}
-
-function AccessLogSection() {
-  const { data: log = [] } = useQuery({
-    queryKey: ['gymAccessLog'],
-    queryFn: () => promoService.getMyAccessLog(20),
-    staleTime: 30_000,
-  });
-  const [expanded, setExpanded] = useState(false);
-
-  if (log.length === 0) return null;
-
-  const visible = expanded ? log : log.slice(0, 3);
-
-  return (
-    <div className="mt-4 pt-4 border-t border-[rgba(255,255,255,0.06)]">
-      <div className="text-[clamp(0.65rem,1.7dvh,0.78rem)] uppercase tracking-wider text-zinc-500 mb-3">
-        Who&apos;s viewed your data
-      </div>
-      <ul className="space-y-2">
-        {visible.map((row, i) => (
-          <li
-            key={`${row.viewedAt}-${i}`}
-            className="flex items-center justify-between gap-3 text-[12.5px]"
-          >
-            <span className="text-zinc-300">{labelForKind(row.resourceKind)}</span>
-            <span className="text-zinc-500 tabular-nums">
-              {relativeTime(row.viewedAt)}
-            </span>
-          </li>
-        ))}
-      </ul>
-      {log.length > 3 && (
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          className="mt-3 inline-flex items-center gap-1 text-[12px] font-medium text-[#D4FF00] hover:underline min-h-[44px]"
-        >
-          {expanded ? 'Show less' : `Show ${log.length - 3} more`}
-          <ChevronDown
-            size={12}
-            className="transition-transform"
-            style={{ transform: expanded ? 'rotate(180deg)' : undefined }}
-          />
-        </button>
-      )}
-    </div>
-  );
-}
 export function PromoRedemptionSection() {
   const { data: redemption, isLoading } = useQuery({
     queryKey: QUERY_KEY,
@@ -125,7 +54,6 @@ function RedeemForm() {
   const [error, setError] = useState<string | null>(null);
 
   const redeemMutation = useMutation({
-    // Pass shareMealData as both arguments to apply to meal logs and profile name
     mutationFn: () => promoService.redeem(code.trim(), shareMealData, shareMealData),
     onSuccess: async (result) => {
       if (result.ok && result.redemption) {
@@ -333,17 +261,10 @@ function ActiveOrExpiredCard({ redemption }: { redemption: PromoRedemption }) {
           }`}
         >
           <span
-            className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-transform ${
-              redemption.shareMealData ? 'translate-x-6' : 'translate-x-1'
+            className={`absolute left-1 top-1 w-5 h-5 rounded-full bg-white shadow transition-all duration-200 ${
+              redemption.shareMealData ? 'translate-x-5' : 'translate-x-0'
             }`}
           />
-          {redemption.shareMealData && (
-            <Check
-              size={10}
-              className="absolute top-1.5 left-1.5 text-black pointer-events-none"
-              strokeWidth={3}
-            />
-          )}
         </button>
       </div>
 
@@ -367,20 +288,12 @@ function ActiveOrExpiredCard({ redemption }: { redemption: PromoRedemption }) {
           }`}
         >
           <span
-            className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-transform ${
-              redemption.shareName ? 'translate-x-6' : 'translate-x-1'
+            className={`absolute left-1 top-1 w-5 h-5 rounded-full bg-white shadow transition-all duration-200 ${
+              redemption.shareName ? 'translate-x-5' : 'translate-x-0'
             }`}
           />
-          {redemption.shareName && (
-            <Check
-              size={10}
-              className="absolute top-1.5 left-1.5 text-black pointer-events-none"
-              strokeWidth={3}
-            />
-          )}
         </button>
       </div>
-      <AccessLogSection />
     </motion.section>
   );
 }
