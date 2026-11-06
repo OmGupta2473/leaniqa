@@ -72,6 +72,8 @@ export function GymOwnerDashboardPage() {
     queryKey: ['gymMembers', gym?.id],
     queryFn: () => gymOwnerService.listGymMembers(gym!.id),
     enabled: !!gym,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
   const members: GymMember[] = membersQuery.data ?? [];
 
