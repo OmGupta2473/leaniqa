@@ -1,0 +1,35 @@
+-- 20261106000013_revoke_gym_member_access_log_grants.sql
+--
+-- P1 defense-in-depth: narrow the broad grants Supabase applies to every new
+-- table so that even if a future RLS policy widens access, or a future
+-- SECURITY INVOKER function reads the audit table, the grants are already
+-- closed at the privilege layer.
+--
+-- Scope of this migration (Option A, approved):
+--   * anon           : revoke SELECT   (audit log is member-only)
+--   * authenticated  : revoke INSERT, UPDATE, DELETE  (writes happen only
+--                      inside SECURITY DEFINER RPCs, which run as the
+--                      function owner and are unaffected)
+--   * authenticated  : SELECT is retained. It is neutralised today by the
+--                      two SELECT-only RLS policies on the table, and no
+--                      client path reads the table directly.
+--   * service_role / postgres : untouched.
+--
+-- All four RPCs that touch this table (get_gym_member_detail,
+-- get_gym_member_activity, get_gym_member_weekly_reports,
+-- get_my_gym_access_log) are SECURITY DEFINER, so the revokes below do not
+-- affect their ability to write or read the table.
+--
+-- Queued follow-ups (do NOT do here):
+--   1. Option C: convert get_my_gym_access_log to SECURITY INVOKER and
+--      additionally revoke SELECT from authenticated. Only worth doing if
+--      a direct PostgREST read path on this table is ever added.
+--   2. search_path hygiene: ALTER FUNCTION ... SET search_path = 'public'
+--      on get_gym_member_activity and get_gym_member_weekly_reports
+--      (separate session; no behavioural change).
+--
+-- REVOKE of a privilege that is not held is a no-op in Postgres, so this
+-- migration is safe to re-run.
+
+revoke select                  on public.gym_member_access_log from anon;
+revoke insert, update, delete  on public.gym_member_access_log from authenticated;
