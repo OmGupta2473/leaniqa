@@ -3,10 +3,10 @@ import { supabase } from '@/shared/utils/supabase';
 export interface PromoRedemption {
   gymId: string;
   gymName: string;
-  /** ISO timestamp. Date-comparison at read time, no cron. */
   premiumUntil: string;
   redeemedAt: string;
   shareMealData: boolean;
+  shareName: boolean; // NEW
   consentGrantedAt: string | null;
   consentRevokedAt: string | null;
 }
@@ -25,10 +25,10 @@ export const promoService = {
    * caller distinguishes them via errorCode. Only a transport error will
    * surface as errorCode='network'.
    */
-  async redeem(code: string, shareMealData: boolean): Promise<RedeemResult> {
+  async redeem(code: string, shareMealData: boolean, shareName: boolean): Promise<RedeemResult> {
     try {
       const { data, error } = await supabase.functions.invoke('redeem-promo', {
-        body: { code, share_meal_data: shareMealData },
+        body: { code, share_meal_data: shareMealData, share_name: shareName }, // NEW
       });
       if (error) {
         let body: { error?: string; error_code?: string } | null = null;
@@ -55,11 +55,7 @@ export const promoService = {
           premiumUntil: data.premium_until,
           redeemedAt: new Date().toISOString(),
           shareMealData: data.share_meal_data === true,
-          // REMOVED fake timestamps here:
-          // consentGrantedAt: data.share_meal_data ? new Date().toISOString() : null,
-          // consentRevokedAt: data.share_meal_data ? null : new Date().toISOString(),
-          
-          // Just return null; the query invalidation will fetch the real ones
+          shareName: data.share_meal_data === true, // At redeem time, both are bound to the checkbox
           consentGrantedAt: null,
           consentRevokedAt: null,
         },
@@ -81,8 +77,7 @@ export const promoService = {
     if (!user) return null;
     const { data, error } = await supabase
       .from('promo_redemptions')
-      .select('gym_id, premium_until, share_meal_data, redeemed_at, consent_granted_at, consent_revoked_at, gyms(name)')
-      .eq('user_id', user.id)
+      .select('gym_id, premium_until, share_meal_data, share_name, redeemed_at, consent_granted_at, consent_revoked_at, gyms(name)')
       .maybeSingle();
     if (error) {
       if (error.code !== 'PGRST116') {
@@ -99,9 +94,11 @@ export const promoService = {
       premiumUntil: data.premium_until,
       redeemedAt: data.redeemed_at,
       shareMealData: data.share_meal_data,
+      shareName: data.share_name, // NEW
       consentGrantedAt: data.consent_granted_at,
       consentRevokedAt: data.consent_revoked_at,
     };
+
   },
 
   /**
@@ -109,9 +106,12 @@ export const promoService = {
    * RLS + WHERE user_id = auth.uid() in the RPC means only the owner can
    * flip their own row.
    */
-  async setConsent(share: boolean): Promise<{ ok: boolean; error?: string }> {
+  async setConsent(shareMealData: boolean, shareName: boolean): Promise<{ ok: boolean; error?: string }> {
     try {
-      const { error } = await supabase.rpc('set_promo_consent', { p_share: share });
+      const { error } = await supabase.rpc('set_promo_consent', { 
+        p_share_meal_data: shareMealData, 
+        p_share_name: shareName 
+      });
       if (error) {
         console.error('[promoService] setConsent', error.code, error.message);
         return { ok: false, error: 'Could not update sharing. Please try again.' };

@@ -27,6 +27,7 @@ const CODE_MAX_LEN = 40;
 interface RedeemBody {
   code: string;
   share_meal_data: boolean;
+  share_name: boolean;
 }
 
 function parseBody(raw: unknown): RedeemBody | null {
@@ -38,7 +39,14 @@ function parseBody(raw: unknown): RedeemBody | null {
   if (r.share_meal_data !== undefined && typeof r.share_meal_data !== "boolean") {
     return null;
   }
-  return { code, share_meal_data: r.share_meal_data === true };
+  if (r.share_name !== undefined && typeof r.share_name !== "boolean") {
+    return null;
+  }
+  return { 
+    code, 
+    share_meal_data: r.share_meal_data === true,
+    share_name: r.share_name === true
+  };
 }
 
 function rpcErrorMessage(code: string): string {
@@ -156,6 +164,7 @@ serve(async (req) => {
     const { data: rows, error: rpcError } = await supabase.rpc("redeem_promo_code", {
       p_code: parsed.code,
       p_share_meal_data: parsed.share_meal_data,
+      p_share_name: parsed.share_name,
     });
 
     if (rpcError) {

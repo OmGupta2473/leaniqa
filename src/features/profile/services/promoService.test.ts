@@ -38,11 +38,11 @@ describe('promoService.redeem', () => {
       error: null,
     });
 
-    const result = await promoService.redeem('TESTGYM30', true);
+    const result = await promoService.redeem('TESTGYM30', true, true);
 
-    expect(m.invoke).toHaveBeenCalledWith('redeem-promo', {
-      body: { code: 'TESTGYM30', share_meal_data: true },
-    });
+expect(m.invoke).toHaveBeenCalledWith('redeem-promo', {
+  body: { code: 'TESTGYM30', share_meal_data: true, share_name: true },
+});
     expect(result.ok).toBe(true);
     expect(result.redemption).toMatchObject({
       gymId: 'gym-1',
@@ -71,7 +71,7 @@ describe('promoService.redeem', () => {
       },
     });
 
-    const result = await promoService.redeem('TESTGYM30', false);
+    const result = await promoService.redeem('TESTGYM30', false, false);
     expect(result.ok).toBe(false);
     expect(result.errorCode).toBe('already_redeemed');
     expect(result.error).toContain('already');
@@ -91,55 +91,61 @@ describe('promoService.redeem', () => {
       },
     });
 
-    const result = await promoService.redeem('NOPE', false);
+    const result = await promoService.redeem('NOPE', false, false);
     expect(result.ok).toBe(false);
     expect(result.errorCode).toBe('invalid_code');
   });
 });
 
 describe('promoService.getRedemption', () => {
-  it('T-PROMO-4: returns null when no row', async () => {
-    const chain: any = {
-      select: vi.fn(() => chain),
-      eq: vi.fn(() => chain),
-      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-    };
-    m.from.mockReturnValue(chain);
+it('T-PROMO-4: returns null when no row', async () => {
+  const chain: any = {
+    select: vi.fn(() => chain),
+    maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+  };
+  m.from.mockReturnValue(chain);
 
-    const result = await promoService.getRedemption();
-    expect(result).toBeNull();
-    expect(m.from).toHaveBeenCalledWith('promo_redemptions');
-    expect(chain.eq).toHaveBeenCalledWith('user_id', 'user-1');
+  const result = await promoService.getRedemption();
+  expect(result).toBeNull();
+  expect(m.from).toHaveBeenCalledWith('promo_redemptions');
+  // getRedemption now filters ownership via RLS (no explicit .eq('user_id', ...)),
+  // so assert the select string carries the new share_name column and that the
+  // query terminates in maybeSingle. Do NOT assert chain.eq here — the
+  // implementation never calls it.
+  expect(chain.select).toHaveBeenCalledWith(
+    expect.stringContaining('share_name'),
+  );
+  expect(chain.maybeSingle).toHaveBeenCalled();
+});
+
+it('T-PROMO-5: returns joined object when row exists', async () => {
+  const chain: any = {
+    select: vi.fn(() => chain),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data: {
+        gym_id: 'gym-1',
+        premium_until: '2026-12-05T12:00:00Z',
+        share_meal_data: true,
+        share_name: true,
+        redeemed_at: '2026-11-05T12:00:00Z',
+        consent_granted_at: '2026-11-05T12:00:00Z',
+        consent_revoked_at: null,
+        gyms: { name: 'Test Gym' },
+      },
+      error: null,
+    }),
+  };
+  m.from.mockReturnValue(chain);
+
+  const result = await promoService.getRedemption();
+  expect(result).toMatchObject({
+    gymId: 'gym-1',
+    gymName: 'Test Gym',
+    premiumUntil: '2026-12-05T12:00:00Z',
+    shareMealData: true,
+    shareName: true,
   });
-
-  it('T-PROMO-5: returns joined object when row exists', async () => {
-    const chain: any = {
-      select: vi.fn(() => chain),
-      eq: vi.fn(() => chain),
-      maybeSingle: vi.fn().mockResolvedValue({
-        data: {
-          gym_id: 'gym-1',
-          premium_until: '2026-12-05T12:00:00Z',
-          share_meal_data: true,
-          redeemed_at: '2026-11-05T12:00:00Z',
-          consent_granted_at: '2026-11-05T12:00:00Z',
-          consent_revoked_at: null,
-          gyms: { name: 'Test Gym' },
-        },
-        error: null,
-      }),
-    };
-    m.from.mockReturnValue(chain);
-
-    const result = await promoService.getRedemption();
-    expect(result).toMatchObject({
-      gymId: 'gym-1',
-      gymName: 'Test Gym',
-      premiumUntil: '2026-12-05T12:00:00Z',
-      shareMealData: true,
-    });
-  });
-
+});
   it('T-PROMO-6: returns null when user is signed out', async () => {
     m.getUser.mockResolvedValue({ data: { user: null }, error: null });
 
@@ -153,9 +159,12 @@ describe('promoService.setConsent', () => {
   it('T-PROMO-7: calls set_promo_consent RPC with p_share', async () => {
     m.rpc.mockResolvedValue({ data: null, error: null });
 
-    const result = await promoService.setConsent(false);
+    const result = await promoService.setConsent(false, false);
 
-    expect(m.rpc).toHaveBeenCalledWith('set_promo_consent', { p_share: false });
+expect(m.rpc).toHaveBeenCalledWith('set_promo_consent', {
+  p_share_meal_data: false,
+  p_share_name: false,
+});
     expect(result.ok).toBe(true);
   });
 
@@ -165,7 +174,7 @@ describe('promoService.setConsent', () => {
       error: { message: 'permission denied for function set_promo_consent', code: '42501' },
     });
 
-    const result = await promoService.setConsent(true);
+    const result = await promoService.setConsent(true, true);
     expect(result.ok).toBe(false);
     expect(result.error).toBeTruthy();
   });

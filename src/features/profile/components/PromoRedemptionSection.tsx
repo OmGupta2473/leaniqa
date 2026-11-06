@@ -23,18 +23,6 @@ function formatDate(iso: string): string {
   });
 }
 
-/**
- * Profile section for gym code redemption and consent. Three states:
- *   1. No redemption → redeem form (input + consent + button).
- *   2. Redemption active → gym card + sharing toggle.
- *   3. Redemption expired → muted card + sharing toggle still visible
- *      (per Q5: show the toggle whenever a promo_redemptions row exists).
- *
- * Does NOT read from useEntitlements — plan gating depends on
- * resolve_user_access (1c); this card is informational and reads the
- * promo_redemptions row directly so its display is correct even if the
- * entitlements function regresses.
- */
 export function PromoRedemptionSection() {
   const { data: redemption, isLoading } = useQuery({
     queryKey: QUERY_KEY,
@@ -66,7 +54,8 @@ function RedeemForm() {
   const [error, setError] = useState<string | null>(null);
 
   const redeemMutation = useMutation({
-    mutationFn: () => promoService.redeem(code.trim(), shareMealData),
+    // Pass shareMealData as both arguments to apply to meal logs and profile name
+    mutationFn: () => promoService.redeem(code.trim(), shareMealData, shareMealData),
     onSuccess: async (result) => {
       if (result.ok && result.redemption) {
         haptics.success();
@@ -150,8 +139,7 @@ function RedeemForm() {
             className="mt-1 w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-[#D4FF00] focus:ring-2 focus:ring-[#D4FF00] cursor-pointer"
           />
           <span className="text-[clamp(0.72rem,1.85dvh,0.85rem)] text-zinc-300 leading-snug">
-            Share my meal logs and weekly reports with the gym associated
-            with this code. You can revoke this later.
+            Share my meal logs and profile name with the gym associated with this code. You can revoke this later.
           </span>
         </label>
 
@@ -184,7 +172,8 @@ function ActiveOrExpiredCard({ redemption }: { redemption: PromoRedemption }) {
   const isActive = new Date(redemption.premiumUntil) > new Date();
 
   const consentMutation = useMutation({
-    mutationFn: (share: boolean) => promoService.setConsent(share),
+    mutationFn: ({ mealData, name }: { mealData: boolean, name: boolean }) => 
+      promoService.setConsent(mealData, name),
     onSuccess: async (result) => {
       if (result.ok) {
         haptics.tap();
@@ -198,6 +187,20 @@ function ActiveOrExpiredCard({ redemption }: { redemption: PromoRedemption }) {
       }
     },
   });
+
+  const handleToggleMealData = () => {
+    consentMutation.mutate({ 
+      mealData: !redemption.shareMealData, 
+      name: redemption.shareName 
+    });
+  };
+
+  const handleToggleName = () => {
+    consentMutation.mutate({ 
+      mealData: redemption.shareMealData, 
+      name: !redemption.shareName 
+    });
+  };
 
   return (
     <motion.section
@@ -242,7 +245,7 @@ function ActiveOrExpiredCard({ redemption }: { redemption: PromoRedemption }) {
       <div className="flex items-center justify-between gap-4 mt-4 pt-4 border-t border-[rgba(255,255,255,0.06)]">
         <div className="min-w-0">
           <div className="text-[clamp(0.8rem,2.1dvh,0.95rem)] font-semibold text-white leading-tight">
-            Gym sharing
+            Meal sharing
           </div>
           <div className="text-[clamp(0.65rem,1.7dvh,0.78rem)] text-zinc-500 leading-snug mt-0.5">
             Meal logs and weekly reports
@@ -252,8 +255,7 @@ function ActiveOrExpiredCard({ redemption }: { redemption: PromoRedemption }) {
           type="button"
           role="switch"
           aria-checked={redemption.shareMealData}
-          aria-label="Share meal logs and weekly reports with gym"
-          onClick={() => consentMutation.mutate(!redemption.shareMealData)}
+          onClick={handleToggleMealData}
           disabled={consentMutation.isPending}
           className={`relative w-12 h-7 rounded-full shrink-0 transition-colors disabled:opacity-50 ${
             redemption.shareMealData ? 'bg-[#D4FF00]' : 'bg-zinc-700'
@@ -265,6 +267,40 @@ function ActiveOrExpiredCard({ redemption }: { redemption: PromoRedemption }) {
             }`}
           />
           {redemption.shareMealData && (
+            <Check
+              size={10}
+              className="absolute top-1.5 left-1.5 text-black pointer-events-none"
+              strokeWidth={3}
+            />
+          )}
+        </button>
+      </div>
+
+      <div className="flex items-center justify-between gap-4 mt-4 pt-4 border-t border-[rgba(255,255,255,0.06)]">
+        <div className="min-w-0">
+          <div className="text-[clamp(0.8rem,2.1dvh,0.95rem)] font-semibold text-white leading-tight">
+            Profile name
+          </div>
+          <div className="text-[clamp(0.65rem,1.7dvh,0.78rem)] text-zinc-500 leading-snug mt-0.5">
+            Your display name in the gym dashboard
+          </div>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={redemption.shareName}
+          onClick={handleToggleName}
+          disabled={consentMutation.isPending}
+          className={`relative w-12 h-7 rounded-full shrink-0 transition-colors disabled:opacity-50 ${
+            redemption.shareName ? 'bg-[#D4FF00]' : 'bg-zinc-700'
+          }`}
+        >
+          <span
+            className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+              redemption.shareName ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+          {redemption.shareName && (
             <Check
               size={10}
               className="absolute top-1.5 left-1.5 text-black pointer-events-none"
