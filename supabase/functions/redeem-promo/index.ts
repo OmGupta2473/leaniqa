@@ -55,6 +55,7 @@ function rpcErrorMessage(code: string): string {
     case "invalid_code": return "That code isn't valid. Check the spelling and try again.";
     case "code_inactive": return "That code is no longer active.";
     case "code_exhausted": return "That code has reached its redemption limit.";
+    case "cannot_redeem_own_gym": return "You can't redeem a code from your own gym.";
     case "not_authenticated": return "Please sign in again.";
     default: return "Could not redeem this code.";
   }
@@ -68,6 +69,7 @@ function mapRpcError(
   if (message.includes("invalid_code"))      return { error_code: "invalid_code",      status: 404 };
   if (message.includes("code_inactive"))     return { error_code: "code_inactive",     status: 400 };
   if (message.includes("code_exhausted"))    return { error_code: "code_exhausted",    status: 400 };
+  if (message.includes("cannot_redeem_own_gym")) return { error_code: "cannot_redeem_own_gym", status: 403 };
   if (message.includes("not_authenticated")) return { error_code: "not_authenticated", status: 401 };
   if (code === "23505" && message.includes("promo_redemptions_one_per_user")) {
     return { error_code: "already_redeemed", status: 409 };

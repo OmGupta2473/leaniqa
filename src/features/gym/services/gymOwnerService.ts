@@ -6,6 +6,8 @@ export interface OwnedGym {
   id: string;
   name: string;
   createdAt: string;
+  /** 'creator' for the user who created the gym, 'co_owner' for added owners. */
+  role: 'creator' | 'co_owner';
 }
 
 export interface PromoCodeRow {
@@ -88,16 +90,26 @@ export interface GymOwnerResult<T> {
 
 export const gymOwnerService = {
   /** Gym list for the current owner. RPC-enforced (list_my_gyms). */
-  async listOwnedGyms(): Promise<OwnedGym[]> {
-    const { data, error } = await supabase.rpc('list_my_gyms');
-    if (error) {
-      console.error('[gymOwnerService] listOwnedGyms', error.code, error.message);
-      return [];
-    }
-    const rows = (data ?? []) as Array<{ id: string; name: string; created_at: string }>;
-    return rows
-      .map((r) => ({ id: r.id, name: r.name, createdAt: r.created_at }))
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+async listOwnedGyms(): Promise<OwnedGym[]> {
+  const { data, error } = await supabase.rpc('list_my_gyms');
+  if (error) {
+    console.error('[gymOwnerService] listOwnedGyms', error.code, error.message);
+    return [];
+  }
+  const rows = (data ?? []) as Array<{
+    id: string;
+    name: string;
+    created_at: string;
+    role: 'creator' | 'co_owner';
+  }>;
+  return rows
+    .map((r) => ({
+      id: r.id,
+      name: r.name,
+      createdAt: r.created_at,
+      role: r.role === 'creator' ? ('creator' as const) : ('co_owner' as const),
+    }))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   },
 
   /** Codes for one owned gym. Owner RLS on promo_codes enforces the gate. */

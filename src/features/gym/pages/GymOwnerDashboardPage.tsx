@@ -180,6 +180,9 @@ const membersError = membersQuery.error as Error | null;
 
         <div>
           <h1 className="gym-title">{gym.name}</h1>
+          {gym.role === 'co_owner' && (
+            <span className="gym-pill gym-pill-share mt-1 inline-flex">Co-owner</span>
+          )}
           <p className="gym-caption mt-1">
             {members.length === 0
   ? 'No members yet.'

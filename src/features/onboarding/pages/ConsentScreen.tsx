@@ -122,18 +122,16 @@ export function ConsentScreen({ draft, setDraft, onFinish }: ConsentScreenProps)
         <button
           onClick={handleContinue}
           disabled={!isValid || isSaving}
-          className={`w-full py-[clamp(0.75rem,2.1dvh,1rem)] rounded-full font-semibold text-[clamp(0.9rem,2.3dvh,1rem)] transition-all flex items-center justify-center gap-3 ${
-            isValid && !isSaving
+          className={`w-full py-[clamp(0.75rem,2.1dvh,1rem)] rounded-full font-semibold text-[clamp(0.9rem,2.3dvh,1rem)] transition-all flex items-center justify-center gap-3 ${isValid && !isSaving
               ? 'bg-[#D4FF00] text-black hover:brightness-110'
               : 'bg-zinc-900 text-zinc-600 cursor-not-allowed'
-          }`}
+            }`}
         >
           {isSaving ? 'Saving…' : 'Continue'}
           {!isSaving && (
             <div
-              className={`w-7 h-7 rounded-full flex items-center justify-center ${
-                isValid ? 'bg-black/10' : 'bg-zinc-800/50'
-              }`}
+              className={`w-7 h-7 rounded-full flex items-center justify-center ${isValid ? 'bg-black/10' : 'bg-zinc-800/50'
+                }`}
             >
               <ArrowRight className="w-4 h-4" />
             </div>
@@ -163,9 +161,8 @@ function ConsentRow({
 }) {
   return (
     <div
-      className={`flex items-start gap-[clamp(0.5rem,1.4dvh,0.75rem)] p-[clamp(0.75rem,2dvh,1.1rem)] ${
-        !isLast ? 'border-b border-zinc-800/60' : ''
-      }`}
+      className={`flex items-start gap-[clamp(0.5rem,1.4dvh,0.75rem)] p-[clamp(0.75rem,2dvh,1.1rem)] ${!isLast ? 'border-b border-zinc-800/60' : ''
+        }`}
     >
       <button
         onClick={onToggle}
@@ -173,9 +170,8 @@ function ConsentRow({
         aria-pressed={checked}
       >
         <div
-          className={`w-5 h-5 rounded-[6px] border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
-            checked ? 'bg-[#D4FF00] border-[#D4FF00]' : 'border-zinc-700'
-          }`}
+          className={`w-5 h-5 rounded-[6px] border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${checked ? 'bg-[#D4FF00] border-[#D4FF00]' : 'border-zinc-700'
+            }`}
         >
           {checked && <Check className="w-3.5 h-3.5 text-black" strokeWidth={3} />}
         </div>
@@ -191,16 +187,16 @@ function ConsentRow({
           </p>
         </div>
       </button>
-              {onOpen && (
-                <button
-                  onClick={onOpen}
-                  type="button"
-                  aria-label={`Read ${title}`}
-                  className="flex items-center gap-1 text-[11px] font-semibold text-[#D4FF00] hover:text-white px-3 py-1.5 rounded-full bg-[#D4FF00]/10 hover:bg-[#D4FF00]/20 transition-colors shrink-0 mt-0.5 border border-[#D4FF00]/30 shadow-[0_0_12px_rgba(212,255,0,0.1)] active:scale-95"
-                >
-                  Read <ChevronRight className="w-3 h-3" />
-                </button>
-              )}
+      {onOpen && (
+        <button
+          onClick={onOpen}
+          type="button"
+          aria-label={`Read ${title}`}
+          className="flex items-center gap-1 text-[11px] font-semibold text-[#D4FF00] hover:text-white px-3 py-1.5 rounded-full bg-[#D4FF00]/10 hover:bg-[#D4FF00]/20 transition-colors shrink-0 mt-0.5 border border-[#D4FF00]/30 shadow-[0_0_12px_rgba(212,255,0,0.1)] active:scale-95"
+        >
+          Read <ChevronRight className="w-3 h-3" />
+        </button>
+      )}
     </div>
   );
 }
