@@ -1,11 +1,11 @@
 -- 5.2.5 + 5.2.6: single-member fetch RPC + member-facing access log.
 --
--- Target audit table (confirmed Q-A): public.gym_member_access_log
+-- Target audit table: public.gym_member_access_log
 --   id bigint, gym_id uuid, owner_id uuid, member_user_id uuid,
 --   resource_kind text, row_count int, accessed_at timestamptz default now()
--- Owner-column is `owner_id` (not owner_user_id); gyms ownership is `owner_id`.
--- Existing RLS policies (Q-C): gym_member_access_log_member_select,
--- gym_member_access_log_owner_select — left in place, not modified.
+-- Ownership column on gyms is `owner_id`.
+-- Existing RLS policies (gym_member_access_log_member_select,
+-- gym_member_access_log_owner_select) are left untouched.
 
 -- ---------------------------------------------------------------------------
 -- 1. resource_kind: allow 'member_viewed'
@@ -61,7 +61,7 @@ begin
   order by redeemed_at desc
   limit 1;
 
-  if v_row is null then
+  if not found then
     raise exception 'member_not_found';
   end if;
 
