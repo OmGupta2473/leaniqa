@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, MotionConfig } from 'motion/react';
+import { GymSwitcher } from '../components/GymSwitcher';
 import {
   AlertTriangle,
   ChevronLeft,
@@ -41,7 +42,22 @@ export function GymOwnerDashboardPage() {
     queryFn: () => gymOwnerService.listOwnedGyms(),
   });
   const gyms: OwnedGym[] = gymsQuery.data ?? [];
-  const gym = gyms[0] ?? null;
+
+  // URL-driven gym selection so /gym?gym=<id> is shareable and browser
+  // back/forward work. Falls back to the first gym when the param is absent
+  // or invalid (e.g. gym was deleted, or the user's default).
+  const [searchParams, setSearchParams] = useSearchParams();
+  const gymIdParam = searchParams.get('gym');
+  const gym: OwnedGym | null =
+    gyms.find((g) => g.id === gymIdParam) ?? gyms[0] ?? null;
+
+  const handleSelectGym = (gymId: string) => {
+    // replace: true so gym-switching doesn't pollute browser history with
+    // one entry per tap. Back button returns to /dashboard, not the last gym.
+    const next = new URLSearchParams(searchParams);
+    next.set('gym', gymId);
+    setSearchParams(next, { replace: true });
+  };
 
   const codesQuery = useQuery({
     queryKey: ['gymCodes', gym?.id],
@@ -149,7 +165,15 @@ const membersError = membersQuery.error as Error | null;
             <ChevronLeft size={18} />
           </button>
           <div className="gym-label">Gym owner</div>
-          <div className="w-11" aria-hidden="true" />
+          {gyms.length > 1 ? (
+            <GymSwitcher
+              gyms={gyms}
+              selectedGymId={gym?.id ?? null}
+              onSelect={handleSelectGym}
+            />
+          ) : (
+            <div className="w-11" aria-hidden="true" />
+          )}
         </motion.div>
 
         <div>

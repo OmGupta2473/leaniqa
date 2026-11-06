@@ -95,7 +95,9 @@ export const gymOwnerService = {
       return [];
     }
     const rows = (data ?? []) as Array<{ id: string; name: string; created_at: string }>;
-    return rows.map((r) => ({ id: r.id, name: r.name, createdAt: r.created_at }));
+    return rows
+      .map((r) => ({ id: r.id, name: r.name, createdAt: r.created_at }))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   },
 
   /** Codes for one owned gym. Owner RLS on promo_codes enforces the gate. */

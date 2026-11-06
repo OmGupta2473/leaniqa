@@ -41,26 +41,26 @@ export function GymOwnerMemberDetailPage() {
   const hasAccess = member?.hasMealAccess === true;
 
   // ── Loading ─────────────────────────────────────────────────────────
-  if (!gymId || !memberId) {
-    return (
-      <PageShell onBack={() => navigate('/gym')}>
-        <ErrorBlock
-          title="Invalid link"
-          body="This member link is missing an ID."
-          onRetry={() => navigate('/gym')}
-          retryLabel="Back to gym"
-        />
-      </PageShell>
-    );
-  }
+if (!gymId || !memberId) {
+  return (
+    <PageShell onBack={() => navigate('/gym')}>
+      <ErrorBlock
+        title="Invalid link"
+        body="This member link is missing an ID."
+        onRetry={() => navigate('/gym')}
+        retryLabel="Back to gym"
+      />
+    </PageShell>
+  );
+}
 
   if (detailQuery.isLoading) {
-    return <DetailSkeleton onBack={() => navigate('/gym')} />;
+    return <DetailSkeleton onBack={() => navigate(`/gym?gym=${gymId}`)} />;
   }
 
   if (memberResult && !memberResult.ok) {
     return (
-      <PageShell onBack={() => navigate('/gym')}>
+      <PageShell onBack={() => navigate(`/gym?gym=${gymId}`)}>
         <ErrorBlock
           title="Couldn't load member"
           body={
@@ -75,11 +75,11 @@ export function GymOwnerMemberDetailPage() {
 
   if (!member) {
     return (
-      <PageShell onBack={() => navigate('/gym')}>
+      <PageShell onBack={() => navigate(`/gym?gym=${gymId}`)}>
         <ErrorBlock
           title="Member not found"
           body="This member is not part of your gym."
-          onRetry={() => navigate('/gym')}
+          onRetry={() => navigate(`/gym?gym=${gymId}`)}
           retryLabel="Back to gym"
         />
       </PageShell>
@@ -90,7 +90,7 @@ export function GymOwnerMemberDetailPage() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <PageShell onBack={() => navigate('/gym')}>
+      <PageShell onBack={() => navigate(`/gym?gym=${gymId}`)}>
         <div>
           <h1 className="gym-title">{displayName}</h1>
           <div className="gym-row-pills mt-2">
