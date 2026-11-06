@@ -17,6 +17,12 @@ export interface RedeemResult {
   errorCode?: string;
   error?: string;
 }
+export interface GymAccessLogRow {
+  viewedAt: string;
+  gymId: string;
+  gymName: string;
+  resourceKind: 'member_viewed' | 'meal_logs' | 'weekly_reports' | string;
+}
 
 export const promoService = {
   /**
@@ -45,7 +51,7 @@ export const promoService = {
       if (!data?.ok) {
         return { ok: false, errorCode: 'unknown', error: 'Unexpected response from server.' };
       }
-// src/features/profile/services/promoService.ts
+      // src/features/profile/services/promoService.ts
 
       return {
         ok: true,
@@ -75,12 +81,12 @@ export const promoService = {
   async getRedemption(): Promise<PromoRedemption | null> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
-const { data, error } = await supabase
-  .from('promo_redemptions')
-  .select('gym_id, premium_until, share_meal_data, share_name, redeemed_at, consent_granted_at, consent_revoked_at, gyms(name)')
-  .order('redeemed_at', { ascending: false })
-  .limit(1)
-  .maybeSingle();
+    const { data, error } = await supabase
+      .from('promo_redemptions')
+      .select('gym_id, premium_until, share_meal_data, share_name, redeemed_at, consent_granted_at, consent_revoked_at, gyms(name)')
+      .order('redeemed_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
     if (error) {
       if (error.code !== 'PGRST116') {
         console.error('[promoService] getRedemption', error.code, error.message);
@@ -110,9 +116,9 @@ const { data, error } = await supabase
    */
   async setConsent(shareMealData: boolean, shareName: boolean): Promise<{ ok: boolean; error?: string }> {
     try {
-      const { error } = await supabase.rpc('set_promo_consent', { 
-        p_share_meal_data: shareMealData, 
-        p_share_name: shareName 
+      const { error } = await supabase.rpc('set_promo_consent', {
+        p_share_meal_data: shareMealData,
+        p_share_name: shareName
       });
       if (error) {
         console.error('[promoService] setConsent', error.code, error.message);
@@ -122,6 +128,41 @@ const { data, error } = await supabase
     } catch (err) {
       console.error('[promoService] setConsent threw', err instanceof Error ? err.message : String(err));
       return { ok: false, error: 'Check your connection and try again.' };
+    }
+  },
+    /**
+   * The current user's audit log: which gym views their data, when, and for
+   * which resource. Scoped server-side to auth.uid() by get_my_gym_access_log.
+   * Returns [] on any error so the UI degrades to "no log" rather than
+   * blocking the profile page.
+   */
+  async getMyAccessLog(limit = 20): Promise<GymAccessLogRow[]> {
+    try {
+      const { data, error } = await supabase.rpc('get_my_gym_access_log', {
+        p_limit: limit,
+      });
+      if (error) {
+        console.error('[promoService] getMyAccessLog', error.code, error.message);
+        return [];
+      }
+      const rows = (data ?? []) as Array<{
+        viewed_at: string;
+        gym_id: string;
+        gym_name: string;
+        resource_kind: string;
+      }>;
+      return rows.map((r) => ({
+        viewedAt: r.viewed_at,
+        gymId: r.gym_id,
+        gymName: r.gym_name,
+        resourceKind: r.resource_kind,
+      }));
+    } catch (err) {
+      console.error(
+        '[promoService] getMyAccessLog threw',
+        err instanceof Error ? err.message : String(err),
+      );
+      return [];
     }
   },
 };

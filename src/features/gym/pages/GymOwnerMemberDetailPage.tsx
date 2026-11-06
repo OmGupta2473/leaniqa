@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion, MotionConfig, AnimatePresence } from 'motion/react';
@@ -27,19 +27,17 @@ export function GymOwnerMemberDetailPage() {
   const isOnline = useNetworkConnectivity();
   const [tab, setTab] = useState<Tab>('meals');
 
-  const membersQuery = useQuery({
-    queryKey: ['gymMembers', gymId],
-    queryFn: () => gymOwnerService.listGymMembers(gymId!),
-    enabled: !!gymId,
+  const detailQuery = useQuery({
+    queryKey: ['gymMemberDetail', gymId, memberId],
+    queryFn: () => gymOwnerService.getMemberDetail(gymId!, memberId!),
+    enabled: !!gymId && !!memberId,
     staleTime: 0,
     refetchOnWindowFocus: true,
   });
 
-  const member: GymMember | null = useMemo(() => {
-    if (!membersQuery.data || !memberId) return null;
-    return membersQuery.data.find((m) => m.userId === memberId) ?? null;
-  }, [membersQuery.data, memberId]);
-
+  const memberResult = detailQuery.data;
+  const member: GymMember | null =
+    memberResult?.ok && memberResult.data ? memberResult.data : null;
   const hasAccess = member?.hasMealAccess === true;
 
   // ── Loading ─────────────────────────────────────────────────────────
@@ -56,17 +54,20 @@ export function GymOwnerMemberDetailPage() {
     );
   }
 
-  if (membersQuery.isLoading) {
+  if (detailQuery.isLoading) {
     return <DetailSkeleton onBack={() => navigate('/gym')} />;
   }
 
-  if (membersQuery.error) {
+  if (memberResult && !memberResult.ok) {
     return (
       <PageShell onBack={() => navigate('/gym')}>
         <ErrorBlock
           title="Couldn't load member"
-          body={isOnline ? 'Try again in a moment.' : 'You are offline.'}
-          onRetry={() => membersQuery.refetch()}
+          body={
+            memberResult.error ??
+            (isOnline ? 'Try again in a moment.' : 'You are offline.')
+          }
+          onRetry={() => detailQuery.refetch()}
         />
       </PageShell>
     );

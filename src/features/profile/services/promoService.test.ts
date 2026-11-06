@@ -212,3 +212,45 @@ describe('promoService.setConsent', () => {
     expect(result.error).toBeTruthy();
   });
 });
+describe('promoService.getMyAccessLog', () => {
+  it('T-PROMO-9: maps RPC rows to camelCase, preserves resource_kind', async () => {
+    m.rpc.mockResolvedValue({
+      data: [
+        {
+          viewed_at: '2026-11-06T10:00:00Z',
+          gym_id: 'gym-1',
+          gym_name: 'Test Gym',
+          resource_kind: 'member_viewed',
+        },
+        {
+          viewed_at: '2026-11-06T09:00:00Z',
+          gym_id: 'gym-1',
+          gym_name: 'Test Gym',
+          resource_kind: 'meal_logs',
+        },
+      ],
+      error: null,
+    });
+
+    const result = await promoService.getMyAccessLog(10);
+
+    expect(m.rpc).toHaveBeenCalledWith('get_my_gym_access_log', { p_limit: 10 });
+    expect(result).toHaveLength(2);
+    expect(result[0]).toMatchObject({
+      viewedAt: '2026-11-06T10:00:00Z',
+      gymId: 'gym-1',
+      gymName: 'Test Gym',
+      resourceKind: 'member_viewed',
+    });
+  });
+
+  it('T-PROMO-10: returns [] on RPC error', async () => {
+    m.rpc.mockResolvedValue({
+      data: null,
+      error: { message: 'permission denied', code: '42501' },
+    });
+
+    const result = await promoService.getMyAccessLog();
+    expect(result).toEqual([]);
+  });
+});

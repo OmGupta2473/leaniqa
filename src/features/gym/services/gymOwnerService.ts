@@ -69,6 +69,7 @@ export type GymOwnerErrorCode =
   | 'not_gym_owner'
   | 'invalid_range'
   | 'member_not_shareable'
+  | 'member_not_found'
   | 'invalid_duration_v1'
   | 'invalid_max_redemptions_v1'
   | 'custom_code_not_allowed_v1'
@@ -268,6 +269,63 @@ export const gymOwnerService = {
         confidence: r.confidence,
       })),
     };
+    
+  },
+    /**
+   * Single-member fetch for the owner detail page. Replaces the previous
+   * "fetch all members + find()" pattern so the detail page does not depend
+   * on the full member list being loaded or paginated. Writes a
+   * 'member_viewed' audit row server-side.
+   *
+   * Returns { ok: true, data: null } when the member is not found (a
+   * well-defined state, not an error). RPC errors are mapped like the rest
+   * of this service.
+   */
+  async getMemberDetail(
+    gymId: string,
+    memberId: string,
+  ): Promise<GymOwnerResult<GymMember | null>> {
+    const { data, error } = await supabase.rpc('get_gym_member_detail', {
+      p_gym_id: gymId,
+      p_member_user_id: memberId,
+    });
+    if (error) {
+      const msg = (error.message ?? '').toLowerCase();
+      if (msg.includes('member_not_found')) {
+        return { ok: true, data: null };
+      }
+      return mapRpcError(error);
+    }
+    const row = (Array.isArray(data) ? data[0] : data) as
+      | {
+          user_id: string;
+          name: string | null;
+          redeemed_at: string;
+          premium_until: string;
+          share_meal_data: boolean;
+          share_name: boolean;
+          consent_granted_at: string | null;
+          consent_revoked_at: string | null;
+          is_active: boolean;
+          has_meal_access: boolean;
+        }
+      | null
+      | undefined;
+    if (!row) return { ok: true, data: null };
+    return {
+      ok: true,
+      data: {
+        userId: row.user_id,
+        name: row.name,
+        redeemedAt: row.redeemed_at,
+        premiumUntil: row.premium_until,
+        shareMealData: row.share_meal_data,
+        consentGrantedAt: row.consent_granted_at,
+        consentRevokedAt: row.consent_revoked_at,
+        isActive: row.is_active,
+        hasMealAccess: row.has_meal_access,
+      },
+    };
   },
 };
 
@@ -280,6 +338,7 @@ function mapRpcError(error: { message?: string; code?: string }): GymOwnerResult
     'not_gym_owner',
     'invalid_range',
     'member_not_shareable',
+    'member_not_found',
     'invalid_duration_v1',
     'invalid_max_redemptions_v1',
     'custom_code_not_allowed_v1',
@@ -303,6 +362,7 @@ function friendly(code: GymOwnerErrorCode): string {
     case 'code_generation_failed': return 'Could not generate a unique code. Try again.';
     case 'network': return 'Check your connection and try again.';
         case 'member_not_shareable': return 'This member has not consented to share data, or their access has ended.';
+    case 'member_not_found': return 'This member is not part of your gym.';
     default: return 'Something went wrong.';
   }
 }
