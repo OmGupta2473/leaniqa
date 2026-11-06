@@ -75,10 +75,12 @@ export const promoService = {
   async getRedemption(): Promise<PromoRedemption | null> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
-    const { data, error } = await supabase
-      .from('promo_redemptions')
-      .select('gym_id, premium_until, share_meal_data, share_name, redeemed_at, consent_granted_at, consent_revoked_at, gyms(name)')
-      .maybeSingle();
+const { data, error } = await supabase
+  .from('promo_redemptions')
+  .select('gym_id, premium_until, share_meal_data, share_name, redeemed_at, consent_granted_at, consent_revoked_at, gyms(name)')
+  .order('redeemed_at', { ascending: false })
+  .limit(1)
+  .maybeSingle();
     if (error) {
       if (error.code !== 'PGRST116') {
         console.error('[promoService] getRedemption', error.code, error.message);
