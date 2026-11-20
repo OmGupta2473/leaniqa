@@ -24,12 +24,18 @@ export interface AmbiguityCheckItem {
   input_term: string;
   layer: string;
   candidates?: unknown[] | null;
+  /** Set by the resolver when a state/entity mismatch was detected during
+   *  buildResolvedItem (e.g. user said 'raw' but the matched entity is a
+   *  prepared dish like '* curry'). Treated as ambiguous so the item is
+   *  surfaced for review and blocked from memory writes. */
+  was_ambiguous?: boolean;
 }
 
 /**
  * True when this single item is ambiguous, regardless of layer.
  *
  * Rules (any one suffices):
+ *   0. was_ambiguous === true (resolver-flagged state/entity mismatch)
  *   1. layer === 'ambiguous'
  *   2. candidates.length >= 2
  *   3. input_term is a known ambiguous term
@@ -39,6 +45,7 @@ export function itemHasAmbiguitySignal(
   item: AmbiguityCheckItem,
   ambiguousTerms: ReadonlySet<string>,
 ): boolean {
+  if (item.was_ambiguous === true) return true;
   if (item.layer === 'ambiguous') return true;
   if ((item.candidates?.length ?? 0) >= 2) return true;
   const term = item.input_term.trim().toLowerCase();

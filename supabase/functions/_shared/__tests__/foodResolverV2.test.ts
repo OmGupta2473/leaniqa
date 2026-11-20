@@ -1169,3 +1169,253 @@ describe('foodResolverV2 ? non-food modifier clauses', () => {
     expect(r.unresolved_items.some((item) => item.input_term === 'mystery grain')).toBe(true);
   });
 });
+
+// =============================================================================
+// 2026-11-20 meal-parsing fixes (T-PARSE-*).
+// See supabase/migrations/20261120000000_meal_parsing_fixes.sql and the
+// state/entity-mismatch flag added to buildResolvedItem.
+// =============================================================================
+describe('foodResolverV2 — meal-parsing fixes (2026-11-20)', () => {
+  function setupEggSoyaDb(): FakeDb {
+    const db = new FakeDb();
+
+    db.foods.set(200, makeFood({
+      id: 200, canonical_name: 'egg white boiled', display_name: 'Egg white, boiled',
+      category: 'egg', kcal_per_100g: 52, protein_per_100g: 10.9,
+      fat_per_100g: 0.2, carbs_per_100g: 0.7, fiber_per_100g: 0,
+      default_portion_grams: 33, default_portion_label: '1 piece',
+    }));
+    db.portions.set(200, [{ unit: 'piece', grams: 33, is_default: true, confidence: 1 }]);
+
+    db.foods.set(201, makeFood({
+      id: 201, canonical_name: 'egg boiled', display_name: 'Egg, boiled',
+      category: 'egg', kcal_per_100g: 155, protein_per_100g: 13,
+      fat_per_100g: 11, carbs_per_100g: 1.1, fiber_per_100g: 0,
+      default_portion_grams: 50, default_portion_label: '1 piece',
+    }));
+    db.portions.set(201, [{ unit: 'piece', grams: 50, is_default: true, confidence: 1 }]);
+
+    db.foods.set(202, makeFood({
+      id: 202, canonical_name: 'rice', display_name: 'Rice, cooked',
+      category: 'grain', kcal_per_100g: 130, protein_per_100g: 2.7,
+      fat_per_100g: 0.3, carbs_per_100g: 28, fiber_per_100g: 0.4,
+      default_portion_grams: 150, default_portion_label: '1 bowl',
+    }));
+    db.portions.set(202, [{ unit: 'bowl', grams: 150, is_default: true, confidence: 1 }]);
+
+    db.foods.set(203, makeFood({
+      id: 203, canonical_name: 'soya chunks dry', display_name: 'Soya chunks, dry',
+      category: 'legume', kcal_per_100g: 336, protein_per_100g: 52,
+      fat_per_100g: 0.5, carbs_per_100g: 33, fiber_per_100g: 13,
+      default_portion_grams: 50, default_portion_label: '50g',
+    }));
+    db.portions.set(203, [{ unit: 'g', grams: 1, is_default: true, confidence: 1 }]);
+
+    db.foods.set(204, makeFood({
+      id: 204, canonical_name: 'soya chunks curry', display_name: 'Soya chunks curry',
+      category: 'legume', kcal_per_100g: 180, protein_per_100g: 14,
+      fat_per_100g: 8, carbs_per_100g: 15, fiber_per_100g: 4,
+      default_portion_grams: 150, default_portion_label: '1 bowl',
+      oil_included: true,
+    }));
+    db.portions.set(204, [{ unit: 'bowl', grams: 150, is_default: true, confidence: 1 }]);
+
+    db.foods.set(205, makeFood({
+      id: 205, canonical_name: 'potato boiled', display_name: 'Potato, boiled',
+      category: 'vegetable', kcal_per_100g: 87, protein_per_100g: 1.9,
+      fat_per_100g: 0.1, carbs_per_100g: 20, fiber_per_100g: 1.8,
+      default_portion_grams: 100, default_portion_label: '100g',
+    }));
+    db.portions.set(205, [{ unit: 'g', grams: 1, is_default: true, confidence: 1 }]);
+
+    db.foods.set(206, makeFood({
+      id: 206, canonical_name: 'oil', display_name: 'Oil (vegetable)',
+      category: 'oil', kcal_per_100g: 884, protein_per_100g: 0,
+      fat_per_100g: 100, carbs_per_100g: 0, fiber_per_100g: 0,
+      default_portion_grams: 14, default_portion_label: '1 tbsp',
+      oil_included: true,
+    }));
+    db.portions.set(206, [
+      { unit: 'tbsp', grams: 14, is_default: true, confidence: 1 },
+      { unit: 'tsp', grams: 5, is_default: false, confidence: 1 },
+    ]);
+
+    const alias = (key: string, food_id: number, confidence = 0.95): void => {
+      db.aliases.set(key, { alias: key, food_id, portion_grams: null, portion_unit: null, confidence });
+    };
+    // Egg white — must NOT hit 201 (whole egg) or 202 (rice)
+    alias('egg white', 200); alias('egg whites', 200);
+    alias('white egg', 200); alias('white eggs', 200);
+    alias('boiled egg white', 200); alias('boiled egg whites', 200);
+    alias('boiled white eggs', 200); alias('egg white boiled', 200);
+    alias('egg whites boiled', 200);
+    alias('cooked egg white', 200); alias('egg white cooked', 200);
+    // Soya dry — must hit 203, not 204
+    alias('raw soya chunks', 203); alias('raw soya chunk', 203);
+    alias('dry soya chunks', 203); alias('dry soya chunk', 203);
+    alias('soya chunks raw', 203); alias('soya chunks dry', 203);
+    // Soya curry — must hit 204
+    alias('soya curry', 204); alias('soya chunk curry', 204);
+    // Potato cooked — must hit 205
+    alias('cooked potato', 205); alias('boiled potato', 205);
+    alias('potato strips', 205); alias('cooked potato strips', 205);
+
+    return db;
+  }
+
+  describe('T-PARSE-01..03: egg-white normalization', () => {
+    it('T-PARSE-01: "2 boiled egg white" → egg white boiled, NOT rice', async () => {
+      const db = setupEggSoyaDb();
+      const r = await resolve(
+        { userId: TEST_USER, rawText: '2 boiled egg white', mealType: 'breakfast' },
+        db, TEST_CONFIG,
+      );
+      expect(r.items).toHaveLength(1);
+      expect(r.items[0].food_id).toBe(200);
+      expect(r.items[0].canonical_name).toBe('egg white boiled');
+      expect(r.items[0].canonical_name).not.toBe('rice');
+      expect(r.items[0].fat).toBeLessThan(1);
+    });
+
+    it('T-PARSE-02: "2 boiled white eggs" → egg white boiled, NOT whole egg', async () => {
+      const db = setupEggSoyaDb();
+      const r = await resolve(
+        { userId: TEST_USER, rawText: '2 boiled white eggs', mealType: 'breakfast' },
+        db, TEST_CONFIG,
+      );
+      expect(r.items[0].food_id).toBe(200);
+      expect(r.items[0].food_id).not.toBe(201);
+    });
+
+    it('T-PARSE-03: "2 egg whites boiled" → regression guard, same entity', async () => {
+      const db = setupEggSoyaDb();
+      const r = await resolve(
+        { userId: TEST_USER, rawText: '2 egg whites boiled', mealType: 'breakfast' },
+        db, TEST_CONFIG,
+      );
+      expect(r.items[0].food_id).toBe(200);
+    });
+  });
+
+  describe('T-PARSE-04: potato + oil', () => {
+    it('"Potato strips cooked 50g with 1 tbsp oil" → ~168 kcal, not 290', async () => {
+      const db = setupEggSoyaDb();
+      const r = await resolve(
+        { userId: TEST_USER, rawText: 'Potato strips cooked 50g with 1 tbsp oil', mealType: 'lunch' },
+        db, TEST_CONFIG,
+      );
+      expect(r.items).toHaveLength(2);
+      const oil = r.items.find((i) => i.food_id === 206);
+      const potato = r.items.find((i) => i.food_id === 205);
+      expect(oil).toBeDefined();
+      expect(potato).toBeDefined();
+      expect(oil!.grams).toBe(14);
+      expect(potato!.grams).toBe(50);
+      expect(r.totals.kcal).toBeGreaterThanOrEqual(150);
+      expect(r.totals.kcal).toBeLessThanOrEqual(190);
+      expect(r.totals.fat).toBeGreaterThanOrEqual(13);
+      expect(r.totals.fat).toBeLessThanOrEqual(16);
+    });
+  });
+
+  describe('T-PARSE-05..07: soya dry-vs-curry', () => {
+    it('T-PARSE-05: "Raw soya chunks cooked" → soya chunks dry', async () => {
+      const db = setupEggSoyaDb();
+      const r = await resolve(
+        { userId: TEST_USER, rawText: 'Raw soya chunks cooked', mealType: 'lunch' },
+        db, TEST_CONFIG,
+      );
+      expect(r.items[0].food_id).toBe(203);
+      expect(r.items[0].weight_basis).toBe('raw');
+    });
+
+    it('T-PARSE-06: "50g dry soya chunks" → soya chunks dry, ~168 kcal', async () => {
+      const db = setupEggSoyaDb();
+      const r = await resolve(
+        { userId: TEST_USER, rawText: '50g dry soya chunks', mealType: 'lunch' },
+        db, TEST_CONFIG,
+      );
+      expect(r.items[0].food_id).toBe(203);
+      expect(r.items[0].grams).toBe(50);
+      expect(r.items[0].kcal).toBeGreaterThanOrEqual(160);
+      expect(r.items[0].kcal).toBeLessThanOrEqual(175);
+    });
+
+    it('T-PARSE-07: "soya chunks curry" → soya chunks curry', async () => {
+      const db = setupEggSoyaDb();
+      const r = await resolve(
+        { userId: TEST_USER, rawText: 'soya chunks curry', mealType: 'lunch' },
+        db, TEST_CONFIG,
+      );
+      expect(r.items[0].food_id).toBe(204);
+    });
+  });
+
+  describe('T-PARSE-08: roti alias', () => {
+    it('"1 roti" → roti (not Western bread)', async () => {
+      const db = setupEggSoyaDb();
+      db.foods.set(5, makeFood({
+        id: 5, canonical_name: 'roti', category: 'bread',
+        kcal_per_100g: 297, default_portion_grams: 40, default_portion_label: '1 piece',
+      }));
+      db.portions.set(5, [{ unit: 'piece', grams: 40, is_default: true, confidence: 1 }]);
+      db.foods.set(300, makeFood({
+        id: 300, canonical_name: 'white bread', category: 'bread',
+        kcal_per_100g: 265, default_portion_grams: 28, default_portion_label: '1 slice',
+      }));
+      const r = await resolve(
+        { userId: TEST_USER, rawText: '1 roti', mealType: 'breakfast' },
+        db, TEST_CONFIG,
+      );
+      expect(r.items[0].food_id).toBe(5);
+    });
+  });
+
+  describe('T-PARSE-10: raw rice basis', () => {
+    it('"100g raw rice" → weight_basis=raw', async () => {
+      const db = setupEggSoyaDb();
+      db.foods.set(301, makeFood({
+        id: 301, canonical_name: 'raw rice', category: 'grain',
+        kcal_per_100g: 365, protein_per_100g: 7,
+        fat_per_100g: 0.7, carbs_per_100g: 80, fiber_per_100g: 1.3,
+        default_portion_grams: 100, default_portion_label: '100g',
+      }));
+      const r = await resolve(
+        { userId: TEST_USER, rawText: '100g raw rice', mealType: 'lunch' },
+        db, TEST_CONFIG,
+      );
+      expect(r.items[0].weight_basis).toBe('raw');
+      expect(r.items[0].kcal).toBeGreaterThanOrEqual(340);
+      expect(r.items[0].kcal).toBeLessThanOrEqual(370);
+    });
+  });
+
+  describe('T-PARSE-12: 1 tbsp oil = 14g / ~124 kcal', () => {
+    it('"1 tbsp oil" → 14g, ~124 kcal, 14g fat', async () => {
+      const db = setupEggSoyaDb();
+      const r = await resolve(
+        { userId: TEST_USER, rawText: '1 tbsp oil', mealType: 'lunch' },
+        db, TEST_CONFIG,
+      );
+      expect(r.items[0].grams).toBe(14);
+      expect(r.items[0].kcal).toBe(124);
+      expect(r.items[0].fat).toBe(14);
+    });
+  });
+
+  describe('T-PARSE-13: state/entity mismatch fires ambiguity', () => {
+    it('"raw soya curry" flags was_ambiguous (user said raw, matched curry)', async () => {
+      const db = setupEggSoyaDb();
+      // Force the resolver to match the curry: no dry alias for "soya curry"
+      const r = await resolve(
+        { userId: TEST_USER, rawText: 'raw soya curry', mealType: 'lunch' },
+        db, TEST_CONFIG,
+      );
+      expect(r.items[0].food_id).toBe(204);
+      expect(r.items[0].was_ambiguous).toBe(true);
+      expect(r.items[0].requires_confirmation).toBe(true);
+      expect(r.needs_confirmation).toBe(true);
+      expect(r.kb_confidence).toBeLessThanOrEqual(0.5);
+    });
+  });
+});

@@ -70,10 +70,19 @@ export async function lookupPortion(
   const rows = await db.getFoodPortions(food.id);
 
   // 2a. Exact unit match (highest priority when unit is known).
+  // Defensive: 1 tbsp of a pure fat is ~14g. A value >20g is almost
+  // certainly a data-entry error (someone entered "2 tbsp" or ml as g).
+  // Reject the row instead of doubling user-visible fat. The migration
+  // 20261120000000 corrects the underlying data; this guard prevents
+  // recurrence.
   if (unit !== null) {
     const exact = rows.find((r) => r.unit === unit);
     if (exact && exact.grams > 0) {
-      return { grams: exact.grams, source: 'exact_unit' };
+      const suspiciousTbsp = unit === 'tbsp' && exact.grams > 20;
+      if (!suspiciousTbsp) {
+        return { grams: exact.grams, source: 'exact_unit' };
+      }
+      // Fall through to legacy default so a sane default can win.
     }
   }
 

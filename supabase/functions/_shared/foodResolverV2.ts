@@ -294,7 +294,10 @@ interface ModifierContext {
 }
 
 const WEIGHT_BASIS_MODIFIERS: Array<{ pattern: RegExp; basis: WeightBasis }> = [
-  { pattern: /\braw\b/i, basis: 'raw' },
+  // dry/dried/uncooked are pre-cooking states just like raw. Without them,
+  // "50g dry soya chunks" was resolved as a prepared dish (curry), which
+  // includes oil/gravy and is a different KB entity.
+  { pattern: /\b(?:raw|dry|dried|uncooked)\b/i, basis: 'raw' },
   {
     pattern: /\b(?:cooked|boiled|steamed|grilled|baked|roasted|pressure[- ]?cooked)\b/i,
     basis: 'cooked',
@@ -399,11 +402,20 @@ function extractOilContext(originalText: string | undefined): OilContext {
   if (!originalText?.trim()) {
     return { userExcluded: false, userIncluded: false };
   }
+  // Two variants of "user included oil":
+  //   1. "with oil" / "with added oil" / "add extra oil" / "extra ghee"
+  //   2. "with 1 tbsp oil" / "with 2 tsp ghee" / "with 14g oil" — the
+  //      quantity sits between "with" and the noun. Without (2),
+  //      "Potato strips cooked 50g with 1 tbsp oil" was never flagged
+  //      userIncluded, so downstream oil_review_needed never fired.
   return {
     userExcluded: /\b(?:no\s+(?:added\s+)?oil|without\s+(?:added\s+)?oil|no\s+ghee|without\s+ghee|oil[- ]?free)\b/i
       .test(originalText),
-    userIncluded: /\b(?:with\s+(?:added\s+)?oil|add(?:ed)?\s+(?:extra\s+)?oil|extra\s+ghee|with\s+ghee)\b/i
-      .test(originalText),
+    userIncluded:
+      /\b(?:with\s+(?:added\s+)?(?:oil|ghee)|add(?:ed)?\s+(?:extra\s+)?(?:oil|ghee)|extra\s+ghee)\b/i
+        .test(originalText) ||
+      /\bwith\s+\d+(?:\.\d+)?\s*(?:tbsp|tablespoons?|tsp|teaspoons?|g|grams?|ml)\s+(?:of\s+)?(?:oil|ghee)\b/i
+        .test(originalText),
   };
 }
 
@@ -682,6 +694,41 @@ async function tryExact(foodName: string, db: ResolverDb): Promise<{ food: FoodR
   return food ? { food } : null;
 }
 
+async function tryExactAny(
+  names: string[],
+  db: ResolverDb,
+): Promise<{ food: FoodRow } | null> {
+  const seen = new Set<string>();
+  for (const name of names) {
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    const food = await db.getFoodByCanonicalName(name);
+    if (food) return { food };
+  }
+  return null;
+}
+
+// State-suffixed name candidates — tried in this order so a state-suffixed
+// entry ("egg white cooked") wins over the base entity ("egg white") only
+// when the user actually typed a state word AND the state entry exists.
+function basisSuffixCandidates(
+  foodName: string,
+  basis: WeightBasis | null | undefined,
+): string[] {
+  if (!basis || basis === 'unknown') return [];
+  // Skip if the food name already carries a state word — avoids "dry dry soya chunks".
+  if (/\b(?:raw|dry|dried|uncooked|cooked|boiled|steamed|fried)\b/i.test(foodName)) {
+    return [];
+  }
+  const words = basis === 'raw' ? ['raw', 'dry'] : basis === 'cooked' ? ['cooked'] : ['fried'];
+  const out: string[] = [];
+  for (const w of words) {
+    out.push(`${w} ${foodName}`);
+    out.push(`${foodName} ${w}`);
+  }
+  return out;
+}
+
 async function tryAlias(
   foodName: string,
   unit: string | null,
@@ -695,6 +742,56 @@ async function tryAlias(
   keys.push(foodName);
 
   for (const key of keys) {
+    const alias = await db.getAliasByKey(key);
+    if (!alias) continue;
+    const foods = await db.getFoodsByIds([alias.food_id]);
+    const food = foods[0];
+    if (!food) continue;
+    return {
+      food,
+      aliasPortion: { grams: alias.portion_grams, unit: alias.portion_unit },
+    };
+  }
+  return null;
+}
+
+async function tryAliasAny(
+  foodName: string,
+  unit: string | null,
+  basis: WeightBasis | null | undefined,
+  db: ResolverDb,
+): Promise<{
+  food: FoodRow;
+  aliasPortion: { grams: number | null; unit: string | null };
+} | null> {
+  // Priority order — basis-suffixed keys come first so state-specific aliases
+  // win over the base entity. Without this, "raw soya chunks" (which strips
+  // to food_name="soya chunks") would hit any "soya chunks" alias first —
+  // often the prepared curry — before the state-specific "raw soya chunks".
+  const keys: string[] = [];
+  const stateInName = /\b(?:raw|dry|dried|uncooked|cooked|boiled|steamed|fried)\b/i.test(foodName);
+
+  if (basis && basis !== 'unknown' && !stateInName) {
+    const basisWord = basis === 'raw' ? 'raw' : basis === 'cooked' ? 'cooked' : 'fried';
+    if (unit) keys.push(`${unit} ${basisWord} ${foodName}`);
+    if (unit) keys.push(`${unit} ${foodName} ${basisWord}`);
+    keys.push(`${basisWord} ${foodName}`);
+    keys.push(`${foodName} ${basisWord}`);
+    if (basis === 'raw') {
+      if (unit) keys.push(`${unit} dry ${foodName}`);
+      if (unit) keys.push(`${unit} ${foodName} dry`);
+      keys.push(`dry ${foodName}`);
+      keys.push(`${foodName} dry`);
+    }
+  }
+
+  if (unit) keys.push(`${unit} ${foodName}`);
+  keys.push(foodName);
+
+  const seen = new Set<string>();
+  for (const key of keys) {
+    if (seen.has(key)) continue;
+    seen.add(key);
     const alias = await db.getAliasByKey(key);
     if (!alias) continue;
     const foods = await db.getFoodsByIds([alias.food_id]);
@@ -789,6 +886,18 @@ async function buildResolvedItem(
   const { basis: weightBasis } = inferWeightBasis(parsed.weight_basis_hint, parsed.food_name);
   const oilStatus = computeOilStatus(oilContext, food.oil_included, parsed.food_name);
 
+  // State/entity mismatch detection. If the user said "raw"/"dry" but the
+  // matched entity is clearly a prepared dish (curry / fried / masala /
+  // gravy / biryani / roast / tikka), the macros do NOT reflect the state
+  // the user asked for. Flag for review instead of silently returning
+  // cooked-dish macros labelled weight_basis: raw.
+  const canonicalLower = (food.canonical_name ?? '').toLowerCase();
+  const looksPrepared = /\b(curry|masala|gravy|fried|tikka|fry|roast|biryani|pulao|korma|butter)\b/
+    .test(canonicalLower);
+  const stateMismatch = parsed.weight_basis_hint === 'raw' && looksPrepared;
+  const effectiveConfidence = stateMismatch ? Math.min(confidence, 0.5) : confidence;
+  const effectiveKbConfidence = stateMismatch ? Math.min(kbConfidence, 0.5) : kbConfidence;
+
   return {
     raw_text: parsed.raw_text,
     input_term: parsed.food_name,
@@ -805,15 +914,15 @@ async function buildResolvedItem(
     fiber: Math.round(food.fiber_per_100g * scale * 10) / 10,
     weight_basis: weightBasis,
     quantity_source: mapPortionSourceToQuantitySource(resolution.source),
-    confidence,
+    confidence: effectiveConfidence,
     layer,
     resolution_type: 'matched',
-    requires_confirmation: requiresConfirmation,
+    requires_confirmation: requiresConfirmation || stateMismatch,
     oil_included: food.oil_included,
     oil_status: oilStatus.status,
     oil_review_needed: oilStatus.reviewNeeded,
-    was_ambiguous: false,
-    kb_confidence: kbConfidence,
+    was_ambiguous: stateMismatch,
+    kb_confidence: effectiveKbConfidence,
   };
 }
 
@@ -823,10 +932,18 @@ async function resolveOneItem(
   config: ResolverConfig,
   oilContext: OilContext,
 ): Promise<ResolvedItem | null> {
-  const rawExact = parsed.raw_food_name && parsed.raw_food_name !== parsed.food_name
-    ? await tryExact(parsed.raw_food_name, db)
-    : null;
-  const exact = rawExact ?? await tryExact(parsed.food_name, db);
+  // Exact-match lookup order:
+  //   1. raw_food_name (unmodified input, e.g. "raw soya chunks")
+  //   2. state-suffixed variants of food_name ("raw soya chunks", "soya chunks raw")
+  //   3. food_name (state-stripped, e.g. "soya chunks")
+  const exact = await tryExactAny(
+    [
+      parsed.raw_food_name ?? '',
+      ...basisSuffixCandidates(parsed.food_name, parsed.weight_basis_hint),
+      parsed.food_name,
+    ],
+    db,
+  );
   if (exact) {
     const resolved = await buildResolvedItem(
       parsed, exact.food, null, 'exact', 0.95, config, db, oilContext,
@@ -837,7 +954,7 @@ async function resolveOneItem(
     // that carries a spray portion can win.
   }
 
-  const alias = await tryAlias(parsed.food_name, parsed.unit, db);
+  const alias = await tryAliasAny(parsed.food_name, parsed.unit, parsed.weight_basis_hint, db);
   if (alias) {
     const conf = alias.aliasPortion.grams != null ? 0.9 : 0.8;
     return buildResolvedItem(
@@ -907,6 +1024,7 @@ async function applyAmbiguityOverlay(
       input_term: item.input_term,
       layer: item.layer,
       candidates: item.candidates ?? null,
+      was_ambiguous: item.was_ambiguous,
     };
 
     if (!itemHasAmbiguitySignal(checkItem, ambiguousTerms)) {
@@ -1363,7 +1481,12 @@ function isMemoryEligible(
     // Phase 6.7 — reject any ambiguous-originated item.
     if (
       shouldBlockMemoryWrite(
-        { input_term: item.input_term, layer: item.layer, candidates: item.candidates ?? null },
+        {
+          input_term: item.input_term,
+          layer: item.layer,
+          candidates: item.candidates ?? null,
+          was_ambiguous: item.was_ambiguous,
+        },
         ambiguousTerms,
       )
     ) {
