@@ -77,12 +77,16 @@ describe('resolve-meal-v2 response contract', () => {
 
     expect(result.items).toHaveLength(1);
     expect(result.items[0]).toMatchObject({
-      weight_basis: 'unknown',
+      weight_basis: 'cooked',
+      user_stated_state: 'none',
+      assumed_state: 'cooked',
       oil_status: 'unknown',
       oil_review_needed: false,
       quantity_source: 'user_provided',
     });
-    expect(result.assumptions).toContain('Assumed cooked weight for rice.');
+    expect(result.assumptions).toContain(
+      "Assumed cooked weight. If you weighed it before cooking, add 'raw'.",
+    );
     expect(result.assumptions).not.toContain(
       'Oil content not specified for rice; verify if important.',
     );

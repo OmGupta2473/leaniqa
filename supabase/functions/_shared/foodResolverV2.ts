@@ -77,6 +77,9 @@ export interface FoodRow {
   oil_per_100g: number | null;
   provenance: string | null;
   review_status: string;
+  /** Raw/cooked state — prod CHECK enum: {raw, cooked, boiled, steamed, fried,
+   *  roasted, unknown}. May be null on legacy rows. */
+  preparation_state?: string | null;
 }
 
 export interface AliasRow {
@@ -181,6 +184,12 @@ export interface ResolvedItem {
   /** Phase 6.7 — confidence in (food × portion). Distinct from
    *  `confidence` which is only about food match. */
   kb_confidence: number;
+  /** 2026-11-22 — 'none' = user stated no basis; resolver chose one. */
+  user_stated_state?: 'none' | 'raw' | 'cooked';
+  /** 2026-11-22 — basis the resolver chose. Null when user stated it. */
+  assumed_state?: WeightBasis | null;
+  /** 2026-11-22 — user-facing explanation. Null = suppress message. */
+  basis_assumption?: string | null;
 }
 
 export interface UnresolvedItem {
@@ -297,7 +306,9 @@ const WEIGHT_BASIS_MODIFIERS: Array<{ pattern: RegExp; basis: WeightBasis }> = [
   // dry/dried/uncooked are pre-cooking states just like raw. Without them,
   // "50g dry soya chunks" was resolved as a prepared dish (curry), which
   // includes oil/gravy and is a different KB entity.
-  { pattern: /\b(?:raw|dry|dried|uncooked)\b/i, basis: 'raw' },
+  // "before cooking" and "pre-cooking" (2026-11-22) catch phrasings like
+  // "100g chicken breast before cooking" or "pre-cooked 100g rice".
+  { pattern: /\b(?:raw|dry|dried|uncooked|before\s+cooking|pre[- ]?cooking)\b/i, basis: 'raw' },
   {
     pattern: /\b(?:cooked|boiled|steamed|grilled|baked|roasted|pressure[- ]?cooked)\b/i,
     basis: 'cooked',
@@ -372,25 +383,177 @@ function applyModifierContext(
   }));
 }
 
+// 2026-11-22 — Basis resolution. User-stated basis wins; otherwise use the
+// matched entity's preparation_state (primary); else canonical-name keyword
+// (legacy fallback); else 'cooked' (default — most logged foods are cooked
+// or as-served). Never returns 'unknown' for a matched entity.
 function inferWeightBasis(
   hint: WeightBasis | undefined,
-  inputTerm: string,
-): { basis: WeightBasis; assumption: string | null } {
-  if (hint === 'raw') {
-    return { basis: 'raw', assumption: null };
+  food: FoodRow,
+): WeightBasis {
+  if (hint === 'raw') return 'raw';
+  if (hint === 'cooked' || hint === 'finished') return hint;
+
+  const prepState = food.preparation_state;
+  if (prepState === 'raw') return 'raw';
+  if (
+    prepState === 'cooked' ||
+    prepState === 'fried' ||
+    prepState === 'steamed' ||
+    prepState === 'boiled' ||
+    prepState === 'roasted'
+  ) {
+    return 'cooked';
   }
-  if (hint === 'cooked' || hint === 'finished') {
+
+  const lower = (food.canonical_name ?? '').toLowerCase();
+  if (/\b(?:raw|dry|uncooked)\b/.test(lower)) return 'raw';
+  if (
+    /\b(?:curry|masala|gravy|fried|tikka|fry|roast|biryani|pulao|korma|butter)\b/.test(lower)
+  ) {
+    return 'cooked';
+  }
+
+  return 'cooked';
+}
+
+interface BasisAssumptionResult {
+  assumption: string | null;
+  conflict: boolean;
+}
+
+// 2026-11-22 — Basis explanation. All 8 messages are verbatim from the
+// task spec, straight quotes, no rewording. `conflict: true` triggers
+// requires_confirmation + was_ambiguous on the item.
+//
+// Fixed 2026-11-22b: gating now uses the RESOLVED `weightBasis` + a
+// basis-sensitive category set, instead of `isPrepared` (which was false
+// for entities missing `preparation_state` — e.g. old test fixtures for
+// 'rice' — causing "Assumed cooked weight" to be suppressed). This restores
+// the correct 2-message output for mixed meals like
+// "200g rice and 150g raw chicken breast".
+function computeBasisAssumption(
+  hint: WeightBasis | undefined,
+  food: FoodRow,
+  _foodName: string,
+  rawFoodName: string | undefined,
+  unit: string | null,
+  weightBasis: WeightBasis,
+  grams: number,
+): BasisAssumptionResult {
+  const canonicalLower = (food.canonical_name ?? '').toLowerCase();
+  const displayName = food.display_name ?? food.canonical_name;
+  const hasGrams = unit === 'g' || unit === 'ml';
+  const userSaidRaw = hint === 'raw';
+  const userSaidCooked = hint === 'cooked' || hint === 'finished';
+
+  const prepState = food.preparation_state;
+  const preparedStates = new Set(['cooked', 'fried', 'steamed', 'boiled', 'roasted']);
+  const looksPrepared =
+    /\b(?:curry|masala|gravy|fried|tikka|fry|roast|biryani|pulao|korma|butter)\b/.test(canonicalLower);
+  const looksRaw = /\b(?:raw|dry|uncooked)\b/.test(canonicalLower);
+  const isPrepared = (prepState != null && preparedStates.has(prepState)) || looksPrepared;
+  const isRaw = prepState === 'raw' || looksRaw;
+
+  // Raw vs cooked materially differs only for these categories. Fruits,
+  // packaged snacks, and beverages are excluded — no basis assumption
+  // there (per 2026-11-22 spec correction #11).
+  const basisSensitiveCategories = new Set([
+    'rice', 'grain', 'dal', 'legume', 'vegetable', 'paneer',
+    'nonveg', 'egg', 'bread', 'meat',
+  ]);
+  const categoryIsSensitive = basisSensitiveCategories.has(
+    (food.category ?? '').toLowerCase().trim(),
+  );
+
+  // 1. Conflicts — user-stated basis contradicts the matched entity.
+  if (userSaidRaw && isPrepared) {
     return {
-      basis: hint,
-      assumption:
-        "Assumed weight is after cooking. Add 'raw' if you weighed it before cooking.",
+      assumption: `You said 'raw' but ${displayName} is a cooked dish. Confirm cooked as-served weight, or type the raw ingredient name.`,
+      conflict: true,
     };
   }
-  // hint undefined or 'unknown' — preserve existing behavior.
-  return {
-    basis: 'unknown',
-    assumption: `Assumed cooked weight for ${inputTerm}.`,
-  };
+  if (userSaidCooked && isRaw) {
+    return {
+      assumption: `You said 'cooked' but ${displayName} is a raw ingredient. Confirm raw weight, or type the cooked dish name.`,
+      conflict: true,
+    };
+  }
+
+  // 2. Explicit raw (valid).
+  if (userSaidRaw) {
+    const rawThenCooked =
+      rawFoodName != null &&
+      /\b(?:cooked|boiled|steamed|grilled|fried|roasted|baked)\b/i.test(rawFoodName);
+    if (rawThenCooked) {
+      if (hasGrams) {
+        return {
+          assumption: `Raw weight before cooking used. Example: 100g raw chicken breast cooked.`,
+          conflict: false,
+        };
+      }
+      // Correction #5 — include the assumed quantity in the message when the
+      // UI cannot clearly show it (portion-reference/default items only show
+      // "Food (default portion)" in the pending card, not grams).
+      return {
+        assumption: `Assumed ${Math.round(grams)}g ${food.canonical_name}. Raw weight before cooking used.`,
+        conflict: false,
+      };
+    }
+    if (/\bsoya\b/i.test(canonicalLower)) {
+      return {
+        assumption: `Dry/raw soya weight used. For cooked soya curry, log '1 bowl soya chunks curry'.`,
+        conflict: false,
+      };
+    }
+    return { assumption: `Raw weight before cooking used.`, conflict: false };
+  }
+
+  // 3. Explicit cooked (valid).
+  if (userSaidCooked) {
+    return { assumption: `Cooked weight used.`, conflict: false };
+  }
+
+  // 4. No state, matched a prepared-dish entity by keyword → as-served.
+  //    Emitted regardless of grams (the user named a dish, not a gram weight).
+  if (looksPrepared) {
+    return { assumption: `Cooked/as-served weight used.`, conflict: false };
+  }
+
+  // 5. No state, no grams, no dish keyword → no basis message. Portion-
+  //    reference inputs (bowl/katori/cup/piece) already carry a well-known
+  //    measure; a gram-based assumption would be noise.
+  if (!hasGrams) {
+    return { assumption: null, conflict: false };
+  }
+
+  // 6. No state, grams provided. Emit based on the RESOLVED basis +
+  //    basis-sensitive category gate (this is the fix for mixed-meal test).
+  if (weightBasis === 'cooked') {
+    if (categoryIsSensitive || isPrepared) {
+      return {
+        assumption: `Assumed cooked weight. If you weighed it before cooking, add 'raw'.`,
+        conflict: false,
+      };
+    }
+    return { assumption: null, conflict: false };
+  }
+  if (weightBasis === 'raw') {
+    if (/\bsoya\b/i.test(canonicalLower)) {
+      return {
+        assumption: `Dry/raw soya weight used. For cooked soya curry, log '1 bowl soya chunks curry'.`,
+        conflict: false,
+      };
+    }
+    if (isRaw || categoryIsSensitive) {
+      return {
+        assumption: `Raw weight used. If you weighed it after cooking, add 'cooked'.`,
+        conflict: false,
+      };
+    }
+    return { assumption: null, conflict: false };
+  }
+  return { assumption: null, conflict: false };
 }
 
 interface OilContext {
@@ -505,24 +668,9 @@ const NON_FOOD_CONTEXT_PATTERNS = [
   /\b(?:no\s+(?:added\s+)?oil|without\s+(?:added\s+)?oil|no\s+ghee|without\s+ghee|oil[- ]?free)\b/gi,
 ];
 
-const BASIS_SENSITIVE_CATEGORIES = new Set([
-  'rice',
-  'dal',
-  'legume',
-  'vegetable',
-  'paneer',
-  'nonveg',
-  'egg',
-  // 'grain' is included because rice is categorized as grain in existing
-  // data/tests. Raw-vs-cooked materially changes rice macros.
-  'grain',
-]);
-
-function shouldEmitBasisAssumption(category: string | null): boolean {
-  if (!category) return false;
-  const lower = category.toLowerCase().trim();
-  return BASIS_SENSITIVE_CATEGORIES.has(lower);
-}
+// (Removed 2026-11-22: basis messages are computed per-item in
+// buildResolvedItem, which is the only place with access to the matched
+// entity's preparation_state.)
 
 function stripNonFoodContextClauses(s: string): string {
   let out = s;
@@ -883,18 +1031,28 @@ async function buildResolvedItem(
   const requiresConfirmation = confidence < config.confidenceThreshold;
   const kbConfidence = Math.round(confidence * portionFactor(resolution.source) * 100) / 100;
   const scale = grams / 100;
-  const { basis: weightBasis } = inferWeightBasis(parsed.weight_basis_hint, parsed.food_name);
+  const weightBasis = inferWeightBasis(parsed.weight_basis_hint, food);
   const oilStatus = computeOilStatus(oilContext, food.oil_included, parsed.food_name);
 
-  // State/entity mismatch detection. If the user said "raw"/"dry" but the
-  // matched entity is clearly a prepared dish (curry / fried / masala /
-  // gravy / biryani / roast / tikka), the macros do NOT reflect the state
-  // the user asked for. Flag for review instead of silently returning
-  // cooked-dish macros labelled weight_basis: raw.
-  const canonicalLower = (food.canonical_name ?? '').toLowerCase();
-  const looksPrepared = /\b(curry|masala|gravy|fried|tikka|fry|roast|biryani|pulao|korma|butter)\b/
-    .test(canonicalLower);
-  const stateMismatch = parsed.weight_basis_hint === 'raw' && looksPrepared;
+  const basisResult = computeBasisAssumption(
+    parsed.weight_basis_hint,
+    food,
+    parsed.food_name,
+    parsed.raw_food_name,
+    parsed.unit,
+    weightBasis,
+    grams,
+  );
+  const stateMismatch = basisResult.conflict;
+
+  const userStatedState: 'none' | 'raw' | 'cooked' =
+    parsed.weight_basis_hint === 'raw'
+      ? 'raw'
+      : parsed.weight_basis_hint === 'cooked' || parsed.weight_basis_hint === 'finished'
+      ? 'cooked'
+      : 'none';
+  const assumedState = userStatedState === 'none' ? weightBasis : null;
+
   const effectiveConfidence = stateMismatch ? Math.min(confidence, 0.5) : confidence;
   const effectiveKbConfidence = stateMismatch ? Math.min(kbConfidence, 0.5) : kbConfidence;
 
@@ -913,6 +1071,9 @@ async function buildResolvedItem(
     carbs: Math.round(food.carbs_per_100g * scale * 10) / 10,
     fiber: Math.round(food.fiber_per_100g * scale * 10) / 10,
     weight_basis: weightBasis,
+    user_stated_state: userStatedState,
+    assumed_state: assumedState,
+    basis_assumption: basisResult.assumption,
     quantity_source: mapPortionSourceToQuantitySource(resolution.source),
     confidence: effectiveConfidence,
     layer,
@@ -1142,6 +1303,9 @@ async function applySelections(
       carbs: Math.round(food.carbs_per_100g * scale * 10) / 10,
       fiber: Math.round(food.fiber_per_100g * scale * 10) / 10,
       weight_basis: item.weight_basis,
+      user_stated_state: item.user_stated_state,
+      assumed_state: item.assumed_state,
+      basis_assumption: item.basis_assumption,
       quantity_source: item.quantity_source,
       confidence: 1.0,
       layer: 'user_selection',
@@ -1173,8 +1337,18 @@ function modifierContextConflicts(cachedItems: ResolvedItem[], rawText: string):
     extractModifierContext(rawText),
   );
   return cachedItems.some((cached, index) => {
-    const currentBasis = currentItems[index]?.weight_basis_hint ?? 'unknown';
-    return cached.weight_basis !== currentBasis;
+    const hint = currentItems[index]?.weight_basis_hint;
+    // 2026-11-22 — Compare user-stated state, not resolved basis. Resolved
+    // basis is now always 'cooked' or 'raw' (never 'unknown'), so comparing
+    // weight_basis would falsely flag every unstated input as a conflict.
+    const currentStated: 'none' | 'raw' | 'cooked' =
+      hint === 'raw'
+        ? 'raw'
+        : hint === 'cooked' || hint === 'finished'
+        ? 'cooked'
+        : 'none';
+    const cachedStated = cached.user_stated_state ?? 'none';
+    return cachedStated !== currentStated;
   });
 }
 
@@ -1187,7 +1361,10 @@ async function revalidateItems(
     if (
       item.weight_basis != null &&
       item.oil_status != null &&
-      item.quantity_source != null
+      item.quantity_source != null &&
+      // Force refresh of cache rows written before the new basis fields
+      // existed, so they gain basis_assumption / user_stated_state.
+      item.basis_assumption !== undefined
     ) {
       return null;
     }
@@ -1616,13 +1793,11 @@ async function finalize(input: FinalizeInput): Promise<ResolverResult> {
   );
   const items = qualifierResult.items;
   const totals = aggregate(items);
-  const assumptions = items.flatMap((item) => {
-    const { assumption } = inferWeightBasis(item.weight_basis, item.input_term);
-    if (assumption && shouldEmitBasisAssumption(item.category)) {
-      return [assumption];
-    }
-    return [];
-  });
+  // 2026-11-22 — basis_assumption is computed in buildResolvedItem (which
+  // has the matched entity's preparation_state). Null = no message.
+  const assumptions = items
+    .map((item) => item.basis_assumption)
+    .filter((a): a is string => typeof a === 'string' && a.length > 0);
   assumptions.push(...(input.additionalAssumptions ?? []));
   if (qualifierResult.assumption) assumptions.push(qualifierResult.assumption);
   for (const item of items) {
@@ -1752,7 +1927,12 @@ function applyTotalWeightQualifier(
       unresolved[0].input_term.toLowerCase() === 'total' &&
       specifiedGrams > 0 &&
       item.quantity_source === 'portion_reference' &&
-      item.weight_basis === 'unknown' &&
+      // 2026-11-22 — weight_basis is now 'cooked' for implicit-cooked
+      // entities (never 'unknown'). The original intent of this guard was
+      // "don't rescale when user explicitly stated raw/cooked", which is
+      // exactly what user_stated_state captures. Legacy cache rows without
+      // user_stated_state fall back to 'none' (matches old 'unknown').
+      (item.user_stated_state ?? 'none') === 'none' &&
       !item.oil_review_needed &&
       !item.was_ambiguous &&
       item.resolution_type === 'matched' &&

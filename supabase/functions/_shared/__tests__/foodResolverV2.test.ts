@@ -519,8 +519,8 @@ describe('foodResolverV2 ? non-food modifier clauses', () => {
       config,
     );
     expect(second.metadata.memory_hit).toBe(false);
-    expect(second.items[0].weight_basis).toBe('unknown');
-    expect(db.memory.get(key)?.items[0].weight_basis).toBe('unknown');
+    expect(second.items[0].weight_basis).toBe('cooked');
+    expect(db.memory.get(key)?.items[0].weight_basis).toBe('cooked');
 
     const third = await resolve(
       { userId: TEST_USER, rawText: '150g chicken breast', mealType: 'lunch' },
@@ -528,7 +528,7 @@ describe('foodResolverV2 ? non-food modifier clauses', () => {
       config,
     );
     expect(third.metadata.memory_hit).toBe(true);
-    expect(third.items[0].weight_basis).toBe('unknown');
+    expect(third.items[0].weight_basis).toBe('cooked');
   });
 
   it('self-heals modifier cache symmetrically from unknown to finished basis', async () => {
@@ -542,7 +542,7 @@ describe('foodResolverV2 ? non-food modifier clauses', () => {
       db,
       config,
     );
-    expect(first.items[0].weight_basis).toBe('unknown');
+    expect(first.items[0].weight_basis).toBe('cooked');
 
     const modifiedText = '150g chicken breast weighed after air frying, no oil';
     const second = await resolve(
@@ -743,6 +743,7 @@ describe('foodResolverV2 ? non-food modifier clauses', () => {
     );
   });
 
+
   it('does not rescale when the item needs oil review', async () => {
     const db = setupQualifierDb();
     const roti = db.foods.get(5)!;
@@ -759,6 +760,67 @@ describe('foodResolverV2 ? non-food modifier clauses', () => {
     expect(result.assumptions).toContain(
       'You specified 100g total, but this estimate uses default portions totaling 80g. Tap Edit to adjust.',
     );
+  });
+
+  it('does not rescale when the user stated raw (raw basis blocks rescale)', async () => {
+    const db = setupQualifierDb();
+    db.foods.set(107, makeFood({
+      id: 107, canonical_name: 'raw roti',
+      category: 'bread',
+      kcal_per_100g: 297, protein_per_100g: 11,
+      fat_per_100g: 5, carbs_per_100g: 51, fiber_per_100g: 4.9,
+      default_portion_grams: 40, default_portion_label: '1 piece',
+      preparation_state: 'raw',
+    }));
+    db.portions.set(107, [{ unit: 'piece', grams: 40, is_default: true, confidence: 1 }]);
+    db.aliases.set('raw rotis', {
+      alias: 'raw rotis', food_id: 107, portion_grams: null,
+      portion_unit: null, confidence: 0.9,
+    });
+
+    const result = await resolve(
+      { userId: TEST_USER, rawText: '2 raw rotis, 100g total', mealType: 'lunch' },
+      db,
+      TEST_CONFIG,
+    );
+
+    expect(result.items[0].grams).toBe(80); // not rescaled
+    expect(result.items[0].user_stated_state).toBe('raw');
+  });
+
+  it('revalidates a legacy cache item missing user_stated_state', async () => {
+    const db = setupQualifierDb();
+    const config = { ...TEST_CONFIG, memoryReadEnabled: true };
+
+    // Inject a legacy cache entry missing the 2026-11-22 fields.
+    const legacyItem: any = {
+      raw_text: '2 rotis', input_term: 'rotis', food_id: 5,
+      canonical_name: 'roti', category: 'bread',
+      quantity: 2, unit: null, grams: 80,
+      weight_basis: 'cooked', quantity_source: 'portion_reference',
+      kcal: 238, protein: 8.8, fat: 4, carbs: 40.8, fiber: 3.9,
+      confidence: 0.95, layer: 'user_selection',
+      resolution_type: 'matched', requires_confirmation: false,
+      oil_included: false, oil_status: 'unknown', oil_review_needed: false,
+      was_ambiguous: false, kb_confidence: 0.95,
+      // Missing: user_stated_state, assumed_state, basis_assumption.
+    };
+    db.memory.set(`${TEST_USER}:2 rotis`, {
+      user_id: TEST_USER, normalized_text: '2 rotis',
+      items: [legacyItem],
+      total_kcal: 238, total_protein: 8.8, total_fat: 4, total_carbs: 40.8,
+      uses: 1, last_used_at: new Date().toISOString(),
+    });
+
+    const result = await resolve(
+      { userId: TEST_USER, rawText: '2 rotis', mealType: 'lunch' },
+      db, config,
+    );
+
+    expect(result.metadata.memory_hit).toBe(true);
+    // Revalidation populated the new fields.
+    expect(result.items[0].user_stated_state).toBe('none');
+    expect(result.items[0].weight_basis).toBe('cooked');
   });
 
   it('adds an assumption for a generic each qualifier', async () => {
@@ -865,7 +927,9 @@ describe('foodResolverV2 ? non-food modifier clauses', () => {
 
     expect(r.items[0].oil_status).toBe('excluded');
     expect(r.items[0].oil_review_needed).toBe(false);
-    expect(r.assumptions?.some((text) => text.includes('oil'))).toBe(false);
+    // Contract: assumptions is `undefined` when empty (finalize omits the
+    // field). Frontend guards with `Array.isArray(data.assumptions)`.
+    expect(r.assumptions?.some((text) => text.includes('oil')) ?? false).toBe(false);
   });
 
   it('records requested oil as included and flags a KB conflict', async () => {
@@ -1024,31 +1088,28 @@ describe('foodResolverV2 ? non-food modifier clauses', () => {
     ))).toBe(true);
   });
 
-  it('marks raw chicken without an assumption', async () => {
+  it('marks raw chicken and emits the raw-basis message', async () => {
     const r = await resolve(
       { userId: TEST_USER, rawText: '150g raw chicken breast', mealType: 'lunch' },
       setupModifierDb(),
       TEST_CONFIG,
     );
     expect(r.items[0].weight_basis).toBe('raw');
-    expect(r.assumptions).toBeUndefined();
+    expect(r.items[0].user_stated_state).toBe('raw');
+    expect(r.assumptions).toContain('Raw weight before cooking used.');
   });
 
-  it('marks cooked rice and emits the cooked-basis reminder', async () => {
+  it('marks cooked rice and emits the cooked-basis message (not "Assumed")', async () => {
     const r = await resolve(
       { userId: TEST_USER, rawText: '200g cooked rice', mealType: 'lunch' },
       setupModifierDb(),
       TEST_CONFIG,
     );
     expect(r.items[0].weight_basis).toBe('cooked');
-    // Current resolver behaviour: when basis is cooked (explicit or implied
-    // via prep-strip), emit a reminder that the user can correct to raw.
-    // Note: this fires even though the user explicitly said "cooked" — the
-    // message wording is under review (see cleanup §1 for details). If the
-    // resolver's trigger condition changes to fire only for basis='unknown',
-    // revert this test to `expect(r.assumptions).toBeUndefined()`.
-    expect(r.assumptions).toContain(
-      'Assumed weight is after cooking. Add \'raw\' if you weighed it before cooking.',
+    expect(r.items[0].user_stated_state).toBe('cooked');
+    expect(r.assumptions).toContain('Cooked weight used.');
+    expect(r.assumptions).not.toContain(
+      "Assumed cooked weight. If you weighed it before cooking, add 'raw'.",
     );
   });
 
@@ -1058,8 +1119,12 @@ describe('foodResolverV2 ? non-food modifier clauses', () => {
       setupModifierDb(),
       TEST_CONFIG,
     );
-    expect(r.items[0].weight_basis).toBe('unknown');
-    expect(r.assumptions).toContain('Assumed cooked weight for rice.');
+    expect(r.items[0].weight_basis).toBe('cooked');
+    expect(r.items[0].user_stated_state).toBe('none');
+    expect(r.items[0].assumed_state).toBe('cooked');
+    expect(r.assumptions).toContain(
+      "Assumed cooked weight. If you weighed it before cooking, add 'raw'.",
+    );
   });
 
   it('does not assume cooked weight for roti', async () => {
@@ -1069,7 +1134,8 @@ describe('foodResolverV2 ? non-food modifier clauses', () => {
       TEST_CONFIG,
     );
 
-    expect(r.items[0].weight_basis).toBe('unknown');
+    expect(r.items[0].weight_basis).toBe('cooked');
+    // Portion-reference input (no grams stated) → no basis assumption.
     expect(r.assumptions?.some((text) => /Assumed cooked weight/i.test(text)) ?? false).toBe(false);
   });
 
@@ -1087,12 +1153,8 @@ describe('foodResolverV2 ? non-food modifier clauses', () => {
       TEST_CONFIG,
     );
     expect(r.items[0].weight_basis).toBe('finished');
-    // Same reminder as 'marks cooked rice' above: fires for basis='finished'
-    // even though the user's own wording ("weighed after air frying") made
-    // finished basis explicit. See cleanup §1 for the wording concern.
-    expect(r.assumptions).toContain(
-      'Assumed weight is after cooking. Add \'raw\' if you weighed it before cooking.',
-    );
+    expect(r.items[0].user_stated_state).toBe('cooked');
+    expect(r.assumptions).toContain('Cooked weight used.');
   });
 
   it('keeps mixed food weight bases independent', async () => {
@@ -1105,8 +1167,11 @@ describe('foodResolverV2 ? non-food modifier clauses', () => {
       setupModifierDb(),
       TEST_CONFIG,
     );
-    expect(r.items.map((item) => item.weight_basis)).toEqual(['unknown', 'raw']);
-    expect(r.assumptions).toEqual(['Assumed cooked weight for rice.']);
+    expect(r.items.map((item) => item.weight_basis)).toEqual(['cooked', 'raw']);
+    expect(r.assumptions).toEqual([
+      "Assumed cooked weight. If you weighed it before cooking, add 'raw'.",
+      'Raw weight before cooking used.',
+    ]);
   });
 
   it('prefers the exact raw chicken variant before the stripped name', async () => {
@@ -1167,6 +1232,536 @@ describe('foodResolverV2 ? non-food modifier clauses', () => {
 
     expect(r.items).toHaveLength(0);
     expect(r.unresolved_items.some((item) => item.input_term === 'mystery grain')).toBe(true);
+  });
+});
+
+// =============================================================================
+// 2026-11-22 — raw-vs-cooked basis (T-BASIS-*).
+// =============================================================================
+describe('foodResolverV2 — raw-vs-cooked basis (2026-11-22)', () => {
+  function setupBasisDb(): FakeDb {
+    const db = new FakeDb();
+
+    // Cooked rice (14, prepState='cooked', 130/100g)
+    db.foods.set(14, makeFood({
+      id: 14, canonical_name: 'rice', display_name: 'Rice, cooked',
+      category: 'rice', kcal_per_100g: 130, protein_per_100g: 2.7,
+      fat_per_100g: 0.3, carbs_per_100g: 28, fiber_per_100g: 0.4,
+      default_portion_grams: 150, default_portion_label: 'serving',
+      preparation_state: 'cooked',
+    }));
+    db.portions.set(14, [{ unit: 'bowl', grams: 150, is_default: true, confidence: 1 }]);
+
+    // Raw rice (new, prepState='raw', 365/100g). Has a default portion so
+    // no-unit inputs like "Raw rice cooked" resolve instead of landing in
+    // unresolved_items.
+    db.foods.set(15, makeFood({
+      id: 15, canonical_name: 'raw rice', display_name: 'Rice, raw (uncooked)',
+      category: 'rice', kcal_per_100g: 365, protein_per_100g: 7,
+      fat_per_100g: 0.7, carbs_per_100g: 80, fiber_per_100g: 1.3,
+      preparation_state: 'raw',
+      default_portion_grams: 100, default_portion_label: '100g',
+    }));
+
+    // Cooked chicken breast (76, prepState='cooked')
+    db.foods.set(76, makeFood({
+      id: 76, canonical_name: 'chicken breast', display_name: 'Chicken breast, cooked',
+      category: 'nonveg', kcal_per_100g: 165, protein_per_100g: 31,
+      fat_per_100g: 3.6, carbs_per_100g: 0, fiber_per_100g: 0,
+      default_portion_grams: 100, default_portion_label: '100g',
+      preparation_state: 'cooked',
+    }));
+
+    // Raw chicken breast (77, prepState='raw' AFTER the migration fix)
+    db.foods.set(77, makeFood({
+      id: 77, canonical_name: 'raw chicken breast', display_name: 'Chicken breast, raw',
+      category: 'nonveg', kcal_per_100g: 120, protein_per_100g: 22.5,
+      fat_per_100g: 2.6, carbs_per_100g: 0, fiber_per_100g: 0,
+      default_portion_grams: 100, default_portion_label: '100g',
+      preparation_state: 'raw',
+    }));
+
+    // Soya chunks dry (717, prepState='raw')
+    db.foods.set(717, makeFood({
+      id: 717, canonical_name: 'soya chunks dry', display_name: 'Soya chunks, dry (raw)',
+      category: 'legume', kcal_per_100g: 336, protein_per_100g: 52,
+      fat_per_100g: 0.5, carbs_per_100g: 33, fiber_per_100g: 13,
+      default_portion_grams: 50, default_portion_label: 'dry',
+      preparation_state: 'raw',
+    }));
+    db.portions.set(717, [
+      { unit: 'g', grams: 1, is_default: false, confidence: 1 },
+      { unit: 'piece', grams: 50, is_default: true, confidence: 1 },
+    ]);
+
+    // Soya chunks curry (45, prepState='cooked')
+    db.foods.set(45, makeFood({
+      id: 45, canonical_name: 'soya chunks curry', display_name: 'Soya chunks curry',
+      category: 'legume', kcal_per_100g: 180, protein_per_100g: 22,
+      fat_per_100g: 6, carbs_per_100g: 10, fiber_per_100g: 4,
+      default_portion_grams: 150, default_portion_label: 'serving',
+      preparation_state: 'cooked', oil_included: true,
+    }));
+    db.portions.set(45, [
+      { unit: 'bowl', grams: 150, is_default: true, confidence: 1 },
+    ]);
+
+    // Cooked dal (30, prepState='cooked')
+    db.foods.set(30, makeFood({
+      id: 30, canonical_name: 'dal', display_name: 'Dal, cooked',
+      category: 'dal', kcal_per_100g: 116, protein_per_100g: 7.2,
+      fat_per_100g: 0.5, carbs_per_100g: 20.9, fiber_per_100g: 4,
+      default_portion_grams: 150, default_portion_label: 'serving',
+      preparation_state: 'cooked',
+    }));
+    db.portions.set(30, [{ unit: 'bowl', grams: 150, is_default: true, confidence: 1 }]);
+
+    // Bare 'soya chunks' alias → 717
+    db.aliases.set('soya chunks', {
+      alias: 'soya chunks', food_id: 717, portion_grams: null,
+      portion_unit: null, confidence: 0.9,
+    });
+    // 'raw dal' alias → 30 (conflict path)
+    db.aliases.set('raw dal', {
+      alias: 'raw dal', food_id: 30, portion_grams: null,
+      portion_unit: null, confidence: 0.85,
+    });
+
+    return db;
+  }
+
+  // ── T-BASIS-01..03: rice ────────────────────────────────────────────────
+  it('T-BASIS-01: 100g rice → cooked, "Assumed cooked weight ..."', async () => {
+    const r = await resolve(
+      { userId: TEST_USER, rawText: '100g rice', mealType: 'lunch' },
+      setupBasisDb(), TEST_CONFIG,
+    );
+    expect(r.items[0].food_id).toBe(14);
+    expect(r.items[0].weight_basis).toBe('cooked');
+    expect(r.items[0].user_stated_state).toBe('none');
+    expect(r.items[0].assumed_state).toBe('cooked');
+    expect(r.assumptions).toContain(
+      "Assumed cooked weight. If you weighed it before cooking, add 'raw'.",
+    );
+  });
+
+  it('T-BASIS-02: 100g raw rice → raw rice, "Raw weight before cooking used."', async () => {
+    const r = await resolve(
+      { userId: TEST_USER, rawText: '100g raw rice', mealType: 'lunch' },
+      setupBasisDb(), TEST_CONFIG,
+    );
+    expect(r.items[0].food_id).toBe(15);
+    expect(r.items[0].canonical_name).toBe('raw rice');
+    expect(r.items[0].weight_basis).toBe('raw');
+    expect(r.items[0].user_stated_state).toBe('raw');
+    expect(r.items[0].assumed_state).toBeNull();
+    expect(r.assumptions).toContain('Raw weight before cooking used.');
+  });
+
+  it('T-BASIS-03: 100g cooked rice → "Cooked weight used." (not Assumed)', async () => {
+    const r = await resolve(
+      { userId: TEST_USER, rawText: '100g cooked rice', mealType: 'lunch' },
+      setupBasisDb(), TEST_CONFIG,
+    );
+    expect(r.items[0].food_id).toBe(14);
+    expect(r.items[0].weight_basis).toBe('cooked');
+    expect(r.items[0].user_stated_state).toBe('cooked');
+    expect(r.assumptions).toContain('Cooked weight used.');
+    expect(r.assumptions).not.toContain(
+      "Assumed cooked weight. If you weighed it before cooking, add 'raw'.",
+    );
+  });
+
+  // ── T-BASIS-04..05: chicken breast ─────────────────────────────────────
+  it('T-BASIS-04: 100g raw chicken breast cooked → raw entity, raw-then-cooked message', async () => {
+    const r = await resolve(
+      { userId: TEST_USER, rawText: '100g raw chicken breast cooked', mealType: 'lunch' },
+      setupBasisDb(), TEST_CONFIG,
+    );
+    expect(r.items[0].food_id).toBe(77);
+    expect(r.items[0].canonical_name).toBe('raw chicken breast');
+    expect(r.items[0].weight_basis).toBe('raw');
+    expect(r.items[0].user_stated_state).toBe('raw');
+    expect(r.items[0].was_ambiguous).toBe(false);
+    expect(r.items[0].requires_confirmation).toBe(false);
+    expect(r.assumptions).toContain(
+      'Raw weight before cooking used. Example: 100g raw chicken breast cooked.',
+    );
+  });
+
+  it('T-BASIS-05: 150g chicken breast cooked → cooked entity, "Cooked weight used."', async () => {
+    const r = await resolve(
+      { userId: TEST_USER, rawText: '150g chicken breast cooked', mealType: 'lunch' },
+      setupBasisDb(), TEST_CONFIG,
+    );
+    expect(r.items[0].food_id).toBe(76);
+    expect(r.items[0].weight_basis).toBe('cooked');
+    expect(r.items[0].user_stated_state).toBe('cooked');
+    expect(r.assumptions).toContain('Cooked weight used.');
+  });
+
+  // ── T-BASIS-06..07: soya ────────────────────────────────────────────────
+  it('T-BASIS-06: 50g soya chunks → dry/raw entity via bare alias', async () => {
+    const r = await resolve(
+      { userId: TEST_USER, rawText: '50g soya chunks', mealType: 'lunch' },
+      setupBasisDb(), TEST_CONFIG,
+    );
+    expect(r.items[0].food_id).toBe(717);
+    expect(r.items[0].canonical_name).toBe('soya chunks dry');
+    expect(r.items[0].weight_basis).toBe('raw');
+    expect(r.items[0].user_stated_state).toBe('none');
+    expect(r.items[0].assumed_state).toBe('raw');
+    expect(r.assumptions).toContain(
+      "Dry/raw soya weight used. For cooked soya curry, log '1 bowl soya chunks curry'.",
+    );
+  });
+
+  it('T-BASIS-07: 1 bowl soya chunks curry → curry, "Cooked/as-served weight used."', async () => {
+    const r = await resolve(
+      { userId: TEST_USER, rawText: '1 bowl soya chunks curry', mealType: 'lunch' },
+      setupBasisDb(), TEST_CONFIG,
+    );
+    expect(r.items[0].food_id).toBe(45);
+    expect(r.items[0].weight_basis).toBe('cooked');
+    expect(r.items[0].user_stated_state).toBe('none');
+    expect(r.items[0].assumed_state).toBe('cooked');
+    expect(r.assumptions).toContain('Cooked/as-served weight used.');
+  });
+
+  // ── T-BASIS-08..09: conflicts ──────────────────────────────────────────
+  it('T-BASIS-08: Raw soya chunks curry → conflict, require confirmation', async () => {
+    const r = await resolve(
+      { userId: TEST_USER, rawText: 'Raw soya chunks curry', mealType: 'lunch' },
+      setupBasisDb(), TEST_CONFIG,
+    );
+    expect(r.items[0].food_id).toBe(45);
+    expect(r.items[0].was_ambiguous).toBe(true);
+    expect(r.items[0].requires_confirmation).toBe(true);
+    expect(r.needs_confirmation).toBe(true);
+    expect(r.kb_confidence).toBeLessThanOrEqual(0.5);
+    expect(r.assumptions?.some((a) => a.startsWith("You said 'raw' but"))).toBe(true);
+  });
+
+  it('T-BASIS-09: 100g raw dal → conflict (no raw dal entity)', async () => {
+    const r = await resolve(
+      { userId: TEST_USER, rawText: '100g raw dal', mealType: 'lunch' },
+      setupBasisDb(), TEST_CONFIG,
+    );
+    expect(r.items[0].food_id).toBe(30);
+    expect(r.items[0].was_ambiguous).toBe(true);
+    expect(r.items[0].requires_confirmation).toBe(true);
+    expect(r.assumptions?.some((a) => a.startsWith("You said 'raw' but"))).toBe(true);
+  });
+
+  // ── T-BASIS-10: no-message case ────────────────────────────────────────
+  it('T-BASIS-10: 1 bowl dal → no basis assumption (portion reference, not grams)', async () => {
+    const r = await resolve(
+      { userId: TEST_USER, rawText: '1 bowl dal', mealType: 'lunch' },
+      setupBasisDb(), TEST_CONFIG,
+    );
+    expect(r.items[0].food_id).toBe(30);
+    expect(r.items[0].weight_basis).toBe('cooked');
+    expect(r.items[0].user_stated_state).toBe('none');
+    expect(r.items[0].assumed_state).toBe('cooked');
+    expect(r.items[0].basis_assumption).toBeNull();
+    const basisMessages = (r.assumptions ?? []).filter(
+      (a) =>
+        a.includes('Assumed cooked weight') ||
+        a.includes('Raw weight') ||
+        a.includes('Cooked weight') ||
+        a.includes('Cooked/as-served weight'),
+    );
+    expect(basisMessages).toEqual([]);
+  });
+
+  // ── T-BASIS-11: gram form works the same ───────────────────────────────
+  it('T-BASIS-11: soya chunks 50g → same as T-BASIS-06 (word order robust)', async () => {
+    const r = await resolve(
+      { userId: TEST_USER, rawText: 'soya chunks 50g', mealType: 'lunch' },
+      setupBasisDb(), TEST_CONFIG,
+    );
+    expect(r.items[0].food_id).toBe(717);
+    expect(r.assumptions).toContain(
+      "Dry/raw soya weight used. For cooked soya curry, log '1 bowl soya chunks curry'.",
+    );
+  });
+
+  // ── T-BASIS-12: raw rice cooked = valid raw-then-cooked ────────────────
+  it('T-BASIS-12: Raw rice cooked → valid raw-then-cooked, NOT a conflict', async () => {
+    const r = await resolve(
+      { userId: TEST_USER, rawText: 'Raw rice cooked', mealType: 'lunch' },
+      setupBasisDb(), TEST_CONFIG,
+    );
+    expect(r.items[0].food_id).toBe(15);
+    expect(r.items[0].weight_basis).toBe('raw');
+    expect(r.items[0].was_ambiguous).toBe(false);
+    expect(r.items[0].requires_confirmation).toBe(false);
+    expect(r.assumptions).toContain(
+      'Assumed 100g raw rice. Raw weight before cooking used.',
+    );
+  });
+});
+
+// =============================================================================
+// 2026-11-22 — raw-vs-cooked basis + assumption messages (T-BASIS-*).
+// =============================================================================
+describe('foodResolverV2 — raw-vs-cooked basis (2026-11-22)', () => {
+  function setupBasisDb(): FakeDb {
+    const db = new FakeDb();
+
+    // Cooked rice (id 14, mirrors prod)
+    db.foods.set(14, makeFood({
+      id: 14, canonical_name: 'rice', display_name: 'Rice, cooked',
+      category: 'grain', kcal_per_100g: 130, protein_per_100g: 2.7,
+      fat_per_100g: 0.3, carbs_per_100g: 28, fiber_per_100g: 0.4,
+      default_portion_grams: 150, default_portion_label: '1 bowl',
+      preparation_state: 'cooked',
+    }));
+    db.portions.set(14, [{ unit: 'bowl', grams: 150, is_default: true, confidence: 1 }]);
+
+    // Raw rice (mirrors a to-be-created entity)
+    db.foods.set(15, makeFood({
+      id: 15, canonical_name: 'raw rice', display_name: 'Rice, raw',
+      category: 'grain', kcal_per_100g: 365, protein_per_100g: 7,
+      fat_per_100g: 0.7, carbs_per_100g: 80, fiber_per_100g: 1.3,
+      default_portion_grams: 100, default_portion_label: '100g',
+      preparation_state: 'raw',
+    }));
+
+    // Cooked chicken breast (id 102)
+    db.foods.set(102, makeFood({
+      id: 102, canonical_name: 'chicken breast', display_name: 'Chicken breast, cooked',
+      category: 'nonveg', kcal_per_100g: 165, protein_per_100g: 31,
+      fat_per_100g: 3.6, carbs_per_100g: 0, fiber_per_100g: 0,
+      default_portion_grams: 100, default_portion_label: '100g',
+      preparation_state: 'cooked',
+    }));
+
+    // Raw chicken breast (id 103)
+    db.foods.set(103, makeFood({
+      id: 103, canonical_name: 'raw chicken breast', display_name: 'Chicken breast, raw',
+      category: 'nonveg', kcal_per_100g: 120, protein_per_100g: 22.5,
+      fat_per_100g: 2.6, carbs_per_100g: 0, fiber_per_100g: 0,
+      default_portion_grams: 100, default_portion_label: '100g',
+      preparation_state: 'raw',
+    }));
+
+    // Dry soya chunks (id 200)
+    db.foods.set(200, makeFood({
+      id: 200, canonical_name: 'soya chunks dry', display_name: 'Soya chunks, dry (raw)',
+      category: 'legume', kcal_per_100g: 336, protein_per_100g: 52,
+      fat_per_100g: 0.5, carbs_per_100g: 33, fiber_per_100g: 13,
+      default_portion_grams: 50, default_portion_label: 'dry',
+      preparation_state: 'raw',
+    }));
+    db.portions.set(200, [
+      { unit: 'g', grams: 1, is_default: false, confidence: 1 },
+      { unit: 'piece', grams: 50, is_default: true, confidence: 1 },
+    ]);
+
+    // Soya chunks curry (id 45)
+    db.foods.set(45, makeFood({
+      id: 45, canonical_name: 'soya chunks curry', display_name: 'Soya chunks curry',
+      category: 'legume', kcal_per_100g: 180, protein_per_100g: 22,
+      fat_per_100g: 6, carbs_per_100g: 10, fiber_per_100g: 4,
+      default_portion_grams: 150, default_portion_label: 'serving',
+      preparation_state: 'cooked', oil_included: true,
+    }));
+    db.portions.set(45, [
+      { unit: 'bowl', grams: 150, is_default: true, confidence: 1 },
+      { unit: 'katori', grams: 100, is_default: false, confidence: 1 },
+      { unit: 'cup', grams: 150, is_default: false, confidence: 1 },
+    ]);
+
+    // Cooked dal (id 34)
+    db.foods.set(34, makeFood({
+      id: 34, canonical_name: 'dal', display_name: 'Dal, cooked',
+      category: 'dal', kcal_per_100g: 116, protein_per_100g: 7.2,
+      fat_per_100g: 0.4, carbs_per_100g: 20, fiber_per_100g: 4,
+      default_portion_grams: 150, default_portion_label: '1 bowl',
+      preparation_state: 'cooked',
+    }));
+    db.portions.set(34, [{ unit: 'bowl', grams: 150, is_default: true, confidence: 1 }]);
+
+    // Aliases: soya chunks → soya chunks dry (bare); bowl soya chunks → curry
+    db.aliases.set('soya chunks', {
+      alias: 'soya chunks', food_id: 200, portion_grams: null, portion_unit: null, confidence: 0.95,
+    });
+    db.aliases.set('bowl soya chunks', {
+      alias: 'bowl soya chunks', food_id: 45, portion_grams: null, portion_unit: null, confidence: 0.95,
+    });
+
+    return db;
+  }
+
+  describe('rice', () => {
+    it('T-BASIS-01: 100g rice → cooked, "Assumed cooked weight"', async () => {
+      const r = await resolve(
+        { userId: TEST_USER, rawText: '100g rice', mealType: 'lunch' },
+        setupBasisDb(), TEST_CONFIG,
+      );
+      expect(r.items[0].food_id).toBe(14);
+      expect(r.items[0].weight_basis).toBe('cooked');
+      expect(r.items[0].user_stated_state).toBe('none');
+      expect(r.items[0].assumed_state).toBe('cooked');
+      expect(r.assumptions).toContain(
+        "Assumed cooked weight. If you weighed it before cooking, add 'raw'.",
+      );
+    });
+
+    it('T-BASIS-02: 100g raw rice → raw rice entity, "Raw weight before cooking used."', async () => {
+      const r = await resolve(
+        { userId: TEST_USER, rawText: '100g raw rice', mealType: 'lunch' },
+        setupBasisDb(), TEST_CONFIG,
+      );
+      expect(r.items[0].food_id).toBe(15);
+      expect(r.items[0].canonical_name).toBe('raw rice');
+      expect(r.items[0].weight_basis).toBe('raw');
+      expect(r.items[0].user_stated_state).toBe('raw');
+      expect(r.items[0].assumed_state).toBeNull();
+      expect(r.assumptions).toContain('Raw weight before cooking used.');
+    });
+
+    it('T-BASIS-03: 100g cooked rice → "Cooked weight used." (not Assumed)', async () => {
+      const r = await resolve(
+        { userId: TEST_USER, rawText: '100g cooked rice', mealType: 'lunch' },
+        setupBasisDb(), TEST_CONFIG,
+      );
+      expect(r.items[0].food_id).toBe(14);
+      expect(r.items[0].weight_basis).toBe('cooked');
+      expect(r.items[0].user_stated_state).toBe('cooked');
+      expect(r.assumptions).toContain('Cooked weight used.');
+      expect(r.assumptions).not.toContain(
+        "Assumed cooked weight. If you weighed it before cooking, add 'raw'.",
+      );
+    });
+  });
+
+  describe('chicken breast', () => {
+    it('T-BASIS-04: 100g raw chicken breast cooked → raw entity, raw-then-cooked message', async () => {
+      const r = await resolve(
+        { userId: TEST_USER, rawText: '100g raw chicken breast cooked', mealType: 'lunch' },
+        setupBasisDb(), TEST_CONFIG,
+      );
+      expect(r.items[0].food_id).toBe(103);
+      expect(r.items[0].canonical_name).toBe('raw chicken breast');
+      expect(r.items[0].weight_basis).toBe('raw');
+      expect(r.items[0].user_stated_state).toBe('raw');
+      expect(r.assumptions).toContain(
+        'Raw weight before cooking used. Example: 100g raw chicken breast cooked.',
+      );
+    });
+
+    it('T-BASIS-05: 150g chicken breast cooked → cooked entity, "Cooked weight used."', async () => {
+      const r = await resolve(
+        { userId: TEST_USER, rawText: '150g chicken breast cooked', mealType: 'lunch' },
+        setupBasisDb(), TEST_CONFIG,
+      );
+      expect(r.items[0].food_id).toBe(102);
+      expect(r.items[0].weight_basis).toBe('cooked');
+      expect(r.items[0].user_stated_state).toBe('cooked');
+      expect(r.assumptions).toContain('Cooked weight used.');
+    });
+  });
+
+  describe('soya chunks', () => {
+    it('T-BASIS-06: 50g soya chunks → dry/raw entity (via alias), dry-soya message', async () => {
+      const r = await resolve(
+        { userId: TEST_USER, rawText: '50g soya chunks', mealType: 'lunch' },
+        setupBasisDb(), TEST_CONFIG,
+      );
+      expect(r.items[0].food_id).toBe(200);
+      expect(r.items[0].canonical_name).toBe('soya chunks dry');
+      expect(r.items[0].weight_basis).toBe('raw');
+      expect(r.items[0].user_stated_state).toBe('none');
+      expect(r.items[0].assumed_state).toBe('raw');
+      expect(r.assumptions).toContain(
+        "Dry/raw soya weight used. For cooked soya curry, log '1 bowl soya chunks curry'.",
+      );
+    });
+
+    it('T-BASIS-07: 1 bowl soya chunks curry → curry entity, "Cooked/as-served weight used."', async () => {
+      const r = await resolve(
+        { userId: TEST_USER, rawText: '1 bowl soya chunks curry', mealType: 'lunch' },
+        setupBasisDb(), TEST_CONFIG,
+      );
+      expect(r.items[0].food_id).toBe(45);
+      expect(r.items[0].weight_basis).toBe('cooked');
+      expect(r.items[0].user_stated_state).toBe('none');
+      expect(r.assumptions).toContain('Cooked/as-served weight used.');
+    });
+  });
+
+  describe('conflicts', () => {
+    it('T-BASIS-08: Raw soya chunks curry → conflict, require confirmation', async () => {
+      const r = await resolve(
+        { userId: TEST_USER, rawText: 'Raw soya chunks curry', mealType: 'lunch' },
+        setupBasisDb(), TEST_CONFIG,
+      );
+      expect(r.items[0].food_id).toBe(45);
+      expect(r.items[0].was_ambiguous).toBe(true);
+      expect(r.items[0].requires_confirmation).toBe(true);
+      expect(r.needs_confirmation).toBe(true);
+      expect(r.assumptions?.some((a) => a.startsWith("You said 'raw' but"))).toBe(true);
+    });
+
+    it('T-BASIS-09: 100g raw dal → conflict (no raw dal entity), require confirmation', async () => {
+      const r = await resolve(
+        { userId: TEST_USER, rawText: '100g raw dal', mealType: 'lunch' },
+        setupBasisDb(), TEST_CONFIG,
+      );
+      expect(r.items[0].food_id).toBe(34);
+      expect(r.items[0].was_ambiguous).toBe(true);
+      expect(r.items[0].requires_confirmation).toBe(true);
+      expect(r.assumptions?.some((a) => a.startsWith("You said 'raw' but"))).toBe(true);
+    });
+  });
+
+  describe('no-message cases', () => {
+    it('T-BASIS-10: 1 bowl dal → cooked dal, NO assumption (portion reference, not grams)', async () => {
+      const r = await resolve(
+        { userId: TEST_USER, rawText: '1 bowl dal', mealType: 'lunch' },
+        setupBasisDb(), TEST_CONFIG,
+      );
+      expect(r.items[0].food_id).toBe(34);
+      expect(r.items[0].weight_basis).toBe('cooked');
+      expect(r.items[0].user_stated_state).toBe('none');
+      const basisMessages = (r.assumptions ?? []).filter(
+        (a) =>
+          a.includes('Assumed cooked weight') ||
+          a.includes('Raw weight') ||
+          a.includes('Cooked weight') ||
+          a.includes('Cooked/as-served weight'),
+      );
+      expect(basisMessages).toEqual([]);
+    });
+
+    it('T-BASIS-11: 50g soya chunks (gram form) → same entity + message as T-BASIS-06', async () => {
+      const r = await resolve(
+        { userId: TEST_USER, rawText: 'soya chunks 50g', mealType: 'lunch' },
+        setupBasisDb(), TEST_CONFIG,
+      );
+      expect(r.items[0].food_id).toBe(200);
+      expect(r.assumptions).toContain(
+        "Dry/raw soya weight used. For cooked soya curry, log '1 bowl soya chunks curry'.",
+      );
+    });
+
+    it('T-BASIS-12: Raw rice cooked → conflict on cooked-dish-matched-to-raw-input', async () => {
+      // User typed "raw rice cooked". prepStrip → food_name='raw rice';
+      // basis='raw'. Matches raw rice (15). No conflict — valid raw-then-cooked.
+      // This test locks that valid case is NOT a conflict.
+      const r = await resolve(
+        { userId: TEST_USER, rawText: 'Raw rice cooked', mealType: 'lunch' },
+        setupBasisDb(), TEST_CONFIG,
+      );
+      expect(r.items[0].food_id).toBe(15);
+      expect(r.items[0].was_ambiguous).toBe(false);
+      expect(r.items[0].requires_confirmation).toBe(false);
+      expect(r.assumptions).toContain(
+        'Assumed 100g raw rice. Raw weight before cooking used.',
+      );
+    });
   });
 });
 
