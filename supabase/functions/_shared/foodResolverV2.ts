@@ -1181,12 +1181,12 @@ async function applyAmbiguityOverlay(
       continue;
     }
 
-    const checkItem: AmbiguityCheckItem = {
-      input_term: item.input_term,
-      layer: item.layer,
-      candidates: item.candidates ?? null,
-      was_ambiguous: item.was_ambiguous,
-    };
+const checkItem: AmbiguityCheckItem = {
+  input_term: item.input_term,
+  layer: item.layer,
+  candidates: item.candidates ?? null,
+  was_ambiguous: item.was_ambiguous,
+};
 
     if (!itemHasAmbiguitySignal(checkItem, ambiguousTerms)) {
       out.push({ ...item, was_ambiguous: false });
@@ -1195,13 +1195,24 @@ async function applyAmbiguityOverlay(
 
     const candidates = await db.getAmbiguousCandidates(item.input_term);
     if (candidates.length < 2) {
-      // Term is in the ambiguity table but candidates row data is
-      // inconsistent. Still flag for review rather than silently save.
-      out.push({
-        ...item,
-        was_ambiguous: true,
-        requires_confirmation: true,
-      });
+      // 2026-11-22b — Do NOT flag when the resolver has nothing to
+      // disambiguate. A term can be in food_ambiguous_terms with fewer than
+      // 2 candidate rows (data drift, incomplete seeds, curated removals).
+      // Forcing requires_confirmation on a single-result item is noise:
+      // the user has no alternative to pick from.
+      //
+      // BUT (2026-11-22c): preserve state-mismatch conflicts flagged by
+      // buildResolvedItem. Those items have was_ambiguous=true AND
+      // requires_confirmation=true because the user said 'raw'/'cooked'
+      // but the matched entity is the opposite basis — the user needs to
+      // confirm or correct the basis, not disambiguate between candidates.
+      // Overwriting was_ambiguous=false here silently auto-logged conflict
+      // cases (T-BASIS-08/09, T-CONFIRM-01, T-PARSE-13).
+      if (item.was_ambiguous === true) {
+        out.push(item);
+        continue;
+      }
+      out.push({ ...item, was_ambiguous: false });
       continue;
     }
 
